@@ -158,4 +158,26 @@ func TestBrowserOptions(t *testing.T) {
 	if !o.noSandbox {
 		t.Error("WithNoSandbox should set noSandbox=true")
 	}
+
+	WithWindowState(WindowStateMaximized)(o)
+
+	if o.windowState != WindowStateMaximized {
+		t.Error("WithWindowState should set windowState")
+	}
+
+	WithLaunchFlag("disable-gpu")(o)
+
+	if o.launchFlags == nil {
+		t.Fatal("WithLaunchFlag should initialize launchFlags map")
+	}
+
+	if _, ok := o.launchFlags["disable-gpu"]; !ok {
+		t.Error("WithLaunchFlag should add the flag")
+	}
+
+	WithLaunchFlag("window-size", "800,600")(o)
+
+	if vals, ok := o.launchFlags["window-size"]; !ok || len(vals) != 1 || vals[0] != "800,600" {
+		t.Error("WithLaunchFlag should store flag values")
+	}
 }

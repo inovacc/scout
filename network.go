@@ -12,15 +12,15 @@ import (
 
 // Cookie represents an HTTP cookie.
 type Cookie struct {
-	Name     string
-	Value    string
-	URL      string // Used when setting cookies to associate with a URL.
-	Domain   string
-	Path     string
-	Expires  time.Time
-	Secure   bool
-	HTTPOnly bool
-	SameSite string
+	Name     string    `json:"name"`
+	Value    string    `json:"value"`
+	URL      string    `json:"url,omitempty"`
+	Domain   string    `json:"domain,omitempty"`
+	Path     string    `json:"path,omitempty"`
+	Expires  time.Time `json:"expires,omitzero"`
+	Secure   bool      `json:"secure,omitempty"`
+	HTTPOnly bool      `json:"http_only,omitempty"`
+	SameSite string    `json:"same_site,omitempty"`
 }
 
 // HijackHandler is a function called for each intercepted request.

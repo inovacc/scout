@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
+	"github.com/go-rod/rod/lib/launcher/flags"
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/go-rod/stealth"
 )
@@ -42,6 +43,14 @@ func New(opts ...Option) (*Browser, error) {
 
 	if len(o.env) > 0 {
 		l = l.Env(o.env...)
+	}
+
+	if o.xvfb {
+		l = l.XVFB(o.xvfbArgs...)
+	}
+
+	for name, values := range o.launchFlags {
+		l = l.Set(flags.Flag(name), values...)
 	}
 
 	u, err := l.Launch()
@@ -125,6 +134,12 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 	if b.opts.windowW > 0 && b.opts.windowH > 0 {
 		if err := p.SetViewport(b.opts.windowW, b.opts.windowH); err != nil {
 			return nil, fmt.Errorf("scout: set viewport: %w", err)
+		}
+	}
+
+	if b.opts.windowState != "" && b.opts.windowState != WindowStateNormal {
+		if err := p.setWindowState(b.opts.windowState); err != nil {
+			return nil, fmt.Errorf("scout: set initial window state: %w", err)
 		}
 	}
 

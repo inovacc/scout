@@ -13,6 +13,8 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **Network Control** - Set headers, manage cookies, intercept/modify requests via hijacking, block URLs by pattern, HTTP basic auth
 - **Stealth Mode** - Anti-bot-detection via `go-rod/stealth` to avoid fingerprinting
 - **Device Emulation** - Viewport sizing, window bounds, device profile emulation
+- **Window Control** - Minimize, maximize, fullscreen, restore; get/set window bounds and state
+- **Session & Storage** - localStorage/sessionStorage access, save/load full session state (URL, cookies, storage)
 - **DOM Traversal** - Navigate parent/children/siblings, shadow roots, iframes
 - **Struct-Tag Extraction** - Extract data into Go structs using `scout:"selector"` tags
 - **Table & Meta Extraction** - Parse HTML tables and page metadata (OG, Twitter, JSON-LD)
@@ -209,6 +211,9 @@ err := page.NavigateWithRetry("https://example.com", rl)
 | `WithIncognito()` | Incognito mode | disabled |
 | `WithEnv(env...)` | Set environment variables for browser | none |
 | `WithNoSandbox()` | Disable sandbox (containers) | disabled |
+| `WithWindowState(state)` | Initial window state (normal/minimized/maximized/fullscreen) | normal |
+| `WithLaunchFlag(name, values...)` | Add custom Chrome CLI flag | none |
+| `WithXvfb(args...)` | Enable Xvfb for headful mode without display (Unix only) | disabled |
 
 ## Development
 

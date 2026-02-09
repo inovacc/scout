@@ -4,7 +4,8 @@
 // capabilities.
 //
 // Core features: navigation, element interaction, screenshots, PDF generation,
-// JavaScript evaluation, network interception, cookies, and stealth mode.
+// JavaScript evaluation, network interception, cookies, stealth mode, and
+// window state control (minimize, maximize, fullscreen).
 //
 // Scraping toolkit: struct-tag extraction ([Page.Extract]), HTML table and
 // metadata parsing, form detection and filling, rate limiting with retry,

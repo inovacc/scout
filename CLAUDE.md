@@ -40,6 +40,7 @@ All code is in package `scout` (flat, single-package library). The types are:
 | `Element` | `*rod.Element` | `element.go` |
 | `EvalResult` | JS eval results | `eval.go` |
 | `HijackRouter`, `HijackContext` | rod hijack types | `network.go` |
+| `WindowState`, `WindowBounds` | Window state control | `window.go` |
 
 ### Scraping Toolkit Types
 
@@ -51,6 +52,7 @@ All code is in package `scout` (flat, single-package library). The types are:
 | `PaginateByClick/URL/Scroll/LoadMore` | Generic pagination | `paginate.go` |
 | `SearchResults`, `SearchResult` | SERP parsing | `search.go` |
 | `CrawlResult`, `SitemapURL` | Web crawling | `crawl.go` |
+| `storageAPI`, `SessionState` | Web storage & session persistence | `storage.go` |
 
 ### Examples
 
@@ -74,6 +76,8 @@ All code is in package `scout` (flat, single-package library). The types are:
 - **Struct tags**: `scout:"selector"` or `scout:"selector@attr"` for extraction; `form:"field_name"` for form filling.
 - **Generics**: Pagination functions use type parameters (`PaginateByClick[T]`) — package-level functions because Go methods can't have type params.
 - **Nolint**: `Element.Interactable()` uses `//nolint:nilerr`; `RateLimiter.calculateBackoff` uses `//nolint:gosec` for jitter rand.
+- **Platform-specific options**: `WithXvfb()` lives in `option_unix.go` (`//go:build !windows`). The `xvfb`/`xvfbArgs` fields compile on all platforms but the option function is only available on Unix.
+- **Window state transitions**: Chrome requires restoring to `normal` before changing between non-normal states. `setWindowState()` handles this automatically.
 
 ## Testing
 
@@ -85,6 +89,7 @@ All code is in package `scout` (flat, single-package library). The types are:
 - Paginate routes: `/products-page{1,2,3}`, `/api/products`, `/infinite`, `/load-more`
 - Search routes: `/serp-google`, `/serp-google-page2`, `/serp-bing`, `/serp-ddg`
 - Crawl routes: `/crawl-start`, `/crawl-page{1,2,3}`, `/sitemap.xml`
+- Window tests: no routes needed — window control operates on the browser window itself
 - Tests use `t.Skipf` when browser is unavailable — they will not fail in headless CI without Chrome, they skip.
 - No mocking framework; tests run against a real headless browser and local HTTP test server.
 

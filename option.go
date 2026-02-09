@@ -20,6 +20,10 @@ type options struct {
 	env         []string
 	incognito   bool
 	noSandbox   bool
+	windowState WindowState
+	xvfb        bool
+	xvfbArgs    []string
+	launchFlags map[string][]string
 }
 
 func defaults() *options {
@@ -94,4 +98,20 @@ func WithIncognito() Option {
 // WithNoSandbox disables the browser sandbox. Use only in containers.
 func WithNoSandbox() Option {
 	return func(o *options) { o.noSandbox = true }
+}
+
+// WithWindowState sets the initial window state for new pages.
+func WithWindowState(state WindowState) Option {
+	return func(o *options) { o.windowState = state }
+}
+
+// WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.
+func WithLaunchFlag(name string, values ...string) Option {
+	return func(o *options) {
+		if o.launchFlags == nil {
+			o.launchFlags = make(map[string][]string)
+		}
+
+		o.launchFlags[name] = values
+	}
 }
