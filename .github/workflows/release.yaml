@@ -10,6 +10,7 @@ jobs:
     uses: inovacc/workflows/.github/workflows/reusable-go-release.yml@main
     with:
       run-release: true
+      library-mode: true
     permissions:
       contents: write
     secrets: inherit

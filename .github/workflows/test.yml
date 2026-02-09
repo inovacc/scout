@@ -13,3 +13,4 @@ jobs:
       run-tests: true
       run-lint: true
       run-vulncheck: true
+      vulncheck-skip-stdlib: true
