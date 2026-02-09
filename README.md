@@ -25,7 +25,7 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 ## Installation
 
 ```bash
-go get github.com/inovacc/scout
+go get github.com/inovacc/scout@latest
 ```
 
 Requires Go 1.25+ and a Chromium-based browser available on the system (auto-downloaded by rod if not present).
