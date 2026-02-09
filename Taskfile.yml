@@ -1,0 +1,166 @@
+version: 3
+
+vars:
+  MAIN_PACKAGE: .
+  COVERAGE_FILE: coverage.out
+  GITHUB_OWNER:
+    sh: echo "${GITHUB_OWNER:-dyammarcano}"
+
+tasks:
+  # === INFORMATION ===
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list
+
+  # === CODE GENERATION ===
+  proto:generate:
+    desc: Generate Go code from protobuf definitions
+    cmds:
+      - protoc --go_out=. --go_opt=paths=source_relative internal/database/proto/database.proto
+    sources:
+      - internal/database/proto/*.proto
+    generates:
+      - internal/database/proto/*.pb.go
+
+  sqlc:generate:
+    desc: Generate sqlc type-safe database code
+    cmds:
+      - sqlc generate
+
+  generate:
+    desc: Generate version information, protobuf, and sqlc code
+    deps: [proto:generate, sqlc:generate]
+    cmds:
+      - go generate ./...
+
+  # === BUILD TASKS ===
+  build:dev:
+    desc: Build development snapshot with goreleaser
+    deps: [ generate ]
+    env:
+      GITHUB_OWNER: "{{.GITHUB_OWNER}}"
+    cmds:
+      - goreleaser build --snapshot --clean
+
+  build:prod:
+    desc: Build production snapshot with goreleaser
+    deps: [ generate ]
+    env:
+      GITHUB_OWNER: "{{.GITHUB_OWNER}}"
+    cmds:
+      - goreleaser --snapshot --skip-publish,announce --rm-dist
+
+  # === TEST TASKS ===
+  test:
+    desc: Run all tests with coverage
+    cmds:
+      - go test -v -race -coverprofile={{.COVERAGE_FILE}} ./...
+
+  test:coverage:
+    desc: Generate HTML coverage report
+    deps: [ test ]
+    cmds:
+      - go tool cover -html={{.COVERAGE_FILE}} -o coverage.html
+      - echo "Coverage report generated at coverage.html"
+
+  test:cover:
+    desc: Run tests and show coverage percentage
+    cmds:
+      - go test -coverprofile={{.COVERAGE_FILE}} ./...
+      - cmd: go tool cover -func={{.COVERAGE_FILE}} | findstr "total:"
+        platforms: [ windows ]
+      - cmd: go tool cover -func={{.COVERAGE_FILE}} | grep "total:"
+        platforms: [ linux, darwin ]
+
+  test:unit:
+    desc: Run unit tests only (skip integration)
+    cmds:
+      - go test -v -short ./...
+
+  # === CODE QUALITY ===
+  fmt:
+    desc: Format all Go code
+    cmds:
+      - go fmt ./...
+      - goimports -w .
+
+  vet:
+    desc: Run go vet static analysis
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  lint:fix:
+    desc: Run linter and auto-fix issues
+    cmds:
+      - golangci-lint run --fix ./...
+
+  check:
+    desc: Run all quality checks (fmt, vet, lint, test)
+    cmds:
+      - task: fmt
+      - task: vet
+      - task: lint
+      - task: test
+
+  # === RUN TASKS ===
+  run:
+    desc: Run the application
+    deps: [ generate ]
+    cmds:
+      - go run {{.MAIN_PACKAGE}}
+
+
+
+  # === DEPENDENCY MANAGEMENT ===
+  deps:
+    desc: Download and tidy dependencies
+    cmds:
+      - go mod download
+      - go mod tidy
+      - go mod verify
+
+  deps:upgrade:
+    desc: Upgrade all dependencies to latest versions
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+      - go mod verify
+
+  # === CLEANUP ===
+  clean:
+    desc: Clean build artifacts and generated files
+    cmds:
+      - rm -rf {{.BUILD_DIR}}
+      - rm -f {{.COVERAGE_FILE}} coverage.html
+      - rm -f .go-version cmd/version.go
+
+  # === RELEASE TASKS ===
+  release:
+    desc: Create a production release with goreleaser (requires git tag)
+    deps: [ generate ]
+    env:
+      GITHUB_OWNER: "{{.GITHUB_OWNER}}"
+    cmds:
+      - goreleaser release --clean
+
+
+  release:snapshot:
+    desc: Create a snapshot release (no git tag required)
+    deps: [ generate ]
+    env:
+      GITHUB_OWNER: "{{.GITHUB_OWNER}}"
+    cmds:
+      - goreleaser release --snapshot --clean
+
+  release:check:
+    desc: Validate goreleaser configuration
+    env:
+      GITHUB_OWNER: "{{.GITHUB_OWNER}}"
+    cmds:
+      - goreleaser check

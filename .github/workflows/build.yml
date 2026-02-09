@@ -1,0 +1,58 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: latest
+          check-latest: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xorg-dev libgl1-mesa-dev libegl1-mesa-dev libgles2-mesa-dev
+          sudo apt-get install -y libasound2-dev libpulse-dev
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.4.0
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -race -p=1 ./... -v
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: latest
+          check-latest: true
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.4.0
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -race -p=1 ./... -v
