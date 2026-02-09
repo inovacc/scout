@@ -129,6 +129,13 @@ items, err := scout.PaginateByURL[Item](browser, func(page int) string {
 
 // Click-next pagination
 items, err := scout.PaginateByClick[Item](page, "a.next")
+
+// Infinite scroll
+items, err := scout.PaginateByScroll[Item](page, "div.item",
+    scout.WithPaginateMaxPages(20))
+
+// Load-more button
+items, err := scout.PaginateByLoadMore[Item](page, "button.load-more")
 ```
 
 ## Search
@@ -186,6 +193,7 @@ err := page.NavigateWithRetry("https://example.com", rl)
 | `WithExecPath(path)` | Path to browser binary | auto-detect |
 | `WithUserDataDir(dir)` | Persistent session directory | temp |
 | `WithIncognito()` | Incognito mode | disabled |
+| `WithEnv(env...)` | Set environment variables for browser | none |
 | `WithNoSandbox()` | Disable sandbox (containers) | disabled |
 
 ## Development

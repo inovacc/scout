@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/go-rod/rod"
 )
 
 // PaginateOption configures pagination behavior.
@@ -234,76 +236,55 @@ func PaginateByLoadMore[T any](p *Page, loadMoreSelector string, opts ...Paginat
 
 // --- internal helpers ---
 
+// extractAll extracts all items of type T from the page.
+// It finds repeating container elements by looking at the first scout-tagged field,
+// then walks up to each field's parent to use as scope for extracting the full struct.
 func extractAll[T any](p *Page) ([]T, error) {
-	var wrapper struct {
-		Items []T
-	}
-
-	// Get the scout tag from T to know the item selector
 	var zero T
 	rt := reflect.TypeOf(zero)
 	if rt.Kind() == reflect.Ptr {
 		rt = rt.Elem()
 	}
-
-	// We need to determine the item selector from context
-	// Since generic functions can't introspect the parent struct,
-	// we extract all items that match T's fields directly from page root
-	rv := reflect.ValueOf(&wrapper).Elem()
-	itemsField := rv.FieldByName("Items")
-
-	// Collect all possible container selectors from T's fields
-	// and try to find repeating patterns
-	els, err := findItemElements(p, rt)
-	if err != nil || len(els) == 0 {
-		return nil, err
-	}
-
-	result := reflect.MakeSlice(reflect.SliceOf(rt), len(els), len(els))
-	for i, el := range els {
-		if err := extractStruct(p.page, el.element, result.Index(i)); err != nil {
-			return nil, err
-		}
-	}
-	itemsField.Set(result)
-
-	return wrapper.Items, nil
-}
-
-// findItemElements attempts to find repeating elements that match T's structure.
-// It looks at the first field's scout tag and walks up to find the common parent pattern.
-func findItemElements(p *Page, rt reflect.Type) ([]*Element, error) {
 	if rt.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("scout: paginate: T must be a struct type")
 	}
 
 	// Find the first scout-tagged field to locate items
+	var firstSelector string
 	for i := 0; i < rt.NumField(); i++ {
 		tag := rt.Field(i).Tag.Get("scout")
 		if tag == "" || tag == "-" {
 			continue
 		}
-		selector, _ := parseTag(tag)
+		firstSelector, _ = parseTag(tag)
+		break
+	}
+	if firstSelector == "" {
+		return nil, fmt.Errorf("scout: paginate: T has no scout-tagged fields")
+	}
 
-		// Find all elements matching the first field's selector
-		els, err := p.Elements(selector)
-		if err != nil || len(els) == 0 {
+	// Find all elements matching the first field's selector
+	fieldEls, err := p.page.Elements(firstSelector)
+	if err != nil || len(fieldEls) == 0 {
+		return nil, nil
+	}
+
+	// Walk up each match to its parent container using ElementByJS
+	var items []T
+	for _, el := range fieldEls {
+		parent, err := p.page.ElementByJS(rod.Eval(`() => this.parentElement`).This(el.Object))
+		if err != nil {
 			continue
 		}
 
-		// Walk up each match to find parent containers
-		containers := make([]*Element, 0, len(els))
-		for _, el := range els {
-			parent, err := el.Parent()
-			if err != nil {
-				continue
-			}
-			containers = append(containers, parent)
+		item := reflect.New(rt).Elem()
+		if err := extractStruct(p.page, parent, item); err != nil {
+			continue
 		}
-		return containers, nil
+		items = append(items, item.Interface().(T))
 	}
 
-	return nil, nil
+	return items, nil
 }
 
 func countElements(p *Page, selector string) (int, error) {

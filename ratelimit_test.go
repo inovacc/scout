@@ -194,6 +194,10 @@ func TestNavigateWithRetry(t *testing.T) {
 		t.Fatalf("NavigateWithRetry() error: %v", err)
 	}
 
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
 	title, err := page.Title()
 	if err != nil {
 		t.Fatalf("Title() error: %v", err)

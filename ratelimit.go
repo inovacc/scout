@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand/v2"
-	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -69,7 +68,6 @@ type RateLimiter struct {
 	limiter *rate.Limiter
 	opts    *rateLimitOptions
 	sem     chan struct{}
-	mu      sync.Mutex
 }
 
 // NewRateLimiter creates a new rate limiter with the given options.
