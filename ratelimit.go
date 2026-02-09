@@ -98,10 +98,12 @@ func (rl *RateLimiter) Wait() {
 func (rl *RateLimiter) Do(fn func() error) error {
 	if rl.sem != nil {
 		rl.sem <- struct{}{}
+
 		defer func() { <-rl.sem }()
 	}
 
 	var lastErr error
+
 	for attempt := 0; attempt <= rl.opts.maxRetries; attempt++ {
 		_ = rl.limiter.Wait(context.Background())
 
@@ -134,5 +136,6 @@ func (rl *RateLimiter) calculateBackoff(attempt int) time.Duration {
 	// Add jitter: +/- 25%
 	jitter := backoff * 0.25
 	backoff = backoff - jitter + rand.Float64()*2*jitter //nolint:gosec // jitter doesn't need crypto rand
+
 	return time.Duration(backoff)
 }

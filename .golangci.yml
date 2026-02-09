@@ -1,0 +1,88 @@
+# https://golangci-lint.run/docs/welcome/install/
+
+version: "2"
+
+run:
+  timeout: 2m
+
+linters:
+  default: all
+  enable:
+    - govet
+    - errcheck
+    - bodyclose
+    - copyloopvar
+    - depguard
+    - dogsled
+    - dupl
+    - errorlint
+    - gocheckcompilerdirectives
+    - goconst
+    - gocritic
+    - gocyclo
+    - godox
+    - goprintffuncname
+    - gosec
+    - intrange
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - staticcheck
+    - testifylint
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+    - wsl_v5
+
+  exclusions:
+    rules:
+      - path: "examples/"
+        linters:
+          - forbidigo
+          - gocritic
+
+  disable:
+    - tagliatelle
+    - gochecknoglobals
+    - mnd
+    - testpackage
+    - varnamelen
+    - paralleltest
+    - gochecknoinits
+    - funlen
+    - cyclop
+    - err113
+    - wsl
+    - errorlint
+    - exhaustruct
+    - forcetypeassert
+    - funcorder
+    - gocognit
+    - godot
+    - godox
+    - gosec
+    - gosmopolitan
+    - intrange
+    - ireturn
+    - lll
+    - nestif
+    - nlreturn
+    - noctx
+    - noinlineerr
+    - nonamedreturns
+    - perfsprint
+    - revive
+    - tagalign
+    - testifylint
+    - thelper
+    - usetesting
+    - wrapcheck
+    - depguard
+    - dupl
+    - goconst
+    - gocyclo
+    - whitespace

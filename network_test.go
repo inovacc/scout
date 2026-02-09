@@ -11,10 +11,12 @@ func TestSetHeaders(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/echo-headers")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	cleanup, err := page.SetHeaders(map[string]string{
@@ -28,6 +30,7 @@ func TestSetHeaders(t *testing.T) {
 	if err := page.Reload(); err != nil {
 		t.Fatalf("Reload() error: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad() error: %v", err)
 	}
@@ -36,10 +39,12 @@ func TestSetHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Element() error: %v", err)
 	}
+
 	text, err := el.Text()
 	if err != nil {
 		t.Fatalf("Text() error: %v", err)
 	}
+
 	if text != "test-value" {
 		t.Errorf("custom header = %q, want %q", text, "test-value")
 	}
@@ -50,10 +55,12 @@ func TestSetAndGetCookies(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.SetCookies(Cookie{
@@ -70,12 +77,14 @@ func TestSetAndGetCookies(t *testing.T) {
 	}
 
 	found := false
+
 	for _, c := range cookies {
 		if c.Name == "mykey" && c.Value == "myval" {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		t.Errorf("cookie 'mykey' not found in %v", cookies)
 	}
@@ -86,10 +95,12 @@ func TestClearCookies(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/set-cookie")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -104,6 +115,7 @@ func TestClearCookies(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetCookies() error: %v", err)
 	}
+
 	if len(cookies) != 0 {
 		t.Errorf("expected 0 cookies after clear, got %d", len(cookies))
 	}
@@ -114,10 +126,12 @@ func TestHijack(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage("")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	var intercepted atomic.Bool
@@ -129,12 +143,15 @@ func TestHijack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Hijack() error: %v", err)
 	}
+
 	go router.Run()
+
 	defer func() { _ = router.Stop() }()
 
 	if err := page.Navigate(srv.URL + "/json"); err != nil {
 		t.Fatalf("Navigate() error: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad() error: %v", err)
 	}
@@ -143,9 +160,11 @@ func TestHijack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("HTML() error: %v", err)
 	}
+
 	if !strings.Contains(html, "hijacked") {
 		t.Errorf("expected hijacked response, got: %s", html)
 	}
+
 	if !intercepted.Load() {
 		t.Error("hijack handler was not called")
 	}

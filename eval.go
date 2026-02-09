@@ -19,6 +19,7 @@ func (r *EvalResult) String() string {
 	if r == nil || r.Value == nil {
 		return ""
 	}
+
 	switch v := r.Value.(type) {
 	case string:
 		return v
@@ -36,6 +37,7 @@ func (r *EvalResult) Int() int {
 	if r == nil || r.Value == nil {
 		return 0
 	}
+
 	switch v := r.Value.(type) {
 	case json.Number:
 		n, _ := v.Int64()
@@ -55,6 +57,7 @@ func (r *EvalResult) Float() float64 {
 	if r == nil || r.Value == nil {
 		return 0
 	}
+
 	switch v := r.Value.(type) {
 	case json.Number:
 		f, _ := v.Float64()
@@ -74,6 +77,7 @@ func (r *EvalResult) Bool() bool {
 	if r == nil || r.Value == nil {
 		return false
 	}
+
 	switch v := r.Value.(type) {
 	case bool:
 		return v
@@ -92,6 +96,7 @@ func (r *EvalResult) IsNull() bool {
 	if r == nil {
 		return true
 	}
+
 	return r.Type == "undefined" || r.Subtype == "null" || r.Value == nil
 }
 
@@ -100,10 +105,16 @@ func (r *EvalResult) JSON() []byte {
 	if r == nil {
 		return nil
 	}
+
 	if r.rawJSON != nil {
 		return r.rawJSON
 	}
-	b, _ := json.Marshal(r.Value)
+
+	b, err := json.Marshal(r.Value)
+	if err != nil {
+		return nil
+	}
+
 	return b
 }
 
@@ -112,9 +123,11 @@ func (r *EvalResult) Decode(target any) error {
 	if r == nil {
 		return fmt.Errorf("scout: eval result is nil")
 	}
+
 	data := r.JSON()
 	if err := json.Unmarshal(data, target); err != nil {
 		return fmt.Errorf("scout: decode eval result: %w", err)
 	}
+
 	return nil
 }

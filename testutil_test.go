@@ -101,6 +101,8 @@ func newTestBrowser(t *testing.T) *Browser {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	t.Cleanup(func() { _ = b.Close() })
+
 	return b
 }

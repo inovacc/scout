@@ -17,10 +17,12 @@ func paginateTestRoutes(mux *http.ServeMux) {
 		page := i
 		mux.HandleFunc(fmt.Sprintf("/products-page%d", page), func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "text/html")
+
 			nextLink := ""
 			if page < 3 {
 				nextLink = fmt.Sprintf(`<a id="next" href="/products-page%d">Next</a>`, page+1)
 			}
+
 			_, _ = fmt.Fprintf(w, `<!DOCTYPE html>
 <html><head><title>Products Page %d</title></head>
 <body>
@@ -34,10 +36,12 @@ func paginateTestRoutes(mux *http.ServeMux) {
 	// URL-pattern pagination
 	mux.HandleFunc("/api/products", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
+
 		page := r.URL.Query().Get("page")
 		if page == "" {
 			page = "1"
 		}
+
 		_, _ = fmt.Fprintf(w, `<!DOCTYPE html>
 <html><head><title>Products</title></head>
 <body>
@@ -125,7 +129,6 @@ func TestPaginateByURL(t *testing.T) {
 	items, err := PaginateByURL[testItem](b, func(page int) string {
 		return fmt.Sprintf("%s/api/products?page=%d", srv.URL, page)
 	}, WithPaginateMaxPages(3), WithPaginateDelay(100*time.Millisecond))
-
 	if err != nil {
 		t.Fatalf("PaginateByURL() error: %v", err)
 	}
@@ -136,6 +139,7 @@ func TestPaginateByURL(t *testing.T) {
 
 	// Should have items from multiple pages
 	t.Logf("PaginateByURL() collected %d items", len(items))
+
 	for i, item := range items {
 		t.Logf("  [%d] Name=%q Price=%d", i, item.Name, item.Price)
 	}
@@ -146,10 +150,12 @@ func TestPaginateByClick(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/products-page1")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	items, err := PaginateByClick[testItem](page, "#next",
@@ -163,6 +169,7 @@ func TestPaginateByClick(t *testing.T) {
 	if len(items) == 0 {
 		t.Error("PaginateByClick() returned no items")
 	}
+
 	t.Logf("PaginateByClick() collected %d items", len(items))
 }
 
@@ -188,23 +195,31 @@ func TestPaginateOptions(t *testing.T) {
 	if o.maxPages != 10 {
 		t.Errorf("default maxPages = %d, want 10", o.maxPages)
 	}
+
 	if o.delay != 500*time.Millisecond {
 		t.Errorf("default delay = %v, want 500ms", o.delay)
 	}
 
 	WithPaginateMaxPages(5)(o)
+
 	if o.maxPages != 5 {
 		t.Errorf("maxPages = %d, want 5", o.maxPages)
 	}
+
 	WithPaginateDelay(1 * time.Second)(o)
+
 	if o.delay != 1*time.Second {
 		t.Errorf("delay = %v, want 1s", o.delay)
 	}
+
 	WithPaginateDedup("Name")(o)
+
 	if o.dedupField != "Name" {
 		t.Errorf("dedupField = %q, want Name", o.dedupField)
 	}
+
 	WithPaginateStopOnEmpty()(o)
+
 	if !o.stopOnEmpty {
 		t.Error("stopOnEmpty should be true")
 	}

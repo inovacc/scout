@@ -27,15 +27,19 @@ func New(opts ...Option) (*Browser, error) {
 	if o.execPath != "" {
 		l = l.Bin(o.execPath)
 	}
+
 	if o.proxy != "" {
 		l = l.Proxy(o.proxy)
 	}
+
 	if o.userDataDir != "" {
 		l = l.UserDataDir(o.userDataDir)
 	}
+
 	if o.noSandbox {
 		l = l.NoSandbox(true)
 	}
+
 	if len(o.env) > 0 {
 		l = l.Env(o.env...)
 	}
@@ -67,6 +71,7 @@ func New(opts ...Option) (*Browser, error) {
 			_ = b.Close()
 			return nil, fmt.Errorf("scout: incognito mode: %w", err)
 		}
+
 		return &Browser{browser: ctx, opts: o}, nil
 	}
 
@@ -80,14 +85,17 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 		return nil, fmt.Errorf("scout: browser is nil")
 	}
 
-	var rodPage *rod.Page
-	var err error
+	var (
+		rodPage *rod.Page
+		err     error
+	)
 
 	if b.opts.stealth {
 		rodPage, err = stealth.Page(b.browser)
 		if err != nil {
 			return nil, fmt.Errorf("scout: create stealth page: %w", err)
 		}
+
 		if url != "" {
 			if err := rodPage.Navigate(url); err != nil {
 				return nil, fmt.Errorf("scout: navigate: %w", err)
@@ -138,6 +146,7 @@ func (b *Browser) Pages() ([]*Page, error) {
 	for i, rp := range rodPages {
 		pages[i] = &Page{page: rp, browser: b}
 	}
+
 	return pages, nil
 }
 
@@ -151,6 +160,7 @@ func (b *Browser) Version() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: get version: %w", err)
 	}
+
 	return v.Product, nil
 }
 
@@ -159,9 +169,12 @@ func (b *Browser) Close() error {
 	if b == nil || b.browser == nil {
 		return nil
 	}
+
 	if err := b.browser.Close(); err != nil {
 		return fmt.Errorf("scout: close browser: %w", err)
 	}
+
 	b.browser = nil
+
 	return nil
 }

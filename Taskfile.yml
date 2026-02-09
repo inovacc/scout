@@ -91,11 +91,6 @@ tasks:
       - go vet ./...
 
   lint:
-    desc: Run golangci-lint
-    cmds:
-      - golangci-lint run ./...
-
-  lint:fix:
     desc: Run linter and auto-fix issues
     cmds:
       - golangci-lint run --fix ./...

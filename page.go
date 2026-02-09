@@ -40,6 +40,7 @@ func (p *Page) Navigate(url string) error {
 	if err := p.page.Navigate(url); err != nil {
 		return fmt.Errorf("scout: navigate to %s: %w", url, err)
 	}
+
 	return nil
 }
 
@@ -48,6 +49,7 @@ func (p *Page) NavigateBack() error {
 	if err := p.page.NavigateBack(); err != nil {
 		return fmt.Errorf("scout: navigate back: %w", err)
 	}
+
 	return nil
 }
 
@@ -56,6 +58,7 @@ func (p *Page) NavigateForward() error {
 	if err := p.page.NavigateForward(); err != nil {
 		return fmt.Errorf("scout: navigate forward: %w", err)
 	}
+
 	return nil
 }
 
@@ -64,6 +67,7 @@ func (p *Page) Reload() error {
 	if err := p.page.Reload(); err != nil {
 		return fmt.Errorf("scout: reload: %w", err)
 	}
+
 	return nil
 }
 
@@ -72,6 +76,7 @@ func (p *Page) Close() error {
 	if err := p.page.Close(); err != nil {
 		return fmt.Errorf("scout: close page: %w", err)
 	}
+
 	return nil
 }
 
@@ -81,6 +86,7 @@ func (p *Page) URL() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: get page url: %w", err)
 	}
+
 	return info.URL, nil
 }
 
@@ -90,6 +96,7 @@ func (p *Page) Title() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: get page title: %w", err)
 	}
+
 	return info.Title, nil
 }
 
@@ -99,6 +106,7 @@ func (p *Page) HTML() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: get html: %w", err)
 	}
+
 	return html, nil
 }
 
@@ -108,6 +116,7 @@ func (p *Page) Screenshot() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: screenshot: %w", err)
 	}
+
 	return data, nil
 }
 
@@ -117,6 +126,7 @@ func (p *Page) FullScreenshot() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: full screenshot: %w", err)
 	}
+
 	return data, nil
 }
 
@@ -126,6 +136,7 @@ func (p *Page) ScrollScreenshot() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: scroll screenshot: %w", err)
 	}
+
 	return data, nil
 }
 
@@ -137,12 +148,14 @@ func (p *Page) ScreenshotPNG() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: screenshot png: %w", err)
 	}
+
 	return data, nil
 }
 
 // ScreenshotJPEG captures a viewport screenshot in JPEG format with the given quality (0-100).
 func (p *Page) ScreenshotJPEG(quality int) ([]byte, error) {
 	q := quality
+
 	data, err := p.page.Screenshot(false, &proto.PageCaptureScreenshot{
 		Format:  proto.PageCaptureScreenshotFormatJpeg,
 		Quality: gson.Int(q),
@@ -150,6 +163,7 @@ func (p *Page) ScreenshotJPEG(quality int) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: screenshot jpeg: %w", err)
 	}
+
 	return data, nil
 }
 
@@ -159,10 +173,12 @@ func (p *Page) PDF() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: generate pdf: %w", err)
 	}
+
 	buf, err := readAll(reader)
 	if err != nil {
 		return nil, fmt.Errorf("scout: read pdf: %w", err)
 	}
+
 	return buf, nil
 }
 
@@ -179,21 +195,27 @@ func (p *Page) PDFWithOptions(opts PDFOptions) ([]byte, error) {
 	if opts.Scale > 0 {
 		req.Scale = gson.Num(opts.Scale)
 	}
+
 	if opts.PaperWidth > 0 {
 		req.PaperWidth = gson.Num(opts.PaperWidth)
 	}
+
 	if opts.PaperHeight > 0 {
 		req.PaperHeight = gson.Num(opts.PaperHeight)
 	}
+
 	if opts.MarginTop > 0 {
 		req.MarginTop = gson.Num(opts.MarginTop)
 	}
+
 	if opts.MarginBottom > 0 {
 		req.MarginBottom = gson.Num(opts.MarginBottom)
 	}
+
 	if opts.MarginLeft > 0 {
 		req.MarginLeft = gson.Num(opts.MarginLeft)
 	}
+
 	if opts.MarginRight > 0 {
 		req.MarginRight = gson.Num(opts.MarginRight)
 	}
@@ -202,10 +224,12 @@ func (p *Page) PDFWithOptions(opts PDFOptions) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: generate pdf: %w", err)
 	}
+
 	buf, err := readAll(reader)
 	if err != nil {
 		return nil, fmt.Errorf("scout: read pdf: %w", err)
 	}
+
 	return buf, nil
 }
 
@@ -215,6 +239,7 @@ func (p *Page) Eval(js string, args ...any) (*EvalResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: eval: %w", err)
 	}
+
 	return remoteObjectToEvalResult(obj), nil
 }
 
@@ -225,6 +250,7 @@ func (p *Page) EvalOnNewDocument(js string) (remove func() error, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: eval on new document: %w", err)
 	}
+
 	return rm, nil
 }
 
@@ -234,6 +260,7 @@ func (p *Page) Element(selector string) (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: element %q: %w", selector, err)
 	}
+
 	return &Element{element: el}, nil
 }
 
@@ -243,6 +270,7 @@ func (p *Page) Elements(selector string) ([]*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: elements %q: %w", selector, err)
 	}
+
 	return wrapElements(els), nil
 }
 
@@ -252,6 +280,7 @@ func (p *Page) ElementByXPath(xpath string) (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: element xpath %q: %w", xpath, err)
 	}
+
 	return &Element{element: el}, nil
 }
 
@@ -261,16 +290,19 @@ func (p *Page) ElementsByXPath(xpath string) ([]*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: elements xpath %q: %w", xpath, err)
 	}
+
 	return wrapElements(els), nil
 }
 
 // ElementByJS finds an element using a JavaScript expression.
 func (p *Page) ElementByJS(js string, args ...any) (*Element, error) {
 	opts := rod.Eval(js, args...)
+
 	el, err := p.page.ElementByJS(opts)
 	if err != nil {
 		return nil, fmt.Errorf("scout: element by js: %w", err)
 	}
+
 	return &Element{element: el}, nil
 }
 
@@ -280,6 +312,7 @@ func (p *Page) ElementByText(selector, regex string) (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: element by text %q %q: %w", selector, regex, err)
 	}
+
 	return &Element{element: el}, nil
 }
 
@@ -289,6 +322,7 @@ func (p *Page) ElementFromPoint(x, y int) (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: element from point (%d,%d): %w", x, y, err)
 	}
+
 	return &Element{element: el}, nil
 }
 
@@ -300,6 +334,7 @@ func (p *Page) Search(query string) (*Element, error) {
 		return nil, fmt.Errorf("scout: search %q: %w", query, err)
 	}
 	defer sr.Release()
+
 	return &Element{element: sr.First}, nil
 }
 
@@ -309,6 +344,7 @@ func (p *Page) Has(selector string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("scout: has %q: %w", selector, err)
 	}
+
 	return has, nil
 }
 
@@ -318,6 +354,7 @@ func (p *Page) HasXPath(xpath string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("scout: has xpath %q: %w", xpath, err)
 	}
+
 	return has, nil
 }
 
@@ -326,6 +363,7 @@ func (p *Page) WaitLoad() error {
 	if err := p.page.WaitLoad(); err != nil {
 		return fmt.Errorf("scout: wait load: %w", err)
 	}
+
 	return nil
 }
 
@@ -334,6 +372,7 @@ func (p *Page) WaitStable(d time.Duration) error {
 	if err := p.page.WaitStable(d); err != nil {
 		return fmt.Errorf("scout: wait stable: %w", err)
 	}
+
 	return nil
 }
 
@@ -342,6 +381,7 @@ func (p *Page) WaitDOMStable(d time.Duration, diff float64) error {
 	if err := p.page.WaitDOMStable(d, diff); err != nil {
 		return fmt.Errorf("scout: wait dom stable: %w", err)
 	}
+
 	return nil
 }
 
@@ -350,6 +390,7 @@ func (p *Page) WaitIdle(timeout time.Duration) error {
 	if err := p.page.WaitIdle(timeout); err != nil {
 		return fmt.Errorf("scout: wait idle: %w", err)
 	}
+
 	return nil
 }
 
@@ -365,6 +406,7 @@ func (p *Page) WaitSelector(selector string) (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: wait selector %q: %w", selector, err)
 	}
+
 	return &Element{element: el}, nil
 }
 
@@ -374,6 +416,7 @@ func (p *Page) WaitXPath(xpath string) (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: wait xpath %q: %w", xpath, err)
 	}
+
 	return &Element{element: el}, nil
 }
 
@@ -391,6 +434,7 @@ func (p *Page) SetViewport(width, height int) error {
 	}); err != nil {
 		return fmt.Errorf("scout: set viewport: %w", err)
 	}
+
 	return nil
 }
 
@@ -404,6 +448,7 @@ func (p *Page) SetWindow(left, top, width, height int) error {
 	}); err != nil {
 		return fmt.Errorf("scout: set window: %w", err)
 	}
+
 	return nil
 }
 
@@ -412,6 +457,7 @@ func (p *Page) Emulate(device devices.Device) error {
 	if err := p.page.Emulate(device); err != nil {
 		return fmt.Errorf("scout: emulate device: %w", err)
 	}
+
 	return nil
 }
 
@@ -420,6 +466,7 @@ func (p *Page) SetDocumentContent(html string) error {
 	if err := p.page.SetDocumentContent(html); err != nil {
 		return fmt.Errorf("scout: set document content: %w", err)
 	}
+
 	return nil
 }
 
@@ -428,6 +475,7 @@ func (p *Page) AddScriptTag(url, content string) error {
 	if err := p.page.AddScriptTag(url, content); err != nil {
 		return fmt.Errorf("scout: add script tag: %w", err)
 	}
+
 	return nil
 }
 
@@ -436,6 +484,7 @@ func (p *Page) AddStyleTag(url, content string) error {
 	if err := p.page.AddStyleTag(url, content); err != nil {
 		return fmt.Errorf("scout: add style tag: %w", err)
 	}
+
 	return nil
 }
 
@@ -444,6 +493,7 @@ func (p *Page) StopLoading() error {
 	if err := p.page.StopLoading(); err != nil {
 		return fmt.Errorf("scout: stop loading: %w", err)
 	}
+
 	return nil
 }
 
@@ -452,6 +502,7 @@ func (p *Page) Activate() error {
 	if _, err := p.page.Activate(); err != nil {
 		return fmt.Errorf("scout: activate page: %w", err)
 	}
+
 	return nil
 }
 
@@ -467,14 +518,17 @@ func (p *Page) Race(selectors ...string) (*Element, int, error) {
 	if len(selectors) == 0 {
 		return nil, -1, fmt.Errorf("scout: race requires at least one selector")
 	}
+
 	race := p.page.Race()
 	for _, sel := range selectors {
 		race = race.Element(sel)
 	}
+
 	el, err := race.Do()
 	if err != nil {
 		return nil, -1, fmt.Errorf("scout: race: %w", err)
 	}
+
 	return &Element{element: el}, -1, nil
 }
 
@@ -488,7 +542,9 @@ func remoteObjectToEvalResult(obj *proto.RuntimeRemoteObject) *EvalResult {
 	if obj == nil {
 		return &EvalResult{Type: "undefined"}
 	}
+
 	raw, _ := obj.Value.MarshalJSON()
+
 	return &EvalResult{
 		Type:    string(obj.Type),
 		Subtype: string(obj.Subtype),
@@ -502,23 +558,29 @@ func wrapElements(els rod.Elements) []*Element {
 	for i, el := range els {
 		result[i] = &Element{element: el}
 	}
+
 	return result
 }
 
 func readAll(r *rod.StreamReader) ([]byte, error) {
 	var buf []byte
+
 	for {
 		chunk := make([]byte, 64*1024)
+
 		n, err := r.Read(chunk)
 		if n > 0 {
 			buf = append(buf, chunk[:n]...)
 		}
+
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
+
 			return buf, err
 		}
 	}
+
 	return buf, nil
 }

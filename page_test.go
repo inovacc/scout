@@ -10,16 +10,19 @@ func TestPageNavigateAndTitle(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	title, err := page.Title()
 	if err != nil {
 		t.Fatalf("Title() error: %v", err)
 	}
+
 	if title != "Test Page" {
 		t.Errorf("Title() = %q, want %q", title, "Test Page")
 	}
@@ -28,6 +31,7 @@ func TestPageNavigateAndTitle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("URL() error: %v", err)
 	}
+
 	if !strings.HasPrefix(u, "http://") {
 		t.Errorf("URL() = %q, expected http:// prefix", u)
 	}
@@ -38,16 +42,19 @@ func TestPageHTML(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	html, err := page.HTML()
 	if err != nil {
 		t.Fatalf("HTML() error: %v", err)
 	}
+
 	if !strings.Contains(html, "Hello World") {
 		t.Error("HTML() should contain 'Hello World'")
 	}
@@ -58,10 +65,12 @@ func TestPageScreenshot(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -72,6 +81,7 @@ func TestPageScreenshot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Screenshot() error: %v", err)
 	}
+
 	if len(data) == 0 {
 		t.Error("Screenshot() returned empty data")
 	}
@@ -87,10 +97,12 @@ func TestPageFullScreenshot(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -101,6 +113,7 @@ func TestPageFullScreenshot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FullScreenshot() error: %v", err)
 	}
+
 	if len(data) == 0 {
 		t.Error("FullScreenshot() returned empty data")
 	}
@@ -111,10 +124,12 @@ func TestPageScreenshotJPEG(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -125,6 +140,7 @@ func TestPageScreenshotJPEG(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ScreenshotJPEG() error: %v", err)
 	}
+
 	if len(data) == 0 {
 		t.Error("ScreenshotJPEG() returned empty data")
 	}
@@ -139,16 +155,19 @@ func TestPageEval(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	result, err := page.Eval(`() => document.title`)
 	if err != nil {
 		t.Fatalf("Eval() error: %v", err)
 	}
+
 	if result.String() != "Test Page" {
 		t.Errorf("Eval() = %q, want %q", result.String(), "Test Page")
 	}
@@ -158,6 +177,7 @@ func TestPageEval(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Eval() with args error: %v", err)
 	}
+
 	if result.Int() != 30 {
 		t.Errorf("Eval() = %d, want 30", result.Int())
 	}
@@ -167,6 +187,7 @@ func TestPageEval(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Eval() bool error: %v", err)
 	}
+
 	if !result.Bool() {
 		t.Error("Eval() should return true")
 	}
@@ -177,20 +198,24 @@ func TestPageElement(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	el, err := page.Element("h1")
 	if err != nil {
 		t.Fatalf("Element() error: %v", err)
 	}
+
 	text, err := el.Text()
 	if err != nil {
 		t.Fatalf("Text() error: %v", err)
 	}
+
 	if text != "Hello World" {
 		t.Errorf("Text() = %q, want %q", text, "Hello World")
 	}
@@ -201,16 +226,19 @@ func TestPageElements(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	els, err := page.Elements("option")
 	if err != nil {
 		t.Fatalf("Elements() error: %v", err)
 	}
+
 	if len(els) != 3 {
 		t.Errorf("Elements() returned %d elements, want 3", len(els))
 	}
@@ -221,20 +249,24 @@ func TestPageElementByXPath(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	el, err := page.ElementByXPath("//h1")
 	if err != nil {
 		t.Fatalf("ElementByXPath() error: %v", err)
 	}
+
 	text, err := el.Text()
 	if err != nil {
 		t.Fatalf("Text() error: %v", err)
 	}
+
 	if text != "Hello World" {
 		t.Errorf("Text() = %q, want %q", text, "Hello World")
 	}
@@ -245,16 +277,19 @@ func TestPageHas(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	has, err := page.Has("h1")
 	if err != nil {
 		t.Fatalf("Has() error: %v", err)
 	}
+
 	if !has {
 		t.Error("Has('h1') should be true")
 	}
@@ -263,6 +298,7 @@ func TestPageHas(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Has() error: %v", err)
 	}
+
 	if has {
 		t.Error("Has('#nonexistent') should be false")
 	}
@@ -273,10 +309,12 @@ func TestPageNavigateAndBack(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -286,6 +324,7 @@ func TestPageNavigateAndBack(t *testing.T) {
 	if err := page.Navigate(srv.URL + "/page2"); err != nil {
 		t.Fatalf("Navigate() error: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad() error: %v", err)
 	}
@@ -294,6 +333,7 @@ func TestPageNavigateAndBack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Title() error: %v", err)
 	}
+
 	if title != "Page Two" {
 		t.Errorf("Title() = %q, want %q", title, "Page Two")
 	}
@@ -301,6 +341,7 @@ func TestPageNavigateAndBack(t *testing.T) {
 	if err := page.NavigateBack(); err != nil {
 		t.Fatalf("NavigateBack() error: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad() error: %v", err)
 	}
@@ -309,6 +350,7 @@ func TestPageNavigateAndBack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Title() error: %v", err)
 	}
+
 	if title != "Test Page" {
 		t.Errorf("Title() after back = %q, want %q", title, "Test Page")
 	}
@@ -319,20 +361,24 @@ func TestPageWaitSelector(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/slow")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	el, err := page.WaitSelector("#delayed")
 	if err != nil {
 		t.Fatalf("WaitSelector() error: %v", err)
 	}
+
 	text, err := el.Text()
 	if err != nil {
 		t.Fatalf("Text() error: %v", err)
 	}
+
 	if text != "Loaded" {
 		t.Errorf("Text() = %q, want %q", text, "Loaded")
 	}
@@ -343,10 +389,12 @@ func TestPageSetViewport(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL)
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.SetViewport(800, 600); err != nil {
@@ -368,10 +416,12 @@ func TestPageRedirect(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/redirect")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -382,6 +432,7 @@ func TestPageRedirect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Title() error: %v", err)
 	}
+
 	if title != "Page Two" {
 		t.Errorf("Title() = %q, want %q (after redirect)", title, "Page Two")
 	}

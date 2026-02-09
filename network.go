@@ -42,6 +42,7 @@ func (r *HijackRouter) Stop() error {
 	if err := r.router.Stop(); err != nil {
 		return fmt.Errorf("scout: stop hijack router: %w", err)
 	}
+
 	return nil
 }
 
@@ -80,6 +81,7 @@ func (c *HijackContext) LoadResponse(loadBody bool) error {
 	if err := c.hijack.LoadResponse(http.DefaultClient, loadBody); err != nil {
 		return fmt.Errorf("scout: load response: %w", err)
 	}
+
 	return nil
 }
 
@@ -130,10 +132,12 @@ func (p *Page) SetHeaders(headers map[string]string) (cleanup func(), err error)
 	for k, v := range headers {
 		dict = append(dict, k, v)
 	}
+
 	cleanup, err = p.page.SetExtraHeaders(dict)
 	if err != nil {
 		return nil, fmt.Errorf("scout: set headers: %w", err)
 	}
+
 	return cleanup, nil
 }
 
@@ -144,6 +148,7 @@ func (p *Page) SetUserAgent(ua string) error {
 	}); err != nil {
 		return fmt.Errorf("scout: set user agent: %w", err)
 	}
+
 	return nil
 }
 
@@ -163,11 +168,14 @@ func (p *Page) SetCookies(cookies ...Cookie) error {
 		if !c.Expires.IsZero() {
 			param.Expires = proto.TimeSinceEpoch(c.Expires.Unix())
 		}
+
 		params[i] = param
 	}
+
 	if err := p.page.SetCookies(params); err != nil {
 		return fmt.Errorf("scout: set cookies: %w", err)
 	}
+
 	return nil
 }
 
@@ -177,6 +185,7 @@ func (p *Page) GetCookies(urls ...string) ([]Cookie, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: get cookies: %w", err)
 	}
+
 	cookies := make([]Cookie, len(rodCookies))
 	for i, c := range rodCookies {
 		cookies[i] = Cookie{
@@ -190,6 +199,7 @@ func (p *Page) GetCookies(urls ...string) ([]Cookie, error) {
 			SameSite: string(c.SameSite),
 		}
 	}
+
 	return cookies, nil
 }
 
@@ -198,6 +208,7 @@ func (p *Page) ClearCookies() error {
 	if err := p.page.SetCookies(nil); err != nil {
 		return fmt.Errorf("scout: clear cookies: %w", err)
 	}
+
 	return nil
 }
 
@@ -212,12 +223,14 @@ func (b *Browser) HandleAuth(username, password string) func() error {
 // Call Run() on the returned router in a goroutine, and Stop() when done.
 func (p *Page) Hijack(pattern string, handler HijackHandler) (*HijackRouter, error) {
 	router := p.page.HijackRequests()
+
 	err := router.Add(pattern, "", func(h *rod.Hijack) {
 		handler(&HijackContext{hijack: h})
 	})
 	if err != nil {
 		return nil, fmt.Errorf("scout: hijack %q: %w", pattern, err)
 	}
+
 	return &HijackRouter{router: router}, nil
 }
 
@@ -227,5 +240,6 @@ func (p *Page) SetBlockedURLs(urls ...string) error {
 	if err := p.page.SetBlockedURLs(urls); err != nil {
 		return fmt.Errorf("scout: set blocked urls: %w", err)
 	}
+
 	return nil
 }

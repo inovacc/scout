@@ -90,6 +90,7 @@ func (b *Browser) Search(query string, opts ...SearchOption) (*SearchResults, er
 	if err != nil {
 		return nil, fmt.Errorf("scout: search: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -110,6 +111,7 @@ func (b *Browser) SearchAll(query string, opts ...SearchOption) ([]SearchResult,
 	}
 
 	var allResults []SearchResult
+
 	parser := getParser(o.engine)
 	searchURL := parser.buildURL(query, o)
 
@@ -128,6 +130,7 @@ func (b *Browser) SearchAll(query string, opts ...SearchOption) ([]SearchResult,
 
 		results, err := parser.parse(page, query, o.engine)
 		_ = page.Close()
+
 		if err != nil {
 			return allResults, err
 		}
@@ -137,11 +140,13 @@ func (b *Browser) SearchAll(query string, opts ...SearchOption) ([]SearchResult,
 		for i := range results.Results {
 			results.Results[i].Position = offset + i + 1
 		}
+
 		allResults = append(allResults, results.Results...)
 
 		if results.NextPageURL == "" {
 			break
 		}
+
 		searchURL = results.NextPageURL
 
 		if pageNum < o.maxPages-1 {
@@ -164,7 +169,7 @@ type serpParser struct {
 }
 
 func getParser(engine SearchEngine) *serpParser {
-	switch engine {
+	switch engine { //nolint:exhaustive // Google is the default case
 	case Bing:
 		return &bingParser
 	case DuckDuckGo:
@@ -222,7 +227,7 @@ var ddgParser = serpParser{
 	},
 }
 
-func (sp *serpParser) parse(page *Page, query string, engine SearchEngine) (*SearchResults, error) {
+func (sp *serpParser) parse(page *Page, query string, engine SearchEngine) (*SearchResults, error) { //nolint:unparam // error kept for future use
 	sr := &SearchResults{
 		Query:  query,
 		Engine: engine,
@@ -231,7 +236,7 @@ func (sp *serpParser) parse(page *Page, query string, engine SearchEngine) (*Sea
 	// Extract results
 	resultEls, err := page.Elements(sp.resultSelector)
 	if err != nil {
-		return sr, nil // no results is not an error
+		return sr, nil //nolint:nilerr // no results is not an error
 	}
 
 	position := 1
@@ -286,6 +291,7 @@ func cleanSearchURL(rawURL string) string {
 			if q := u.Query().Get("q"); q != "" {
 				return q
 			}
+
 			if q := u.Query().Get("url"); q != "" {
 				return q
 			}
@@ -300,6 +306,7 @@ func cleanSearchURL(rawURL string) string {
 			}
 		}
 	}
+
 	return rawURL
 }
 
@@ -307,17 +314,21 @@ func resolveURL(page *Page, href string) string {
 	if strings.HasPrefix(href, "http") {
 		return href
 	}
+
 	pageURL, err := page.URL()
 	if err != nil {
 		return href
 	}
+
 	base, err := url.Parse(pageURL)
 	if err != nil {
 		return href
 	}
+
 	ref, err := url.Parse(href)
 	if err != nil {
 		return href
 	}
+
 	return base.ResolveReference(ref).String()
 }

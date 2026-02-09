@@ -70,6 +70,7 @@ func WithCrawlConcurrent(n int) CrawlOption {
 		if n < 1 {
 			n = 1
 		}
+
 		o.concurrent = n
 	}
 }
@@ -86,13 +87,17 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 	if err != nil {
 		return nil, fmt.Errorf("scout: crawl: invalid start URL: %w", err)
 	}
+
 	if len(o.allowedDomains) == 0 {
 		o.allowedDomains = []string{startParsed.Hostname()}
 	}
 
 	visited := &visitedSet{urls: make(map[string]bool)}
-	var results []CrawlResult
-	var mu sync.Mutex
+
+	var (
+		results []CrawlResult
+		mu      sync.Mutex
+	)
 
 	type crawlItem struct {
 		url   string
@@ -106,10 +111,12 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 
 	for len(queue) > 0 {
 		mu.Lock()
+
 		if len(results) >= o.maxPages {
 			mu.Unlock()
 			break
 		}
+
 		mu.Unlock()
 
 		// Take next item from queue
@@ -126,20 +133,31 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 		page, err := b.NewPage(item.url)
 		if err != nil {
 			<-sem
+
 			result := CrawlResult{URL: item.url, Depth: item.depth, Error: err}
+
 			mu.Lock()
+
 			results = append(results, result)
+
 			mu.Unlock()
+
 			continue
 		}
 
 		if err := page.WaitLoad(); err != nil {
 			_ = page.Close()
+
 			<-sem
+
 			result := CrawlResult{URL: item.url, Depth: item.depth, Error: err}
+
 			mu.Lock()
+
 			results = append(results, result)
+
 			mu.Unlock()
+
 			continue
 		}
 
@@ -164,19 +182,26 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 		if handler != nil {
 			if err := handler(page, &result); err != nil {
 				_ = page.Close()
+
 				<-sem
 				mu.Lock()
+
 				results = append(results, result)
+
 				mu.Unlock()
+
 				return results, err
 			}
 		}
 
 		_ = page.Close()
+
 		<-sem
 
 		mu.Lock()
+
 		results = append(results, result)
+
 		mu.Unlock()
 
 		// Enqueue new links
@@ -221,6 +246,7 @@ func (b *Browser) ParseSitemap(sitemapURL string) ([]SitemapURL, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: parse sitemap: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
@@ -232,13 +258,16 @@ func (b *Browser) ParseSitemap(sitemapURL string) ([]SitemapURL, error) {
 	var index sitemapIndex
 	if err := xml.Unmarshal(body, &index); err == nil && len(index.Sitemaps) > 0 {
 		var allURLs []SitemapURL
+
 		for _, sm := range index.Sitemaps {
 			urls, err := b.ParseSitemap(sm.Loc)
 			if err != nil {
 				continue
 			}
+
 			allURLs = append(allURLs, urls...)
 		}
+
 		return allURLs, nil
 	}
 
@@ -261,12 +290,14 @@ type visitedSet struct {
 func (v *visitedSet) has(u string) bool {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
+
 	return v.urls[u]
 }
 
 func (v *visitedSet) add(u string) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+
 	v.urls[u] = true
 }
 
@@ -281,6 +312,7 @@ func normalizeURL(rawURL string) string {
 	if u.Path != "/" {
 		u.Path = strings.TrimRight(u.Path, "/")
 	}
+
 	return u.String()
 }
 
@@ -289,12 +321,14 @@ func isDomainAllowed(rawURL string, allowed []string) bool {
 	if err != nil {
 		return false
 	}
+
 	host := u.Hostname()
 	for _, d := range allowed {
 		if host == d || strings.HasSuffix(host, "."+d) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -312,9 +346,11 @@ func resolveLink(pageURL, href string) string {
 	if err != nil {
 		return ""
 	}
+
 	ref, err := url.Parse(href)
 	if err != nil {
 		return ""
 	}
+
 	return base.ResolveReference(ref).String()
 }

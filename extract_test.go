@@ -108,10 +108,12 @@ func TestExtractStruct(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/extract")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	type Product struct {
@@ -132,21 +134,27 @@ func TestExtractStruct(t *testing.T) {
 	if p.Name != "Widget Pro" {
 		t.Errorf("Name = %q, want %q", p.Name, "Widget Pro")
 	}
+
 	if p.Price != 29.99 {
 		t.Errorf("Price = %v, want 29.99", p.Price)
 	}
+
 	if p.Image != "/images/widget.png" {
 		t.Errorf("Image = %q, want %q", p.Image, "/images/widget.png")
 	}
+
 	if p.Link != "/products/widget" {
 		t.Errorf("Link = %q, want %q", p.Link, "/products/widget")
 	}
+
 	if len(p.Tags) != 2 || p.Tags[0] != "electronics" || p.Tags[1] != "gadgets" {
 		t.Errorf("Tags = %v, want [electronics gadgets]", p.Tags)
 	}
+
 	if p.Count != 42 {
 		t.Errorf("Count = %d, want 42", p.Count)
 	}
+
 	if !p.Available {
 		t.Error("Available should be true")
 	}
@@ -157,10 +165,12 @@ func TestExtractStructFromElement(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/extract")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	el, err := page.Element(".product")
@@ -176,6 +186,7 @@ func TestExtractStructFromElement(t *testing.T) {
 	if err := el.Extract(&p); err != nil {
 		t.Fatalf("Extract() error: %v", err)
 	}
+
 	if p.Name != "Widget Pro" {
 		t.Errorf("Name = %q, want %q", p.Name, "Widget Pro")
 	}
@@ -186,10 +197,12 @@ func TestExtractInvalidTarget(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/extract")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	var s string
@@ -207,10 +220,12 @@ func TestExtractTable(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/table")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	td, err := page.ExtractTable("#data")
@@ -221,12 +236,15 @@ func TestExtractTable(t *testing.T) {
 	if len(td.Headers) != 3 {
 		t.Fatalf("Headers count = %d, want 3", len(td.Headers))
 	}
+
 	if td.Headers[0] != "Name" || td.Headers[1] != "Age" || td.Headers[2] != "City" {
 		t.Errorf("Headers = %v", td.Headers)
 	}
+
 	if len(td.Rows) != 3 {
 		t.Fatalf("Rows count = %d, want 3", len(td.Rows))
 	}
+
 	if td.Rows[0][0] != "Alice" || td.Rows[0][1] != "30" || td.Rows[0][2] != "NYC" {
 		t.Errorf("Row 0 = %v", td.Rows[0])
 	}
@@ -237,10 +255,12 @@ func TestExtractTableMap(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/table")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	maps, err := page.ExtractTableMap("#data")
@@ -251,9 +271,11 @@ func TestExtractTableMap(t *testing.T) {
 	if len(maps) != 3 {
 		t.Fatalf("rows = %d, want 3", len(maps))
 	}
+
 	if maps[0]["Name"] != "Alice" {
 		t.Errorf("maps[0][Name] = %q, want Alice", maps[0]["Name"])
 	}
+
 	if maps[1]["Age"] != "25" {
 		t.Errorf("maps[1][Age] = %q, want 25", maps[1]["Age"])
 	}
@@ -264,10 +286,12 @@ func TestExtractTableNoThead(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/table")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	td, err := page.ExtractTable("#no-thead")
@@ -278,6 +302,7 @@ func TestExtractTableNoThead(t *testing.T) {
 	if len(td.Headers) != 2 || td.Headers[0] != "X" || td.Headers[1] != "Y" {
 		t.Errorf("Headers = %v, want [X Y]", td.Headers)
 	}
+
 	if len(td.Rows) != 2 {
 		t.Errorf("Rows = %d, want 2", len(td.Rows))
 	}
@@ -288,10 +313,12 @@ func TestExtractMeta(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/meta")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	meta, err := page.ExtractMeta()
@@ -302,28 +329,36 @@ func TestExtractMeta(t *testing.T) {
 	if meta.Title != "Meta Test Page" {
 		t.Errorf("Title = %q, want %q", meta.Title, "Meta Test Page")
 	}
+
 	if meta.Description != "A test page for metadata extraction" {
 		t.Errorf("Description = %q", meta.Description)
 	}
+
 	if meta.Canonical != "https://example.com/meta" {
 		t.Errorf("Canonical = %q", meta.Canonical)
 	}
+
 	if meta.OG["og:title"] != "OG Title" {
 		t.Errorf("OG title = %q", meta.OG["og:title"])
 	}
+
 	if meta.OG["og:image"] != "https://example.com/image.png" {
 		t.Errorf("OG image = %q", meta.OG["og:image"])
 	}
+
 	if meta.Twitter["twitter:card"] != "summary" {
 		t.Errorf("Twitter card = %q", meta.Twitter["twitter:card"])
 	}
+
 	if len(meta.JSONLD) != 1 {
 		t.Fatalf("JSONLD count = %d, want 1", len(meta.JSONLD))
 	}
+
 	var ld map[string]any
 	if err := json.Unmarshal(meta.JSONLD[0], &ld); err != nil {
 		t.Fatalf("JSONLD unmarshal error: %v", err)
 	}
+
 	if ld["@type"] != "WebPage" {
 		t.Errorf("JSONLD @type = %v", ld["@type"])
 	}
@@ -334,16 +369,19 @@ func TestExtractText(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/extract")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	text, err := page.ExtractText("h2.title")
 	if err != nil {
 		t.Fatalf("ExtractText() error: %v", err)
 	}
+
 	if text != "Widget Pro" {
 		t.Errorf("ExtractText() = %q, want %q", text, "Widget Pro")
 	}
@@ -354,16 +392,19 @@ func TestExtractTexts(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/extract")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	texts, err := page.ExtractTexts("span.tag")
 	if err != nil {
 		t.Fatalf("ExtractTexts() error: %v", err)
 	}
+
 	if len(texts) != 2 || texts[0] != "electronics" || texts[1] != "gadgets" {
 		t.Errorf("ExtractTexts() = %v", texts)
 	}
@@ -374,16 +415,19 @@ func TestExtractAttribute(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/extract")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	val, err := page.ExtractAttribute("img.hero", "src")
 	if err != nil {
 		t.Fatalf("ExtractAttribute() error: %v", err)
 	}
+
 	if val != "/images/widget.png" {
 		t.Errorf("ExtractAttribute() = %q", val)
 	}
@@ -394,16 +438,19 @@ func TestExtractAttributes(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/links")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	vals, err := page.ExtractAttributes("a", "href")
 	if err != nil {
 		t.Fatalf("ExtractAttributes() error: %v", err)
 	}
+
 	if len(vals) != 3 {
 		t.Errorf("ExtractAttributes() returned %d values, want 3", len(vals))
 	}
@@ -414,16 +461,19 @@ func TestExtractLinks(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/links")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	links, err := page.ExtractLinks()
 	if err != nil {
 		t.Fatalf("ExtractLinks() error: %v", err)
 	}
+
 	if len(links) != 3 {
 		t.Errorf("ExtractLinks() returned %d links, want 3", len(links))
 	}
@@ -434,15 +484,18 @@ func TestExtractNestedStruct(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/nested")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	type Header struct {
 		Name string `scout:"span.name"`
 	}
+
 	type Card struct {
 		Header Header `scout:"div.header"`
 		Desc   string `scout:"p.desc"`
@@ -452,9 +505,11 @@ func TestExtractNestedStruct(t *testing.T) {
 	if err := page.Extract(&c); err != nil {
 		t.Fatalf("Extract() error: %v", err)
 	}
+
 	if c.Header.Name != "Card Title" {
 		t.Errorf("Header.Name = %q, want %q", c.Header.Name, "Card Title")
 	}
+
 	if c.Desc != "Card description" {
 		t.Errorf("Desc = %q, want %q", c.Desc, "Card description")
 	}
@@ -465,16 +520,19 @@ func TestExtractSliceOfStructs(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/products-list")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	type Item struct {
 		Name  string `scout:"h3.name"`
 		Price int    `scout:"span.price"`
 	}
+
 	type PageData struct {
 		Items []Item `scout:"div.item"`
 	}
@@ -483,12 +541,15 @@ func TestExtractSliceOfStructs(t *testing.T) {
 	if err := page.Extract(&pd); err != nil {
 		t.Fatalf("Extract() error: %v", err)
 	}
+
 	if len(pd.Items) != 3 {
 		t.Fatalf("Items count = %d, want 3", len(pd.Items))
 	}
+
 	if pd.Items[0].Name != "Alpha" || pd.Items[0].Price != 10 {
 		t.Errorf("Items[0] = %+v", pd.Items[0])
 	}
+
 	if pd.Items[2].Name != "Gamma" || pd.Items[2].Price != 30 {
 		t.Errorf("Items[2] = %+v", pd.Items[2])
 	}

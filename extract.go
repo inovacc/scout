@@ -47,10 +47,12 @@ func (p *Page) Extract(target any, _ ...ExtractOption) error {
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return fmt.Errorf("scout: extract: target must be a non-nil pointer to struct")
 	}
+
 	rv = rv.Elem()
 	if rv.Kind() != reflect.Struct {
 		return fmt.Errorf("scout: extract: target must be a pointer to struct")
 	}
+
 	return extractStruct(p.page, nil, rv)
 }
 
@@ -60,10 +62,12 @@ func (e *Element) Extract(target any, _ ...ExtractOption) error {
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return fmt.Errorf("scout: extract: target must be a non-nil pointer to struct")
 	}
+
 	rv = rv.Elem()
 	if rv.Kind() != reflect.Struct {
 		return fmt.Errorf("scout: extract: target must be a pointer to struct")
 	}
+
 	return extractStruct(e.element.Page(), e.element, rv)
 }
 
@@ -73,6 +77,7 @@ func (p *Page) ExtractTable(selector string) (*TableData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: extract table %q: %w", selector, err)
 	}
+
 	return extractTableFromElement(el)
 }
 
@@ -82,6 +87,7 @@ func (p *Page) ExtractTableMap(selector string) ([]map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]map[string]string, len(td.Rows))
 	for i, row := range td.Rows {
 		m := make(map[string]string, len(td.Headers))
@@ -90,8 +96,10 @@ func (p *Page) ExtractTableMap(selector string) ([]map[string]string, error) {
 				m[header] = row[j]
 			}
 		}
+
 		result[i] = m
 	}
+
 	return result, nil
 }
 
@@ -107,6 +115,7 @@ func (p *Page) ExtractMeta() (*MetaData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: extract meta title: %w", err)
 	}
+
 	meta.Title = title.Value.Str()
 
 	// Meta tags via JS for reliability
@@ -180,10 +189,12 @@ func (p *Page) ExtractText(selector string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: extract text %q: %w", selector, err)
 	}
+
 	text, err := el.Text()
 	if err != nil {
 		return "", fmt.Errorf("scout: extract text %q: %w", selector, err)
 	}
+
 	return text, nil
 }
 
@@ -193,14 +204,17 @@ func (p *Page) ExtractTexts(selector string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: extract texts %q: %w", selector, err)
 	}
+
 	texts := make([]string, 0, len(els))
 	for _, el := range els {
 		text, err := el.Text()
 		if err != nil {
 			return nil, fmt.Errorf("scout: extract texts %q: %w", selector, err)
 		}
+
 		texts = append(texts, text)
 	}
+
 	return texts, nil
 }
 
@@ -210,13 +224,16 @@ func (p *Page) ExtractAttribute(selector, attr string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: extract attribute %q %q: %w", selector, attr, err)
 	}
+
 	val, err := el.Attribute(attr)
 	if err != nil {
 		return "", fmt.Errorf("scout: extract attribute %q %q: %w", selector, attr, err)
 	}
+
 	if val == nil {
 		return "", nil
 	}
+
 	return *val, nil
 }
 
@@ -226,16 +243,19 @@ func (p *Page) ExtractAttributes(selector, attr string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: extract attributes %q %q: %w", selector, attr, err)
 	}
+
 	result := make([]string, 0, len(els))
 	for _, el := range els {
 		val, err := el.Attribute(attr)
 		if err != nil {
 			return nil, fmt.Errorf("scout: extract attributes %q %q: %w", selector, attr, err)
 		}
+
 		if val != nil {
 			result = append(result, *val)
 		}
 	}
+
 	return result, nil
 }
 
@@ -257,6 +277,7 @@ func extractTableFromElement(el *rod.Element) (*TableData, error) {
 			if err != nil {
 				return nil, fmt.Errorf("scout: extract table header: %w", err)
 			}
+
 			td.Headers = append(td.Headers, text)
 		}
 	} else {
@@ -268,6 +289,7 @@ func extractTableFromElement(el *rod.Element) (*TableData, error) {
 				if err != nil {
 					return nil, fmt.Errorf("scout: extract table header: %w", err)
 				}
+
 				td.Headers = append(td.Headers, text)
 			}
 		}
@@ -291,14 +313,18 @@ func extractTableFromElement(el *rod.Element) (*TableData, error) {
 		if err != nil {
 			return nil, fmt.Errorf("scout: extract table cells: %w", err)
 		}
+
 		var rowData []string
+
 		for _, cell := range cells {
 			text, err := cell.Text()
 			if err != nil {
 				return nil, fmt.Errorf("scout: extract table cell: %w", err)
 			}
+
 			rowData = append(rowData, text)
 		}
+
 		if len(rowData) > 0 {
 			td.Rows = append(td.Rows, rowData)
 		}
@@ -313,6 +339,7 @@ func parseTag(tag string) (selector, attr string) {
 	if i := strings.LastIndex(tag, "@"); i > 0 {
 		return tag[:i], tag[i+1:]
 	}
+
 	return tag, ""
 }
 
@@ -321,6 +348,7 @@ func findElements(page *rod.Page, scope *rod.Element, selector string) (rod.Elem
 	if scope != nil {
 		return page.ElementsByJS(rod.Eval(`(sel) => this.querySelectorAll(sel)`, selector).This(scope.Object))
 	}
+
 	return page.Elements(selector)
 }
 
@@ -329,6 +357,7 @@ func findElement(page *rod.Page, scope *rod.Element, selector string) (*rod.Elem
 	if scope != nil {
 		return page.ElementByJS(rod.Eval(`(sel) => this.querySelector(sel)`, selector).This(scope.Object))
 	}
+
 	return page.Element(selector)
 }
 
@@ -336,6 +365,7 @@ func extractStruct(page *rod.Page, scope *rod.Element, rv reflect.Value) error {
 	rt := rv.Type()
 	for i := 0; i < rt.NumField(); i++ {
 		field := rt.Field(i)
+
 		tag := field.Tag.Get("scout")
 		if tag == "" || tag == "-" {
 			continue
@@ -348,11 +378,12 @@ func extractStruct(page *rod.Page, scope *rod.Element, rv reflect.Value) error {
 			return fmt.Errorf("scout: extract field %q: %w", field.Name, err)
 		}
 	}
+
 	return nil
 }
 
 func setField(page *rod.Page, scope *rod.Element, fv reflect.Value, ft reflect.Type, selector, attr string) error {
-	switch ft.Kind() {
+	switch ft.Kind() { //nolint:exhaustive // only supported types are handled
 	case reflect.String:
 		return setStringField(page, scope, fv, selector, attr)
 	case reflect.Int, reflect.Int64:
@@ -367,8 +398,9 @@ func setField(page *rod.Page, scope *rod.Element, fv reflect.Value, ft reflect.T
 		// Nested struct: selector scopes a container element
 		el, err := findElement(page, scope, selector)
 		if err != nil {
-			return nil // element not found, leave struct zero-valued
+			return nil //nolint:nilerr // element not found, leave struct zero-valued
 		}
+
 		return extractStruct(page, el, fv)
 	default:
 		return nil
@@ -381,70 +413,85 @@ func getTextOrAttr(el *rod.Element, attr string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		if val == nil {
 			return "", nil
 		}
+
 		return *val, nil
 	}
+
 	return el.Text()
 }
 
 func setStringField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
-		return nil // not found, leave as zero value
+		return nil //nolint:nilerr // not found, leave as zero value
 	}
+
 	val, err := getTextOrAttr(el, attr)
 	if err != nil {
 		return err
 	}
+
 	fv.SetString(val)
+
 	return nil
 }
 
 func setIntField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
-		return nil
+		return nil //nolint:nilerr // not found, leave as zero value
 	}
+
 	val, err := getTextOrAttr(el, attr)
 	if err != nil {
 		return err
 	}
+
 	val = strings.TrimSpace(val)
 	if n, err := strconv.ParseInt(val, 10, 64); err == nil {
 		fv.SetInt(n)
 	}
+
 	return nil
 }
 
 func setFloatField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
-		return nil
+		return nil //nolint:nilerr // not found, leave as zero value
 	}
+
 	val, err := getTextOrAttr(el, attr)
 	if err != nil {
 		return err
 	}
+
 	val = strings.TrimSpace(val)
 	if f, err := strconv.ParseFloat(val, 64); err == nil {
 		fv.SetFloat(f)
 	}
+
 	return nil
 }
 
 func setBoolField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
-		return nil
+		return nil //nolint:nilerr // not found, leave as zero value
 	}
+
 	val, err := getTextOrAttr(el, attr)
 	if err != nil {
 		return err
 	}
+
 	val = strings.TrimSpace(strings.ToLower(val))
 	fv.SetBool(val == "true" || val == "1" || val == "yes")
+
 	return nil
 }
 
@@ -455,17 +502,21 @@ func setSliceField(page *rod.Page, scope *rod.Element, fv reflect.Value, ft refl
 		// []string: collect text/attr from all matches
 		els, err := findElements(page, scope, selector)
 		if err != nil {
-			return nil
+			return nil //nolint:nilerr // not found, leave as zero value
 		}
+
 		result := reflect.MakeSlice(ft, 0, len(els))
 		for _, el := range els {
 			val, err := getTextOrAttr(el, attr)
 			if err != nil {
 				continue
 			}
+
 			result = reflect.Append(result, reflect.ValueOf(val))
 		}
+
 		fv.Set(result)
+
 		return nil
 	}
 
@@ -473,15 +524,18 @@ func setSliceField(page *rod.Page, scope *rod.Element, fv reflect.Value, ft refl
 		// []struct: one struct per matching element
 		els, err := findElements(page, scope, selector)
 		if err != nil {
-			return nil
+			return nil //nolint:nilerr // not found, leave as zero value
 		}
+
 		result := reflect.MakeSlice(ft, len(els), len(els))
 		for i, el := range els {
 			if err := extractStruct(page, el, result.Index(i)); err != nil {
 				return err
 			}
 		}
+
 		fv.Set(result)
+
 		return nil
 	}
 

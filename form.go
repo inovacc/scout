@@ -36,14 +36,17 @@ func (p *Page) DetectForms() ([]*Form, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: detect forms: %w", err)
 	}
+
 	forms := make([]*Form, 0, len(els))
 	for _, el := range els {
 		f, err := parseForm(p.page, el)
 		if err != nil {
 			return nil, err
 		}
+
 		forms = append(forms, f)
 	}
+
 	return forms, nil
 }
 
@@ -53,6 +56,7 @@ func (p *Page) DetectForm(selector string) (*Form, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: detect form %q: %w", selector, err)
 	}
+
 	return parseForm(p.page, el)
 }
 
@@ -63,6 +67,7 @@ func (f *Form) Fill(data map[string]string) error {
 			return fmt.Errorf("scout: fill field %q: %w", key, err)
 		}
 	}
+
 	return nil
 }
 
@@ -72,21 +77,26 @@ func (f *Form) FillStruct(data any) error {
 	if rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
 	}
+
 	if rv.Kind() != reflect.Struct {
 		return fmt.Errorf("scout: fill struct: data must be a struct or pointer to struct")
 	}
+
 	rt := rv.Type()
 	for i := 0; i < rt.NumField(); i++ {
 		field := rt.Field(i)
+
 		tag := field.Tag.Get("form")
 		if tag == "" || tag == "-" {
 			continue
 		}
+
 		val := fmt.Sprintf("%v", rv.Field(i).Interface())
 		if err := f.fillField(tag, val); err != nil {
 			return fmt.Errorf("scout: fill struct field %q: %w", field.Name, err)
 		}
 	}
+
 	return nil
 }
 
@@ -101,6 +111,7 @@ func (f *Form) Submit() error {
 		if err := submitBtn.Click(proto.InputMouseButtonLeft, 1); err != nil {
 			return fmt.Errorf("scout: submit click: %w", err)
 		}
+
 		return nil
 	}
 
@@ -109,6 +120,7 @@ func (f *Form) Submit() error {
 	if err != nil {
 		return fmt.Errorf("scout: submit: %w", err)
 	}
+
 	return nil
 }
 
@@ -185,6 +197,7 @@ func (w *FormWizard) Run() error {
 			if err != nil {
 				return fmt.Errorf("scout: wizard step %d next button %q: %w", i+1, step.NextSelector, err)
 			}
+
 			if err := nextBtn.Click(proto.InputMouseButtonLeft, 1); err != nil {
 				return fmt.Errorf("scout: wizard step %d click next: %w", i+1, err)
 			}
@@ -196,6 +209,7 @@ func (w *FormWizard) Run() error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -225,6 +239,7 @@ func parseForm(page *rod.Page, el *rod.Element) (*Form, error) {
 		if err != nil {
 			continue
 		}
+
 		f.Fields = append(f.Fields, field)
 	}
 
@@ -238,16 +253,19 @@ func parseFormField(el *rod.Element) (FormField, error) {
 	if err != nil {
 		return ff, err
 	}
+
 	tag := tagName.Value.Str()
 
 	name, _ := el.Attribute("name")
 	if name != nil {
 		ff.Name = *name
 	}
+
 	id, _ := el.Attribute("id")
 	if id != nil {
 		ff.ID = *id
 	}
+
 	placeholder, _ := el.Attribute("placeholder")
 	if placeholder != nil {
 		ff.Placeholder = *placeholder
@@ -261,6 +279,7 @@ func parseFormField(el *rod.Element) (FormField, error) {
 		} else {
 			ff.Type = "text"
 		}
+
 		val, _ := el.Attribute("value")
 		if val != nil {
 			ff.Value = *val
@@ -303,6 +322,7 @@ func (f *Form) fillField(key, value string) error {
 	if err != nil {
 		return err
 	}
+
 	tag := tagResult.Value.Str()
 
 	if tag == "select" {
@@ -311,6 +331,7 @@ func (f *Form) fillField(key, value string) error {
 			this.value = val;
 			this.dispatchEvent(new Event('change', {bubbles: true}));
 		}`, value)
+
 		return err
 	}
 
@@ -319,8 +340,10 @@ func (f *Form) fillField(key, value string) error {
 		// Field may be empty, ignore
 		_ = err
 	}
+
 	if err := el.Input(value); err != nil {
 		return err
 	}
+
 	return nil
 }

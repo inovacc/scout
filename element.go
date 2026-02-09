@@ -19,6 +19,7 @@ func (e *Element) Click() error {
 	if err := e.element.Click(proto.InputMouseButtonLeft, 1); err != nil {
 		return fmt.Errorf("scout: click: %w", err)
 	}
+
 	return nil
 }
 
@@ -27,6 +28,7 @@ func (e *Element) DoubleClick() error {
 	if err := e.element.Click(proto.InputMouseButtonLeft, 2); err != nil {
 		return fmt.Errorf("scout: double click: %w", err)
 	}
+
 	return nil
 }
 
@@ -35,6 +37,7 @@ func (e *Element) RightClick() error {
 	if err := e.element.Click(proto.InputMouseButtonRight, 1); err != nil {
 		return fmt.Errorf("scout: right click: %w", err)
 	}
+
 	return nil
 }
 
@@ -43,6 +46,7 @@ func (e *Element) Hover() error {
 	if err := e.element.Hover(); err != nil {
 		return fmt.Errorf("scout: hover: %w", err)
 	}
+
 	return nil
 }
 
@@ -51,6 +55,7 @@ func (e *Element) MoveMouseOut() error {
 	if err := e.element.MoveMouseOut(); err != nil {
 		return fmt.Errorf("scout: move mouse out: %w", err)
 	}
+
 	return nil
 }
 
@@ -59,6 +64,7 @@ func (e *Element) Tap() error {
 	if err := e.element.Tap(); err != nil {
 		return fmt.Errorf("scout: tap: %w", err)
 	}
+
 	return nil
 }
 
@@ -67,6 +73,7 @@ func (e *Element) Input(text string) error {
 	if err := e.element.Input(text); err != nil {
 		return fmt.Errorf("scout: input: %w", err)
 	}
+
 	return nil
 }
 
@@ -75,6 +82,7 @@ func (e *Element) InputTime(t time.Time) error {
 	if err := e.element.InputTime(t); err != nil {
 		return fmt.Errorf("scout: input time: %w", err)
 	}
+
 	return nil
 }
 
@@ -83,6 +91,7 @@ func (e *Element) InputColor(color string) error {
 	if err := e.element.InputColor(color); err != nil {
 		return fmt.Errorf("scout: input color: %w", err)
 	}
+
 	return nil
 }
 
@@ -91,9 +100,11 @@ func (e *Element) Clear() error {
 	if err := e.element.SelectAllText(); err != nil {
 		return fmt.Errorf("scout: clear (select all): %w", err)
 	}
+
 	if err := e.element.Input(""); err != nil {
 		return fmt.Errorf("scout: clear (input empty): %w", err)
 	}
+
 	return nil
 }
 
@@ -102,6 +113,7 @@ func (e *Element) Type(keys ...input.Key) error {
 	if err := e.element.Type(keys...); err != nil {
 		return fmt.Errorf("scout: type: %w", err)
 	}
+
 	return nil
 }
 
@@ -110,6 +122,7 @@ func (e *Element) Press(key input.Key) error {
 	if err := e.element.Type(key); err != nil {
 		return fmt.Errorf("scout: press: %w", err)
 	}
+
 	return nil
 }
 
@@ -118,6 +131,7 @@ func (e *Element) SelectOption(selectors ...string) error {
 	if err := e.element.Select(selectors, true, SelectorText); err != nil {
 		return fmt.Errorf("scout: select option: %w", err)
 	}
+
 	return nil
 }
 
@@ -126,6 +140,7 @@ func (e *Element) SelectOptionByCSS(selectors ...string) error {
 	if err := e.element.Select(selectors, true, SelectorCSS); err != nil {
 		return fmt.Errorf("scout: select option by css: %w", err)
 	}
+
 	return nil
 }
 
@@ -134,6 +149,7 @@ func (e *Element) SetFiles(paths []string) error {
 	if err := e.element.SetFiles(paths); err != nil {
 		return fmt.Errorf("scout: set files: %w", err)
 	}
+
 	return nil
 }
 
@@ -142,6 +158,7 @@ func (e *Element) Focus() error {
 	if err := e.element.Focus(); err != nil {
 		return fmt.Errorf("scout: focus: %w", err)
 	}
+
 	return nil
 }
 
@@ -150,6 +167,7 @@ func (e *Element) Blur() error {
 	if err := e.element.Blur(); err != nil {
 		return fmt.Errorf("scout: blur: %w", err)
 	}
+
 	return nil
 }
 
@@ -158,6 +176,7 @@ func (e *Element) ScrollIntoView() error {
 	if err := e.element.ScrollIntoView(); err != nil {
 		return fmt.Errorf("scout: scroll into view: %w", err)
 	}
+
 	return nil
 }
 
@@ -166,6 +185,7 @@ func (e *Element) Remove() error {
 	if err := e.element.Remove(); err != nil {
 		return fmt.Errorf("scout: remove: %w", err)
 	}
+
 	return nil
 }
 
@@ -174,6 +194,7 @@ func (e *Element) SelectAllText() error {
 	if err := e.element.SelectAllText(); err != nil {
 		return fmt.Errorf("scout: select all text: %w", err)
 	}
+
 	return nil
 }
 
@@ -182,6 +203,7 @@ func (e *Element) SelectText(regex string) error {
 	if err := e.element.SelectText(regex); err != nil {
 		return fmt.Errorf("scout: select text: %w", err)
 	}
+
 	return nil
 }
 
@@ -191,6 +213,7 @@ func (e *Element) Text() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: text: %w", err)
 	}
+
 	return text, nil
 }
 
@@ -200,6 +223,7 @@ func (e *Element) HTML() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: html: %w", err)
 	}
+
 	return html, nil
 }
 
@@ -210,9 +234,11 @@ func (e *Element) Attribute(name string) (string, bool, error) {
 	if err != nil {
 		return "", false, fmt.Errorf("scout: attribute %q: %w", name, err)
 	}
+
 	if val == nil {
 		return "", false, nil
 	}
+
 	return *val, true, nil
 }
 
@@ -222,6 +248,7 @@ func (e *Element) Property(name string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: property %q: %w", name, err)
 	}
+
 	return val.String(), nil
 }
 
@@ -231,6 +258,7 @@ func (e *Element) Visible() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("scout: visible: %w", err)
 	}
+
 	return visible, nil
 }
 
@@ -240,6 +268,7 @@ func (e *Element) Interactable() (bool, error) {
 	if err != nil {
 		return false, nil //nolint:nilerr // expected: non-interactable returns error
 	}
+
 	return true, nil
 }
 
@@ -249,6 +278,7 @@ func (e *Element) Disabled() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("scout: disabled: %w", err)
 	}
+
 	return disabled, nil
 }
 
@@ -258,6 +288,7 @@ func (e *Element) Screenshot() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: element screenshot: %w", err)
 	}
+
 	return data, nil
 }
 
@@ -267,6 +298,7 @@ func (e *Element) ScreenshotJPEG(quality int) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: element screenshot jpeg: %w", err)
 	}
+
 	return data, nil
 }
 
@@ -276,6 +308,7 @@ func (e *Element) GetXPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: get xpath: %w", err)
 	}
+
 	return xpath, nil
 }
 
@@ -285,6 +318,7 @@ func (e *Element) Matches(selector string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("scout: matches %q: %w", selector, err)
 	}
+
 	return matches, nil
 }
 
@@ -294,6 +328,7 @@ func (e *Element) ContainsElement(target *Element) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("scout: contains element: %w", err)
 	}
+
 	return contains, nil
 }
 
@@ -303,6 +338,7 @@ func (e *Element) Equal(other *Element) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("scout: equal: %w", err)
 	}
+
 	return eq, nil
 }
 
@@ -312,6 +348,7 @@ func (e *Element) CanvasToImage(format string, quality float64) ([]byte, error) 
 	if err != nil {
 		return nil, fmt.Errorf("scout: canvas to image: %w", err)
 	}
+
 	return data, nil
 }
 
@@ -321,6 +358,7 @@ func (e *Element) BackgroundImage() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: background image: %w", err)
 	}
+
 	return data, nil
 }
 
@@ -330,6 +368,7 @@ func (e *Element) Resource() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: resource: %w", err)
 	}
+
 	return data, nil
 }
 
@@ -339,13 +378,16 @@ func (e *Element) Parent() (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: parent: %w", err)
 	}
+
 	if obj.Value.Nil() {
 		return nil, fmt.Errorf("scout: parent: no parent element")
 	}
+
 	parent, err := e.element.Page().ElementFromObject(obj)
 	if err != nil {
 		return nil, fmt.Errorf("scout: parent: %w", err)
 	}
+
 	return &Element{element: parent}, nil
 }
 
@@ -353,6 +395,7 @@ func (e *Element) Parent() (*Element, error) {
 // Pass empty string to match all ancestors.
 func (e *Element) Parents(selector string) ([]*Element, error) {
 	page := e.element.Page()
+
 	els, err := page.ElementsByJS(rod.Eval(`(sel) => {
 		const els = [];
 		let el = this.parentElement;
@@ -365,6 +408,7 @@ func (e *Element) Parents(selector string) ([]*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: parents: %w", err)
 	}
+
 	return wrapElements(els), nil
 }
 
@@ -374,13 +418,16 @@ func (e *Element) Next() (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: next: %w", err)
 	}
+
 	if obj.Value.Nil() {
 		return nil, fmt.Errorf("scout: next: no next sibling")
 	}
+
 	next, err := e.element.Page().ElementFromObject(obj)
 	if err != nil {
 		return nil, fmt.Errorf("scout: next: %w", err)
 	}
+
 	return &Element{element: next}, nil
 }
 
@@ -390,13 +437,16 @@ func (e *Element) Previous() (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: previous: %w", err)
 	}
+
 	if obj.Value.Nil() {
 		return nil, fmt.Errorf("scout: previous: no previous sibling")
 	}
+
 	prev, err := e.element.Page().ElementFromObject(obj)
 	if err != nil {
 		return nil, fmt.Errorf("scout: previous: %w", err)
 	}
+
 	return &Element{element: prev}, nil
 }
 
@@ -406,6 +456,7 @@ func (e *Element) ShadowRoot() (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: shadow root: %w", err)
 	}
+
 	return &Element{element: sr}, nil
 }
 
@@ -415,32 +466,38 @@ func (e *Element) Frame() (*Page, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: frame: %w", err)
 	}
+
 	return &Page{page: frame}, nil
 }
 
 // Element finds the first child element matching the CSS selector.
 func (e *Element) Element(selector string) (*Element, error) {
 	page := e.element.Page()
+
 	el, err := page.ElementByJS(rod.Eval(`(sel) => this.querySelector(sel)`, selector).This(e.element.Object))
 	if err != nil {
 		return nil, fmt.Errorf("scout: child element %q: %w", selector, err)
 	}
+
 	return &Element{element: el}, nil
 }
 
 // Elements finds all child elements matching the CSS selector.
 func (e *Element) Elements(selector string) ([]*Element, error) {
 	page := e.element.Page()
+
 	els, err := page.ElementsByJS(rod.Eval(`(sel) => this.querySelectorAll(sel)`, selector).This(e.element.Object))
 	if err != nil {
 		return nil, fmt.Errorf("scout: child elements %q: %w", selector, err)
 	}
+
 	return wrapElements(els), nil
 }
 
 // ElementByXPath finds the first child matching the XPath expression relative to this element.
 func (e *Element) ElementByXPath(xpath string) (*Element, error) {
 	page := e.element.Page()
+
 	el, err := page.ElementByJS(rod.Eval(`(xpath) => {
 		const result = document.evaluate(xpath, this, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
 		return result.singleNodeValue;
@@ -448,12 +505,14 @@ func (e *Element) ElementByXPath(xpath string) (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: child element xpath %q: %w", xpath, err)
 	}
+
 	return &Element{element: el}, nil
 }
 
 // ElementsByXPath finds all children matching the XPath expression relative to this element.
 func (e *Element) ElementsByXPath(xpath string) ([]*Element, error) {
 	page := e.element.Page()
+
 	els, err := page.ElementsByJS(rod.Eval(`(xpath) => {
 		const result = document.evaluate(xpath, this, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 		const nodes = [];
@@ -463,12 +522,14 @@ func (e *Element) ElementsByXPath(xpath string) ([]*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: child elements xpath %q: %w", xpath, err)
 	}
+
 	return wrapElements(els), nil
 }
 
 // ElementByText finds the first child element matching the CSS selector whose text matches the regex.
 func (e *Element) ElementByText(selector, regex string) (*Element, error) {
 	page := e.element.Page()
+
 	el, err := page.ElementByJS(rod.Eval(`(sel, regex) => {
 		const re = new RegExp(regex);
 		const els = this.querySelectorAll(sel);
@@ -480,6 +541,7 @@ func (e *Element) ElementByText(selector, regex string) (*Element, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: child element by text %q %q: %w", selector, regex, err)
 	}
+
 	return &Element{element: el}, nil
 }
 
@@ -488,6 +550,7 @@ func (e *Element) WaitVisible() error {
 	if err := e.element.WaitVisible(); err != nil {
 		return fmt.Errorf("scout: wait visible: %w", err)
 	}
+
 	return nil
 }
 
@@ -496,6 +559,7 @@ func (e *Element) WaitInvisible() error {
 	if err := e.element.WaitInvisible(); err != nil {
 		return fmt.Errorf("scout: wait invisible: %w", err)
 	}
+
 	return nil
 }
 
@@ -504,6 +568,7 @@ func (e *Element) WaitStable(d time.Duration) error {
 	if err := e.element.WaitStable(d); err != nil {
 		return fmt.Errorf("scout: wait stable: %w", err)
 	}
+
 	return nil
 }
 
@@ -512,6 +577,7 @@ func (e *Element) WaitStableRAF() error {
 	if err := e.element.WaitStableRAF(); err != nil {
 		return fmt.Errorf("scout: wait stable raf: %w", err)
 	}
+
 	return nil
 }
 
@@ -520,6 +586,7 @@ func (e *Element) WaitInteractable() error {
 	if _, err := e.element.WaitInteractable(); err != nil {
 		return fmt.Errorf("scout: wait interactable: %w", err)
 	}
+
 	return nil
 }
 
@@ -528,6 +595,7 @@ func (e *Element) WaitEnabled() error {
 	if err := e.element.WaitEnabled(); err != nil {
 		return fmt.Errorf("scout: wait enabled: %w", err)
 	}
+
 	return nil
 }
 
@@ -536,6 +604,7 @@ func (e *Element) WaitWritable() error {
 	if err := e.element.WaitWritable(); err != nil {
 		return fmt.Errorf("scout: wait writable: %w", err)
 	}
+
 	return nil
 }
 
@@ -544,6 +613,7 @@ func (e *Element) WaitLoad() error {
 	if err := e.element.WaitLoad(); err != nil {
 		return fmt.Errorf("scout: wait load: %w", err)
 	}
+
 	return nil
 }
 
@@ -553,6 +623,7 @@ func (e *Element) Eval(js string, args ...any) (*EvalResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: element eval: %w", err)
 	}
+
 	return remoteObjectToEvalResult(obj), nil
 }
 

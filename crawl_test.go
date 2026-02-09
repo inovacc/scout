@@ -58,6 +58,7 @@ func crawlTestRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/sitemap.xml", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/xml")
+
 		sitemap := sitemapURLSet{
 			URLs: []SitemapURL{
 				{Loc: "https://example.com/page1", LastMod: "2024-01-01", ChangeFreq: "daily", Priority: "1.0"},
@@ -81,6 +82,7 @@ func TestCrawl(t *testing.T) {
 	b := newTestBrowser(t)
 
 	var titles []string
+
 	results, err := b.Crawl(srv.URL+"/crawl-start", func(_ *Page, result *CrawlResult) error {
 		titles = append(titles, result.Title)
 		return nil
@@ -89,7 +91,6 @@ func TestCrawl(t *testing.T) {
 		WithCrawlMaxPages(10),
 		WithCrawlDelay(50*time.Millisecond),
 	)
-
 	if err != nil {
 		t.Fatalf("Crawl() error: %v", err)
 	}
@@ -102,24 +103,31 @@ func TestCrawl(t *testing.T) {
 	foundStart := false
 	foundPage1 := false
 	foundPage2 := false
+
 	for _, r := range results {
 		t.Logf("Crawled: %s (depth=%d, title=%q, links=%d)", r.URL, r.Depth, r.Title, len(r.Links))
+
 		if r.Title == "Crawl Start" {
 			foundStart = true
 		}
+
 		if r.Title == "Crawl Page 1" {
 			foundPage1 = true
 		}
+
 		if r.Title == "Crawl Page 2" {
 			foundPage2 = true
 		}
 	}
+
 	if !foundStart {
 		t.Error("should have crawled start page")
 	}
+
 	if !foundPage1 {
 		t.Error("should have crawled page 1")
 	}
+
 	if !foundPage2 {
 		t.Error("should have crawled page 2")
 	}
@@ -136,7 +144,6 @@ func TestCrawlMaxPages(t *testing.T) {
 		WithCrawlMaxPages(2),
 		WithCrawlDelay(50*time.Millisecond),
 	)
-
 	if err != nil {
 		t.Fatalf("Crawl() error: %v", err)
 	}
@@ -187,12 +194,15 @@ func TestParseSitemap(t *testing.T) {
 	if urls[0].Loc != "https://example.com/page1" {
 		t.Errorf("urls[0].Loc = %q", urls[0].Loc)
 	}
+
 	if urls[0].LastMod != "2024-01-01" {
 		t.Errorf("urls[0].LastMod = %q", urls[0].LastMod)
 	}
+
 	if urls[0].ChangeFreq != "daily" {
 		t.Errorf("urls[0].ChangeFreq = %q", urls[0].ChangeFreq)
 	}
+
 	if urls[0].Priority != "1.0" {
 		t.Errorf("urls[0].Priority = %q", urls[0].Priority)
 	}
@@ -265,37 +275,51 @@ func TestCrawlOptions(t *testing.T) {
 	if o.maxDepth != 3 {
 		t.Errorf("default maxDepth = %d, want 3", o.maxDepth)
 	}
+
 	if o.maxPages != 100 {
 		t.Errorf("default maxPages = %d, want 100", o.maxPages)
 	}
+
 	if o.delay != 500*time.Millisecond {
 		t.Errorf("default delay = %v", o.delay)
 	}
+
 	if o.concurrent != 1 {
 		t.Errorf("default concurrent = %d, want 1", o.concurrent)
 	}
 
 	WithCrawlMaxDepth(5)(o)
+
 	if o.maxDepth != 5 {
 		t.Errorf("maxDepth = %d, want 5", o.maxDepth)
 	}
+
 	WithCrawlMaxPages(50)(o)
+
 	if o.maxPages != 50 {
 		t.Errorf("maxPages = %d, want 50", o.maxPages)
 	}
+
 	WithCrawlAllowedDomains("a.com", "b.com")(o)
+
 	if len(o.allowedDomains) != 2 {
 		t.Errorf("allowedDomains = %v", o.allowedDomains)
 	}
+
 	WithCrawlDelay(1 * time.Second)(o)
+
 	if o.delay != 1*time.Second {
 		t.Errorf("delay = %v", o.delay)
 	}
+
 	WithCrawlConcurrent(4)(o)
+
 	if o.concurrent != 4 {
 		t.Errorf("concurrent = %d, want 4", o.concurrent)
 	}
+
 	WithCrawlConcurrent(0)(o) // should clamp to 1
+
 	if o.concurrent != 1 {
 		t.Errorf("concurrent = %d, want 1 (clamped)", o.concurrent)
 	}
