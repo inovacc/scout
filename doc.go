@@ -41,5 +41,7 @@
 //	var p Product
 //	err := page.Extract(&p)
 //
+// See the examples/ directory for 17 runnable programs covering all features.
+//
 // [go-rod]: https://github.com/go-rod/rod
 package scout

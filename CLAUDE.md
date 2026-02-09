@@ -52,12 +52,22 @@ All code is in package `scout` (flat, single-package library). The types are:
 | `SearchResults`, `SearchResult` | SERP parsing | `search.go` |
 | `CrawlResult`, `SitemapURL` | Web crawling | `crawl.go` |
 
+### Examples
+
+`examples/` contains 17 standalone runnable programs (not part of the library build due to `_` prefix):
+- `examples/simple/` — 8 examples: navigation, screenshots, extraction, JS eval, forms, cookies
+- `examples/advanced/` — 9 examples: search, pagination, crawling, rate limiting, hijacking, stealth, PDF
+- Each is a separate `package main` with its own implicit dependency on the parent module
+- Build individually: `cd examples/simple/basic-navigation && go build .`
+
 **Functional options pattern** for configuration: `New(opts ...Option)` with `With*()` functions in `option.go`. Each feature area has its own options (`ExtractOption`, `SearchOption`, `PaginateOption`, `CrawlOption`, `RateLimitOption`). Defaults: headless=true, 1920x1080, 30s timeout.
 
 **Escape hatches**: `RodPage()` and `RodElement()` expose the underlying rod instances when the wrapper API is insufficient.
 
 ## Conventions
 
+- **WaitLoad**: `NewPage()` does not wait for DOM load. Call `page.WaitLoad()` before `Extract()`, `ExtractMeta()`, `PDF()`, etc. when targeting external sites.
+- **extractAll[T] (pagination)**: Finds first `scout:` tag match, walks to `parentElement`, extracts remaining fields within that parent. All struct fields must be resolvable within the parent of the first field's match.
 - **Error wrapping**: All errors use `fmt.Errorf("scout: action: %w", err)` — consistent `scout:` prefix.
 - **Nil-safety**: `Browser.Close()` and key methods are nil-safe and idempotent. Methods guard with `if b == nil || b.browser == nil`.
 - **Cleanup patterns**: `SetHeaders()` and `EvalOnNewDocument()` return cleanup functions. `HijackRouter` has `Run()` (blocking, use in goroutine) and `Stop()`.

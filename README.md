@@ -62,6 +62,20 @@ func main() {
 }
 ```
 
+## Examples
+
+The [`examples/`](examples/) directory contains 17 runnable programs organized by complexity:
+
+**Simple** — basic-navigation, screenshot, extract-struct, extract-table, extract-meta, javascript-eval, form-fill, cookies-headers
+
+**Advanced** — search-engines, pagination, crawl-site, sitemap-parser, rate-limited-scraper, form-wizard, request-intercept, stealth-scraper, pdf-generator
+
+```bash
+cd examples/simple/basic-navigation && go run .
+```
+
+See [`examples/README.md`](examples/README.md) for the full index with descriptions and key APIs.
+
 ## Extraction
 
 Extract data into Go structs using struct tags:
