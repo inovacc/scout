@@ -1,7 +1,7 @@
 # Project Roadmap
 
 ## Current Status
-**Overall Progress:** 85% Complete
+**Overall Progress:** 90% Complete
 
 ## Phases
 
@@ -52,46 +52,60 @@
 - [x] Pagination tests (URL-pattern, click, dedup, options)
 - [x] Search parser tests (Google, Bing, DDG, URL cleaning)
 - [x] Crawl tests (BFS, max pages, handler stop, sitemap, URL normalization)
-- [ ] Increase core test coverage from 33.2% to 80%+
+- [x] Window control tests (minimize, maximize, fullscreen, restore, bounds)
+- [x] Storage and session tests (localStorage, sessionStorage, save/load state)
+- [x] NetworkRecorder tests (capture entries, export HAR, body toggle, Stop idempotency, Clear)
+- [x] Keyboard input tests (KeyPress, KeyType)
+- [ ] Increase core test coverage from 58.0% to 80%+
 - [ ] Add tests for PDF generation, device emulation, DOM traversal
 - [ ] Add tests for EvalResult type conversions (Float, Decode, JSON)
 
-### Phase 5: Storage & JS Execution [PLANNED]
-- [ ] Session storage get/set/clear
-- [ ] Local storage get/set/clear
-- [ ] Enhanced cookie management (filter, export, import)
-- [ ] JS execution toolkit (run scripts to extract website info)
-- [ ] Script injection and result collection patterns
+### Phase 5: Storage & Session Management [COMPLETE]
+- [x] Session storage get/set/clear (`storage.go`)
+- [x] Local storage get/set/clear (`storage.go`)
+- [x] Save/load full session state (URL, cookies, storage) (`storage.go`)
+- [x] Window control: minimize, maximize, fullscreen, restore, bounds (`window.go`)
 
-### Phase 6: Distributed Crawling [PLANNED]
+### Phase 6: HAR Recording & gRPC Remote Control [COMPLETE]
+- [x] **HAR Network Recording** (`recorder.go`) — capture HTTP traffic via CDP events, export HAR 1.2 format
+- [x] **Keyboard Input** (`page.go`) — `KeyPress(key)` and `KeyType(keys...)` for page-level keyboard control
+- [x] **gRPC Service Layer** (`grpc/`) — protobuf service definition, multi-session server with 25+ RPCs
+- [x] **gRPC Server Binary** (`cmd/server/`) — standalone gRPC server with reflection and graceful shutdown
+- [x] **Interactive CLI Client** (`cmd/client/`) — command-driven browser control with event streaming
+- [x] **Example Workflow** (`cmd/example-workflow/`) — bidirectional streaming demo
+
+### Phase 7: Distributed Crawling [PLANNED]
 - [ ] Swarm mode: split crawl workloads across multiple browser instances
 - [ ] Multi-IP support: assign different proxies per browser in the cluster
 - [ ] Work distribution: BFS queue shared across workers
 - [ ] Result aggregation: merge results from all workers
 - [ ] Headless cluster configuration options
 
-### Phase 7: Documentation & Release [NOT STARTED]
-- [ ] Publish to GitHub with git remote
+### Phase 8: Documentation & Release [IN PROGRESS]
+- [x] Publish to GitHub with git remote
+- [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)
 - [ ] Add LICENSE file
-- [ ] Create initial git tag / release
 - [ ] Add GoDoc examples for key functions
 - [ ] Write integration test examples
 
 ## Test Coverage
 
-**Current:** ~33% (core) + new feature tests  |  **Target:** 80%
+**Current:** 58.0% (core package)  |  **Target:** 80%
 
 | File | Coverage | Status |
 |------|----------|--------|
 | option.go | 100.0% | Complete |
-| browser.go | 54.5% - 83.3% | Needs improvement |
-| page.go | 0.0% - 80.0% | Many methods untested |
-| element.go | 0.0% - 83.3% | Many methods untested |
-| network.go | 0.0% - 100.0% | Accessor methods untested |
-| eval.go | 0.0% - 66.7% | Float/JSON/Decode untested |
-| extract.go | NEW | Tested |
-| form.go | NEW | Tested |
-| ratelimit.go | NEW | Tested |
-| paginate.go | NEW | Tested |
-| search.go | NEW | Tested |
-| crawl.go | NEW | Tested |
+| browser.go | ~60% | Needs improvement |
+| page.go | ~50% | Many methods still untested |
+| element.go | ~40% | Many methods still untested |
+| network.go | ~50% | Accessor methods untested |
+| eval.go | ~30% | Float/JSON/Decode untested |
+| extract.go | Tested | Complete |
+| form.go | Tested | Complete |
+| ratelimit.go | Tested | Complete |
+| paginate.go | Tested | Complete |
+| search.go | Tested | Complete |
+| crawl.go | Tested | Complete |
+| window.go | Tested | Complete |
+| storage.go | Tested | Complete |
+| recorder.go | Tested | Complete |

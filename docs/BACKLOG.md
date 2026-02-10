@@ -39,20 +39,27 @@
 - **Description:** No LICENSE file in the repository. Required for open-source distribution.
 - **Effort:** Small
 
-### Missing Git Remote
+### gRPC Server Test Coverage
 
-- **Priority:** P1
-- **Description:** No git remote configured. Repository needs to be pushed to GitHub at `github.com/inovacc/scout` (as declared in go.mod).
-- **Effort:** Small
-
-### Taskfile Cleanup
-
-- **Priority:** P3
-- **Description:** Taskfile.yml contains tasks for protobuf generation (`proto:generate`), sqlc (`sqlc:generate`), goreleaser builds (`build:dev`, `build:prod`), and `run` — none of which apply to this library package. These appear to be copied from a template.
-- **Effort:** Small
+- **Priority:** P2
+- **Description:** The `grpc/server/` package has 0% test coverage. All 25+ RPCs (CreateSession, Navigate, Click, Type, Screenshot, etc.) are untested. Consider integration tests against a local httptest server with a real browser.
+- **Effort:** Large
 
 ### GoDoc Examples
 
 - **Priority:** P2
-- **Description:** Add `Example*` test functions for key API entry points: New, Browser.NewPage, Page.Element, Page.Eval, Page.Hijack, Element.Click, Element.Input.
+- **Description:** Add `Example*` test functions for key API entry points: New, Browser.NewPage, Page.Element, Page.Eval, Page.Hijack, Element.Click, Element.Input, NetworkRecorder, KeyPress.
 - **Effort:** Medium
+
+### Remove Legacy Taskfile Tasks
+
+- **Priority:** P3
+- **Description:** `Taskfile.yml` still contains legacy template tasks that don't apply: `proto:generate` (references non-existent `internal/database/proto/`), `sqlc:generate`, `generate`, `build:dev`, `build:prod`, `run` (depends on generate), `release`, `release:snapshot`, `release:check` (goreleaser not configured). Valid tasks (`proto`, `grpc:*`, `test`, `check`, `lint`, `fmt`, `vet`, `deps`) work correctly.
+- **Effort:** Small
+
+## Resolved Items
+
+| Item | Resolution | Date |
+|------|------------|------|
+| Missing Git Remote | Remote configured at `github.com/inovacc/scout.git` | 2025 |
+| Taskfile Cleanup | Legacy template tasks replaced with valid proto/grpc tasks | 2025 |

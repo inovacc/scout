@@ -3,6 +3,8 @@ package scout
 import (
 	"strings"
 	"testing"
+
+	"github.com/go-rod/rod/lib/input"
 )
 
 func TestPageNavigateAndTitle(t *testing.T) {
@@ -435,5 +437,71 @@ func TestPageRedirect(t *testing.T) {
 
 	if title != "Page Two" {
 		t.Errorf("Title() = %q, want %q (after redirect)", title, "Page Two")
+	}
+}
+
+func TestPageKeyPress(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	// Focus the input first
+	el, err := page.Element("#name")
+	if err != nil {
+		t.Fatalf("Element() error: %v", err)
+	}
+	if err := el.Focus(); err != nil {
+		t.Fatalf("Focus() error: %v", err)
+	}
+
+	// Press Tab key to move focus
+	if err := page.KeyPress(input.Tab); err != nil {
+		t.Fatalf("KeyPress() error: %v", err)
+	}
+}
+
+func TestPageKeyType(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	// Focus the input
+	el, err := page.Element("#name")
+	if err != nil {
+		t.Fatalf("Element() error: %v", err)
+	}
+	if err := el.Clear(); err != nil {
+		t.Fatalf("Clear() error: %v", err)
+	}
+	if err := el.Focus(); err != nil {
+		t.Fatalf("Focus() error: %v", err)
+	}
+
+	// Type keys using page-level method
+	if err := page.KeyType(input.KeyA, input.KeyB, input.KeyC); err != nil {
+		t.Fatalf("KeyType() error: %v", err)
+	}
+
+	val, err := el.Property("value")
+	if err != nil {
+		t.Fatalf("Property() error: %v", err)
+	}
+
+	if val != "abc" {
+		t.Errorf("KeyType() input value = %q, want %q", val, "abc")
 	}
 }

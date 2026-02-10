@@ -33,14 +33,31 @@
 - [x] Tests for all new features
 - **New dependency:** `golang.org/x/time/rate`
 
-## v0.3.0 - Storage & JS Execution [PLANNED]
-**Goal:** Complete browser state management and JS execution toolkit.
+## v0.1.5 - Window Control & Storage [COMPLETE]
+**Goal:** Browser state management and window control.
 
-- [ ] Session storage get/set/clear
-- [ ] Local storage get/set/clear
-- [ ] Enhanced cookie management (filter, export, import)
-- [ ] JS execution patterns for website info extraction
-- [ ] 80%+ test coverage
+- [x] Window control: minimize, maximize, fullscreen, restore
+- [x] Get/set window bounds (position, dimensions)
+- [x] localStorage get/set/clear
+- [x] sessionStorage get/set/clear
+- [x] Save/load full session state (URL, cookies, storage)
+- [x] Per-OS launch options (`option_unix.go`, `option_windows.go`)
+- [x] Tests for window control and storage features
+
+## v0.3.0 - HAR Recording & gRPC Remote Control [COMPLETE]
+**Goal:** Network traffic recording and remote browser control via gRPC.
+
+- [x] HAR 1.2 network recording via CDP events (`recorder.go`)
+- [x] `NetworkRecorder` with functional options (`WithCaptureBody`, `WithCreatorName`)
+- [x] Page-level keyboard input (`KeyPress`, `KeyType`)
+- [x] gRPC service definition with 25+ RPCs (`grpc/proto/scout.proto`)
+- [x] Multi-session gRPC server with event streaming (`grpc/server/`)
+- [x] Server binary with reflection and graceful shutdown (`cmd/server/`)
+- [x] Interactive CLI client with event streaming (`cmd/client/`)
+- [x] Bidirectional streaming example workflow (`cmd/example-workflow/`)
+- [x] HAR recorder example (`examples/advanced/har-recorder/`)
+- [x] Tests for NetworkRecorder and keyboard input
+- **New dependencies:** `google.golang.org/grpc`, `google.golang.org/protobuf`, `github.com/google/uuid`
 
 ## v0.4.0 - Distributed Crawling [PLANNED]
 **Goal:** Swarm-mode crawling across multiple browser instances.
@@ -50,10 +67,12 @@
 - [ ] Shared work queue for BFS crawling
 - [ ] Result aggregation
 
-## v0.5.0 - Documentation & Release [PLANNED]
+## v0.5.0 - Documentation & Release [IN PROGRESS]
 **Goal:** Comprehensive documentation and published release.
 
+- [x] Published to GitHub with git remote
+- [x] Git tags (v0.1.3, v0.1.4, v0.1.5)
 - [ ] LICENSE file
 - [ ] GoDoc examples for Browser, Page, Element, EvalResult, and new features
 - [ ] Integration test examples (login flow, form submission, scraping)
-- [ ] Published to GitHub with initial release tag
+- [ ] 80%+ test coverage

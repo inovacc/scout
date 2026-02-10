@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/devices"
+	"github.com/go-rod/rod/lib/input"
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/ysmood/gson"
 )
@@ -530,6 +531,24 @@ func (p *Page) Race(selectors ...string) (*Element, int, error) {
 	}
 
 	return &Element{element: el}, -1, nil
+}
+
+// KeyPress presses and releases a single keyboard key on the page.
+func (p *Page) KeyPress(key input.Key) error {
+	if err := p.page.Keyboard.Press(key); err != nil {
+		return fmt.Errorf("scout: key press: %w", err)
+	}
+
+	return nil
+}
+
+// KeyType types a sequence of keyboard keys on the page.
+func (p *Page) KeyType(keys ...input.Key) error {
+	if err := p.page.Keyboard.Type(keys...); err != nil {
+		return fmt.Errorf("scout: key type: %w", err)
+	}
+
+	return nil
 }
 
 // RodPage returns the underlying rod.Page for advanced use cases.

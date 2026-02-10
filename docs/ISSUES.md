@@ -2,26 +2,21 @@
 
 ## Open Issues
 
-### Taskfile contains inapplicable tasks
-- **Severity:** Low
-- **Status:** Open
-- **Description:** `Taskfile.yml` includes `proto:generate`, `sqlc:generate`, `generate`, `build:dev`, `build:prod`, `run`, and `release` tasks that reference protobuf, sqlc, goreleaser, and `cmd/` artifacts. Scout is a library package with no protobuf, sqlc, goreleaser config, or main package.
-- **Workaround:** Use only `task test`, `task check`, `task lint`, `task fmt`, `task vet`, `task deps` tasks.
-
 ### Race method does not return matched index
 - **Severity:** Medium
 - **Status:** Open
 - **Description:** `Page.Race()` always returns `-1` as the match index (page.go:478), even though the method signature promises to return the index of the matched selector. The rod `race.Do()` API does not directly expose which selector won.
 - **Workaround:** None. Callers cannot determine which selector matched.
 
-### CI build workflow installs unneeded system packages
-- **Severity:** Low
+### gRPC server lacks test coverage
+- **Severity:** Medium
 - **Status:** Open
-- **Description:** `.github/workflows/build.yml` installs X11, Mesa OpenGL, and audio libraries (`xorg-dev`, `libgl1-mesa-dev`, `libasound2-dev`, etc.) on Linux. Scout is a headless browser library that does not require GPU or audio packages.
-- **Workaround:** Builds succeed despite the unnecessary packages.
+- **Description:** The `grpc/server/` package has no tests. All RPCs are exercised only manually via the CLI client or example workflow. Regressions in API mapping (e.g., wrong method names, incorrect parameter types) would not be caught by CI.
+- **Workaround:** Manual testing with `cmd/client/` or `cmd/example-workflow/`.
 
 ## Resolved Issues
 
 | Issue | Resolution | Date |
 |-------|------------|------|
-| (none yet) | | |
+| Taskfile contains inapplicable tasks | Legacy template tasks (proto:generate, sqlc:generate, goreleaser) replaced with valid proto, grpc:server, grpc:client, grpc:workflow, grpc:build tasks | 2025 |
+| CI build workflow installs unneeded system packages | `.github/workflows/build.yml` removed; CI uses reusable `inovacc/workflows` | 2025 |

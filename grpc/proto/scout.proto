@@ -1,0 +1,240 @@
+syntax = "proto3";
+
+package scout.v1;
+
+option go_package = "github.com/inovacc/scout/grpc/scoutpb";
+
+// ScoutService exposes real-time headless browser control with forensic capture.
+service ScoutService {
+  // Session lifecycle
+  rpc CreateSession(CreateSessionRequest)   returns (CreateSessionResponse);
+  rpc DestroySession(SessionRequest)        returns (Empty);
+
+  // Navigation
+  rpc Navigate(NavigateRequest)             returns (NavigateResponse);
+  rpc Reload(SessionRequest)                returns (Empty);
+  rpc GoBack(SessionRequest)                returns (Empty);
+  rpc GoForward(SessionRequest)             returns (Empty);
+
+  // Element interaction
+  rpc Click(ElementRequest)                 returns (Empty);
+  rpc DoubleClick(ElementRequest)           returns (Empty);
+  rpc RightClick(ElementRequest)            returns (Empty);
+  rpc Hover(ElementRequest)                 returns (Empty);
+  rpc Type(TypeRequest)                     returns (Empty);
+  rpc SelectOption(SelectRequest)           returns (Empty);
+  rpc PressKey(KeyRequest)                  returns (Empty);
+
+  // Query
+  rpc GetText(ElementRequest)               returns (TextResponse);
+  rpc GetAttribute(AttributeRequest)        returns (TextResponse);
+  rpc GetTitle(SessionRequest)              returns (TextResponse);
+  rpc GetURL(SessionRequest)                returns (TextResponse);
+  rpc Eval(EvalRequest)                     returns (EvalResponse);
+  rpc ElementExists(ElementRequest)         returns (BoolResponse);
+
+  // Capture
+  rpc Screenshot(ScreenshotRequest)         returns (ScreenshotResponse);
+  rpc PDF(SessionRequest)                   returns (PDFResponse);
+
+  // Forensic - network recording
+  rpc StartRecording(RecordingRequest)      returns (Empty);
+  rpc StopRecording(SessionRequest)         returns (Empty);
+  rpc ExportHAR(SessionRequest)             returns (HARResponse);
+
+  // Real-time event stream (server -> client)
+  rpc StreamEvents(SessionRequest)          returns (stream BrowserEvent);
+
+  // Bidirectional: client sends commands, server streams events
+  rpc Interactive(stream Command)           returns (stream BrowserEvent);
+}
+
+// ---------------------- Messages ----------------------
+
+message Empty {}
+
+message CreateSessionRequest {
+  bool   headless    = 1;
+  bool   stealth     = 2;
+  string proxy       = 3;
+  string user_agent  = 4;
+  int32  width       = 5;
+  int32  height      = 6;
+  string initial_url = 7;
+  bool   record      = 8;  // start recording immediately
+  bool   capture_body = 9; // capture response bodies
+}
+
+message CreateSessionResponse {
+  string session_id = 1;
+  string url        = 2;
+  string title      = 3;
+}
+
+message SessionRequest {
+  string session_id = 1;
+}
+
+message NavigateRequest {
+  string session_id = 1;
+  string url        = 2;
+  bool   wait_stable = 3;
+}
+
+message NavigateResponse {
+  string url    = 1;
+  string title  = 2;
+  int32  status = 3;
+}
+
+message ElementRequest {
+  string session_id = 1;
+  string selector   = 2;  // CSS selector or XPath
+  bool   xpath      = 3;
+}
+
+message TypeRequest {
+  string session_id = 1;
+  string selector   = 2;
+  string text       = 3;
+  bool   clear_first = 4;
+}
+
+message SelectRequest {
+  string session_id = 1;
+  string selector   = 2;
+  string value      = 3;
+}
+
+message KeyRequest {
+  string session_id = 1;
+  string key        = 2;  // e.g. "Enter", "Tab", "Escape"
+  repeated string modifiers = 3; // "ctrl", "shift", "alt"
+}
+
+message AttributeRequest {
+  string session_id = 1;
+  string selector   = 2;
+  string attribute  = 3;
+}
+
+message TextResponse {
+  string text = 1;
+}
+
+message BoolResponse {
+  bool value = 1;
+}
+
+message EvalRequest {
+  string session_id = 1;
+  string script     = 2;
+}
+
+message EvalResponse {
+  string result = 1;  // JSON-encoded result
+}
+
+message ScreenshotRequest {
+  string session_id = 1;
+  bool   full_page  = 2;
+  string format     = 3;  // "png" or "jpeg"
+  int32  quality    = 4;  // jpeg quality 0-100
+}
+
+message ScreenshotResponse {
+  bytes  data     = 1;
+  string format   = 2;
+}
+
+message PDFResponse {
+  bytes data = 1;
+}
+
+message RecordingRequest {
+  string session_id  = 1;
+  bool   capture_body = 2;
+}
+
+message HARResponse {
+  bytes  data         = 1;  // HAR JSON
+  int32  entry_count  = 2;
+}
+
+// ---------------------- Events ----------------------
+
+message BrowserEvent {
+  string session_id = 1;
+  int64  timestamp  = 2;  // unix millis
+
+  oneof event {
+    NetworkRequestEvent   request_sent     = 10;
+    NetworkResponseEvent  response_received = 11;
+    ConsoleEvent          console          = 12;
+    PageEvent             page_event       = 13;
+    ErrorEvent            error            = 14;
+  }
+}
+
+message NetworkRequestEvent {
+  string request_id  = 1;
+  string method      = 2;
+  string url         = 3;
+  map<string, string> headers = 4;
+  string post_data   = 5;
+  string resource_type = 6;
+}
+
+message NetworkResponseEvent {
+  string request_id  = 1;
+  string url         = 2;
+  int32  status      = 3;
+  string status_text = 4;
+  map<string, string> headers = 5;
+  string mime_type   = 6;
+  string remote_ip   = 7;
+  double time_ms     = 8;
+}
+
+message ConsoleEvent {
+  string level   = 1;  // "log", "warn", "error", "info"
+  string message = 2;
+}
+
+message PageEvent {
+  string type = 1;  // "load", "domcontentloaded", "navigated", "dialog"
+  string url  = 2;
+  string data = 3;
+}
+
+message ErrorEvent {
+  string message = 1;
+  string source  = 2;
+}
+
+// -------------------- Interactive Command --------------------
+
+message Command {
+  string session_id = 1;
+  string request_id = 2;  // for correlating responses
+
+  oneof action {
+    NavigateAction   navigate    = 10;
+    ClickAction      click       = 11;
+    TypeAction       type        = 12;
+    KeyAction        press_key   = 13;
+    EvalAction       eval        = 14;
+    ScreenshotAction screenshot  = 15;
+    WaitAction       wait        = 16;
+    ScrollAction     scroll      = 17;
+  }
+}
+
+message NavigateAction { string url = 1; }
+message ClickAction    { string selector = 1; }
+message TypeAction     { string selector = 1; string text = 2; }
+message KeyAction      { string key = 1; }
+message EvalAction     { string script = 1; }
+message ScreenshotAction { bool full_page = 1; }
+message WaitAction     { string selector = 1; int32 timeout_ms = 2; }
+message ScrollAction   { int32 x = 1; int32 y = 2; }

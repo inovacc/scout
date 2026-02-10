@@ -14,8 +14,25 @@ tasks:
       - task --list
 
   # === CODE GENERATION ===
+  proto:
+    desc: Generate gRPC protobuf code for scout service
+    cmds:
+      - protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative grpc/proto/scout.proto
+      - cmd: move grpc\proto\scout.pb.go grpc\scoutpb\scout.pb.go
+        platforms: [ windows ]
+      - cmd: move grpc\proto\scout_grpc.pb.go grpc\scoutpb\scout_grpc.pb.go
+        platforms: [ windows ]
+      - cmd: mv grpc/proto/scout.pb.go grpc/scoutpb/scout.pb.go
+        platforms: [ linux, darwin ]
+      - cmd: mv grpc/proto/scout_grpc.pb.go grpc/scoutpb/scout_grpc.pb.go
+        platforms: [ linux, darwin ]
+    sources:
+      - grpc/proto/*.proto
+    generates:
+      - grpc/scoutpb/*.pb.go
+
   proto:generate:
-    desc: Generate Go code from protobuf definitions
+    desc: Generate Go code from protobuf definitions (legacy)
     cmds:
       - protoc --go_out=. --go_opt=paths=source_relative internal/database/proto/database.proto
     sources:
@@ -109,6 +126,29 @@ tasks:
     deps: [ generate ]
     cmds:
       - go run {{.MAIN_PACKAGE}}
+
+  # === gRPC TASKS ===
+  grpc:server:
+    desc: Run the gRPC scout server
+    cmds:
+      - go run ./cmd/server {{.CLI_ARGS}}
+
+  grpc:client:
+    desc: Run the interactive gRPC client
+    cmds:
+      - go run ./cmd/client {{.CLI_ARGS}}
+
+  grpc:workflow:
+    desc: Run the example workflow demo
+    cmds:
+      - go run ./cmd/example-workflow {{.CLI_ARGS}}
+
+  grpc:build:
+    desc: Build gRPC server and client binaries
+    cmds:
+      - go build -o bin/scout-server ./cmd/server
+      - go build -o bin/scout-client ./cmd/client
+      - go build -o bin/scout-workflow ./cmd/example-workflow
 
 
 

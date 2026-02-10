@@ -23,6 +23,9 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **Pagination** - Click-next, URL-pattern, infinite-scroll, and load-more with Go generics
 - **Search Engine Integration** - Query Google, Bing, DuckDuckGo and parse SERP results
 - **Web Crawling** - BFS crawling with depth/page limits, domain filtering, sitemap parsing
+- **HAR Network Recording** - Capture HTTP traffic via CDP events and export as HAR 1.2 format
+- **Keyboard Input** - Page-level key press and type sequences via `input.Key` constants
+- **gRPC Remote Control** - Multi-session browser control via gRPC with 25+ RPCs and event streaming
 
 ## Installation
 
@@ -66,11 +69,11 @@ func main() {
 
 ## Examples
 
-The [`examples/`](examples/) directory contains 17 runnable programs organized by complexity:
+The [`examples/`](examples/) directory contains 18 runnable programs organized by complexity:
 
 **Simple** — basic-navigation, screenshot, extract-struct, extract-table, extract-meta, javascript-eval, form-fill, cookies-headers
 
-**Advanced** — search-engines, pagination, crawl-site, sitemap-parser, rate-limited-scraper, form-wizard, request-intercept, stealth-scraper, pdf-generator
+**Advanced** — search-engines, pagination, crawl-site, sitemap-parser, rate-limited-scraper, form-wizard, request-intercept, stealth-scraper, pdf-generator, har-recorder
 
 ```bash
 cd examples/simple/basic-navigation && go run .
@@ -177,6 +180,23 @@ results, err := browser.Crawl("https://example.com", func(page *scout.Page, resu
 )
 ```
 
+## HAR Network Recording
+
+```go
+recorder := scout.NewNetworkRecorder(page,
+    scout.WithCaptureBody(true),
+    scout.WithCreatorName("my-tool", "1.0"),
+)
+defer recorder.Stop()
+
+// Navigate and interact — all HTTP traffic is captured
+page.Navigate("https://example.com")
+
+// Export as HAR 1.2
+harJSON, entryCount, err := recorder.ExportHAR()
+os.WriteFile("capture.har", harJSON, 0644)
+```
+
 ## Rate Limiting
 
 ```go
@@ -225,9 +245,18 @@ task test:unit     # Run tests with -short flag
 task check         # Full quality check: fmt, vet, lint, test
 task lint          # Run golangci-lint
 task fmt           # Format code (go fmt + goimports)
+
+# gRPC
+task proto         # Generate protobuf code
+task grpc:server   # Run gRPC server (default :50051)
+task grpc:client   # Run interactive CLI client
+task grpc:workflow # Run example workflow
+task grpc:build    # Build server/client binaries to bin/
 ```
 
 ## Dependencies
+
+**Core library** (no gRPC — library-only consumers do not pull gRPC deps):
 
 | Package | Purpose |
 |---------|---------|
@@ -235,6 +264,14 @@ task fmt           # Format code (go fmt + goimports)
 | [go-rod/stealth](https://github.com/go-rod/stealth) | Anti-bot-detection page creation |
 | [ysmood/gson](https://github.com/ysmood/gson) | JSON number handling for JS evaluation results |
 | [golang.org/x/time](https://pkg.go.dev/golang.org/x/time) | Token bucket rate limiter |
+
+**gRPC layer** (`grpc/` and `cmd/` only):
+
+| Package | Purpose |
+|---------|---------|
+| [google.golang.org/grpc](https://pkg.go.dev/google.golang.org/grpc) | gRPC framework |
+| [google.golang.org/protobuf](https://pkg.go.dev/google.golang.org/protobuf) | Protocol Buffers runtime |
+| [google/uuid](https://github.com/google/uuid) | Session ID generation |
 
 ## License
 

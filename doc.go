@@ -4,8 +4,9 @@
 // capabilities.
 //
 // Core features: navigation, element interaction, screenshots, PDF generation,
-// JavaScript evaluation, network interception, cookies, stealth mode, and
-// window state control (minimize, maximize, fullscreen).
+// JavaScript evaluation, network interception, cookies, stealth mode,
+// window state control (minimize, maximize, fullscreen), and HAR network
+// recording via [NetworkRecorder].
 //
 // Scraping toolkit: struct-tag extraction ([Page.Extract]), HTML table and
 // metadata parsing, form detection and filling, rate limiting with retry,
@@ -42,7 +43,18 @@
 //	var p Product
 //	err := page.Extract(&p)
 //
-// See the examples/ directory for 17 runnable programs covering all features.
+// HAR recording:
+//
+//	rec := scout.NewNetworkRecorder(page, scout.WithCaptureBody(true))
+//	defer rec.Stop()
+//	page.Navigate("https://example.com")
+//	data, count, _ := rec.ExportHAR()
+//
+// A gRPC service layer is available in the grpc/ subtree for remote browser
+// control with event streaming and forensic capture. See cmd/server and
+// cmd/client for the server and interactive client binaries.
+//
+// See the examples/ directory for 18 runnable programs covering all features.
 //
 // [go-rod]: https://github.com/go-rod/rod
 package scout
