@@ -450,6 +450,7 @@ func TestPageKeyPress(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	// Focus the input first
@@ -477,6 +478,7 @@ func TestPageKeyType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	// Focus the input
@@ -503,5 +505,590 @@ func TestPageKeyType(t *testing.T) {
 
 	if val != "abc" {
 		t.Errorf("KeyType() input value = %q, want %q", val, "abc")
+	}
+}
+
+func TestPageNavigateForward(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	if err := page.Navigate(srv.URL + "/page2"); err != nil {
+		t.Fatalf("Navigate() error: %v", err)
+	}
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	if err := page.NavigateBack(); err != nil {
+		t.Fatalf("NavigateBack() error: %v", err)
+	}
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	if err := page.NavigateForward(); err != nil {
+		t.Fatalf("NavigateForward() error: %v", err)
+	}
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	title, err := page.Title()
+	if err != nil {
+		t.Fatalf("Title() error: %v", err)
+	}
+
+	if title != "Page Two" {
+		t.Errorf("Title() after forward = %q, want %q", title, "Page Two")
+	}
+}
+
+func TestPageScrollScreenshot(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	data, err := page.ScrollScreenshot()
+	if err != nil {
+		t.Fatalf("ScrollScreenshot() error: %v", err)
+	}
+
+	if len(data) == 0 {
+		t.Error("ScrollScreenshot() returned empty data")
+	}
+}
+
+func TestPageScreenshotPNG(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	data, err := page.ScreenshotPNG()
+	if err != nil {
+		t.Fatalf("ScreenshotPNG() error: %v", err)
+	}
+
+	if len(data) == 0 {
+		t.Error("ScreenshotPNG() returned empty data")
+	}
+
+	// PNG magic bytes
+	if data[0] != 0x89 || data[1] != 0x50 {
+		t.Error("ScreenshotPNG() should return PNG data")
+	}
+}
+
+func TestPagePDF(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	data, err := page.PDF()
+	if err != nil {
+		t.Fatalf("PDF() error: %v", err)
+	}
+
+	if len(data) == 0 {
+		t.Error("PDF() returned empty data")
+	}
+
+	// PDF magic bytes
+	if !strings.HasPrefix(string(data), "%PDF") {
+		t.Error("PDF() should return PDF data")
+	}
+}
+
+func TestPagePDFWithOptions(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	data, err := page.PDFWithOptions(PDFOptions{
+		Landscape: true,
+		Scale:     0.5,
+	})
+	if err != nil {
+		t.Fatalf("PDFWithOptions() error: %v", err)
+	}
+
+	if len(data) == 0 {
+		t.Error("PDFWithOptions() returned empty data")
+	}
+}
+
+func TestPageElementByJS(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	el, err := page.ElementByJS(`() => document.getElementById('info')`)
+	if err != nil {
+		t.Fatalf("ElementByJS() error: %v", err)
+	}
+
+	text, err := el.Text()
+	if err != nil {
+		t.Fatalf("Text() error: %v", err)
+	}
+
+	if text != "Some text" {
+		t.Errorf("ElementByJS() text = %q, want %q", text, "Some text")
+	}
+}
+
+func TestPageElementByText(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	el, err := page.ElementByText("h1", "Hello World")
+	if err != nil {
+		t.Fatalf("ElementByText() error: %v", err)
+	}
+
+	tag, err := el.Eval(`() => this.tagName.toLowerCase()`)
+	if err != nil {
+		t.Fatalf("Eval() error: %v", err)
+	}
+
+	if tag.String() != "h1" {
+		t.Errorf("ElementByText() found %q, want h1", tag.String())
+	}
+}
+
+func TestPageHasXPath(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	has, err := page.HasXPath("//h1")
+	if err != nil {
+		t.Fatalf("HasXPath() error: %v", err)
+	}
+
+	if !has {
+		t.Error("HasXPath('//h1') should be true")
+	}
+
+	has, err = page.HasXPath("//nonexistent")
+	if err != nil {
+		t.Fatalf("HasXPath() error: %v", err)
+	}
+
+	if has {
+		t.Error("HasXPath('//nonexistent') should be false")
+	}
+}
+
+func TestPageElementsByXPath(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	els, err := page.ElementsByXPath("//option")
+	if err != nil {
+		t.Fatalf("ElementsByXPath() error: %v", err)
+	}
+
+	if len(els) != 3 {
+		t.Errorf("ElementsByXPath() = %d, want 3", len(els))
+	}
+}
+
+func TestPageWaitStable(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitStable(200); err != nil {
+		t.Fatalf("WaitStable() error: %v", err)
+	}
+}
+
+func TestPageWaitDOMStable(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitDOMStable(200, 0.1); err != nil {
+		t.Fatalf("WaitDOMStable() error: %v", err)
+	}
+}
+
+func TestPageWaitIdle(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	if err := page.WaitIdle(5000); err != nil {
+		t.Fatalf("WaitIdle() error: %v", err)
+	}
+}
+
+func TestPageSetDocumentContent(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.SetDocumentContent("<html><body><h1>Custom</h1></body></html>"); err != nil {
+		t.Fatalf("SetDocumentContent() error: %v", err)
+	}
+
+	el, err := page.Element("h1")
+	if err != nil {
+		t.Fatalf("Element() error: %v", err)
+	}
+
+	text, err := el.Text()
+	if err != nil {
+		t.Fatalf("Text() error: %v", err)
+	}
+
+	if text != "Custom" {
+		t.Errorf("text = %q, want %q", text, "Custom")
+	}
+}
+
+func TestPageSetUserAgent(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/echo-headers")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.SetUserAgent("ScoutBot/1.0"); err != nil {
+		t.Fatalf("SetUserAgent() error: %v", err)
+	}
+
+	if err := page.Reload(); err != nil {
+		t.Fatalf("Reload() error: %v", err)
+	}
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	el, err := page.Element("#ua")
+	if err != nil {
+		t.Fatalf("Element() error: %v", err)
+	}
+
+	text, err := el.Text()
+	if err != nil {
+		t.Fatalf("Text() error: %v", err)
+	}
+
+	if text != "ScoutBot/1.0" {
+		t.Errorf("user agent = %q, want %q", text, "ScoutBot/1.0")
+	}
+}
+
+func TestPageEvalOnNewDocument(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	cleanup, err := page.EvalOnNewDocument(`window.__injected = true`)
+	if err != nil {
+		t.Fatalf("EvalOnNewDocument() error: %v", err)
+	}
+
+	defer func() { _ = cleanup() }()
+
+	// Reload to trigger the injected script
+	if err := page.Navigate(srv.URL + "/page2"); err != nil {
+		t.Fatalf("Navigate() error: %v", err)
+	}
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	result, err := page.Eval(`() => window.__injected`)
+	if err != nil {
+		t.Fatalf("Eval() error: %v", err)
+	}
+
+	if !result.Bool() {
+		t.Error("injected script should have set window.__injected = true")
+	}
+}
+
+func TestPageSetBlockedURLs(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.SetBlockedURLs("*json*"); err != nil {
+		t.Fatalf("SetBlockedURLs() error: %v", err)
+	}
+}
+
+func TestPageActivate(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.Activate(); err != nil {
+		t.Fatalf("Activate() error: %v", err)
+	}
+}
+
+func TestPageStopLoading(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.StopLoading(); err != nil {
+		t.Fatalf("StopLoading() error: %v", err)
+	}
+}
+
+func TestPageWaitXPath(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	el, err := page.WaitXPath("//h1")
+	if err != nil {
+		t.Fatalf("WaitXPath() error: %v", err)
+	}
+
+	text, err := el.Text()
+	if err != nil {
+		t.Fatalf("Text() error: %v", err)
+	}
+
+	if text != "Hello World" {
+		t.Errorf("WaitXPath() text = %q, want %q", text, "Hello World")
+	}
+}
+
+func TestPageSearch(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	el, err := page.Search("Hello World")
+	if err != nil {
+		t.Fatalf("Search() error: %v", err)
+	}
+
+	if el == nil {
+		t.Fatal("Search() returned nil")
+	}
+}
+
+func TestPageElementFromPoint(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	// Get a point we know has an element
+	el, err := page.ElementFromPoint(100, 100)
+	if err != nil {
+		t.Fatalf("ElementFromPoint() error: %v", err)
+	}
+
+	if el == nil {
+		t.Error("ElementFromPoint() returned nil for visible area")
 	}
 }

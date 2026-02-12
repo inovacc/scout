@@ -1,10 +1,7 @@
 version: 3
 
 vars:
-  MAIN_PACKAGE: .
   COVERAGE_FILE: coverage.out
-  GITHUB_OWNER:
-    sh: echo "${GITHUB_OWNER:-dyammarcano}"
 
 tasks:
   # === INFORMATION ===
@@ -30,43 +27,6 @@ tasks:
       - grpc/proto/*.proto
     generates:
       - grpc/scoutpb/*.pb.go
-
-  proto:generate:
-    desc: Generate Go code from protobuf definitions (legacy)
-    cmds:
-      - protoc --go_out=. --go_opt=paths=source_relative internal/database/proto/database.proto
-    sources:
-      - internal/database/proto/*.proto
-    generates:
-      - internal/database/proto/*.pb.go
-
-  sqlc:generate:
-    desc: Generate sqlc type-safe database code
-    cmds:
-      - sqlc generate
-
-  generate:
-    desc: Generate version information, protobuf, and sqlc code
-    deps: [proto:generate, sqlc:generate]
-    cmds:
-      - go generate ./...
-
-  # === BUILD TASKS ===
-  build:dev:
-    desc: Build development snapshot with goreleaser
-    deps: [ generate ]
-    env:
-      GITHUB_OWNER: "{{.GITHUB_OWNER}}"
-    cmds:
-      - goreleaser build --snapshot --clean
-
-  build:prod:
-    desc: Build production snapshot with goreleaser
-    deps: [ generate ]
-    env:
-      GITHUB_OWNER: "{{.GITHUB_OWNER}}"
-    cmds:
-      - goreleaser --snapshot --skip-publish,announce --rm-dist
 
   # === TEST TASKS ===
   test:
@@ -108,6 +68,11 @@ tasks:
       - go vet ./...
 
   lint:
+    desc: Run linter
+    cmds:
+      - golangci-lint run ./...
+
+  lint:fix:
     desc: Run linter and auto-fix issues
     cmds:
       - golangci-lint run --fix ./...
@@ -119,13 +84,6 @@ tasks:
       - task: vet
       - task: lint
       - task: test
-
-  # === RUN TASKS ===
-  run:
-    desc: Run the application
-    deps: [ generate ]
-    cmds:
-      - go run {{.MAIN_PACKAGE}}
 
   # === gRPC TASKS ===
   grpc:server:
@@ -144,13 +102,12 @@ tasks:
       - go run ./cmd/example-workflow {{.CLI_ARGS}}
 
   grpc:build:
-    desc: Build gRPC server and client binaries
+    desc: Build gRPC server, client, and workflow binaries
     cmds:
       - go build -o bin/scout-server ./cmd/server
       - go build -o bin/scout-client ./cmd/client
       - go build -o bin/scout-workflow ./cmd/example-workflow
-
-
+      - go build -o bin/slack-assist ./cmd/slack-assist
 
   # === DEPENDENCY MANAGEMENT ===
   deps:
@@ -171,31 +128,9 @@ tasks:
   clean:
     desc: Clean build artifacts and generated files
     cmds:
-      - rm -rf {{.BUILD_DIR}}
+      - cmd: rm -rf bin
+        platforms: [ linux, darwin ]
+      - cmd: rd /s /q bin 2>nul
+        platforms: [ windows ]
+        ignore_error: true
       - rm -f {{.COVERAGE_FILE}} coverage.html
-      - rm -f .go-version cmd/version.go
-
-  # === RELEASE TASKS ===
-  release:
-    desc: Create a production release with goreleaser (requires git tag)
-    deps: [ generate ]
-    env:
-      GITHUB_OWNER: "{{.GITHUB_OWNER}}"
-    cmds:
-      - goreleaser release --clean
-
-
-  release:snapshot:
-    desc: Create a snapshot release (no git tag required)
-    deps: [ generate ]
-    env:
-      GITHUB_OWNER: "{{.GITHUB_OWNER}}"
-    cmds:
-      - goreleaser release --snapshot --clean
-
-  release:check:
-    desc: Validate goreleaser configuration
-    env:
-      GITHUB_OWNER: "{{.GITHUB_OWNER}}"
-    cmds:
-      - goreleaser check

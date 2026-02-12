@@ -7,7 +7,150 @@
 | P2 | First quarter |
 | P3 | Future |
 
-## Items
+## Scraper Modes
+
+Dedicated scraper modes for authenticated services. Each mode provides structured extraction of user data from web applications via headless browser automation. Requires valid user credentials/session.
+
+### ~~Slack Scraper Mode~~ [DONE]
+
+- **Priority:** P1
+- **Status:** Complete — `scraper/slack/` package with API client, browser auth, channel/message/thread/file/user/search extraction, JSON export, encrypted session capture (`cmd/slack-assist`)
+- **Effort:** Large
+
+### Teams Scraper Mode
+
+- **Priority:** P2
+- **Description:** Scrape Microsoft Teams via browser automation. Extract chats, channel messages, meeting history, shared files, and team/channel structure. Handle Microsoft SSO auth flow.
+- **Scope:** Team/channel list, chat messages, meeting notes, shared files metadata, wiki pages.
+- **Effort:** Large
+
+### Discord Scraper Mode
+
+- **Priority:** P2
+- **Description:** Scrape Discord servers via browser automation. Extract messages, channels, threads, pins, server member lists, and roles.
+- **Scope:** Server list, channel messages (with threads), member directory, roles, pins, file attachments.
+- **Effort:** Large
+
+### Gmail Scraper Mode
+
+- **Priority:** P2
+- **Description:** Scrape Gmail via browser automation. Extract emails, labels, attachments metadata, and contacts. Handle Google auth flow with 2FA support.
+- **Scope:** Inbox/label listing, email content (subject, body, headers), attachment download, contact list, label management.
+- **Effort:** Large
+
+### Outlook Scraper Mode
+
+- **Priority:** P2
+- **Description:** Scrape Outlook Web via browser automation. Extract emails, folders, calendar events, and contacts. Handle Microsoft SSO auth.
+- **Scope:** Folder listing, email content, calendar events, contact list, attachment metadata.
+- **Effort:** Large
+
+### LinkedIn Scraper Mode
+
+- **Priority:** P2
+- **Description:** Scrape LinkedIn profiles, posts, job listings, and company pages. Handle LinkedIn auth and anti-bot measures.
+- **Scope:** Profile data, connections, posts/articles, job search results, company pages, messaging.
+- **Effort:** Large
+
+### Twitter/X Scraper Mode
+
+- **Priority:** P3
+- **Description:** Scrape X/Twitter via browser automation. Extract tweets, profiles, followers, trends, and search results.
+- **Scope:** Timeline, user profiles, tweet threads, search results, trending topics, bookmarks.
+- **Effort:** Large
+
+### Reddit Scraper Mode
+
+- **Priority:** P3
+- **Description:** Scrape Reddit via browser automation. Extract posts, comments, subreddit metadata, and user profiles.
+- **Scope:** Subreddit feeds, post content with comments, user profiles, search results, saved posts.
+- **Effort:** Medium
+
+### YouTube Scraper Mode
+
+- **Priority:** P3
+- **Description:** Scrape YouTube via browser automation. Extract video metadata, comments, channel info, and playlist data.
+- **Scope:** Video metadata (title, description, stats), comments, channel pages, playlists, search results.
+- **Effort:** Medium
+
+### Jira Scraper Mode
+
+- **Priority:** P2
+- **Description:** Scrape Jira via browser automation. Extract issues, boards, sprints, comments, and attachments. Handle Atlassian auth.
+- **Scope:** Issue listing with filters, issue details (comments, attachments, history), board/sprint views, dashboards.
+- **Effort:** Large
+
+### Confluence Scraper Mode
+
+- **Priority:** P2
+- **Description:** Scrape Confluence via browser automation. Extract pages, spaces, comments, and attachments. Handle Atlassian auth.
+- **Scope:** Space listing, page content with hierarchy, comments, attachments, search results.
+- **Effort:** Large
+
+### Notion Scraper Mode
+
+- **Priority:** P3
+- **Description:** Scrape Notion via browser automation. Extract pages, databases, blocks, and comments.
+- **Scope:** Workspace pages, database views, page content (blocks), comments, shared pages.
+- **Effort:** Medium
+
+### GitHub Scraper Mode
+
+- **Priority:** P3
+- **Description:** Scrape GitHub via browser automation for data beyond API limits. Extract repo content, issues, PRs, discussions, wikis, and actions.
+- **Scope:** Repo metadata, issue/PR threads, discussions, wiki pages, actions logs, user profiles.
+- **Effort:** Medium
+
+### Google Drive Scraper Mode
+
+- **Priority:** P3
+- **Description:** Scrape Google Drive via browser automation. Extract file listings, metadata, sharing info, and folder structure. Handle Google auth.
+- **Scope:** File/folder tree, metadata (owner, sharing, dates), recent activity, shared drives.
+- **Effort:** Medium
+
+### SharePoint Scraper Mode
+
+- **Priority:** P3
+- **Description:** Scrape SharePoint via browser automation. Extract documents, lists, sites, and pages. Handle Microsoft SSO.
+- **Scope:** Site listing, document libraries, list data, page content, site permissions.
+- **Effort:** Large
+
+### Salesforce Scraper Mode
+
+- **Priority:** P3
+- **Description:** Scrape Salesforce via browser automation. Extract leads, contacts, opportunities, and reports.
+- **Scope:** Object listings (leads, contacts, accounts, opportunities), reports/dashboards, activity history.
+- **Effort:** Large
+
+### Amazon Product Scraper Mode
+
+- **Priority:** P3
+- **Description:** Scrape Amazon product pages. Extract product details, prices, reviews, rankings, and seller info.
+- **Scope:** Product pages, search results, review pages, price history, seller profiles.
+- **Effort:** Medium
+
+### Google Maps Scraper Mode
+
+- **Priority:** P3
+- **Description:** Scrape Google Maps. Extract business listings, reviews, locations, and contact info.
+- **Scope:** Business search results, place details, reviews, photos metadata, operating hours.
+- **Effort:** Medium
+
+### Cloud Console Scrapers (AWS/GCP/Azure)
+
+- **Priority:** P3
+- **Description:** Scrape cloud provider consoles for resource inventory and billing data not easily available via API.
+- **Scope:** Resource listings, billing dashboards, cost explorer, service quotas, IAM summaries.
+- **Effort:** Extra Large
+
+### Grafana/Datadog Dashboard Scraper
+
+- **Priority:** P3
+- **Description:** Scrape monitoring dashboards for screenshots and data export. Handle auth flows.
+- **Scope:** Dashboard screenshots, panel data extraction, alert history, metric queries.
+- **Effort:** Medium
+
+---
 
 ### Test Coverage Gaps
 
@@ -21,10 +164,10 @@
 - **Description:** Element methods at 0% coverage: DoubleClick, RightClick, Hover, MoveMouseOut, Tap, InputTime, InputColor, Type, Press, SelectOptionByCSS, SetFiles, Focus, Blur, ScrollIntoView, Remove, SelectAllText, SelectText, Interactable, Disabled, ScreenshotJPEG, GetXPath, ContainsElement, Equal, CanvasToImage, BackgroundImage, Resource, Parent, Parents, Next, Previous, ShadowRoot, Frame, all Wait* methods
 - **Effort:** Large
 
-### EvalResult Type Conversion Tests
+### ~~EvalResult Type Conversion Tests~~ [DONE]
 
 - **Priority:** P1
-- **Description:** EvalResult.Float(), JSON(), and Decode() have 0% coverage. String(), Int(), Bool() only partially covered.
+- **Status:** Complete — `eval_test.go` covers String, Int, Float, Bool, IsNull, JSON, Decode with table-driven tests
 - **Effort:** Small
 
 ### Network Accessor Tests
@@ -51,10 +194,10 @@
 - **Description:** Add `Example*` test functions for key API entry points: New, Browser.NewPage, Page.Element, Page.Eval, Page.Hijack, Element.Click, Element.Input, NetworkRecorder, KeyPress.
 - **Effort:** Medium
 
-### Remove Legacy Taskfile Tasks
+### ~~Remove Legacy Taskfile Tasks~~ [DONE]
 
 - **Priority:** P3
-- **Description:** `Taskfile.yml` still contains legacy template tasks that don't apply: `proto:generate` (references non-existent `internal/database/proto/`), `sqlc:generate`, `generate`, `build:dev`, `build:prod`, `run` (depends on generate), `release`, `release:snapshot`, `release:check` (goreleaser not configured). Valid tasks (`proto`, `grpc:*`, `test`, `check`, `lint`, `fmt`, `vet`, `deps`) work correctly.
+- **Status:** Complete — removed `proto:generate`, `sqlc:generate`, `generate`, `build:dev`, `build:prod`, `run`, `release`, `release:snapshot`, `release:check`. Added `lint:fix`, `slack-assist` to `grpc:build`.
 - **Effort:** Small
 
 ## Resolved Items
@@ -63,3 +206,6 @@
 |------|------------|------|
 | Missing Git Remote | Remote configured at `github.com/inovacc/scout.git` | 2025 |
 | Taskfile Cleanup | Legacy template tasks replaced with valid proto/grpc tasks | 2025 |
+| Slack Scraper Mode | Full implementation: API client, browser auth, encrypted session capture, CLI | 2026-02 |
+| Remove Legacy Taskfile Tasks | Removed all non-applicable tasks, added lint:fix and slack-assist build | 2026-02 |
+| EvalResult Type Conversion Tests | Full coverage: String, Int, Float, Bool, IsNull, JSON, Decode | 2026-02 |

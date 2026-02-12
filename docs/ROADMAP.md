@@ -56,9 +56,10 @@
 - [x] Storage and session tests (localStorage, sessionStorage, save/load state)
 - [x] NetworkRecorder tests (capture entries, export HAR, body toggle, Stop idempotency, Clear)
 - [x] Keyboard input tests (KeyPress, KeyType)
-- [ ] Increase core test coverage from 58.0% to 80%+
-- [ ] Add tests for PDF generation, device emulation, DOM traversal
-- [ ] Add tests for EvalResult type conversions (Float, Decode, JSON)
+- [x] EvalResult type conversion tests (String, Int, Float, Bool, IsNull, JSON, Decode)
+- [x] Page method tests (NavigateForward, ScrollScreenshot, PDF, ElementByJS, ElementByText, Search, etc.)
+- [x] Element method tests (DoubleClick, RightClick, Hover, Tap, Type, Press, DOM traversal, etc.)
+- [ ] Increase core test coverage from 69.9% to 80%+
 
 ### Phase 5: Storage & Session Management [COMPLETE]
 - [x] Session storage get/set/clear (`storage.go`)
@@ -74,14 +75,30 @@
 - [x] **Interactive CLI Client** (`cmd/client/`) — command-driven browser control with event streaming
 - [x] **Example Workflow** (`cmd/example-workflow/`) — bidirectional streaming demo
 
-### Phase 7: Distributed Crawling [PLANNED]
+### Phase 7: Scraper Modes [IN PROGRESS]
+- [x] **Scraper mode architecture** (`scraper/`) — base types (Credentials, Progress, AuthError, RateLimitError), ExportJSON, ProgressFunc callback
+- [x] **Slack mode** (`scraper/slack/`) — workspace auth (token + browser), channel listing, message history with threads, file listing, user directory, search, channel export
+- [x] **Slack session capture** (`scraper/slack/session.go`) — CaptureFromPage, encrypted save/load (AES-256-GCM + Argon2id)
+- [x] **Encryption utilities** (`scraper/crypto.go`) — EncryptData/DecryptData with passphrase-based key derivation
+- [x] **Slack Assist CLI** (`cmd/slack-assist/`) — capture, load, decrypt subcommands for browser-assisted credential management
+- [ ] **Teams mode** (P2) — Microsoft SSO, chat/channel messages, meeting history, shared files
+- [ ] **Discord mode** (P2) — server/channel messages, threads, member lists, roles, pins
+- [ ] **Gmail mode** (P2) — Google auth + 2FA, email content, labels, attachments, contacts
+- [ ] **Outlook mode** (P2) — Microsoft SSO, emails, folders, calendar events, contacts
+- [ ] **LinkedIn mode** (P2) — profile data, posts, jobs, connections, company pages
+- [ ] **Jira/Confluence modes** (P2) — Atlassian auth, issues, boards, pages, spaces
+- [ ] **Social/productivity modes** (P3) — Twitter, Reddit, YouTube, Notion, GitHub, etc.
+- [ ] **E-commerce modes** (P3) — Amazon, Google Maps
+- [ ] **Cloud/monitoring modes** (P3) — AWS/GCP/Azure consoles, Grafana, Datadog
+
+### Phase 8: Distributed Crawling [PLANNED]
 - [ ] Swarm mode: split crawl workloads across multiple browser instances
 - [ ] Multi-IP support: assign different proxies per browser in the cluster
 - [ ] Work distribution: BFS queue shared across workers
 - [ ] Result aggregation: merge results from all workers
 - [ ] Headless cluster configuration options
 
-### Phase 8: Documentation & Release [IN PROGRESS]
+### Phase 9: Documentation & Release [IN PROGRESS]
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)
 - [ ] Add LICENSE file
@@ -90,16 +107,16 @@
 
 ## Test Coverage
 
-**Current:** 58.0% (core package)  |  **Target:** 80%
+**Current:** 69.9% (core package)  |  **Target:** 80%
 
 | File | Coverage | Status |
 |------|----------|--------|
 | option.go | 100.0% | Complete |
 | browser.go | ~60% | Needs improvement |
-| page.go | ~50% | Many methods still untested |
-| element.go | ~40% | Many methods still untested |
+| page.go | ~65% | Improved — PDF, scroll, search, DOM, emulation tested |
+| element.go | ~65% | Improved — click variants, input, traversal, state tested |
 | network.go | ~50% | Accessor methods untested |
-| eval.go | ~30% | Float/JSON/Decode untested |
+| eval.go | ~95% | Complete — String, Int, Float, Bool, IsNull, JSON, Decode |
 | extract.go | Tested | Complete |
 | form.go | Tested | Complete |
 | ratelimit.go | Tested | Complete |
