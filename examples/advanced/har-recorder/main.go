@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/inovacc/scout"
+	"github.com/inovacc/scout/pkg/scout"
 )
 
 func main() {

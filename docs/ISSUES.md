@@ -12,7 +12,7 @@
 - **Severity:** Medium
 - **Status:** Open
 - **Description:** The `grpc/server/` package has no tests. All RPCs are exercised only manually via the CLI client or example workflow. Regressions in API mapping (e.g., wrong method names, incorrect parameter types) would not be caught by CI.
-- **Workaround:** Manual testing with `cmd/client/` or `cmd/example-workflow/`.
+- **Workaround:** Manual testing with `scout client` REPL or `scout` CLI commands.
 
 ## Resolved Issues
 

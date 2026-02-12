@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inovacc/scout"
+	"github.com/inovacc/scout/pkg/scout"
 )
 
 func TestSaveLoadEncryptedRoundTrip(t *testing.T) {

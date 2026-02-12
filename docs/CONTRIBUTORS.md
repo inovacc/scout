@@ -18,6 +18,9 @@
 ### Development Workflow
 
 ```bash
+# Build the CLI
+task build
+
 # Run all quality checks
 task check
 
@@ -25,7 +28,7 @@ task check
 task test
 
 # Run a single test
-go test -v -run TestName ./...
+go test -v -run TestName ./pkg/scout/...
 
 # Format and lint
 task fmt

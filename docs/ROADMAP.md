@@ -91,14 +91,42 @@
 - [ ] **E-commerce modes** (P3) — Amazon, Google Maps
 - [ ] **Cloud/monitoring modes** (P3) — AWS/GCP/Azure consoles, Grafana, Datadog
 
-### Phase 8: Distributed Crawling [PLANNED]
+### Phase 8: Unified CLI [IN PROGRESS]
+- [x] Move core library to `pkg/scout/` (import: `github.com/inovacc/scout/pkg/scout`)
+- [x] Cobra CLI scaffold with persistent flags, daemon management, session tracking
+- [x] Port `cmd/server/` and `cmd/client/` into `scout server` / `scout client` subcommands
+- [x] Browser control commands via gRPC: navigate, back, forward, reload, click, type, select, hover, focus, clear, key
+- [x] Inspection commands: title, url, text, attr, eval, html
+- [x] Capture commands: screenshot, pdf, har start/stop/export
+- [x] Window and storage commands: window get/min/max/full/restore, storage get/set/list/clear
+- [x] Network commands: cookie get/set/clear, header, block
+- [x] Standalone scraping commands: search, crawl, table, meta, form detect/fill/submit
+- [x] Port `cmd/slack-assist/` into `scout slack capture/load/decrypt`
+- [x] Remove old `cmd/server/`, `cmd/client/`, `cmd/example-workflow/`, `cmd/slack-assist/`
+- [x] Update documentation (README, CLAUDE.md)
+
+### Phase 9: Screen Recorder [PLANNED]
+- [ ] **ScreenRecorder type** (`pkg/scout/screenrecord.go`) — capture page frames via CDP `Page.startScreencast`, assemble into video
+- [ ] Functional options: `WithFrameRate(fps)`, `WithQuality(0-100)`, `WithMaxDuration(d)`, `WithFormat("webm"|"mp4")`
+- [ ] Frame-by-frame capture using `Page.screencastFrame` CDP events, ACK-based flow control
+- [ ] Export as WebM (VP8/VP9) using pure-Go encoder or as frame directory (PNG sequence)
+- [ ] Optional MP4 export via ffmpeg subprocess (detected at runtime, graceful fallback)
+- [ ] `Start()` / `Stop()` / `Pause()` / `Resume()` lifecycle, nil-safe and idempotent like NetworkRecorder
+- [ ] GIF export for short recordings (e.g. bug reproduction clips)
+- [ ] Combine with NetworkRecorder for synchronized HAR + video forensic bundles
+- [ ] gRPC RPCs: `StartScreenRecording`, `StopScreenRecording`, `ExportRecording`
+- [ ] CLI commands: `scout record start [--fps=N] [--quality=N]`, `scout record stop`, `scout record export [--format=webm|gif]`
+- [ ] Example: `examples/advanced/screen-recorder/`
+- [ ] Tests: start/stop lifecycle, frame capture, export formats, concurrent recording with HAR
+
+### Phase 10: Distributed Crawling [PLANNED]
 - [ ] Swarm mode: split crawl workloads across multiple browser instances
 - [ ] Multi-IP support: assign different proxies per browser in the cluster
 - [ ] Work distribution: BFS queue shared across workers
 - [ ] Result aggregation: merge results from all workers
 - [ ] Headless cluster configuration options
 
-### Phase 9: Documentation & Release [IN PROGRESS]
+### Phase 11: Documentation & Release [IN PROGRESS]
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)
 - [ ] Add LICENSE file

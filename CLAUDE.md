@@ -4,13 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Scout is a Go library (`github.com/inovacc/scout`) that wraps [go-rod](https://github.com/go-rod/rod) to provide a simplified, Go-idiomatic API for headless browser automation, web scraping, search, and crawling. The core library is in the root `package scout`. A gRPC service layer (`grpc/`) and command binaries (`cmd/`) provide remote browser control with forensic capture.
+Scout is a Go library (`github.com/inovacc/scout/pkg/scout`) that wraps [go-rod](https://github.com/go-rod/rod) to provide a simplified, Go-idiomatic API for headless browser automation, web scraping, search, and crawling. The core library is in `pkg/scout/`. A gRPC service layer (`grpc/`) provides remote browser control. A unified Cobra CLI (`cmd/scout/`) exposes all features as commands with a background daemon for session persistence.
 
 ## Build & Test Commands
 
 Uses Taskfile (`task`). Key commands:
 
 ```bash
+task build             # Build scout CLI binary to bin/
 task test              # Run all tests with -race and coverage
 task test:unit         # Run tests with -short flag (skip integration)
 task check             # Full quality check: fmt → vet → lint → test
@@ -19,10 +20,8 @@ task lint:fix          # golangci-lint run --fix ./...
 task fmt               # go fmt + goimports
 task vet               # go vet ./...
 task proto             # Generate gRPC protobuf code
-task grpc:server       # Run the gRPC server
-task grpc:client       # Run the interactive CLI client
-task grpc:workflow     # Run the example workflow demo
-task grpc:build        # Build server/client/workflow binaries to bin/
+task grpc:server       # Run the gRPC server via scout CLI
+task grpc:client       # Run the interactive CLI client via scout CLI
 ```
 
 Run a single test:
@@ -34,19 +33,33 @@ Tests require a Chromium browser available on the system. `newTestBrowser` calls
 
 ## Architecture
 
-Library code is in `package scout` (flat, single-package). The gRPC layer is in `grpc/` subtree. Command binaries are in `cmd/`.
+```
+scout/
+├── pkg/scout/          # Core library (package scout)
+├── cmd/scout/          # Unified Cobra CLI binary
+│   └── internal/cli/   # CLI command implementations
+├── grpc/               # gRPC service layer
+│   ├── proto/          # Protobuf definitions
+│   ├── scoutpb/        # Generated Go code
+│   └── server/         # gRPC server implementation
+├── scraper/            # Scraper framework + Slack mode
+├── examples/           # 18 runnable examples
+└── docs/               # Documentation, ADRs, roadmap
+```
+
+Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/inovacc/scout/pkg/scout`. The gRPC layer is in `grpc/`. The unified CLI is at `cmd/scout/`.
 
 ### Core Types (rod wrappers)
 
 | Type | Wraps | File |
 |------|-------|------|
-| `Browser` | `*rod.Browser` | `browser.go` |
-| `Page` | `*rod.Page` | `page.go` |
-| `Element` | `*rod.Element` | `element.go` |
-| `EvalResult` | JS eval results | `eval.go` |
-| `HijackRouter`, `HijackContext` | rod hijack types | `network.go` |
-| `WindowState`, `WindowBounds` | Window state control | `window.go` |
-| `NetworkRecorder` | HAR 1.2 traffic capture | `recorder.go` |
+| `Browser` | `*rod.Browser` | `pkg/scout/browser.go` |
+| `Page` | `*rod.Page` | `pkg/scout/page.go` |
+| `Element` | `*rod.Element` | `pkg/scout/element.go` |
+| `EvalResult` | JS eval results | `pkg/scout/eval.go` |
+| `HijackRouter`, `HijackContext` | rod hijack types | `pkg/scout/network.go` |
+| `WindowState`, `WindowBounds` | Window state control | `pkg/scout/window.go` |
+| `NetworkRecorder` | HAR 1.2 traffic capture | `pkg/scout/recorder.go` |
 
 ### HAR Recording Types
 
@@ -83,20 +96,71 @@ grpc/
 | `ScoutServer` | Multi-session gRPC service | `grpc/server/server.go` |
 | `ScoutService` (proto) | 25+ RPCs: session, nav, interact, capture, record, stream | `grpc/proto/scout.proto` |
 
-### Command Binaries
+### Scraper Framework
 
-| Binary | Purpose | Path |
-|--------|---------|------|
-| `scout-server` | gRPC server with reflection, graceful shutdown | `cmd/server/` |
-| `scout-client` | Interactive CLI (nav, click, type, key, eval, shot, har) | `cmd/client/` |
-| `scout-workflow` | Bidirectional streaming demo (form automation + HAR) | `cmd/example-workflow/` |
+```
+scraper/
+  scraper.go              # Base types: Credentials, Progress, AuthError, RateLimitError, ExportJSON
+  crypto.go               # AES-256-GCM + Argon2id: EncryptData, DecryptData
+  slack/
+    slack.go              # Scraper struct, Authenticate, ListChannels, GetMessages, etc.
+    api.go                # Internal Slack web API client (apiCall, postAPI)
+    auth.go               # Browser auth flow, token extraction JS, normalizeWorkspaceURL
+    session.go            # CapturedSession, CaptureFromPage, SaveEncrypted, LoadEncrypted
+    types.go              # Workspace, Channel, Message, Thread, File, User, SearchResult
+    option.go             # Functional options: WithWorkspace, WithToken, WithDCookie, etc.
+    export.go             # ExportChannelJSON
+    doc.go                # Package documentation
+```
+
+| Type | Purpose | File |
+|------|---------|------|
+| `Credentials`, `Progress` | Base scraper types | `scraper/scraper.go` |
+| `AuthError`, `RateLimitError` | Typed error conditions | `scraper/scraper.go` |
+| `EncryptData`, `DecryptData` | AES-256-GCM + Argon2id encryption | `scraper/crypto.go` |
+| `slack.Scraper` | Slack workspace scraper | `scraper/slack/slack.go` |
+| `slack.CapturedSession` | Encrypted session persistence | `scraper/slack/session.go` |
+
+### Unified CLI (`cmd/scout/`)
+
+Single binary `scout` with Cobra subcommands. Communicates with a background gRPC daemon for session persistence.
+
+```
+cmd/scout/
+├── main.go                 # Entry point: cli.Execute()
+└── internal/cli/
+    ├── root.go             # Root command + persistent flags (--addr, --session, --output, --format)
+    ├── daemon.go           # Auto-start gRPC daemon, getClient(), resolveSession()
+    ├── daemon_unix.go      # Unix process detach (Setsid)
+    ├── daemon_windows.go   # Windows process detach (CREATE_NEW_PROCESS_GROUP)
+    ├── helpers.go          # writeOutput(), readPassphrase(), truncate()
+    ├── version.go          # scout version
+    ├── session.go          # scout session create/destroy/list/use
+    ├── server.go           # scout server (gRPC server)
+    ├── client.go           # scout client (interactive REPL)
+    ├── navigate.go         # scout navigate/back/forward/reload
+    ├── screenshot.go       # scout screenshot/pdf
+    ├── har.go              # scout har start/stop/export
+    ├── interact.go         # scout click/type/select/hover/focus/clear/key
+    ├── inspect.go          # scout title/url/text/attr/eval/html
+    ├── window.go           # scout window get/min/max/full/restore
+    ├── storage.go          # scout storage get/set/list/clear
+    ├── network.go          # scout cookie/header/block
+    ├── search.go           # scout search (standalone)
+    ├── crawl.go            # scout crawl (standalone)
+    ├── extract.go          # scout table/meta (standalone)
+    ├── form.go             # scout form detect/fill/submit (standalone)
+    └── slack.go            # scout slack capture/load/decrypt
+```
+
+Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessions/`
 
 ### Examples
 
-`examples/` contains 18 standalone runnable programs (not part of the library build due to `_` prefix):
+`examples/` contains 18 standalone runnable programs:
 - `examples/simple/` — 8 examples: navigation, screenshots, extraction, JS eval, forms, cookies
 - `examples/advanced/` — 10 examples: search, pagination, crawling, rate limiting, hijacking, stealth, PDF, HAR recording
-- Each is a separate `package main` with its own implicit dependency on the parent module
+- Each is a separate `package main` importing `github.com/inovacc/scout/pkg/scout`
 - Build individually: `cd examples/simple/basic-navigation && go build .`
 
 **Functional options pattern** for configuration: `New(opts ...Option)` with `With*()` functions in `option.go`. Each feature area has its own options (`ExtractOption`, `SearchOption`, `PaginateOption`, `CrawlOption`, `RateLimitOption`). Defaults: headless=true, 1920x1080, 30s timeout.
@@ -120,7 +184,7 @@ grpc/
 
 ## Testing
 
-- `testutil_test.go` provides `newTestServer()` and `newTestBrowser(t)` (headless, no-sandbox, auto-cleanup).
+- `pkg/scout/testutil_test.go` provides `newTestServer()` and `newTestBrowser(t)` (headless, no-sandbox, auto-cleanup).
 - Route registration: test files call `registerTestRoutes(fn)` in `init()` to add httptest routes. The `newTestServer()` function collects all registered routes.
 - Core routes: `/`, `/page2`, `/json`, `/echo-headers`, `/set-cookie`, `/redirect`, `/slow`
 - Extract routes: `/extract`, `/table`, `/meta`, `/links`, `/nested`, `/products-list`
@@ -135,18 +199,19 @@ grpc/
 
 ## Dependencies
 
-### Core library (package scout)
+### Core library (pkg/scout/)
 - `github.com/go-rod/rod` — core browser automation via Chrome DevTools Protocol
 - `github.com/go-rod/stealth` — anti-bot-detection page creation (enabled via `WithStealth()`)
 - `github.com/ysmood/gson` — JSON number handling for `EvalResult`
 - `golang.org/x/time/rate` — token bucket rate limiter for `RateLimiter`
 
-### gRPC layer (grpc/ and cmd/)
+### gRPC layer and CLI (grpc/ and cmd/scout/)
 - `google.golang.org/grpc` — gRPC framework
 - `google.golang.org/protobuf` — Protocol Buffers runtime
 - `github.com/google/uuid` — session ID generation
+- `github.com/spf13/cobra` — CLI framework
 
-Note: The core library does NOT import gRPC. Library-only consumers pull zero gRPC dependencies.
+Note: The core library does NOT import gRPC or Cobra. Library-only consumers pull zero CLI/gRPC dependencies.
 
 ## CI
 

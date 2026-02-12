@@ -11,7 +11,7 @@ import (
 	"github.com/go-rod/rod/lib/input"
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/google/uuid"
-	"github.com/inovacc/scout"
+	"github.com/inovacc/scout/pkg/scout"
 	pb "github.com/inovacc/scout/grpc/scoutpb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

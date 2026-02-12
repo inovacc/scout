@@ -26,16 +26,26 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **HAR Network Recording** - Capture HTTP traffic via CDP events and export as HAR 1.2 format
 - **Keyboard Input** - Page-level key press and type sequences via `input.Key` constants
 - **gRPC Remote Control** - Multi-session browser control via gRPC with 25+ RPCs and event streaming
+- **Scraper Modes** - Pluggable scraper framework with encrypted session persistence; Slack mode with API client, browser auth, channel/message/thread/file/user extraction
+- **Encrypted Session Capture** - AES-256-GCM + Argon2id passphrase-based encryption for saved browser sessions via `slack-assist` CLI
 
 ## Installation
 
+**Library:**
 ```bash
-go get github.com/inovacc/scout
+go get github.com/inovacc/scout/pkg/scout
+```
+
+**CLI:**
+```bash
+go install github.com/inovacc/scout/cmd/scout@latest
 ```
 
 Requires Go 1.25+ and a Chromium-based browser available on the system (auto-downloaded by rod if not present).
 
 ## Quick Start
+
+### As a Library
 
 ```go
 package main
@@ -44,7 +54,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/inovacc/scout"
+	"github.com/inovacc/scout/pkg/scout"
 )
 
 func main() {
@@ -65,6 +75,47 @@ func main() {
 	}
 	fmt.Println(title)
 }
+```
+
+### As a CLI
+
+```bash
+# Start a browser session
+scout session create --url=https://example.com
+
+# Inspect the page
+scout title
+scout url
+scout text "h1"
+
+# Take a screenshot
+scout screenshot --output=page.png
+
+# Navigate
+scout navigate https://example.org
+scout back
+scout forward
+
+# Interact with elements
+scout click "button#submit"
+scout type "input[name=q]" "search query"
+scout key Enter
+
+# Extract data
+scout eval "document.title"
+scout html --selector="div.content"
+scout table --url=https://example.com --selector="table"
+scout meta --url=https://example.com
+
+# Search engines (standalone)
+scout search "golang web scraping" --engine=google
+
+# Crawl a site (standalone)
+scout crawl https://example.com --max-depth=2
+
+# Clean up
+scout session destroy --all
+```
 ```
 
 ## Examples
@@ -235,23 +286,75 @@ err := page.NavigateWithRetry("https://example.com", rl)
 | `WithLaunchFlag(name, values...)` | Add custom Chrome CLI flag | none |
 | `WithXvfb(args...)` | Enable Xvfb for headful mode without display (Unix only) | disabled |
 
+## CLI Reference
+
+The `scout` CLI provides a unified interface to all library features. It communicates with a background gRPC daemon for session persistence across invocations.
+
+| Command | Description |
+|---------|-------------|
+| `scout session create` | Create a browser session (`--headless`, `--stealth`, `--proxy`, `--url`, `--record`) |
+| `scout session destroy [id]` | Destroy a session (`--all` for all) |
+| `scout session list` | List tracked sessions |
+| `scout session use <id>` | Set active session |
+| `scout navigate <url>` | Navigate to URL |
+| `scout back` / `forward` / `reload` | Browser history navigation |
+| `scout click <sel>` | Click an element |
+| `scout type <sel> <text>` | Type into an element |
+| `scout key <key>` | Press a keyboard key |
+| `scout select <sel> <val>` | Select a dropdown option |
+| `scout hover <sel>` / `focus` / `clear` | Element interaction |
+| `scout title` / `url` | Get page title or URL |
+| `scout text <sel>` | Get element text |
+| `scout attr <sel> <attr>` | Get element attribute |
+| `scout eval <js>` | Execute JavaScript |
+| `scout html [--selector=sel]` | Get page/element HTML |
+| `scout screenshot` | Capture screenshot (`--full`, `--format`, `--quality`) |
+| `scout pdf` | Generate PDF |
+| `scout har start` / `stop` / `export` | HAR network recording |
+| `scout window get\|min\|max\|full\|restore` | Window control |
+| `scout storage get\|set\|list\|clear` | Web storage (`--session-storage`) |
+| `scout cookie get\|set\|clear` | Cookie management |
+| `scout header set <key> <val>` | Set extra headers |
+| `scout block <pattern>` | Block URL pattern |
+| `scout search <query>` | Search engines (`--engine`, `--max-pages`) |
+| `scout crawl <url>` | BFS crawl (`--max-depth`, `--max-pages`, `--delay`) |
+| `scout table` / `meta` | Extract tables/metadata (`--url`, `--selector`) |
+| `scout form detect\|fill\|submit` | Form interaction |
+| `scout slack capture\|load\|decrypt` | Slack session management |
+| `scout server` | Run gRPC server directly |
+| `scout client` | Interactive REPL client |
+| `scout version` | Show version info |
+
+### Slack Session Management
+
+```bash
+# Capture: opens browser, you log in, credentials saved encrypted
+scout slack capture --workspace=myteam.slack.com
+
+# Load: decrypt and display session summary
+scout slack load --input=slack-session.enc
+
+# Decrypt: export plaintext JSON (for debugging)
+scout slack decrypt --input=slack-session.enc --output=session.json
+```
+
 ## Development
 
 Requires [Task](https://taskfile.dev) for build automation.
 
 ```bash
+task build         # Build scout CLI binary to bin/
 task test          # Run all tests with -race and coverage
 task test:unit     # Run tests with -short flag
 task check         # Full quality check: fmt, vet, lint, test
 task lint          # Run golangci-lint
+task lint:fix      # Run golangci-lint with --fix
 task fmt           # Format code (go fmt + goimports)
 
 # gRPC
 task proto         # Generate protobuf code
 task grpc:server   # Run gRPC server (default :50051)
 task grpc:client   # Run interactive CLI client
-task grpc:workflow # Run example workflow
-task grpc:build    # Build server/client binaries to bin/
 ```
 
 ## Dependencies
@@ -264,14 +367,17 @@ task grpc:build    # Build server/client binaries to bin/
 | [go-rod/stealth](https://github.com/go-rod/stealth) | Anti-bot-detection page creation |
 | [ysmood/gson](https://github.com/ysmood/gson) | JSON number handling for JS evaluation results |
 | [golang.org/x/time](https://pkg.go.dev/golang.org/x/time) | Token bucket rate limiter |
+| [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | Argon2id key derivation for session encryption |
+| [golang.org/x/term](https://pkg.go.dev/golang.org/x/term) | Secure passphrase input (no-echo terminal) |
 
-**gRPC layer** (`grpc/` and `cmd/` only):
+**gRPC layer and CLI** (`grpc/` and `cmd/` only):
 
 | Package | Purpose |
 |---------|---------|
 | [google.golang.org/grpc](https://pkg.go.dev/google.golang.org/grpc) | gRPC framework |
 | [google.golang.org/protobuf](https://pkg.go.dev/google.golang.org/protobuf) | Protocol Buffers runtime |
 | [google/uuid](https://github.com/google/uuid) | Session ID generation |
+| [spf13/cobra](https://github.com/spf13/cobra) | CLI framework |
 
 ## License
 

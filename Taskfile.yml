@@ -28,11 +28,17 @@ tasks:
     generates:
       - grpc/scoutpb/*.pb.go
 
+  # === BUILD ===
+  build:
+    desc: Build the scout CLI binary
+    cmds:
+      - go build -o bin/scout ./cmd/scout
+
   # === TEST TASKS ===
   test:
     desc: Run all tests with coverage
     cmds:
-      - go test -v -race -coverprofile={{.COVERAGE_FILE}} ./...
+      - go test -v -race -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./scraper/... ./grpc/...
 
   test:coverage:
     desc: Generate HTML coverage report
@@ -44,7 +50,7 @@ tasks:
   test:cover:
     desc: Run tests and show coverage percentage
     cmds:
-      - go test -coverprofile={{.COVERAGE_FILE}} ./...
+      - go test -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./scraper/... ./grpc/...
       - cmd: go tool cover -func={{.COVERAGE_FILE}} | findstr "total:"
         platforms: [ windows ]
       - cmd: go tool cover -func={{.COVERAGE_FILE}} | grep "total:"
@@ -53,7 +59,7 @@ tasks:
   test:unit:
     desc: Run unit tests only (skip integration)
     cmds:
-      - go test -v -short ./...
+      - go test -v -short ./pkg/scout/... ./scraper/... ./grpc/...
 
   # === CODE QUALITY ===
   fmt:
@@ -89,25 +95,12 @@ tasks:
   grpc:server:
     desc: Run the gRPC scout server
     cmds:
-      - go run ./cmd/server {{.CLI_ARGS}}
+      - go run ./cmd/scout server {{.CLI_ARGS}}
 
   grpc:client:
     desc: Run the interactive gRPC client
     cmds:
-      - go run ./cmd/client {{.CLI_ARGS}}
-
-  grpc:workflow:
-    desc: Run the example workflow demo
-    cmds:
-      - go run ./cmd/example-workflow {{.CLI_ARGS}}
-
-  grpc:build:
-    desc: Build gRPC server, client, and workflow binaries
-    cmds:
-      - go build -o bin/scout-server ./cmd/server
-      - go build -o bin/scout-client ./cmd/client
-      - go build -o bin/scout-workflow ./cmd/example-workflow
-      - go build -o bin/slack-assist ./cmd/slack-assist
+      - go run ./cmd/scout client {{.CLI_ARGS}}
 
   # === DEPENDENCY MANAGEMENT ===
   deps:

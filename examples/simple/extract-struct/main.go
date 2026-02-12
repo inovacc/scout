@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/inovacc/scout"
+	"github.com/inovacc/scout/pkg/scout"
 )
 
 // QuotePage holds data extracted from the quotes.toscrape.com homepage.

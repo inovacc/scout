@@ -14,7 +14,7 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 ### ~~Slack Scraper Mode~~ [DONE]
 
 - **Priority:** P1
-- **Status:** Complete — `scraper/slack/` package with API client, browser auth, channel/message/thread/file/user/search extraction, JSON export, encrypted session capture (`cmd/slack-assist`)
+- **Status:** Complete — `scraper/slack/` package with API client, browser auth, channel/message/thread/file/user/search extraction, JSON export, encrypted session capture (`scout slack` CLI)
 - **Effort:** Large
 
 ### Teams Scraper Mode
@@ -152,6 +152,18 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 
 ---
 
+## Core Features
+
+### Screen Recorder
+
+- **Priority:** P2
+- **Description:** Capture browser sessions as video using Chrome DevTools Protocol `Page.startScreencast`. Record page interactions as WebM, GIF, or PNG frame sequences. Complement the existing `NetworkRecorder` (HAR) with synchronized video evidence. Pure-Go WebM encoding with optional ffmpeg fallback for MP4.
+- **Scope:** `ScreenRecorder` type in `pkg/scout/screenrecord.go` with functional options (`WithFrameRate`, `WithQuality`, `WithMaxDuration`, `WithFormat`). Start/Stop/Pause/Resume lifecycle. Export as WebM (primary), GIF (short clips), or PNG sequence. gRPC RPCs for remote control. CLI `scout record start/stop/export` commands. Combined HAR+video forensic bundles.
+- **Effort:** Large
+- **Dependencies:** CDP `Page.screencastFrame` events, go-rod's underlying protocol access. Pure-Go WebM/VP8 encoder or vendored library. Optional ffmpeg detection for MP4.
+
+---
+
 ### Test Coverage Gaps
 
 - **Priority:** P1
@@ -209,3 +221,4 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 | Slack Scraper Mode | Full implementation: API client, browser auth, encrypted session capture, CLI | 2026-02 |
 | Remove Legacy Taskfile Tasks | Removed all non-applicable tasks, added lint:fix and slack-assist build | 2026-02 |
 | EvalResult Type Conversion Tests | Full coverage: String, Int, Float, Bool, IsNull, JSON, Decode | 2026-02 |
+| Unified CLI | Single Cobra binary `cmd/scout/` replaces cmd/server, cmd/client, cmd/slack-assist, cmd/example-workflow | 2026-02 |

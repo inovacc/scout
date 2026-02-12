@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/inovacc/scout"
+	"github.com/inovacc/scout/pkg/scout"
 )
 
 // LoginData uses form tags to map struct fields to form field names.

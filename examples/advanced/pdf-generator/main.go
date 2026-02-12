@@ -12,7 +12,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/inovacc/scout"
+	"github.com/inovacc/scout/pkg/scout"
 )
 
 func main() {

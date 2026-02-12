@@ -24,7 +24,15 @@
 
 ### gRPC Remote Control
 - **Status:** Completed
-- **Description:** Multi-session browser control via gRPC with 25+ RPCs covering session lifecycle, navigation, element interaction, query, capture, forensic recording, and event streaming. Includes bidirectional interactive streaming. Implemented in `grpc/server/`, `cmd/server/`, `cmd/client/`.
+- **Description:** Multi-session browser control via gRPC with 25+ RPCs covering session lifecycle, navigation, element interaction, query, capture, forensic recording, and event streaming. Includes bidirectional interactive streaming. Implemented in `grpc/server/`.
+
+### Scraper Framework & Slack Mode
+- **Status:** Completed
+- **Description:** Pluggable scraper framework with encrypted session persistence (AES-256-GCM + Argon2id). Slack mode with browser auth, API client, channel/message/thread/file/user extraction, JSON export. Implemented in `scraper/` and `scraper/slack/`.
+
+### Unified CLI
+- **Status:** Completed
+- **Description:** Single Cobra CLI binary (`cmd/scout/`) replacing all separate binaries. Background gRPC daemon for session persistence. 40+ subcommands covering session management, navigation, interaction, inspection, capture, scraping, and Slack session management. File-based session tracking in `~/.scout/`.
 
 ### Retry with Backoff (Core Methods)
 - **Priority:** P3
@@ -32,6 +40,11 @@
 - **Description:** Built-in retry logic for transient navigation and element-finding failures, with configurable backoff strategy. Implemented as `RateLimiter.Do()` and `Page.NavigateWithRetry()`.
 
 ## Proposed Features
+
+### Screen Recorder
+- **Priority:** P2
+- **Status:** Proposed
+- **Description:** Capture browser sessions as video using CDP `Page.startScreencast`. Record page interactions as WebM, GIF, or PNG frame sequences. Combined HAR+video forensic bundles.
 
 ### Distributed Crawling (Swarm Mode)
 - **Priority:** P2

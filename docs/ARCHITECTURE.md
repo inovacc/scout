@@ -35,10 +35,10 @@ flowchart TB
         Server["ScoutServer\n(grpc/server/)"]
     end
 
-    subgraph Commands["Command Binaries"]
-        CmdServer["scout-server\n(cmd/server/)"]
-        CmdClient["scout-client\n(cmd/client/)"]
-        CmdWorkflow["scout-workflow\n(cmd/example-workflow/)"]
+    subgraph Commands["Unified CLI (cmd/scout/)"]
+        CLI["scout CLI\n(Cobra)"]
+        Daemon["Daemon\n(auto-start gRPC)"]
+        Sessions["Session Tracking\n(~/.scout/)"]
     end
 
     subgraph External["External"]
@@ -62,9 +62,10 @@ flowchart TB
     Server -->|uses| Page
     Server -->|uses| Recorder
     PB -->|implements| Server
-    CmdServer -->|starts| Server
-    CmdClient -->|calls| PB
-    CmdWorkflow -->|calls| PB
+    CLI -->|manages| Sessions
+    CLI -->|auto-starts| Daemon
+    Daemon -->|starts| Server
+    CLI -->|calls| PB
 
     Rod -->|CDP protocol| Chrome
     Stealth -->|patches| Page
@@ -149,7 +150,7 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant Client as scout-client
+    participant Client as scout CLI
     participant gRPC as gRPC Transport
     participant Server as ScoutServer
     participant Session as session
@@ -198,7 +199,7 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant Client as Workflow Client
+    participant Client as scout client REPL
     participant Stream as Interactive Stream
     participant Server as ScoutServer
     participant Scout as scout Library

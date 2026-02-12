@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/inovacc/scout"
+	"github.com/inovacc/scout/pkg/scout"
 )
 
 // Quote is extracted from each div.quote container using scout tags.

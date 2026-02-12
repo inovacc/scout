@@ -59,7 +59,39 @@
 - [x] Tests for NetworkRecorder and keyboard input
 - **New dependencies:** `google.golang.org/grpc`, `google.golang.org/protobuf`, `github.com/google/uuid`
 
-## v0.4.0 - Distributed Crawling [PLANNED]
+## v0.4.0 - Scraper Modes & Encrypted Sessions [COMPLETE]
+**Goal:** Pluggable scraper framework with encrypted session persistence.
+
+- [x] Base scraper types (Credentials, Progress, AuthError, RateLimitError)
+- [x] AES-256-GCM + Argon2id encryption utilities (`scraper/crypto.go`)
+- [x] Slack scraper mode: browser auth, API client, channels, messages, threads, files, users, search
+- [x] Encrypted session capture and persistence (`scraper/slack/session.go`)
+- [x] CLI for Slack session management (capture, load, decrypt)
+- **Test Coverage:** 40.5% total (scraper 84.3%, scraper/slack 64.4%)
+
+## v0.5.0 - Unified CLI [COMPLETE]
+**Goal:** Single Cobra CLI binary replacing all separate command binaries.
+
+- [x] Move core library to `pkg/scout/` (import: `github.com/inovacc/scout/pkg/scout`)
+- [x] Cobra CLI scaffold with persistent flags, daemon management, session tracking
+- [x] Port `cmd/server/` and `cmd/client/` into `scout server` / `scout client`
+- [x] Browser control commands via gRPC (navigate, click, type, screenshot, etc.)
+- [x] Standalone scraping commands (search, crawl, table, meta, form)
+- [x] Port `cmd/slack-assist/` into `scout slack capture/load/decrypt`
+- [x] Remove old separate binaries
+- [x] Update documentation (README, CLAUDE.md, ROADMAP)
+- **New dependency:** `github.com/spf13/cobra`
+- **Test Coverage:** 40.5% total (pkg/scout 69.9%, scraper 84.3%, scraper/slack 64.4%)
+
+## v0.6.0 - Screen Recorder [PLANNED]
+**Goal:** Capture browser sessions as video for forensic evidence.
+
+- [ ] ScreenRecorder type using CDP `Page.startScreencast`
+- [ ] WebM/GIF/PNG export formats
+- [ ] gRPC RPCs and CLI commands (`scout record start/stop/export`)
+- [ ] Combined HAR+video forensic bundles
+
+## v0.7.0 - Distributed Crawling [PLANNED]
 **Goal:** Swarm-mode crawling across multiple browser instances.
 
 - [ ] Browser cluster / pool management
@@ -67,8 +99,8 @@
 - [ ] Shared work queue for BFS crawling
 - [ ] Result aggregation
 
-## v0.5.0 - Documentation & Release [IN PROGRESS]
-**Goal:** Comprehensive documentation and published release.
+## v1.0.0 - Documentation & Release [IN PROGRESS]
+**Goal:** Comprehensive documentation and stable release.
 
 - [x] Published to GitHub with git remote
 - [x] Git tags (v0.1.3, v0.1.4, v0.1.5)
@@ -76,3 +108,4 @@
 - [ ] GoDoc examples for Browser, Page, Element, EvalResult, and new features
 - [ ] Integration test examples (login flow, form submission, scraping)
 - [ ] 80%+ test coverage
+- **Target Coverage:** 80%+

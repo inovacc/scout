@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inovacc/scout"
+	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/scraper"
 )
 
