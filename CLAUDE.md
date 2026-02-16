@@ -42,6 +42,7 @@ scout/
 │   ├── proto/          # Protobuf definitions
 │   ├── scoutpb/        # Generated Go code
 │   └── server/         # gRPC server implementation
+├── firecrawl/          # Firecrawl v2 REST API client (pure HTTP, no browser)
 ├── scraper/            # Scraper framework + Slack mode
 ├── examples/           # 18 runnable examples
 └── docs/               # Documentation, ADRs, roadmap
@@ -95,6 +96,35 @@ grpc/
 |------|---------|------|
 | `ScoutServer` | Multi-session gRPC service | `grpc/server/server.go` |
 | `ScoutService` (proto) | 25+ RPCs: session, nav, interact, capture, record, stream | `grpc/proto/scout.proto` |
+
+### Firecrawl Client
+
+```
+firecrawl/
+  doc.go                # Package documentation
+  client.go             # Client type, New(apiKey, ...Option)
+  option.go             # WithAPIURL(), WithTimeout(), WithHTTPClient()
+  types.go              # Document, DocumentMetadata, Format constants, job types
+  http.go               # Internal HTTP helpers (post, get, delete, handleError)
+  error.go              # APIError, AuthError, RateLimitError
+  poll.go               # Generic poll[T]() for async jobs
+  scrape.go             # Scrape() + ScrapeOption funcs
+  crawl.go              # Crawl(), GetCrawlStatus(), WaitForCrawl(), CancelCrawl()
+  search.go             # Search() + SearchOption funcs
+  map.go                # Map() + MapOption funcs
+  batch.go              # BatchScrape(), GetBatchStatus(), WaitForBatch()
+  extract.go            # Extract() + ExtractOption funcs
+```
+
+| Type | Purpose | File |
+|------|---------|------|
+| `Client` | Firecrawl API client | `firecrawl/client.go` |
+| `Document`, `DocumentMetadata` | Scraped page data | `firecrawl/types.go` |
+| `CrawlJob`, `BatchJob` | Async job status | `firecrawl/types.go` |
+| `SearchResult`, `MapResult`, `ExtractResult` | Endpoint results | `firecrawl/types.go` |
+| `APIError`, `AuthError`, `RateLimitError` | Typed errors | `firecrawl/error.go` |
+
+Pure HTTP client — no dependency on `pkg/scout/` or rod. Import as `github.com/inovacc/scout/firecrawl`. API key from `FIRECRAWL_API_KEY` env or passed directly.
 
 ### Scraper Framework
 
@@ -150,7 +180,8 @@ cmd/scout/
     ├── crawl.go            # scout crawl (standalone)
     ├── extract.go          # scout table/meta (standalone)
     ├── form.go             # scout form detect/fill/submit (standalone)
-    └── slack.go            # scout slack capture/load/decrypt
+    ├── slack.go            # scout slack capture/load/decrypt
+    └── firecrawl.go        # scout firecrawl scrape/crawl/search/map/batch/extract
 ```
 
 Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessions/`
@@ -181,6 +212,8 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **Window state transitions**: Chrome requires restoring to `normal` before changing between non-normal states. `setWindowState()` handles this automatically.
 - **NetworkRecorder**: Attach to a page, records all HTTP traffic via CDP events. `Stop()` is nil-safe and idempotent. `ExportHAR()` produces HAR 1.2 JSON. `Clear()` resets entries.
 - **Page keyboard methods**: `KeyPress(key)` and `KeyType(keys...)` operate at the page level (not element-scoped). Used by the gRPC server for `PressKey` RPC.
+- **Firecrawl error prefix**: All firecrawl errors use `"firecrawl:"` prefix. Typed errors: `*AuthError` (401/403), `*RateLimitError` (429), `*APIError` (other).
+- **Firecrawl polling**: `poll[T]()` generic function reused by `WaitForCrawl` and `WaitForBatch` for async job completion.
 
 ## Testing
 
@@ -193,6 +226,7 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Search routes: `/serp-google`, `/serp-google-page2`, `/serp-bing`, `/serp-ddg`
 - Crawl routes: `/crawl-start`, `/crawl-page{1,2,3}`, `/sitemap.xml`
 - Recorder routes: `/recorder-page`, `/recorder-asset`, `/recorder-api`
+- Firecrawl tests: mock HTTP server in `firecrawl/testutil_test.go`; integration tests behind `//go:build integration` + `FIRECRAWL_API_KEY`
 - Window tests: no routes needed — window control operates on the browser window itself
 - Tests use `t.Skipf` when browser is unavailable — they will not fail in headless CI without Chrome, they skip.
 - No mocking framework; tests run against a real headless browser and local HTTP test server.
