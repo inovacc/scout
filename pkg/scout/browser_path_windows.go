@@ -20,6 +20,7 @@ func lookupBrowser(bt BrowserType) (string, error) {
 			filepath.Join(programFiles, `BraveSoftware\Brave-Browser\Application\brave.exe`),
 			filepath.Join(programFilesX86, `BraveSoftware\Brave-Browser\Application\brave.exe`),
 		}
+
 		return firstExisting(paths, bt)
 
 	case BrowserEdge:
@@ -28,6 +29,7 @@ func lookupBrowser(bt BrowserType) (string, error) {
 			filepath.Join(programFilesX86, `Microsoft\Edge\Application\msedge.exe`),
 			filepath.Join(localAppData, `Microsoft\Edge\Application\msedge.exe`),
 		}
+
 		return firstExisting(paths, bt)
 
 	case BrowserChrome:

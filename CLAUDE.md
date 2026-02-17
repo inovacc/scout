@@ -58,19 +58,21 @@ CLI commands:
 ```
 scout/
 ├── pkg/scout/          # Core library (package scout)
+├── pkg/stealth/        # Internalized go-rod/stealth
+├── pkg/identity/       # Device identity, Luhn check digits, trust
+├── pkg/discovery/      # mDNS service discovery
 ├── cmd/scout/          # Unified Cobra CLI binary
 │   └── internal/cli/   # CLI command implementations
 ├── grpc/               # gRPC service layer
 │   ├── proto/          # Protobuf definitions
 │   ├── scoutpb/        # Generated Go code
-│   └── server/         # gRPC server implementation
-├── firecrawl/          # Firecrawl v2 REST API client (pure HTTP, no browser)
-├── scraper/            # Scraper framework + Slack mode
+│   └── server/         # gRPC server + mTLS + pairing
+├── scraper/            # Scraper framework + auth
 ├── examples/           # 18 runnable examples
 └── docs/               # Documentation, ADRs, roadmap
 ```
 
-Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/inovacc/scout/pkg/scout`. The gRPC layer is in `grpc/`. The unified CLI is at `cmd/scout/`.
+Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/inovacc/scout/pkg/scout`. The gRPC layer is in `grpc/`. The unified CLI is at `cmd/scout/`. Additional packages: `pkg/stealth/` (internalized go-rod/stealth), `pkg/identity/` (Syncthing-style device identity with Luhn check digits), `pkg/discovery/` (mDNS service discovery).
 
 ### Core Types (rod wrappers)
 
@@ -113,7 +115,14 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 grpc/
   proto/scout.proto        # Protocol buffer definitions (ScoutService)
   scoutpb/                 # Generated Go code (committed for consumer convenience)
-  server/server.go         # gRPC service implementation (ScoutServer)
+  server/
+    server.go              # gRPC service implementation (ScoutServer)
+    tls.go                 # mTLS certificate generation and TLS config
+    pairing.go             # Syncthing-style device pairing handshake
+    display.go             # Server instance table view with peer tracking
+    platform_linux.go      # Linux session defaults (auto --no-sandbox)
+    platform_windows.go    # Windows session defaults (no-op)
+    platform_other.go      # Darwin/other session defaults (no-op)
 ```
 
 | Type | Purpose | File |
@@ -121,50 +130,13 @@ grpc/
 | `ScoutServer` | Multi-session gRPC service | `grpc/server/server.go` |
 | `ScoutService` (proto) | 25+ RPCs: session, nav, interact, capture, record, stream | `grpc/proto/scout.proto` |
 
-### Firecrawl Client
-
-```
-firecrawl/
-  doc.go                # Package documentation
-  client.go             # Client type, New(apiKey, ...Option)
-  option.go             # WithAPIURL(), WithTimeout(), WithHTTPClient()
-  types.go              # Document, DocumentMetadata, Format constants, job types
-  http.go               # Internal HTTP helpers (post, get, delete, handleError)
-  error.go              # APIError, AuthError, RateLimitError
-  poll.go               # Generic poll[T]() for async jobs
-  scrape.go             # Scrape() + ScrapeOption funcs
-  crawl.go              # Crawl(), GetCrawlStatus(), WaitForCrawl(), CancelCrawl()
-  search.go             # Search() + SearchOption funcs
-  map.go                # Map() + MapOption funcs
-  batch.go              # BatchScrape(), GetBatchStatus(), WaitForBatch()
-  extract.go            # Extract() + ExtractOption funcs
-```
-
-| Type | Purpose | File |
-|------|---------|------|
-| `Client` | Firecrawl API client | `firecrawl/client.go` |
-| `Document`, `DocumentMetadata` | Scraped page data | `firecrawl/types.go` |
-| `CrawlJob`, `BatchJob` | Async job status | `firecrawl/types.go` |
-| `SearchResult`, `MapResult`, `ExtractResult` | Endpoint results | `firecrawl/types.go` |
-| `APIError`, `AuthError`, `RateLimitError` | Typed errors | `firecrawl/error.go` |
-
-Pure HTTP client — no dependency on `pkg/scout/` or rod. Import as `github.com/inovacc/scout/firecrawl`. API key from `FIRECRAWL_API_KEY` env or passed directly.
-
 ### Scraper Framework
 
 ```
 scraper/
   scraper.go              # Base types: Credentials, Progress, AuthError, RateLimitError, ExportJSON
   crypto.go               # AES-256-GCM + Argon2id: EncryptData, DecryptData
-  slack/
-    slack.go              # Scraper struct, Authenticate, ListChannels, GetMessages, etc.
-    api.go                # Internal Slack web API client (apiCall, postAPI)
-    auth.go               # Browser auth flow, token extraction JS, normalizeWorkspaceURL
-    session.go            # CapturedSession, CaptureFromPage, SaveEncrypted, LoadEncrypted
-    types.go              # Workspace, Channel, Message, Thread, File, User, SearchResult
-    option.go             # Functional options: WithWorkspace, WithToken, WithDCookie, etc.
-    export.go             # ExportChannelJSON
-    doc.go                # Package documentation
+  auth/                   # Generic browser auth framework + encrypted session persistence
 ```
 
 | Type | Purpose | File |
@@ -172,8 +144,6 @@ scraper/
 | `Credentials`, `Progress` | Base scraper types | `scraper/scraper.go` |
 | `AuthError`, `RateLimitError` | Typed error conditions | `scraper/scraper.go` |
 | `EncryptData`, `DecryptData` | AES-256-GCM + Argon2id encryption | `scraper/crypto.go` |
-| `slack.Scraper` | Slack workspace scraper | `scraper/slack/slack.go` |
-| `slack.CapturedSession` | Encrypted session persistence | `scraper/slack/session.go` |
 
 ### Unified CLI (`cmd/scout/`)
 
@@ -204,11 +174,11 @@ cmd/scout/
     ├── crawl.go            # scout crawl (standalone)
     ├── extract.go          # scout table/meta (standalone)
     ├── form.go             # scout form detect/fill/submit (standalone)
-    ├── slack.go            # scout slack capture/load/decrypt
-    ├── firecrawl.go        # scout firecrawl scrape/crawl/search/map/batch/extract
     ├── markdown.go         # scout markdown --url=<url> [--main-only]
     ├── map.go              # scout map <url> [--search=term] [--limit=N]
-    └── extension.go        # scout extension load/test/list
+    ├── extension.go        # scout extension load/test/list
+    ├── auth.go             # scout auth login/capture/status/logout/providers
+    └── device.go           # scout device pair/list/trust
 ```
 
 Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessions/`
@@ -239,11 +209,10 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **Window state transitions**: Chrome requires restoring to `normal` before changing between non-normal states. `setWindowState()` handles this automatically.
 - **NetworkRecorder**: Attach to a page, records all HTTP traffic via CDP events. `Stop()` is nil-safe and idempotent. `ExportHAR()` produces HAR 1.2 JSON. `Clear()` resets entries.
 - **Page keyboard methods**: `KeyPress(key)` and `KeyType(keys...)` operate at the page level (not element-scoped). Used by the gRPC server for `PressKey` RPC.
-- **Firecrawl error prefix**: All firecrawl errors use `"firecrawl:"` prefix. Typed errors: `*AuthError` (401/403), `*RateLimitError` (429), `*APIError` (other).
-- **Firecrawl polling**: `poll[T]()` generic function reused by `WaitForCrawl` and `WaitForBatch` for async job completion.
 - **HTML-to-Markdown**: `convertHTMLToMarkdown()` is a pure function testable without browser. `Page.Markdown()` wraps it with page HTML. `Page.MarkdownContent()` applies readability scoring first via `WithMainContentOnly()`.
 - **Readability scoring**: `extractMainContent()` uses tag-based scoring (article +20, nav -25), class/ID pattern matching, link density penalty. Returns highest-scoring DOM node.
 - **URL Map**: `Browser.Map()` combines sitemap.xml parsing + BFS on-page link harvesting. Reuses `visitedSet`, `normalizeURL`, `resolveLink` from crawl.go.
+- **Platform session defaults**: `grpc/server/platform_*.go` uses build constraints to apply OS-specific defaults in `CreateSession` (e.g., `--no-sandbox` on Linux). Follows the same pattern as `daemon_unix.go`/`daemon_windows.go`.
 
 ## Testing
 
@@ -258,7 +227,6 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Map routes: `/map-start`, `/map-page1`, `/map-page1-sub`, `/map-page2`, `/map-page3`
 - Markdown routes: `/markdown`
 - Recorder routes: `/recorder-page`, `/recorder-asset`, `/recorder-api`
-- Firecrawl tests: mock HTTP server in `firecrawl/testutil_test.go`; integration tests behind `//go:build integration` + `FIRECRAWL_API_KEY`
 - Window tests: no routes needed — window control operates on the browser window itself
 - Tests use `t.Skipf` when browser is unavailable — they will not fail in headless CI without Chrome, they skip.
 - No mocking framework; tests run against a real headless browser and local HTTP test server.
@@ -267,10 +235,16 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 
 ### Core library (pkg/scout/)
 - `github.com/go-rod/rod` — core browser automation via Chrome DevTools Protocol
-- `github.com/go-rod/stealth` — anti-bot-detection page creation (enabled via `WithStealth()`)
 - `github.com/ysmood/gson` — JSON number handling for `EvalResult`
 - `golang.org/x/time/rate` — token bucket rate limiter for `RateLimiter`
 - `golang.org/x/net/html` — HTML tokenizer/parser for markdown converter (indirect dep)
+
+### Stealth (pkg/stealth/)
+- Internalized fork of `go-rod/stealth` — anti-bot-detection page creation (enabled via `WithStealth()`)
+
+### Identity & Discovery (pkg/identity/, pkg/discovery/)
+- `golang.org/x/crypto` — Ed25519 key generation, certificate creation
+- `github.com/grandcat/zeroconf` — mDNS service advertisement and discovery
 
 ### gRPC layer and CLI (grpc/ and cmd/scout/)
 - `google.golang.org/grpc` — gRPC framework

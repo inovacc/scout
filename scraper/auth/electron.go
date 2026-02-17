@@ -120,6 +120,7 @@ func getDebuggerWebSocketURL(debugURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	var result struct {

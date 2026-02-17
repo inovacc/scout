@@ -31,6 +31,7 @@ func init() {
 	rootCmd.PersistentFlags().String("browser", "chrome", "browser type: chrome, brave, edge")
 	rootCmd.PersistentFlags().Bool("maximized", false, "start browser window maximized")
 	rootCmd.PersistentFlags().Bool("devtools", false, "open Chrome DevTools automatically")
+	rootCmd.PersistentFlags().Bool("insecure", false, "disable mTLS for client connections")
 }
 
 // Execute runs the root command.

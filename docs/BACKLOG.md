@@ -11,11 +11,11 @@
 
 Dedicated scraper modes for authenticated services. Each mode provides structured extraction of user data from web applications via headless browser automation. Requires valid user credentials/session.
 
-### ~~Slack Scraper Mode~~ [DONE]
+### ~~Slack Scraper Mode~~ [REMOVED]
 
 - **Priority:** P1
-- **Status:** Complete — `scraper/slack/` package with API client, browser auth, channel/message/thread/file/user/search extraction, JSON export, encrypted session capture (`scout slack` CLI)
-- **Effort:** Large
+- **Status:** Removed — `scraper/slack/` package deleted; project focuses on generic auth framework
+- **Effort:** N/A
 
 ### Teams Scraper Mode
 
@@ -265,3 +265,10 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 | Test Coverage Gaps | pkg/scout coverage raised from 69.9% to 80.1% | 2026-02 |
 | Element Method Test Coverage | Comprehensive element method tests added | 2026-02 |
 | Network Accessor Tests | Hijack request/response accessor tests added | 2026-02 |
+| Stealth Internalization | `go-rod/stealth` internalized into `pkg/stealth/` | 2026-02 |
+| Browser Auto-Detection | Brave and Edge browser auto-detection via `WithBrowser()` | 2026-02 |
+| Chrome Extension Loading | `WithExtension(paths...)` for unpacked extension loading | 2026-02 |
+| Device Identity & mTLS | Syncthing-style device IDs, mTLS auth, mDNS discovery | 2026-02 |
+| Platform Session Defaults | Auto `--no-sandbox` on Linux via build constraints | 2026-02 |
+| Firecrawl Removal | `firecrawl/` package removed — project focuses on native browser scraping | 2026-02 |
+| Slack Removal | `scraper/slack/` package removed — replaced by generic auth framework | 2026-02 |

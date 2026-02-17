@@ -85,6 +85,7 @@ func (b *Browser) Map(startURL string, opts ...MapOption) ([]string, error) {
 
 	baseDomain := startParsed.Hostname()
 	visited := &visitedSet{urls: make(map[string]bool)}
+
 	var result []string
 
 	addURL := func(rawURL string) bool {
@@ -92,23 +93,29 @@ func (b *Browser) Map(startURL string, opts ...MapOption) ([]string, error) {
 		if visited.has(normalized) {
 			return false
 		}
+
 		if !mapDomainAllowed(normalized, baseDomain, o.includeSubdoms) {
 			return false
 		}
+
 		if !mapPathAllowed(normalized, o) {
 			return false
 		}
+
 		if o.search != "" && !mapSearchMatch(normalized, o.search) {
 			return false
 		}
+
 		visited.add(normalized)
 		result = append(result, normalized)
+
 		return len(result) < o.limit
 	}
 
 	// Phase 1: Sitemap discovery
 	if o.useSitemap {
 		sitemapURL := fmt.Sprintf("%s://%s/sitemap.xml", startParsed.Scheme, startParsed.Host)
+
 		sitemapURLs, err := b.ParseSitemap(sitemapURL)
 		if err == nil {
 			for _, su := range sitemapURLs {
@@ -168,6 +175,7 @@ func (b *Browser) Map(startURL string, opts ...MapOption) ([]string, error) {
 					queue = append(queue, item{url: norm, depth: cur.depth + 1})
 				}
 			}
+
 			if len(result) >= o.limit {
 				break
 			}
@@ -186,13 +194,16 @@ func mapDomainAllowed(rawURL, baseDomain string, includeSubs bool) bool {
 	if err != nil {
 		return false
 	}
+
 	host := u.Hostname()
 	if host == baseDomain {
 		return true
 	}
+
 	if includeSubs && strings.HasSuffix(host, "."+baseDomain) {
 		return true
 	}
+
 	return false
 }
 
@@ -201,6 +212,7 @@ func mapPathAllowed(rawURL string, o *mapOptions) bool {
 	if err != nil {
 		return false
 	}
+
 	path := u.Path
 
 	if len(o.excludePaths) > 0 {
@@ -217,6 +229,7 @@ func mapPathAllowed(rawURL string, o *mapOptions) bool {
 				return true
 			}
 		}
+
 		return false
 	}
 
@@ -228,6 +241,8 @@ func mapSearchMatch(rawURL, term string) bool {
 	if err != nil {
 		return false
 	}
+
 	lower := strings.ToLower(u.Path + "?" + u.RawQuery)
+
 	return strings.Contains(lower, strings.ToLower(term))
 }

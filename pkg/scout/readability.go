@@ -12,9 +12,11 @@ import (
 // It returns the node that most likely contains the main article/content.
 func extractMainContent(doc *html.Node) *html.Node {
 	var best *html.Node
+
 	bestScore := math.MinInt32
 
 	var walk func(*html.Node)
+
 	walk = func(n *html.Node) {
 		if n.Type == html.ElementNode {
 			score := scoreNode(n)
@@ -23,15 +25,18 @@ func extractMainContent(doc *html.Node) *html.Node {
 				best = n
 			}
 		}
+
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			walk(c)
 		}
 	}
+
 	walk(doc)
 
 	if best == nil {
 		return doc
 	}
+
 	return best
 }
 
@@ -43,7 +48,7 @@ func scoreNode(n *html.Node) int {
 	score := 0
 
 	// Tag-based scoring
-	switch n.DataAtom {
+	switch n.DataAtom { //nolint:exhaustive // only scoring specific tags
 	case atom.Article:
 		score += 20
 	case atom.Main:
@@ -70,12 +75,14 @@ func scoreNode(n *html.Node) int {
 
 	// Class/ID scoring
 	classID := strings.ToLower(getAttr(n, "class") + " " + getAttr(n, "id"))
+
 	negativePatterns := []string{"sidebar", "ad", "menu", "comment", "banner", "widget", "popup", "modal", "nav", "footer"}
 	for _, p := range negativePatterns {
 		if strings.Contains(classID, p) {
 			score -= 15
 		}
 	}
+
 	positivePatterns := []string{"article", "content", "main", "post", "entry", "body", "text"}
 	for _, p := range positivePatterns {
 		if strings.Contains(classID, p) {
@@ -85,6 +92,7 @@ func scoreNode(n *html.Node) int {
 
 	// Text length bonus
 	text := innerText(n)
+
 	textLen := len(strings.TrimSpace(text))
 	if textLen < 25 {
 		score -= 10
@@ -106,32 +114,41 @@ func scoreNode(n *html.Node) int {
 
 func innerText(n *html.Node) string {
 	var sb strings.Builder
+
 	var walk func(*html.Node)
+
 	walk = func(n *html.Node) {
 		if n.Type == html.TextNode {
 			sb.WriteString(n.Data)
 		}
+
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			walk(c)
 		}
 	}
 	walk(n)
+
 	return sb.String()
 }
 
 func linkTextLength(n *html.Node) int {
 	total := 0
+
 	var walk func(*html.Node)
+
 	walk = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.DataAtom == atom.A {
 			total += len(strings.TrimSpace(innerText(n)))
 			return
 		}
+
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			walk(c)
 		}
 	}
+
 	walk(n)
+
 	return total
 }
 
@@ -141,5 +158,6 @@ func getAttr(n *html.Node, key string) string {
 			return a.Val
 		}
 	}
+
 	return ""
 }

@@ -44,10 +44,12 @@ func init() {
 
 func TestConvertHeadings(t *testing.T) {
 	html := `<h1>One</h1><h2>Two</h2><h3>Three</h3><h4>Four</h4><h5>Five</h5><h6>Six</h6>`
+
 	md, err := convertHTMLToMarkdown(html)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, want := range []string{"# One", "## Two", "### Three", "#### Four", "##### Five", "###### Six"} {
 		if !strings.Contains(md, want) {
 			t.Errorf("missing %q in:\n%s", want, md)
@@ -60,6 +62,7 @@ func TestConvertParagraph(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "Hello world.") || !strings.Contains(md, "Second.") {
 		t.Errorf("unexpected: %s", md)
 	}
@@ -70,9 +73,11 @@ func TestConvertBoldItalic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "**bold**") {
 		t.Errorf("missing bold: %s", md)
 	}
+
 	if !strings.Contains(md, "_italic_") {
 		t.Errorf("missing italic: %s", md)
 	}
@@ -83,6 +88,7 @@ func TestConvertLinks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "[Go](https://go.dev)") {
 		t.Errorf("unexpected: %s", md)
 	}
@@ -92,6 +98,7 @@ func TestConvertLinks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if strings.Contains(md2, "[Go]") {
 		t.Errorf("should not have link syntax: %s", md2)
 	}
@@ -102,6 +109,7 @@ func TestConvertImages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "![Logo](/logo.png)") {
 		t.Errorf("unexpected: %s", md)
 	}
@@ -111,6 +119,7 @@ func TestConvertImages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if strings.Contains(md2, "![Logo]") {
 		t.Errorf("should not have image: %s", md2)
 	}
@@ -121,6 +130,7 @@ func TestConvertInlineCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "`fmt.Println`") {
 		t.Errorf("unexpected: %s", md)
 	}
@@ -131,9 +141,11 @@ func TestConvertCodeBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "```go\n") {
 		t.Errorf("missing language fence: %s", md)
 	}
+
 	if !strings.Contains(md, "func main() {}") {
 		t.Errorf("missing code: %s", md)
 	}
@@ -144,9 +156,11 @@ func TestConvertBlockquote(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "> ") {
 		t.Errorf("missing blockquote prefix: %s", md)
 	}
+
 	if !strings.Contains(md, "Quoted text.") {
 		t.Errorf("missing text: %s", md)
 	}
@@ -157,6 +171,7 @@ func TestConvertUnorderedList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "- Apple") || !strings.Contains(md, "- Banana") {
 		t.Errorf("unexpected: %s", md)
 	}
@@ -167,6 +182,7 @@ func TestConvertOrderedList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "1. First") || !strings.Contains(md, "2. Second") {
 		t.Errorf("unexpected: %s", md)
 	}
@@ -177,9 +193,11 @@ func TestConvertNestedList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "- Parent") {
 		t.Errorf("missing parent: %s", md)
 	}
+
 	if !strings.Contains(md, "  - Child") {
 		t.Errorf("missing indented child: %s", md)
 	}
@@ -193,12 +211,15 @@ func TestConvertTable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "| A") {
 		t.Errorf("missing header: %s", md)
 	}
+
 	if !strings.Contains(md, "---") {
 		t.Errorf("missing separator: %s", md)
 	}
+
 	if !strings.Contains(md, "| 1") {
 		t.Errorf("missing data: %s", md)
 	}
@@ -209,6 +230,7 @@ func TestConvertHR(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "---") {
 		t.Errorf("missing hr: %s", md)
 	}
@@ -219,6 +241,7 @@ func TestConvertScriptStripped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if strings.Contains(md, "alert") || strings.Contains(md, ".a{}") {
 		t.Errorf("script/style not stripped: %s", md)
 	}
@@ -229,6 +252,7 @@ func TestConvertBaseURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "https://example.com/about") {
 		t.Errorf("URL not resolved: %s", md)
 	}
@@ -245,6 +269,7 @@ func TestReadabilityScoring(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(md, "long article") {
 		t.Errorf("main content not found: %s", md)
 	}
@@ -272,10 +297,12 @@ func TestPageMarkdown(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/markdown")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -298,10 +325,12 @@ func TestPageMarkdownContent(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(srv.URL + "/markdown")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}

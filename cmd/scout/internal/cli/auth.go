@@ -11,19 +11,15 @@ import (
 
 	"github.com/inovacc/scout/scraper"
 	"github.com/inovacc/scout/scraper/auth"
-	"github.com/inovacc/scout/scraper/slack"
 	"github.com/spf13/cobra"
 )
 
 func init() {
-	// Register known providers
-	auth.Register(slack.NewProvider(""))
-
 	rootCmd.AddCommand(authCmd)
 	authCmd.AddCommand(authLoginCmd, authCaptureCmd, authStatusCmd, authLogoutCmd, authProvidersCmd)
 
-	authLoginCmd.Flags().String("provider", "", "auth provider name (e.g. slack)")
-	authLoginCmd.Flags().String("workspace", "", "workspace domain (provider-specific, e.g. myteam.slack.com)")
+	authLoginCmd.Flags().String("provider", "", "auth provider name")
+	authLoginCmd.Flags().String("workspace", "", "workspace domain (provider-specific)")
 	authLoginCmd.Flags().Duration("timeout", 5*time.Minute, "max time to wait for login")
 
 	authCaptureCmd.Flags().String("url", "", "URL to open in browser")
@@ -51,22 +47,12 @@ var authLoginCmd = &cobra.Command{
 			return fmt.Errorf("scout: --provider is required (use 'scout auth providers' to list)")
 		}
 
-		// For slack, create provider with workspace
-		var provider auth.Provider
-		if providerName == "slack" {
-			if workspace == "" {
-				return fmt.Errorf("scout: --workspace is required for slack")
-			}
-
-			provider = slack.NewProvider(workspace)
-		} else {
-			var err error
-
-			provider, err = auth.Get(providerName)
-			if err != nil {
-				return fmt.Errorf("scout: %w", err)
-			}
+		provider, err := auth.Get(providerName)
+		if err != nil {
+			return fmt.Errorf("scout: %w", err)
 		}
+
+		_ = workspace // reserved for provider-specific use
 
 		passphrase, err := readPassphraseConfirm(cmd.ErrOrStderr())
 		if err != nil {

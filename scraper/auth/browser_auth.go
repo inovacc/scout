@@ -82,6 +82,7 @@ func BrowserAuth(ctx context.Context, provider Provider, opts BrowserAuthOptions
 	reportProgress(opts.Progress, "auth", 0, 0, "waiting for login at "+loginURL)
 
 	deadline := time.Now().Add(opts.Timeout)
+
 	pollInterval := opts.PollInterval
 	if pollInterval == 0 {
 		pollInterval = 2 * time.Second

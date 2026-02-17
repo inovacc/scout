@@ -21,8 +21,7 @@ var screenshotCmd = &cobra.Command{
 	Use:   "screenshot",
 	Short: "Take a screenshot of the current page",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -63,8 +62,7 @@ var pdfCmd = &cobra.Command{
 	Use:   "pdf",
 	Short: "Generate a PDF of the current page",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}

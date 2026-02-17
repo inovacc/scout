@@ -35,6 +35,14 @@ flowchart TB
         Proto["scout.proto\n(grpc/proto/)"]
         PB["scoutpb\n(generated)"]
         Server["ScoutServer\n(grpc/server/)"]
+        TLS["mTLS / Pairing\n(tls.go, pairing.go)"]
+        Platform["Platform Defaults\n(platform_*.go)"]
+    end
+
+    subgraph Identity["Identity & Discovery"]
+        DeviceID["DeviceIdentity\n(pkg/identity/)"]
+        Discovery["mDNS Discovery\n(pkg/discovery/)"]
+        StealthPkg["Stealth\n(pkg/stealth/)"]
     end
 
     subgraph Commands["Unified CLI (cmd/scout/)"]
@@ -43,17 +51,9 @@ flowchart TB
         Sessions["Session Tracking\n(~/.scout/)"]
     end
 
-    subgraph Firecrawl["Firecrawl Client (firecrawl/)"]
-        FC["Client\n(client.go)"]
-        FCScrape["Scrape / Crawl / Search\nMap / Batch / Extract"]
-        FCPoll["poll[T]\n(poll.go)"]
-    end
-
     subgraph External["External"]
-        Chrome["Chromium / Chrome"]
+        Chrome["Chromium / Chrome\n/ Brave / Edge"]
         Rod["go-rod/rod"]
-        Stealth["go-rod/stealth"]
-        FCAPI["Firecrawl API\n(REST)"]
     end
 
     Options -->|configures| Browser
@@ -72,19 +72,19 @@ flowchart TB
     Server -->|uses| Browser
     Server -->|uses| Page
     Server -->|uses| Recorder
+    TLS -->|secures| Server
+    Platform -->|configures| Server
     PB -->|implements| Server
     CLI -->|manages| Sessions
     CLI -->|auto-starts| Daemon
     Daemon -->|starts| Server
     CLI -->|calls| PB
-    CLI -->|uses| FC
 
-    FC -->|configures| FCScrape
-    FCScrape -->|async jobs| FCPoll
-    FC -->|HTTP REST| FCAPI
+    DeviceID -->|authenticates| TLS
+    Discovery -->|finds peers| Server
+    StealthPkg -->|patches| Page
 
     Rod -->|CDP protocol| Chrome
-    Stealth -->|patches| Page
     Browser -->|wraps| Rod
 ```
 

@@ -177,9 +177,8 @@ func (s *ScoutServer) getSession(id string) (*session, error) {
 // ════════════════════════ Session Lifecycle ════════════════════════
 
 func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.CreateSessionResponse, error) {
-	opts := []scout.Option{
-		scout.WithHeadless(req.GetHeadless()),
-	}
+	opts := platformSessionDefaults()
+	opts = append(opts, scout.WithHeadless(req.GetHeadless()))
 
 	if req.GetStealth() {
 		opts = append(opts, scout.WithStealth())

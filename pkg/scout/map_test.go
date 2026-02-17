@@ -147,6 +147,7 @@ func TestMapDedup(t *testing.T) {
 		if seen[u] {
 			t.Errorf("duplicate URL: %s", u)
 		}
+
 		seen[u] = true
 	}
 }
@@ -251,6 +252,7 @@ func TestMapPathAllowed(t *testing.T) {
 
 	for _, tt := range tests {
 		o := &mapOptions{includePaths: tt.include, excludePaths: tt.exclude}
+
 		got := mapPathAllowed(tt.url, o)
 		if got != tt.allowed {
 			t.Errorf("mapPathAllowed(%q, include=%v, exclude=%v) = %v, want %v",
@@ -263,6 +265,7 @@ func TestMapSearchMatch(t *testing.T) {
 	if !mapSearchMatch("https://x.com/blog/go-tips", "go-tips") {
 		t.Error("should match path")
 	}
+
 	if mapSearchMatch("https://x.com/about", "blog") {
 		t.Error("should not match")
 	}
@@ -282,9 +285,11 @@ func TestMapOptions(t *testing.T) {
 	if o.limit != 50 || !o.includeSubdoms || o.delay != time.Second || o.maxDepth != 5 {
 		t.Error("options not applied")
 	}
+
 	if o.useSitemap || o.search != "test" {
 		t.Error("options not applied")
 	}
+
 	if len(o.includePaths) != 2 || len(o.excludePaths) != 1 {
 		t.Error("path options not applied")
 	}

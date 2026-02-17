@@ -519,6 +519,7 @@ func TestSessionStorageRemove(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -553,6 +554,7 @@ func TestSessionStorageLength(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -591,6 +593,7 @@ func TestSaveAndLoadSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -616,6 +619,7 @@ func TestSaveAndLoadSession(t *testing.T) {
 
 	// Test file save/load
 	tmpFile := filepath.Join(os.TempDir(), "scout_test_session.json")
+
 	defer func() { _ = os.Remove(tmpFile) }()
 
 	if err := SaveSessionToFile(state, tmpFile); err != nil {
@@ -636,6 +640,7 @@ func TestSaveAndLoadSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page2.Close() }()
 
 	if err := page2.LoadSession(loaded); err != nil {

@@ -532,6 +532,7 @@ func (p *Page) Race(selectors ...string) (*Element, int, error) {
 
 	// Determine which selector won by matching against the element.
 	idx := -1
+
 	for i, sel := range selectors {
 		matched, mErr := el.Matches(sel)
 		if mErr == nil && matched {

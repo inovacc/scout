@@ -13,6 +13,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage("about:blank")
@@ -31,6 +32,7 @@ func main() {
 	if err := page.Navigate("https://example.com"); err != nil {
 		log.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		log.Fatal(err)
 	}
@@ -38,6 +40,7 @@ func main() {
 	// Check what was captured
 	entries := rec.Entries()
 	fmt.Printf("Captured %d network requests\n", len(entries))
+
 	for _, e := range entries {
 		fmt.Printf("  %s %s -> %d\n", e.Request.Method, e.Request.URL, e.Response.Status)
 	}
@@ -51,5 +54,6 @@ func main() {
 	if err := os.WriteFile("capture.har", data, 0o644); err != nil {
 		log.Fatal(err)
 	}
+
 	fmt.Printf("\nHAR exported: capture.har (%d entries)\n", count)
 }

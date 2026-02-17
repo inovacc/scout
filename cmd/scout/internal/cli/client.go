@@ -75,7 +75,21 @@ var clientCmd = &cobra.Command{
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: %s: %v\n", t, err)
 				continue
 			}
-			client, conn, err := getClient(t)
+			insecureFlag, _ := cmd.Flags().GetBool("insecure")
+			var (
+				client pb.ScoutServiceClient
+				conn   *grpc.ClientConn
+				err    error
+			)
+			if insecureFlag {
+				client, conn, err = getClient(t)
+			} else {
+				client, conn, err = getClientTLS(t)
+				if err != nil {
+					// Fall back to insecure if TLS fails (e.g. no identity)
+					client, conn, err = getClient(t)
+				}
+			}
 			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: %s: %v\n", t, err)
 				continue

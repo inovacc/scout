@@ -104,13 +104,15 @@ type listInfo struct {
 }
 
 func (c *renderCtx) walk(n *html.Node) {
-	switch n.Type {
+	switch n.Type { //nolint:exhaustive // only TextNode and ElementNode are relevant
 	case html.TextNode:
 		text := n.Data
 		if !c.inPre {
 			text = collapseSpaces(text)
 		}
+
 		c.sb.WriteString(text)
+
 		return
 	case html.ElementNode:
 		// skip
@@ -118,10 +120,11 @@ func (c *renderCtx) walk(n *html.Node) {
 		for ch := n.FirstChild; ch != nil; ch = ch.NextSibling {
 			c.walk(ch)
 		}
+
 		return
 	}
 
-	switch n.DataAtom {
+	switch n.DataAtom { //nolint:exhaustive // only relevant HTML elements handled
 	case atom.Script, atom.Style, atom.Noscript, atom.Iframe, atom.Svg:
 		return
 	case atom.H1:
@@ -203,6 +206,7 @@ func (c *renderCtx) inline(n *html.Node, marker string) {
 	if text == "" {
 		return
 	}
+
 	c.sb.WriteString(marker)
 	c.walkChildren(n)
 	c.sb.WriteString(marker)
@@ -212,12 +216,14 @@ func (c *renderCtx) codeBlock(n *html.Node) {
 	c.ensureNewline()
 	// Detect language from <code class="language-xxx">
 	lang := ""
+
 	if code := findChild(n, atom.Code); code != nil {
 		cls := getAttr(code, "class")
-		if strings.HasPrefix(cls, "language-") {
-			lang = strings.TrimPrefix(cls, "language-")
+		if after, found := strings.CutPrefix(cls, "language-"); found {
+			lang = after
 		}
 	}
+
 	c.sb.WriteString("```")
 	c.sb.WriteString(lang)
 	c.sb.WriteString("\n")
@@ -229,6 +235,7 @@ func (c *renderCtx) codeBlock(n *html.Node) {
 	if len(s) > 0 && s[len(s)-1] != '\n' {
 		c.sb.WriteString("\n")
 	}
+
 	c.sb.WriteString("```\n\n")
 }
 
@@ -237,25 +244,31 @@ func (c *renderCtx) blockquote(n *html.Node) {
 	sub := &renderCtx{opts: c.opts, listStack: c.listStack, inPre: c.inPre}
 	sub.walkChildren(n)
 	lines := strings.Split(strings.TrimRight(sub.sb.String(), "\n"), "\n")
+
 	c.ensureNewline()
+
 	for _, line := range lines {
 		c.sb.WriteString("> ")
 		c.sb.WriteString(line)
 		c.sb.WriteString("\n")
 	}
+
 	c.sb.WriteString("\n")
 }
 
 func (c *renderCtx) link(n *html.Node) {
 	href := getAttr(n, "href")
+
 	text := strings.TrimSpace(innerText(n))
 	if text == "" {
 		text = href
 	}
+
 	if !c.opts.includeLinks || href == "" {
 		c.sb.WriteString(text)
 		return
 	}
+
 	href = c.resolveURL(href)
 	c.sb.WriteString("[")
 	c.sb.WriteString(text)
@@ -268,11 +281,14 @@ func (c *renderCtx) image(n *html.Node) {
 	if !c.opts.includeImages {
 		return
 	}
+
 	src := getAttr(n, "src")
 	alt := getAttr(n, "alt")
+
 	if src == "" {
 		return
 	}
+
 	src = c.resolveURL(src)
 	c.sb.WriteString("![")
 	c.sb.WriteString(alt)
@@ -284,11 +300,13 @@ func (c *renderCtx) image(n *html.Node) {
 func (c *renderCtx) list(n *html.Node, ordered bool) {
 	c.ensureNewline()
 	c.listStack = append(c.listStack, listInfo{ordered: ordered, index: 0})
+
 	for ch := n.FirstChild; ch != nil; ch = ch.NextSibling {
 		if ch.Type == html.ElementNode && ch.DataAtom == atom.Li {
 			c.listItem(ch)
 		}
 	}
+
 	c.listStack = c.listStack[:len(c.listStack)-1]
 	if len(c.listStack) == 0 {
 		c.sb.WriteString("\n")
@@ -301,6 +319,7 @@ func (c *renderCtx) listItem(n *html.Node) {
 	info := &c.listStack[len(c.listStack)-1]
 
 	c.sb.WriteString(indent)
+
 	if info.ordered {
 		info.index++
 		c.sb.WriteString(fmt.Sprintf("%d. ", info.index))
@@ -337,6 +356,7 @@ func (c *renderCtx) table(n *html.Node) {
 			cols = len(row)
 		}
 	}
+
 	if cols == 0 {
 		return
 	}
@@ -350,6 +370,7 @@ func (c *renderCtx) table(n *html.Node) {
 
 	// Column widths
 	widths := make([]int, cols)
+
 	for _, row := range rows {
 		for j, cell := range row {
 			if len(cell) > widths[j] {
@@ -357,6 +378,7 @@ func (c *renderCtx) table(n *html.Node) {
 			}
 		}
 	}
+
 	for i := range widths {
 		if widths[i] < 3 {
 			widths[i] = 3
@@ -367,56 +389,70 @@ func (c *renderCtx) table(n *html.Node) {
 
 	// Header row
 	c.sb.WriteString("|")
+
 	for j, cell := range rows[0] {
 		c.sb.WriteString(" ")
 		c.sb.WriteString(cell)
 		c.sb.WriteString(strings.Repeat(" ", widths[j]-len(cell)))
 		c.sb.WriteString(" |")
 	}
+
 	c.sb.WriteString("\n")
 
 	// Separator
 	c.sb.WriteString("|")
+
 	for _, w := range widths {
 		c.sb.WriteString(" ")
 		c.sb.WriteString(strings.Repeat("-", w))
 		c.sb.WriteString(" |")
 	}
+
 	c.sb.WriteString("\n")
 
 	// Data rows
 	for _, row := range rows[1:] {
 		c.sb.WriteString("|")
+
 		for j, cell := range row {
 			c.sb.WriteString(" ")
 			c.sb.WriteString(cell)
 			c.sb.WriteString(strings.Repeat(" ", widths[j]-len(cell)))
 			c.sb.WriteString(" |")
 		}
+
 		c.sb.WriteString("\n")
 	}
+
 	c.sb.WriteString("\n")
 }
 
 func collectTableRows(table *html.Node) [][]string {
 	var rows [][]string
+
 	var walkTable func(*html.Node)
+
 	walkTable = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.DataAtom == atom.Tr {
 			var cells []string
+
 			for c := n.FirstChild; c != nil; c = c.NextSibling {
 				if c.Type == html.ElementNode && (c.DataAtom == atom.Td || c.DataAtom == atom.Th) {
 					cells = append(cells, strings.TrimSpace(innerText(c)))
 				}
 			}
+
 			rows = append(rows, cells)
+
 			return
 		}
+
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			walkTable(c)
 		}
 	}
 	walkTable(table)
+
 	return rows
 }
 
@@ -424,14 +460,17 @@ func (c *renderCtx) resolveURL(href string) string {
 	if c.opts.baseURL == "" {
 		return href
 	}
+
 	base, err := url.Parse(c.opts.baseURL)
 	if err != nil {
 		return href
 	}
+
 	ref, err := url.Parse(href)
 	if err != nil {
 		return href
 	}
+
 	return base.ResolveReference(ref).String()
 }
 
@@ -448,6 +487,7 @@ func findChild(n *html.Node, a atom.Atom) *html.Node {
 			return c
 		}
 	}
+
 	return nil
 }
 
