@@ -2,6 +2,7 @@ package scout
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
@@ -32,6 +33,7 @@ func New(opts ...Option) (*Browser, error) {
 		if err != nil {
 			return nil, fmt.Errorf("scout: lookup %s browser: %w", o.browserType, err)
 		}
+
 		l = l.Bin(binPath)
 	}
 
@@ -57,6 +59,12 @@ func New(opts ...Option) (*Browser, error) {
 
 	for name, values := range o.launchFlags {
 		l = l.Set(flags.Flag(name), values...)
+	}
+
+	if len(o.extensions) > 0 {
+		joined := strings.Join(o.extensions, ",")
+		l = l.Set(flags.Flag("load-extension"), joined)
+		l = l.Set(flags.Flag("disable-extensions-except"), joined)
 	}
 
 	u, err := l.Launch()

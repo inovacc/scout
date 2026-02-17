@@ -39,7 +39,8 @@ type options struct {
 	windowState WindowState
 	xvfb        bool
 	xvfbArgs    []string
-	launchFlags map[string][]string
+	launchFlags  map[string][]string
+	extensions   []string
 }
 
 func defaults() *options {
@@ -130,6 +131,13 @@ func WithNoSandbox() Option {
 // WithWindowState sets the initial window state for new pages.
 func WithWindowState(state WindowState) Option {
 	return func(o *options) { o.windowState = state }
+}
+
+// WithExtension loads one or more unpacked Chrome extensions by directory path.
+// Extensions require --load-extension and --disable-extensions-except launch flags
+// which are set automatically at browser startup.
+func WithExtension(paths ...string) Option {
+	return func(o *options) { o.extensions = append(o.extensions, paths...) }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.
