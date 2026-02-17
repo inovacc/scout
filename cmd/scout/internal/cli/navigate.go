@@ -17,12 +17,7 @@ var navigateCmd = &cobra.Command{
 	Short: "Navigate to a URL",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		if err := ensureDaemon(addr); err != nil {
-			return err
-		}
-
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -52,8 +47,7 @@ var backCmd = &cobra.Command{
 	Use:   "back",
 	Short: "Go back in browser history",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -79,8 +73,7 @@ var forwardCmd = &cobra.Command{
 	Use:   "forward",
 	Short: "Go forward in browser history",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -106,8 +99,7 @@ var reloadCmd = &cobra.Command{
 	Use:   "reload",
 	Short: "Reload the current page",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}

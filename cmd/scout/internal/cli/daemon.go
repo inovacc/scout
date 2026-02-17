@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	pb "github.com/inovacc/scout/grpc/scoutpb"
 	"github.com/inovacc/scout/grpc/server"
 	"github.com/inovacc/scout/pkg/identity"
+	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
@@ -72,10 +74,24 @@ func isDaemonReachable(addr string, timeout time.Duration) bool {
 	}
 }
 
-// ensureDaemon checks if a gRPC server is reachable at addr; if not, starts one.
+// isLocalAddr returns true if addr refers to localhost or has no host component.
+func isLocalAddr(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return true // no port, assume local
+	}
+	return host == "" || host == "localhost" || host == "127.0.0.1" || host == "::1"
+}
+
+// ensureDaemon checks if a gRPC server is reachable at addr; if not and addr is local, starts one.
 func ensureDaemon(addr string) error {
 	if isDaemonReachable(addr, 2*time.Second) {
 		return nil
+	}
+
+	// Only auto-start daemon for local addresses
+	if !isLocalAddr(addr) {
+		return fmt.Errorf("scout: server at %s not reachable", addr)
 	}
 
 	// Daemon not running — start one
@@ -124,22 +140,29 @@ func ensureDaemon(addr string) error {
 	return fmt.Errorf("scout: daemon started but not reachable after 5s")
 }
 
-// getClient connects to the gRPC daemon and returns a client.
-// It attempts mTLS first; if no local identity exists, falls back to insecure.
-func getClient(addr string) (pb.ScoutServiceClient, *grpc.ClientConn, error) {
-	var creds grpc.DialOption
-
+// getClientTLS connects using mTLS credentials from the local identity.
+func getClientTLS(addr string) (pb.ScoutServiceClient, *grpc.ClientConn, error) {
 	dir, err := scoutDir()
-	if err == nil {
-		id, loadErr := identity.LoadIdentity(filepath.Join(dir, "identity"))
-		if loadErr == nil {
-			creds = grpc.WithTransportCredentials(server.ClientTLSCredentials(id))
-		}
+	if err != nil {
+		return nil, nil, fmt.Errorf("scout: config dir: %w", err)
 	}
 
-	if creds == nil {
-		creds = grpc.WithTransportCredentials(insecure.NewCredentials())
+	id, err := identity.LoadIdentity(filepath.Join(dir, "identity"))
+	if err != nil {
+		return nil, nil, fmt.Errorf("scout: load identity for TLS: %w", err)
 	}
+
+	creds := grpc.WithTransportCredentials(server.ClientTLSCredentials(id))
+	return dialClient(addr, creds)
+}
+
+// getClient connects to the gRPC daemon using plaintext (insecure).
+// Used for local daemon communication. For mTLS connections, use getClientTLS.
+func getClient(addr string) (pb.ScoutServiceClient, *grpc.ClientConn, error) {
+	return dialClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+}
+
+func dialClient(addr string, creds grpc.DialOption) (pb.ScoutServiceClient, *grpc.ClientConn, error) {
 
 	conn, err := grpc.NewClient(addr,
 		creds,
@@ -153,6 +176,22 @@ func getClient(addr string) (pb.ScoutServiceClient, *grpc.ClientConn, error) {
 	}
 
 	return pb.NewScoutServiceClient(conn), conn, nil
+}
+
+// resolveClient returns a gRPC client using mTLS or insecure mode based on the --insecure flag.
+func resolveClient(cmd *cobra.Command) (pb.ScoutServiceClient, *grpc.ClientConn, error) {
+	addr, _ := cmd.Flags().GetString("addr")
+	insecureMode, _ := cmd.Flags().GetBool("insecure")
+
+	if insecureMode {
+		if err := ensureDaemon(addr); err != nil {
+			return nil, nil, err
+		}
+
+		return getClient(addr)
+	}
+
+	return getClientTLS(addr)
 }
 
 // resolveSession returns the active session ID from flag or ~/.scout/current-session.
