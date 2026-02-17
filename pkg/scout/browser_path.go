@@ -22,5 +22,6 @@ func firstExisting(paths []string, bt BrowserType) (string, error) {
 			return p, nil
 		}
 	}
+
 	return "", fmt.Errorf("%w: %s", ErrBrowserNotFound, bt)
 }

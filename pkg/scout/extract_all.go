@@ -39,6 +39,7 @@ func (p *Page) ExtractAll(req *ExtractionRequest) *ExtractionResult {
 				result.Errors = append(result.Errors, "selector "+sel+": "+err.Error())
 				continue
 			}
+
 			result.Selectors[sel] = texts
 		}
 	}
@@ -51,11 +52,13 @@ func (p *Page) ExtractAll(req *ExtractionRequest) *ExtractionResult {
 				result.Errors = append(result.Errors, "invalid attr spec "+spec+" (use selector@attr)")
 				continue
 			}
+
 			values, err := p.ExtractAttributes(sel, attr)
 			if err != nil {
 				result.Errors = append(result.Errors, "attr "+spec+": "+err.Error())
 				continue
 			}
+
 			result.Attrs[spec] = values
 		}
 	}
@@ -96,5 +99,6 @@ func ParseAttrSpec(spec string) (selector, attr string, ok bool) {
 	if idx <= 0 || idx >= len(spec)-1 {
 		return "", "", false
 	}
+
 	return spec[:idx], spec[idx+1:], true
 }

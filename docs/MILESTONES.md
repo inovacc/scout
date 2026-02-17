@@ -67,7 +67,7 @@
 - [x] Slack scraper mode: browser auth, API client, channels, messages, threads, files, users, search
 - [x] Encrypted session capture and persistence (`scraper/slack/session.go`)
 - [x] CLI for Slack session management (capture, load, decrypt)
-- **Test Coverage:** 40.5% total (scraper 84.3%, scraper/slack 64.4%)
+- **Test Coverage:** scraper 84.3% (Slack mode removed)
 
 ## v0.5.0 - Unified CLI [COMPLETE]
 **Goal:** Single Cobra CLI binary replacing all separate command binaries.
@@ -81,29 +81,29 @@
 - [x] Remove old separate binaries
 - [x] Update documentation (README, CLAUDE.md, ROADMAP)
 - **New dependency:** `github.com/spf13/cobra`
-- **Test Coverage:** 40.5% total (pkg/scout 80.1%, scraper 84.3%, scraper/slack 60.4%)
+- **Test Coverage:** pkg/scout 79.2% | scraper 84.3%
 
-## v0.6.0 - Firecrawl Integration [COMPLETE]
-**Goal:** Pure HTTP client for the Firecrawl v2 REST API.
+## v0.6.0 - ~~Firecrawl Integration~~ [REMOVED]
+- ~~Firecrawl client removed — project focuses on native browser-based scraping~~
 
-- [x] Go client for Firecrawl scrape, crawl, search, map, batch, extract endpoints
-- [x] Typed errors (`AuthError`, `RateLimitError`, `APIError`)
-- [x] Generic `poll[T]()` for async crawl and batch job polling
-- [x] Functional options for all endpoints and client configuration
-- [x] CLI integration: `scout firecrawl` subcommands
-- [x] Unit tests with mock HTTP server, integration tests behind build tag
-- **No new external dependencies** — uses only standard library
-
-## v0.7.0 - Markdown, URL Map & Coverage [IN PROGRESS]
-**Goal:** Native HTML-to-Markdown, URL discovery, and 80%+ test coverage.
+## v0.7.0 - Markdown, URL Map, Identity & mTLS [IN PROGRESS]
+**Goal:** Native HTML-to-Markdown, URL discovery, device identity, and mTLS.
 
 - [x] Pure Go HTML-to-Markdown converter with readability scoring (`markdown.go`, `readability.go`)
 - [x] `page.Markdown()` and `page.MarkdownContent()` methods
 - [x] CLI: `scout markdown --url=<url> [--main-only]`
 - [x] URL Map / Link Discovery (`map.go`) combining sitemap + BFS link harvesting
 - [x] CLI: `scout map <url> [--search=term] [--limit=N]`
-- [x] Increase pkg/scout test coverage from 69.9% to 80.1%
+- [x] Internalized `go-rod/stealth` into `pkg/stealth/`
+- [x] Multi-browser support: Brave, Edge auto-detection
+- [x] Chrome extension loading via `WithExtension()`
+- [x] Syncthing-style device identity (`pkg/identity/`)
+- [x] mTLS authentication (`grpc/server/tls.go`)
+- [x] Device pairing handshake (`grpc/server/pairing.go`)
+- [x] mDNS peer discovery (`pkg/discovery/`)
+- [x] Platform-specific session defaults (`grpc/server/platform_*.go`)
 - [ ] Tag and release v0.7.0
+- **Coverage:** pkg/scout 79.2% | pkg/identity 81.1% | scraper 84.3%
 
 ## v0.8.0 - Screen Recorder [PLANNED]
 **Goal:** Capture browser sessions as video for forensic evidence.
@@ -130,4 +130,4 @@
 - [ ] GoDoc examples for Browser, Page, Element, EvalResult, and new features
 - [ ] Integration test examples (login flow, form submission, scraping)
 - [x] 80%+ test coverage (pkg/scout: 80.1%)
-- **Coverage:** 40.5% total | pkg/scout 80.1% ✅
+- **Coverage:** pkg/scout 79.2% | pkg/identity 81.1% | scraper 84.3%

@@ -13,6 +13,7 @@ func TestFileExists(t *testing.T) {
 	if err := os.WriteFile(tmp, []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+
 	if !fileExists(tmp) {
 		t.Fatal("expected fileExists to return true for existing file")
 	}
@@ -38,6 +39,7 @@ func TestFirstExisting(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if got != tmp {
 		t.Fatalf("expected %s, got %s", tmp, got)
 	}
@@ -54,6 +56,7 @@ func TestLookupBrowserChrome(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if path != "" {
 		t.Fatalf("expected empty path for chrome, got %q", path)
 	}
@@ -69,6 +72,7 @@ func TestLookupBrowserUnknown(t *testing.T) {
 func TestWithBrowserOption(t *testing.T) {
 	o := defaults()
 	WithBrowser(BrowserEdge)(o)
+
 	if o.browserType != BrowserEdge {
 		t.Fatalf("expected browserType edge, got %q", o.browserType)
 	}

@@ -49,6 +49,7 @@ func TestNetworkRecorderCapturesEntries(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	rec := NewNetworkRecorder(page)
@@ -72,6 +73,7 @@ func TestNetworkRecorderCapturesEntries(t *testing.T) {
 
 	// Should have captured the page load at minimum
 	found := false
+
 	for _, e := range entries {
 		if e.Request.URL != "" {
 			found = true
@@ -94,6 +96,7 @@ func TestNetworkRecorderExportHAR(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	rec := NewNetworkRecorder(page, WithCreatorName("test-tool", "1.0.0"))
@@ -157,6 +160,7 @@ func TestNetworkRecorderCaptureBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	rec := NewNetworkRecorder(page, WithCaptureBody(true))
@@ -178,6 +182,7 @@ func TestNetworkRecorderCaptureBody(t *testing.T) {
 	}
 
 	found := false
+
 	for _, e := range entries {
 		if e.Response.Content.Text != "" {
 			found = true
@@ -200,6 +205,7 @@ func TestNetworkRecorderStopIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	rec := NewNetworkRecorder(page)
@@ -220,6 +226,7 @@ func TestNetworkRecorderClear(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	rec := NewNetworkRecorder(page)

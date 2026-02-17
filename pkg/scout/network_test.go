@@ -180,6 +180,7 @@ func TestHijackRequestAccessors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	var (
@@ -205,11 +206,13 @@ func TestHijackRequestAccessors(t *testing.T) {
 	}
 
 	go router.Run()
+
 	defer func() { _ = router.Stop() }()
 
 	if err := page.Navigate(srv.URL + "/echo-headers"); err != nil {
 		t.Fatalf("Navigate() error: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad() error: %v", err)
 	}
@@ -217,6 +220,7 @@ func TestHijackRequestAccessors(t *testing.T) {
 	if gotMethod != "GET" {
 		t.Errorf("Method() = %q, want GET", gotMethod)
 	}
+
 	if gotURL == "" {
 		t.Error("URL() should not be empty")
 	}
@@ -235,6 +239,7 @@ func TestHijackLoadResponse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	router, err := page.Hijack("*json*", func(ctx *HijackContext) {
@@ -249,11 +254,13 @@ func TestHijackLoadResponse(t *testing.T) {
 	}
 
 	go router.Run()
+
 	defer func() { _ = router.Stop() }()
 
 	if err := page.Navigate(srv.URL + "/json"); err != nil {
 		t.Fatalf("Navigate() error: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad() error: %v", err)
 	}
@@ -274,6 +281,7 @@ func TestHijackSkip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	var skipped atomic.Bool
@@ -288,11 +296,13 @@ func TestHijackSkip(t *testing.T) {
 	}
 
 	go router.Run()
+
 	defer func() { _ = router.Stop() }()
 
 	if err := page.Navigate(srv.URL); err != nil {
 		t.Fatalf("Navigate() error: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad() error: %v", err)
 	}
@@ -312,6 +322,7 @@ func TestHijackResponseFail(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	router, err := page.Hijack("*json*", func(ctx *HijackContext) {
@@ -322,6 +333,7 @@ func TestHijackResponseFail(t *testing.T) {
 	}
 
 	go router.Run()
+
 	defer func() { _ = router.Stop() }()
 
 	// Navigate to JSON — it should fail, which is expected

@@ -461,6 +461,7 @@ func TestPageKeyPress(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Element() error: %v", err)
 	}
+
 	if err := el.Focus(); err != nil {
 		t.Fatalf("Focus() error: %v", err)
 	}
@@ -489,9 +490,11 @@ func TestPageKeyType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Element() error: %v", err)
 	}
+
 	if err := el.Clear(); err != nil {
 		t.Fatalf("Clear() error: %v", err)
 	}
+
 	if err := el.Focus(); err != nil {
 		t.Fatalf("Focus() error: %v", err)
 	}
@@ -1106,6 +1109,7 @@ func TestPageAddScriptTag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -1136,6 +1140,7 @@ func TestPageAddStyleTag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -1157,6 +1162,7 @@ func TestPageEmulate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.Emulate(devices.IPhone6or7or8); err != nil {
@@ -1183,6 +1189,7 @@ func TestPageHandleDialog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -1196,6 +1203,7 @@ func TestPageHandleDialog(t *testing.T) {
 		if dialog.Type != "alert" {
 			return
 		}
+
 		_ = handle(&proto.PageHandleJavaScriptDialog{Accept: true})
 	}()
 
@@ -1213,6 +1221,7 @@ func TestPageRace(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -1254,6 +1263,7 @@ func TestPageWaitRequestIdle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -1274,6 +1284,7 @@ func TestPageWaitNavigation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -1281,9 +1292,11 @@ func TestPageWaitNavigation(t *testing.T) {
 	}
 
 	wait := page.WaitNavigation()
+
 	go func() {
 		_ = page.Navigate(srv.URL + "/page2")
 	}()
+
 	wait()
 
 	title, _ := page.Title()
@@ -1302,6 +1315,7 @@ func TestPageRodPage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	rod := page.RodPage()
@@ -1320,6 +1334,7 @@ func TestPageKeyPressAndType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {

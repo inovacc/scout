@@ -235,6 +235,7 @@ func TestPaginateByScroll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -267,6 +268,7 @@ func TestPaginateByLoadMore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {

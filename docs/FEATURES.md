@@ -26,9 +26,9 @@
 - **Status:** Completed
 - **Description:** Multi-session browser control via gRPC with 25+ RPCs covering session lifecycle, navigation, element interaction, query, capture, forensic recording, and event streaming. Includes bidirectional interactive streaming. Implemented in `grpc/server/`.
 
-### Scraper Framework & Slack Mode
+### Scraper Framework & Generic Auth
 - **Status:** Completed
-- **Description:** Pluggable scraper framework with encrypted session persistence (AES-256-GCM + Argon2id). Slack mode with browser auth, API client, channel/message/thread/file/user extraction, JSON export. Implemented in `scraper/` and `scraper/slack/`.
+- **Description:** Pluggable scraper framework with encrypted session persistence (AES-256-GCM + Argon2id). Generic auth framework with Provider interface, browser capture, OAuth2 PKCE, Electron CDP. Implemented in `scraper/` and `scraper/auth/`.
 
 ### Unified CLI
 - **Status:** Completed
@@ -39,9 +39,8 @@
 - **Status:** Completed (via RateLimiter)
 - **Description:** Built-in retry logic for transient navigation and element-finding failures, with configurable backoff strategy. Implemented as `RateLimiter.Do()` and `Page.NavigateWithRetry()`.
 
-### Firecrawl Integration
-- **Status:** Completed
-- **Description:** Pure HTTP Go client for the Firecrawl v2 REST API. Supports scrape, crawl, search, URL map, batch scrape, and AI-powered extraction endpoints. Typed errors, generic async polling, functional options. CLI commands under `scout firecrawl`. Implemented in `firecrawl/` package with no external dependencies beyond stdlib.
+### ~~Firecrawl Integration~~ [REMOVED]
+- **Status:** Removed — `firecrawl/` package deleted in favor of native browser-based scraping
 
 ### HTML-to-Markdown Engine
 - **Status:** Completed
@@ -50,6 +49,26 @@
 ### URL Map / Link Discovery
 - **Status:** Completed
 - **Description:** Lightweight URL-only discovery combining sitemap.xml parsing with on-page BFS link harvesting. Filters for subdomains, path patterns, search terms. Limit cap on discovered URLs. CLI `scout map <url>`. Implemented in `map.go`.
+
+### Multi-Browser Support
+- **Status:** Completed
+- **Description:** Auto-detection for Brave and Microsoft Edge browsers on Windows, macOS, and Linux. `WithBrowser(BrowserBrave)` or `--browser=brave`. Platform-specific path resolution in `browser_path_*.go`.
+
+### Chrome Extension Loading
+- **Status:** Completed
+- **Description:** Load unpacked Chrome extensions via `WithExtension(paths...)`. Sets `--load-extension` and `--disable-extensions-except` flags. CLI `scout extension load/test/list`.
+
+### Device Identity & mTLS
+- **Status:** Completed
+- **Description:** Syncthing-style device IDs with Ed25519 keys and Luhn check digits (`pkg/identity/`). Mutual TLS authentication for gRPC connections (`grpc/server/tls.go`). Device pairing handshake for certificate exchange (`grpc/server/pairing.go`). mDNS peer discovery (`pkg/discovery/`). CLI `scout device pair/list/trust`.
+
+### Internalized Stealth
+- **Status:** Completed
+- **Description:** `go-rod/stealth` forked and internalized into `pkg/stealth/`. Removes external dependency while maintaining anti-bot-detection capabilities.
+
+### Platform-Specific Server Defaults
+- **Status:** Completed
+- **Description:** Build-constraint-based platform defaults for gRPC server sessions. Auto-applies `--no-sandbox` on Linux (containers/WSL). Windows and macOS get no extra defaults. Implemented in `grpc/server/platform_*.go`.
 
 ## Proposed Features
 

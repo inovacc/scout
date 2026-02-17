@@ -14,6 +14,7 @@ func TestExtractAll(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -45,11 +46,13 @@ func TestExtractAll(t *testing.T) {
 
 	// Invalid attr spec should produce an error
 	foundInvalidError := false
+
 	for _, e := range result.Errors {
 		if e == "invalid attr spec invalid (use selector@attr)" {
 			foundInvalidError = true
 		}
 	}
+
 	if !foundInvalidError {
 		t.Error("expected error for invalid attr spec")
 	}
@@ -65,6 +68,7 @@ func TestExtractAllWithTable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -102,10 +106,12 @@ func TestParseAttrSpec(t *testing.T) {
 			t.Errorf("ParseAttrSpec(%q) ok = %v, want %v", tt.spec, ok, tt.wantOK)
 			continue
 		}
+
 		if ok {
 			if sel != tt.sel {
 				t.Errorf("ParseAttrSpec(%q) sel = %q, want %q", tt.spec, sel, tt.sel)
 			}
+
 			if attr != tt.attr {
 				t.Errorf("ParseAttrSpec(%q) attr = %q, want %q", tt.spec, attr, tt.attr)
 			}

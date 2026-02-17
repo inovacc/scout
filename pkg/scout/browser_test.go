@@ -80,6 +80,7 @@ func TestNewPageStealth(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	// stealth path: stealth.Page() + Navigate()
@@ -87,6 +88,7 @@ func TestNewPageStealth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage(stealth) error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	title, err := page.Title()
@@ -103,6 +105,7 @@ func TestNewPageStealth(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage(stealth, empty) error: %v", err)
 	}
+
 	defer func() { _ = page2.Close() }()
 }
 
@@ -111,12 +114,14 @@ func TestNewBrowserIncognito(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage("about:blank")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 }
 
@@ -128,12 +133,14 @@ func TestNewBrowserWithUserAgent(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(srv.URL + "/echo-headers")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -156,11 +163,13 @@ func TestNewBrowserWithIgnoreCerts(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 }
 
 func TestNewPageNilBrowser(t *testing.T) {
 	var b *Browser
+
 	_, err := b.NewPage("http://example.com")
 	if err == nil {
 		t.Error("expected error from nil browser")

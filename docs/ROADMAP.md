@@ -1,7 +1,7 @@
 # Project Roadmap
 
 ## Current Status
-**Overall Progress:** 92% Complete
+**Overall Progress:** 85% Complete
 
 ## Phases
 
@@ -78,12 +78,9 @@
 ### Phase 7: Scraper Modes [IN PROGRESS]
 - [x] **Scraper mode architecture** (`scraper/`) — base types (Credentials, Progress, AuthError, RateLimitError), ExportJSON, ProgressFunc callback
 - [x] **Generic auth framework** (`scraper/auth/`) — Provider interface, Registry, BrowserAuth flow, BrowserCapture (capture all data before close), OAuth2 PKCE server, Electron CDP connection, encrypted session persistence
-- [x] **Slack mode** (`scraper/slack/`) — workspace auth (token + browser), channel listing, message history with threads, file listing, user directory, search, channel export
-- [x] **Slack auth provider** (`scraper/slack/provider.go`) — SlackProvider implements auth.Provider for generic framework
-- [x] **Slack session capture** (`scraper/slack/session.go`) — CaptureFromPage, encrypted save/load (AES-256-GCM + Argon2id)
 - [x] **Encryption utilities** (`scraper/crypto.go`) — EncryptData/DecryptData with passphrase-based key derivation
-- [x] **Slack Assist CLI** (`cmd/slack-assist/`) — capture, load, decrypt subcommands for browser-assisted credential management
 - [x] **Generic auth CLI** (`cmd/scout/internal/cli/auth.go`) — `scout auth login/capture/status/logout/providers`
+- ~~[x] **Slack mode** — removed in favor of generic auth framework~~
 - [ ] **Teams mode** (P2) — Microsoft SSO, chat/channel messages, meeting history, shared files
 - [ ] **Discord mode** (P2) — server/channel messages, threads, member lists, roles, pins
 - [ ] **Gmail mode** (P2) — Google auth + 2FA, email content, labels, attachments, contacts
@@ -108,15 +105,8 @@
 - [x] Remove old `cmd/server/`, `cmd/client/`, `cmd/example-workflow/`, `cmd/slack-assist/`
 - [x] Update documentation (README, CLAUDE.md)
 
-### Phase 9: Firecrawl Integration [COMPLETE]
-- [x] Pure HTTP Go client for Firecrawl v2 REST API (`firecrawl/`)
-- [x] Scrape, crawl, search, map, batch scrape, and extract endpoints
-- [x] Typed errors (`AuthError`, `RateLimitError`, `APIError`)
-- [x] Generic `poll[T]()` for async job completion (crawl, batch)
-- [x] Functional options pattern for all endpoints
-- [x] CLI commands: `scout firecrawl scrape/crawl/search/map/batch/extract`
-- [x] Unit tests with mock HTTP server (13 tests, 80%+ coverage)
-- [x] Integration tests behind `//go:build integration` + `FIRECRAWL_API_KEY`
+### Phase 9: ~~Firecrawl Integration~~ [REMOVED]
+- ~~Firecrawl client removed — project focuses on native browser-based scraping~~
 
 ### Phase 10: Native HTML-to-Markdown Engine [COMPLETE]
 - [x] Pure Go HTML→Markdown converter in `pkg/scout/markdown.go`
@@ -194,7 +184,17 @@
 - [ ] Result aggregation: merge results from all workers
 - [ ] Headless cluster configuration options
 
-### Phase 17: Documentation & Release [IN PROGRESS]
+### Phase 17: Device Identity, mTLS & Discovery [COMPLETE]
+- [x] **Device identity** (`pkg/identity/`) — Syncthing-style device IDs with Ed25519 keys, Luhn check digits
+- [x] **mTLS authentication** (`grpc/server/tls.go`) — auto-generated certificates, mutual TLS for gRPC
+- [x] **Device pairing** (`grpc/server/pairing.go`) — handshake protocol for mTLS certificate exchange
+- [x] **mDNS discovery** (`pkg/discovery/`) — LAN service advertisement and peer discovery via zeroconf
+- [x] **Platform session defaults** (`grpc/server/platform_*.go`) — auto `--no-sandbox` on Linux containers
+- [x] **Server instance display** (`grpc/server/display.go`) — table view with peer tracking
+- [x] **DevTools option** — `WithDevTools()` for browser DevTools panel
+- [x] **CLI device commands** (`cmd/scout/internal/cli/device.go`) — `scout device pair/list/trust`
+
+### Phase 18: Documentation & Release [IN PROGRESS]
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)
 - [x] Add LICENSE file
@@ -203,13 +203,14 @@
 
 ## Test Coverage
 
-**Current:** 40.5% (total project) | 80.1% (pkg/scout) | **Target:** 80% ✅
+**Current:** pkg/scout 79.2% | pkg/identity 81.1% | scraper 84.3% | **Target:** 80%
 
 | Package | Coverage | Status |
 |---------|----------|--------|
-| pkg/scout | 80.1% | ✅ Target met |
-| scraper | 84.3% | Complete |
-| firecrawl | 71.7% | Good |
-| scraper/slack | 60.4% | Adequate |
+| pkg/scout | 79.2% | Near target |
+| pkg/identity | 81.1% | ✅ Target met |
+| scraper | 84.3% | ✅ Complete |
+| pkg/stealth | 0.0% | No tests (asset wrapper) |
+| pkg/discovery | 0.0% | No tests |
 | scraper/auth | 0.0% | No tests |
 | grpc/server | 0.0% | No tests |

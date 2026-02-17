@@ -26,11 +26,13 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **HAR Network Recording** - Capture HTTP traffic via CDP events and export as HAR 1.2 format
 - **Keyboard Input** - Page-level key press and type sequences via `input.Key` constants
 - **gRPC Remote Control** - Multi-session browser control via gRPC with 25+ RPCs and event streaming
-- **Scraper Modes** - Pluggable scraper framework with encrypted session persistence; Slack mode with API client, browser auth, channel/message/thread/file/user extraction
-- **Encrypted Session Capture** - AES-256-GCM + Argon2id passphrase-based encryption for saved browser sessions via `slack-assist` CLI
+- **Scraper Framework** - Pluggable scraper framework with generic auth (browser capture, OAuth2, Electron CDP), encrypted session persistence (AES-256-GCM + Argon2id)
 - **HTML-to-Markdown** - Convert page HTML to clean markdown with readability scoring for main content extraction (`page.Markdown()`, `page.MarkdownContent()`)
 - **URL Map / Link Discovery** - Lightweight URL-only discovery combining sitemap.xml + on-page link harvesting with path/subdomain/search filters
-- **Firecrawl Integration** - Pure HTTP Go client for the Firecrawl v2 REST API: scrape, crawl, search, map, batch scrape, and AI-powered extraction — all without a browser
+- **Multi-Browser Support** - Chrome (default), Brave, and Microsoft Edge auto-detection via `WithBrowser()`
+- **Chrome Extension Loading** - Load unpacked extensions via `WithExtension(paths...)`
+- **Device Identity & Pairing** - Syncthing-style device IDs with Ed25519 keys, mTLS authentication, mDNS peer discovery
+- **Platform-Aware Defaults** - Auto-applies `--no-sandbox` on Linux containers; platform-specific session defaults via build constraints
 
 ## Installation
 
@@ -118,42 +120,6 @@ scout crawl https://example.com --max-depth=2
 
 # Clean up
 scout session destroy --all
-```
-
-## Firecrawl (LLM-Ready Scraping)
-
-Scout includes a pure HTTP client for the [Firecrawl](https://firecrawl.dev) v2 API — no browser required:
-
-```go
-import "github.com/inovacc/scout/firecrawl"
-
-client, _ := firecrawl.New("fc-xxx") // or FIRECRAWL_API_KEY env
-
-// Scrape a page as markdown
-doc, _ := client.Scrape(ctx, "https://example.com",
-    firecrawl.WithFormats(firecrawl.FormatMarkdown),
-)
-fmt.Println(doc.Markdown)
-
-// Search the web
-results, _ := client.Search(ctx, "golang web scraping")
-
-// Crawl a site asynchronously
-job, _ := client.Crawl(ctx, "https://example.com", firecrawl.WithCrawlLimit(100))
-job, _ = client.WaitForCrawl(ctx, job.ID, 2*time.Second)
-
-// AI extraction
-data, _ := client.Extract(ctx, []string{"https://example.com/pricing"},
-    firecrawl.WithExtractPrompt("get pricing plans"),
-)
-```
-
-CLI:
-```bash
-scout firecrawl scrape https://example.com --formats markdown
-scout firecrawl search "golang tutorial" --limit 10
-scout firecrawl crawl https://docs.example.com --limit 50 --wait
-scout firecrawl extract https://example.com/pricing --prompt "get pricing"
 ```
 
 ## Examples
@@ -360,29 +326,11 @@ The `scout` CLI provides a unified interface to all library features. It communi
 | `scout markdown --url=<url>` | Convert page to markdown (`--main-only`, `--no-images`) |
 | `scout table` / `meta` | Extract tables/metadata (`--url`, `--selector`) |
 | `scout form detect\|fill\|submit` | Form interaction |
-| `scout slack capture\|load\|decrypt` | Slack session management |
+| `scout auth login\|capture\|status\|logout` | Generic auth framework |
+| `scout device pair\|list\|trust` | Device pairing and identity |
 | `scout server` | Run gRPC server directly |
 | `scout client` | Interactive REPL client |
-| `scout firecrawl scrape <url>` | Scrape URL via Firecrawl API |
-| `scout firecrawl crawl <url>` | Crawl website via Firecrawl |
-| `scout firecrawl search <query>` | Web search via Firecrawl |
-| `scout firecrawl map <url>` | Discover URLs on a website |
-| `scout firecrawl batch` | Batch scrape multiple URLs |
-| `scout firecrawl extract <url>` | AI-powered data extraction |
 | `scout version` | Show version info |
-
-### Slack Session Management
-
-```bash
-# Capture: opens browser, you log in, credentials saved encrypted
-scout slack capture --workspace=myteam.slack.com
-
-# Load: decrypt and display session summary
-scout slack load --input=slack-session.enc
-
-# Decrypt: export plaintext JSON (for debugging)
-scout slack decrypt --input=slack-session.enc --output=session.json
-```
 
 ## Development
 
@@ -410,7 +358,7 @@ task grpc:client   # Run interactive CLI client
 | Package | Purpose |
 |---------|---------|
 | [go-rod/rod](https://github.com/go-rod/rod) | Headless browser automation via Chrome DevTools Protocol |
-| [go-rod/stealth](https://github.com/go-rod/stealth) | Anti-bot-detection page creation |
+| pkg/stealth (internalized) | Anti-bot-detection page creation (forked from go-rod/stealth) |
 | [ysmood/gson](https://github.com/ysmood/gson) | JSON number handling for JS evaluation results |
 | [golang.org/x/time](https://pkg.go.dev/golang.org/x/time) | Token bucket rate limiter |
 | [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | Argon2id key derivation for session encryption |
@@ -424,6 +372,7 @@ task grpc:client   # Run interactive CLI client
 | [google.golang.org/protobuf](https://pkg.go.dev/google.golang.org/protobuf) | Protocol Buffers runtime |
 | [google/uuid](https://github.com/google/uuid) | Session ID generation |
 | [spf13/cobra](https://github.com/spf13/cobra) | CLI framework |
+| [grandcat/zeroconf](https://github.com/grandcat/zeroconf) | mDNS service discovery for device pairing |
 
 ## License
 

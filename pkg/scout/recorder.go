@@ -203,6 +203,7 @@ func (r *NetworkRecorder) start() {
 			entry, ok := r.pending[e.RequestID]
 			startTime := r.startTimes[e.RequestID]
 			r.mu.Unlock()
+
 			if !ok {
 				return
 			}
@@ -240,12 +241,15 @@ func (r *NetworkRecorder) start() {
 		func(e *proto.NetworkLoadingFinished) {
 			r.mu.Lock()
 			entry, ok := r.pending[e.RequestID]
+
 			startTime := r.startTimes[e.RequestID]
 			if ok {
 				delete(r.pending, e.RequestID)
 				delete(r.startTimes, e.RequestID)
 			}
+
 			r.mu.Unlock()
+
 			if !ok {
 				return
 			}
@@ -258,6 +262,7 @@ func (r *NetworkRecorder) start() {
 				}.Call(r.page.RodPage())
 				if err == nil && body != nil {
 					entry.Response.Content.Text = body.Body
+
 					entry.Response.Content.Size = len(body.Body)
 					if body.Base64Encoded {
 						entry.Response.Content.Encoding = "base64"
@@ -272,12 +277,15 @@ func (r *NetworkRecorder) start() {
 
 		func(e *proto.NetworkLoadingFailed) {
 			r.mu.Lock()
+
 			entry, ok := r.pending[e.RequestID]
 			if ok {
 				delete(r.pending, e.RequestID)
 				delete(r.startTimes, e.RequestID)
 			}
+
 			r.mu.Unlock()
+
 			if !ok {
 				return
 			}

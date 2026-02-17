@@ -29,5 +29,6 @@ func MustPage(b *rod.Browser) *rod.Page {
 	if err != nil {
 		panic(err)
 	}
+
 	return p
 }
