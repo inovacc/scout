@@ -12,6 +12,8 @@ import (
 	"time"
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
+	"github.com/inovacc/scout/grpc/server"
+	"github.com/inovacc/scout/pkg/identity"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
@@ -88,7 +90,7 @@ func ensureDaemon(addr string) error {
 		port = parts[1]
 	}
 
-	cmd := exec.Command(exe, "server", "--port", port)
+	cmd := exec.Command(exe, "server", "--port", port, "--insecure")
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 
@@ -123,9 +125,24 @@ func ensureDaemon(addr string) error {
 }
 
 // getClient connects to the gRPC daemon and returns a client.
+// It attempts mTLS first; if no local identity exists, falls back to insecure.
 func getClient(addr string) (pb.ScoutServiceClient, *grpc.ClientConn, error) {
+	var creds grpc.DialOption
+
+	dir, err := scoutDir()
+	if err == nil {
+		id, loadErr := identity.LoadIdentity(filepath.Join(dir, "identity"))
+		if loadErr == nil {
+			creds = grpc.WithTransportCredentials(server.ClientTLSCredentials(id))
+		}
+	}
+
+	if creds == nil {
+		creds = grpc.WithTransportCredentials(insecure.NewCredentials())
+	}
+
 	conn, err := grpc.NewClient(addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		creds,
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(64*1024*1024),
 			grpc.MaxCallSendMsgSize(64*1024*1024),

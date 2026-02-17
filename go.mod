@@ -5,6 +5,7 @@ go 1.25
 require (
 	github.com/go-rod/rod v0.116.2
 	github.com/google/uuid v1.6.0
+	github.com/grandcat/zeroconf v1.0.0
 	github.com/spf13/cobra v1.10.2
 	github.com/ysmood/gson v0.7.3
 	golang.org/x/crypto v0.48.0
@@ -16,7 +17,9 @@ require (
 )
 
 require (
+	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/miekg/dns v1.1.27 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/ysmood/fetchup v0.2.4 // indirect
 	github.com/ysmood/goob v0.4.0 // indirect

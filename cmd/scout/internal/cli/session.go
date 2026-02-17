@@ -22,6 +22,8 @@ func init() {
 	sessionCreateCmd.Flags().String("url", "", "initial URL to navigate to")
 	sessionCreateCmd.Flags().Bool("record", false, "enable HAR recording")
 	sessionCreateCmd.Flags().Bool("capture-body", false, "capture response bodies in HAR")
+	sessionCreateCmd.Flags().Bool("maximized", false, "start browser window maximized")
+	sessionCreateCmd.Flags().Bool("devtools", false, "open Chrome DevTools automatically")
 
 	sessionDestroyCmd.Flags().Bool("all", false, "destroy all sessions")
 }
@@ -53,6 +55,8 @@ var sessionCreateCmd = &cobra.Command{
 		url, _ := cmd.Flags().GetString("url")
 		record, _ := cmd.Flags().GetBool("record")
 		captureBody, _ := cmd.Flags().GetBool("capture-body")
+		maximized, _ := cmd.Flags().GetBool("maximized")
+		devtools, _ := cmd.Flags().GetBool("devtools")
 
 		resp, err := client.CreateSession(context.Background(), &pb.CreateSessionRequest{
 			Headless:    headless,
@@ -62,6 +66,8 @@ var sessionCreateCmd = &cobra.Command{
 			InitialUrl:  url,
 			Record:      record,
 			CaptureBody: captureBody,
+			Maximized:   maximized,
+			Devtools:    devtools,
 		})
 		if err != nil {
 			return fmt.Errorf("scout: create session: %w", err)

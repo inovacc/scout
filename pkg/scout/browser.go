@@ -61,6 +61,10 @@ func New(opts ...Option) (*Browser, error) {
 		l = l.Set(flags.Flag(name), values...)
 	}
 
+	if o.devtools {
+		l = l.Set(flags.Flag("auto-open-devtools-for-tabs"))
+	}
+
 	if len(o.extensions) > 0 {
 		joined := strings.Join(o.extensions, ",")
 		l = l.Set(flags.Flag("load-extension"), joined)
