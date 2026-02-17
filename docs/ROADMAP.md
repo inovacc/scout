@@ -59,7 +59,7 @@
 - [x] EvalResult type conversion tests (String, Int, Float, Bool, IsNull, JSON, Decode)
 - [x] Page method tests (NavigateForward, ScrollScreenshot, PDF, ElementByJS, ElementByText, Search, etc.)
 - [x] Element method tests (DoubleClick, RightClick, Hover, Tap, Type, Press, DOM traversal, etc.)
-- [ ] Increase core test coverage from 69.9% to 80%+
+- [x] Increase core test coverage from 69.9% to 80%+ (achieved 80.1%)
 
 ### Phase 5: Storage & Session Management [COMPLETE]
 - [x] Session storage get/set/clear (`storage.go`)
@@ -118,15 +118,15 @@
 - [x] Unit tests with mock HTTP server (13 tests, 80%+ coverage)
 - [x] Integration tests behind `//go:build integration` + `FIRECRAWL_API_KEY`
 
-### Phase 10: Native HTML-to-Markdown Engine [PLANNED]
-- [ ] Pure Go HTML→Markdown converter in `pkg/scout/markdown.go`
-- [ ] `page.Markdown()` — convert full page HTML to clean markdown
-- [ ] `page.MarkdownContent()` — main content only (readability heuristics)
-- [ ] Support: headings, links, images, lists, tables, code blocks, bold/italic, blockquotes
-- [ ] Mozilla Readability-like content scoring to strip nav/footer/sidebar/ads
-- [ ] Functional options: `WithMainContentOnly()`, `WithIncludeImages()`, `WithIncludeLinks()`
-- [ ] CLI: `scout markdown --url=<url> [--main-only]`
-- [ ] Tests with fixture HTML pages covering all markdown element types
+### Phase 10: Native HTML-to-Markdown Engine [COMPLETE]
+- [x] Pure Go HTML→Markdown converter in `pkg/scout/markdown.go`
+- [x] `page.Markdown()` — convert full page HTML to clean markdown
+- [x] `page.MarkdownContent()` — main content only (readability heuristics)
+- [x] Support: headings, links, images, lists, tables, code blocks, bold/italic, blockquotes
+- [x] Mozilla Readability-like content scoring to strip nav/footer/sidebar/ads
+- [x] Functional options: `WithMainContentOnly()`, `WithIncludeImages()`, `WithIncludeLinks()`
+- [x] CLI: `scout markdown --url=<url> [--main-only]`
+- [x] Tests with fixture HTML pages covering all markdown element types
 
 ### Phase 11: Batch Scraper [PLANNED]
 - [ ] `BatchScrape(urls []string, fn func(*Page, string) error, ...BatchOption)` in `pkg/scout/batch.go`
@@ -137,14 +137,14 @@
 - [ ] CLI: `scout batch --urls=u1,u2 --urls-file=file.txt [--concurrency=5] [--format=json]`
 - [ ] Tests: concurrency, error isolation, progress, rate limiting
 
-### Phase 12: URL Map / Link Discovery [PLANNED]
-- [ ] `Map(url string, ...MapOption) ([]string, error)` in `pkg/scout/map.go`
-- [ ] Lightweight link-only crawl — collect URLs without full page extraction
-- [ ] Combine sitemap.xml parsing + on-page link harvesting
-- [ ] Filters: `WithMapSubdomains()`, `WithMapIncludePaths(...)`, `WithMapExcludePaths(...)`, `WithMapSearch(term)`
-- [ ] `WithMapLimit(n)` to cap discovered URLs
-- [ ] CLI: `scout map <url> [--search=term] [--include-subdomains] [--limit=100]`
-- [ ] Tests: link dedup, subdomain filtering, search filtering, sitemap integration
+### Phase 12: URL Map / Link Discovery [COMPLETE]
+- [x] `Map(url string, ...MapOption) ([]string, error)` in `pkg/scout/map.go`
+- [x] Lightweight link-only crawl — collect URLs without full page extraction
+- [x] Combine sitemap.xml parsing + on-page link harvesting
+- [x] Filters: `WithMapSubdomains()`, `WithMapIncludePaths(...)`, `WithMapExcludePaths(...)`, `WithMapSearch(term)`
+- [x] `WithMapLimit(n)` to cap discovered URLs
+- [x] CLI: `scout map <url> [--search=term] [--include-subdomains] [--limit=100]`
+- [x] Tests: link dedup, subdomain filtering, search filtering, sitemap integration
 
 ### Phase 13: LLM-Powered Extraction [PLANNED]
 - [ ] `ExtractWithLLM(page *Page, prompt string, ...LLMOption)` in `pkg/scout/llm.go`

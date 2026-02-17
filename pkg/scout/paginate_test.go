@@ -224,3 +224,67 @@ func TestPaginateOptions(t *testing.T) {
 		t.Error("stopOnEmpty should be true")
 	}
 }
+
+func TestPaginateByScroll(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/infinite")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	items, err := PaginateByScroll[testItem](page, ".item",
+		WithPaginateMaxPages(5),
+		WithPaginateDelay(500*time.Millisecond),
+		WithPaginateStopOnEmpty(),
+	)
+	if err != nil {
+		t.Fatalf("PaginateByScroll() error: %v", err)
+	}
+
+	if len(items) == 0 {
+		t.Error("PaginateByScroll() returned no items")
+	}
+
+	t.Logf("PaginateByScroll() collected %d items", len(items))
+}
+
+func TestPaginateByLoadMore(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/load-more")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	items, err := PaginateByLoadMore[testItem](page, "#load-more",
+		WithPaginateMaxPages(5),
+		WithPaginateDelay(300*time.Millisecond),
+		WithPaginateStopOnEmpty(),
+	)
+	if err != nil {
+		t.Fatalf("PaginateByLoadMore() error: %v", err)
+	}
+
+	if len(items) == 0 {
+		t.Error("PaginateByLoadMore() returned no items")
+	}
+
+	t.Logf("PaginateByLoadMore() collected %d items", len(items))
+}

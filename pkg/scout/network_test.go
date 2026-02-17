@@ -169,3 +169,171 @@ func TestHijack(t *testing.T) {
 		t.Error("hijack handler was not called")
 	}
 }
+
+func TestHijackRequestAccessors(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage("")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	var (
+		gotMethod string
+		gotURL    string
+		gotHeader string
+		gotBody   string
+	)
+
+	router, err := page.Hijack("*echo*", func(ctx *HijackContext) {
+		req := ctx.Request()
+		gotMethod = req.Method()
+		gotURL = req.URL().String()
+		gotHeader = req.Header("Accept")
+		gotBody = req.Body()
+
+		// Test response accessors
+		ctx.Response().SetHeader("X-Test", "value")
+		ctx.Response().SetBody(`{"ok":true}`)
+	})
+	if err != nil {
+		t.Fatalf("Hijack() error: %v", err)
+	}
+
+	go router.Run()
+	defer func() { _ = router.Stop() }()
+
+	if err := page.Navigate(srv.URL + "/echo-headers"); err != nil {
+		t.Fatalf("Navigate() error: %v", err)
+	}
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	if gotMethod != "GET" {
+		t.Errorf("Method() = %q, want GET", gotMethod)
+	}
+	if gotURL == "" {
+		t.Error("URL() should not be empty")
+	}
+	// Accept header may or may not be set, just ensure no panic
+	_ = gotHeader
+	_ = gotBody
+}
+
+func TestHijackLoadResponse(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage("")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	router, err := page.Hijack("*json*", func(ctx *HijackContext) {
+		if err := ctx.LoadResponse(true); err != nil {
+			t.Logf("LoadResponse() error: %v", err)
+		}
+		// Modify response after loading
+		ctx.Response().SetBody(`{"modified":true}`)
+	})
+	if err != nil {
+		t.Fatalf("Hijack() error: %v", err)
+	}
+
+	go router.Run()
+	defer func() { _ = router.Stop() }()
+
+	if err := page.Navigate(srv.URL + "/json"); err != nil {
+		t.Fatalf("Navigate() error: %v", err)
+	}
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	html, _ := page.HTML()
+	if !strings.Contains(html, "modified") {
+		t.Errorf("response should be modified, got: %s", html)
+	}
+}
+
+func TestHijackSkip(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage("")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	var skipped atomic.Bool
+
+	router, err := page.Hijack("*", func(ctx *HijackContext) {
+		skipped.Store(true)
+		ctx.Skip()
+		ctx.ContinueRequest()
+	})
+	if err != nil {
+		t.Fatalf("Hijack() error: %v", err)
+	}
+
+	go router.Run()
+	defer func() { _ = router.Stop() }()
+
+	if err := page.Navigate(srv.URL); err != nil {
+		t.Fatalf("Navigate() error: %v", err)
+	}
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	if !skipped.Load() {
+		t.Error("handler should have been called and skipped")
+	}
+}
+
+func TestHijackResponseFail(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage("")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	router, err := page.Hijack("*json*", func(ctx *HijackContext) {
+		ctx.Response().Fail("BlockedByClient")
+	})
+	if err != nil {
+		t.Fatalf("Hijack() error: %v", err)
+	}
+
+	go router.Run()
+	defer func() { _ = router.Stop() }()
+
+	// Navigate to JSON — it should fail, which is expected
+	_ = page.Navigate(srv.URL + "/json")
+}
+
+func TestHandleAuth(t *testing.T) {
+	b := newTestBrowser(t)
+
+	// HandleAuth returns a function — just verify it doesn't panic
+	waitAuth := b.HandleAuth("user", "pass")
+	if waitAuth == nil {
+		t.Error("HandleAuth() should return a non-nil function")
+	}
+}

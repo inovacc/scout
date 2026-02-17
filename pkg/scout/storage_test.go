@@ -508,3 +508,137 @@ func TestLoadSessionFileNotFound(t *testing.T) {
 		t.Fatal("LoadSessionFromFile() expected error for missing file, got nil")
 	}
 }
+
+func TestSessionStorageRemove(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/storage")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	if err := page.SessionStorageSet("del_me", "value"); err != nil {
+		t.Fatalf("SessionStorageSet() error: %v", err)
+	}
+
+	if err := page.SessionStorageRemove("del_me"); err != nil {
+		t.Fatalf("SessionStorageRemove() error: %v", err)
+	}
+
+	val, err := page.SessionStorageGet("del_me")
+	if err != nil {
+		t.Fatalf("SessionStorageGet() error: %v", err)
+	}
+
+	if val != "" {
+		t.Errorf("SessionStorageGet() after remove = %q, want empty", val)
+	}
+}
+
+func TestSessionStorageLength(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/storage")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	if err := page.SessionStorageClear(); err != nil {
+		t.Fatalf("SessionStorageClear() error: %v", err)
+	}
+
+	if err := page.SessionStorageSet("k1", "v1"); err != nil {
+		t.Fatalf("SessionStorageSet() error: %v", err)
+	}
+
+	if err := page.SessionStorageSet("k2", "v2"); err != nil {
+		t.Fatalf("SessionStorageSet() error: %v", err)
+	}
+
+	length, err := page.SessionStorageLength()
+	if err != nil {
+		t.Fatalf("SessionStorageLength() error: %v", err)
+	}
+
+	if length != 2 {
+		t.Errorf("SessionStorageLength() = %d, want 2", length)
+	}
+}
+
+func TestSaveAndLoadSession(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/set-cookie")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	if err := page.LocalStorageSet("lsk", "lsv"); err != nil {
+		t.Fatalf("LocalStorageSet() error: %v", err)
+	}
+
+	if err := page.SessionStorageSet("ssk", "ssv"); err != nil {
+		t.Fatalf("SessionStorageSet() error: %v", err)
+	}
+
+	state, err := page.SaveSession()
+	if err != nil {
+		t.Fatalf("SaveSession() error: %v", err)
+	}
+
+	if state.URL == "" {
+		t.Error("SaveSession URL should not be empty")
+	}
+
+	// Test file save/load
+	tmpFile := filepath.Join(os.TempDir(), "scout_test_session.json")
+	defer func() { _ = os.Remove(tmpFile) }()
+
+	if err := SaveSessionToFile(state, tmpFile); err != nil {
+		t.Fatalf("SaveSessionToFile() error: %v", err)
+	}
+
+	loaded, err := LoadSessionFromFile(tmpFile)
+	if err != nil {
+		t.Fatalf("LoadSessionFromFile() error: %v", err)
+	}
+
+	if loaded.URL != state.URL {
+		t.Errorf("loaded URL = %q, want %q", loaded.URL, state.URL)
+	}
+
+	// Test LoadSession on a new page
+	page2, err := b.NewPage("")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page2.Close() }()
+
+	if err := page2.LoadSession(loaded); err != nil {
+		t.Fatalf("LoadSession() error: %v", err)
+	}
+}

@@ -154,13 +154,11 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 
 ## Core Features
 
-### HTML-to-Markdown Engine
+### ~~HTML-to-Markdown Engine~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Pure Go HTML→Markdown converter for LLM-ready output without relying on the Firecrawl API. Includes Mozilla Readability-like content scoring to extract main content and strip boilerplate (nav, footer, sidebar, ads). Supports headings, links, images, lists, tables, code blocks, bold/italic, blockquotes.
-- **Scope:** `pkg/scout/markdown.go` with `page.Markdown()` and `page.MarkdownContent()` methods. Functional options (`WithMainContentOnly`, `WithIncludeImages`, `WithIncludeLinks`). CLI `scout markdown --url=<url> [--main-only]`.
+- **Status:** Complete — `pkg/scout/markdown.go` + `readability.go` with `page.Markdown()`, `page.MarkdownContent()`, readability scoring, 17 pure-function tests + browser integration tests, CLI `scout markdown`
 - **Effort:** Large
-- **Dependencies:** May use or vendor a Go HTML-to-markdown library (e.g., `html-to-markdown`). Readability heuristics need content scoring algorithm.
 
 ### Batch Scraper
 
@@ -264,3 +262,4 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 | Unified CLI | Single Cobra binary `cmd/scout/` replaces cmd/server, cmd/client, cmd/slack-assist, cmd/example-workflow | 2026-02 |
 | Missing LICENSE File | BSD 3-Clause LICENSE file added | 2026-02 |
 | Firecrawl Integration | Pure HTTP Go client for Firecrawl v2 API with CLI commands | 2026-02 |
+| HTML-to-Markdown Engine | Pure Go converter with readability scoring, `page.Markdown()`, CLI command | 2026-02 |
