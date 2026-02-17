@@ -224,6 +224,8 @@ func TestCleanSearchURL(t *testing.T) {
 	}{
 		{"https://example.com", "https://example.com"},
 		{"/url?q=https://example.com/page&sa=U", "https://example.com/page"},
+		{"/url?url=https://example.com/other&sa=U", "https://example.com/other"},
+		{"/url?noparam=1", "/url?noparam=1"},
 		{"", ""},
 	}
 	for _, tt := range tests {

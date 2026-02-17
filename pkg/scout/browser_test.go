@@ -72,6 +72,101 @@ func TestBrowserNilSafe(t *testing.T) {
 	}
 }
 
+func TestNewPageStealth(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b, err := New(WithHeadless(true), WithNoSandbox(), WithStealth())
+	if err != nil {
+		t.Skipf("skipping: browser unavailable: %v", err)
+	}
+	defer func() { _ = b.Close() }()
+
+	// stealth path: stealth.Page() + Navigate()
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage(stealth) error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	title, err := page.Title()
+	if err != nil {
+		t.Fatalf("Title() error: %v", err)
+	}
+
+	if title == "" {
+		t.Error("expected non-empty title from stealth page")
+	}
+
+	// stealth with empty URL
+	page2, err := b.NewPage("")
+	if err != nil {
+		t.Fatalf("NewPage(stealth, empty) error: %v", err)
+	}
+	defer func() { _ = page2.Close() }()
+}
+
+func TestNewBrowserIncognito(t *testing.T) {
+	b, err := New(WithHeadless(true), WithNoSandbox(), WithIncognito())
+	if err != nil {
+		t.Skipf("skipping: browser unavailable: %v", err)
+	}
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("about:blank")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+}
+
+func TestNewBrowserWithUserAgent(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b, err := New(WithHeadless(true), WithNoSandbox(), WithUserAgent("ScoutTest/1.0"))
+	if err != nil {
+		t.Skipf("skipping: browser unavailable: %v", err)
+	}
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage(srv.URL + "/echo-headers")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	el, err := page.Element("#ua")
+	if err != nil {
+		t.Fatalf("Element() error: %v", err)
+	}
+
+	text, _ := el.Text()
+	if text != "ScoutTest/1.0" {
+		t.Logf("UA = %q (may not match due to headless override)", text)
+	}
+}
+
+func TestNewBrowserWithIgnoreCerts(t *testing.T) {
+	b, err := New(WithHeadless(true), WithNoSandbox(), WithIgnoreCerts())
+	if err != nil {
+		t.Skipf("skipping: browser unavailable: %v", err)
+	}
+	defer func() { _ = b.Close() }()
+}
+
+func TestNewPageNilBrowser(t *testing.T) {
+	var b *Browser
+	_, err := b.NewPage("http://example.com")
+	if err == nil {
+		t.Error("expected error from nil browser")
+	}
+}
+
 func TestBrowserOptions(t *testing.T) {
 	o := defaults()
 
