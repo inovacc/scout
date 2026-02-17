@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/inovacc/scout/pkg/scout"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -81,6 +82,12 @@ func isHeadless(cmd *cobra.Command) bool {
 	h, _ := cmd.Flags().GetBool("headless")
 
 	return h
+}
+
+// browserOpt returns a WithBrowser option from the --browser persistent flag.
+func browserOpt(cmd *cobra.Command) scout.Option {
+	b, _ := cmd.Flags().GetString("browser")
+	return scout.WithBrowser(scout.BrowserType(b))
 }
 
 // truncate truncates a string to maxLen, appending "..." if needed.

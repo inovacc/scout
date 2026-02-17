@@ -29,7 +29,16 @@ Run a single test:
 go test -v -run TestName ./...
 ```
 
-Tests require a Chromium browser available on the system. `newTestBrowser` calls `t.Skipf` if the browser is unavailable, so tests skip gracefully in environments without a browser.
+Tests require a Chromium-based browser available on the system. `newTestBrowser` calls `t.Skipf` if the browser is unavailable, so tests skip gracefully in environments without a browser.
+
+### Browser Support
+
+Scout supports multiple Chromium-based browsers via `BrowserType`:
+- `BrowserChrome` (default) — rod auto-detect
+- `BrowserBrave` — auto-detects Brave on Windows, macOS, Linux
+- `BrowserEdge` — auto-detects Microsoft Edge on Windows, macOS, Linux
+
+Use `WithBrowser(BrowserBrave)` or CLI `--browser=brave`. `WithExecPath()` takes precedence if both are set. Firefox is not supported (CDP removed in Firefox 141, June 2025).
 
 ## Architecture
 

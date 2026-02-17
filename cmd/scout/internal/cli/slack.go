@@ -116,6 +116,7 @@ var slackCaptureCmd = &cobra.Command{
 		browser, err := scout.New(
 			scout.WithHeadless(false),
 			scout.WithNoSandbox(),
+			browserOpt(cmd),
 			scout.WithTimeout(timeout),
 		)
 		if err != nil {

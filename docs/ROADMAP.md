@@ -128,6 +128,15 @@
 - [x] CLI: `scout markdown --url=<url> [--main-only]`
 - [x] Tests with fixture HTML pages covering all markdown element types
 
+### Browser Support
+
+| Browser | Status | Notes |
+|---------|--------|-------|
+| Chrome/Chromium | ✅ Default | rod auto-detect |
+| Brave | ✅ Supported | `WithBrowser(BrowserBrave)` or `--browser=brave` |
+| Microsoft Edge | ✅ Supported | `WithBrowser(BrowserEdge)` or `--browser=edge` |
+| Firefox | ❌ Blocked | CDP removed in Firefox 141 (June 2025). Requires WebDriver BiDi maturity in Go ecosystem. |
+
 ### Phase 11: Batch Scraper [PLANNED]
 - [ ] `BatchScrape(urls []string, fn func(*Page, string) error, ...BatchOption)` in `pkg/scout/batch.go`
 - [ ] Concurrent page pool with configurable parallelism (`WithBatchConcurrency(n)`)

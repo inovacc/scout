@@ -31,6 +31,7 @@ var crawlCmd = &cobra.Command{
 		browser, err := scout.New(
 			scout.WithHeadless(isHeadless(cmd)),
 			scout.WithNoSandbox(),
+			browserOpt(cmd),
 		)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
