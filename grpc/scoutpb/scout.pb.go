@@ -70,6 +70,7 @@ type CreateSessionRequest struct {
 	CaptureBody   bool                   `protobuf:"varint,9,opt,name=capture_body,json=captureBody,proto3" json:"capture_body,omitempty"` // capture response bodies
 	Maximized     bool                   `protobuf:"varint,10,opt,name=maximized,proto3" json:"maximized,omitempty"`                       // start window maximized
 	Devtools      bool                   `protobuf:"varint,11,opt,name=devtools,proto3" json:"devtools,omitempty"`                         // open Chrome DevTools automatically
+	NoSandbox     bool                   `protobuf:"varint,12,opt,name=no_sandbox,json=noSandbox,proto3" json:"no_sandbox,omitempty"`      // disable browser sandbox (containers/WSL)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -177,6 +178,13 @@ func (x *CreateSessionRequest) GetMaximized() bool {
 func (x *CreateSessionRequest) GetDevtools() bool {
 	if x != nil {
 		return x.Devtools
+	}
+	return false
+}
+
+func (x *CreateSessionRequest) GetNoSandbox() bool {
+	if x != nil {
+		return x.NoSandbox
 	}
 	return false
 }
@@ -2338,7 +2346,7 @@ var File_grpc_proto_scout_proto protoreflect.FileDescriptor
 const file_grpc_proto_scout_proto_rawDesc = "" +
 	"\n" +
 	"\x16grpc/proto/scout.proto\x12\bscout.v1\"\a\n" +
-	"\x05Empty\"\xc5\x02\n" +
+	"\x05Empty\"\xe4\x02\n" +
 	"\x14CreateSessionRequest\x12\x1a\n" +
 	"\bheadless\x18\x01 \x01(\bR\bheadless\x12\x18\n" +
 	"\astealth\x18\x02 \x01(\bR\astealth\x12\x14\n" +
@@ -2353,7 +2361,9 @@ const file_grpc_proto_scout_proto_rawDesc = "" +
 	"\fcapture_body\x18\t \x01(\bR\vcaptureBody\x12\x1c\n" +
 	"\tmaximized\x18\n" +
 	" \x01(\bR\tmaximized\x12\x1a\n" +
-	"\bdevtools\x18\v \x01(\bR\bdevtools\"^\n" +
+	"\bdevtools\x18\v \x01(\bR\bdevtools\x12\x1d\n" +
+	"\n" +
+	"no_sandbox\x18\f \x01(\bR\tnoSandbox\"^\n" +
 	"\x15CreateSessionResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x10\n" +

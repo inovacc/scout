@@ -9,6 +9,7 @@ import (
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 func init() {
@@ -24,6 +25,7 @@ func init() {
 	sessionCreateCmd.Flags().Bool("capture-body", false, "capture response bodies in HAR")
 	sessionCreateCmd.Flags().Bool("maximized", false, "start browser window maximized")
 	sessionCreateCmd.Flags().Bool("devtools", false, "open Chrome DevTools automatically")
+	sessionCreateCmd.Flags().Bool("no-sandbox", false, "disable browser sandbox (containers/WSL)")
 
 	sessionDestroyCmd.Flags().Bool("all", false, "destroy all sessions")
 }
@@ -38,11 +40,21 @@ var sessionCreateCmd = &cobra.Command{
 	Short: "Create a new browser session",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		addr, _ := cmd.Flags().GetString("addr")
-		if err := ensureDaemon(addr); err != nil {
-			return err
-		}
+		insecureMode, _ := cmd.Flags().GetBool("insecure")
 
-		client, conn, err := getClient(addr)
+		var (
+			client pb.ScoutServiceClient
+			conn   *grpc.ClientConn
+			err    error
+		)
+		if insecureMode {
+			if err := ensureDaemon(addr); err != nil {
+				return err
+			}
+			client, conn, err = getClient(addr)
+		} else {
+			client, conn, err = getClientTLS(addr)
+		}
 		if err != nil {
 			return err
 		}
@@ -57,6 +69,7 @@ var sessionCreateCmd = &cobra.Command{
 		captureBody, _ := cmd.Flags().GetBool("capture-body")
 		maximized, _ := cmd.Flags().GetBool("maximized")
 		devtools, _ := cmd.Flags().GetBool("devtools")
+		noSandbox, _ := cmd.Flags().GetBool("no-sandbox")
 
 		resp, err := client.CreateSession(context.Background(), &pb.CreateSessionRequest{
 			Headless:    headless,
@@ -68,6 +81,7 @@ var sessionCreateCmd = &cobra.Command{
 			CaptureBody: captureBody,
 			Maximized:   maximized,
 			Devtools:    devtools,
+			NoSandbox:   noSandbox,
 		})
 		if err != nil {
 			return fmt.Errorf("scout: create session: %w", err)
