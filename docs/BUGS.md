@@ -2,15 +2,10 @@
 
 ## Open Bugs
 
-### Page.Race always returns index -1
-- **Severity:** Medium
-- **Status:** Open
-- **File:** pkg/scout/page.go:518
-- **Description:** `Page.Race()` returns `-1` as the matched selector index regardless of which selector won. The return value `el, -1, nil` is hardcoded.
-- **Expected:** Should return the 0-based index of the winning selector.
+(none)
 
 ## Resolved Bugs
 
 | Bug | Resolution | Date |
 |-----|------------|------|
-| (none yet) | | |
+| Page.Race always returns index -1 | Fixed: now matches returned element against selectors to determine winning index | 2026-02 |
