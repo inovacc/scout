@@ -20,7 +20,8 @@ or run standalone for one-shot operations.`,
 }
 
 func init() {
-	rootCmd.PersistentFlags().String("addr", "localhost:50051", "gRPC daemon address")
+	rootCmd.PersistentFlags().String("addr", "localhost:50051", "gRPC daemon address (deprecated, use --target)")
+	rootCmd.PersistentFlags().StringSlice("target", nil, "target server address(es), repeatable")
 	rootCmd.PersistentFlags().Bool("standalone", false, "run without daemon (one-shot browser)")
 	rootCmd.PersistentFlags().String("session", "", "session ID to use")
 	rootCmd.PersistentFlags().StringP("output", "o", "", "output file path")
@@ -28,6 +29,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().Bool("headless", true, "run browser in headless mode")
 	rootCmd.PersistentFlags().String("browser", "chrome", "browser type: chrome, brave, edge")
+	rootCmd.PersistentFlags().Bool("maximized", false, "start browser window maximized")
+	rootCmd.PersistentFlags().Bool("devtools", false, "open Chrome DevTools automatically")
 }
 
 // Execute runs the root command.

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,8 +31,10 @@ type session struct {
 func (s *session) broadcast(ev *pb.BrowserEvent) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	ev.SessionId = s.id
 	ev.Timestamp = time.Now().UnixMilli()
+
 	for _, ch := range s.subs {
 		select {
 		case ch <- ev:
@@ -43,14 +46,17 @@ func (s *session) broadcast(ev *pb.BrowserEvent) {
 func (s *session) subscribe(id string) chan *pb.BrowserEvent {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	ch := make(chan *pb.BrowserEvent, 256)
 	s.subs[id] = ch
+
 	return ch
 }
 
 func (s *session) unsubscribe(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if ch, ok := s.subs[id]; ok {
 		close(ch)
 		delete(s.subs, id)
@@ -62,12 +68,14 @@ func (s *session) findElement(selector string, xpath bool) (*scout.Element, erro
 	if xpath {
 		return s.page.ElementByXPath(selector)
 	}
+
 	return s.page.Element(selector)
 }
 
 // ScoutServer implements the gRPC ScoutService.
 type ScoutServer struct {
 	pb.UnimplementedScoutServiceServer
+
 	sessions sync.Map // map[string]*session
 }
 
@@ -81,6 +89,7 @@ func (s *ScoutServer) getSession(id string) (*session, error) {
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "session %q not found", id)
 	}
+
 	return v.(*session), nil
 }
 
@@ -88,19 +97,31 @@ func (s *ScoutServer) getSession(id string) (*session, error) {
 
 func (s *ScoutServer) CreateSession(_ context.Context, req *pb.CreateSessionRequest) (*pb.CreateSessionResponse, error) {
 	opts := []scout.Option{
-		scout.WithHeadless(req.Headless),
+		scout.WithHeadless(req.GetHeadless()),
 	}
-	if req.Stealth {
+
+	if req.GetStealth() {
 		opts = append(opts, scout.WithStealth())
 	}
-	if req.Proxy != "" {
-		opts = append(opts, scout.WithProxy(req.Proxy))
+
+	if req.GetProxy() != "" {
+		opts = append(opts, scout.WithProxy(req.GetProxy()))
 	}
-	if req.UserAgent != "" {
-		opts = append(opts, scout.WithUserAgent(req.UserAgent))
+
+	if req.GetUserAgent() != "" {
+		opts = append(opts, scout.WithUserAgent(req.GetUserAgent()))
 	}
-	if req.Width > 0 && req.Height > 0 {
-		opts = append(opts, scout.WithWindowSize(int(req.Width), int(req.Height)))
+
+	if req.GetWidth() > 0 && req.GetHeight() > 0 {
+		opts = append(opts, scout.WithWindowSize(int(req.GetWidth()), int(req.GetHeight())))
+	}
+
+	if req.GetMaximized() {
+		opts = append(opts, scout.WithMaximized())
+	}
+
+	if req.GetDevtools() {
+		opts = append(opts, scout.WithDevTools())
 	}
 
 	browser, err := scout.New(opts...)
@@ -109,8 +130,8 @@ func (s *ScoutServer) CreateSession(_ context.Context, req *pb.CreateSessionRequ
 	}
 
 	url := "about:blank"
-	if req.InitialUrl != "" {
-		url = req.InitialUrl
+	if req.GetInitialUrl() != "" {
+		url = req.GetInitialUrl()
 	}
 
 	page, err := browser.NewPage(url)
@@ -130,11 +151,12 @@ func (s *ScoutServer) CreateSession(_ context.Context, req *pb.CreateSessionRequ
 	s.wireEvents(sess)
 
 	// Start recording if requested
-	if req.Record {
+	if req.GetRecord() {
 		recOpts := []scout.RecorderOption{}
-		if req.CaptureBody {
+		if req.GetCaptureBody() {
 			recOpts = append(recOpts, scout.WithCaptureBody(true))
 		}
+
 		sess.recorder = scout.NewNetworkRecorder(page, recOpts...)
 	}
 
@@ -151,31 +173,35 @@ func (s *ScoutServer) CreateSession(_ context.Context, req *pb.CreateSessionRequ
 }
 
 func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	if sess.recorder != nil {
 		sess.recorder.Stop()
 	}
+
 	_ = sess.browser.Close()
-	s.sessions.Delete(req.SessionId)
+
+	s.sessions.Delete(req.GetSessionId())
+
 	return &pb.Empty{}, nil
 }
 
 // ════════════════════════ Navigation ════════════════════════
 
 func (s *ScoutServer) Navigate(_ context.Context, req *pb.NavigateRequest) (*pb.NavigateResponse, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
 
-	if err := sess.page.Navigate(req.Url); err != nil {
+	if err := sess.page.Navigate(req.GetUrl()); err != nil {
 		return nil, status.Errorf(codes.Internal, "navigate failed: %v", err)
 	}
 
-	if req.WaitStable {
+	if req.GetWaitStable() {
 		_ = sess.page.WaitStable(500 * time.Millisecond)
 	}
 
@@ -189,246 +215,295 @@ func (s *ScoutServer) Navigate(_ context.Context, req *pb.NavigateRequest) (*pb.
 }
 
 func (s *ScoutServer) Reload(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	if err := sess.page.Reload(); err != nil {
 		return nil, status.Errorf(codes.Internal, "reload failed: %v", err)
 	}
+
 	return &pb.Empty{}, nil
 }
 
 func (s *ScoutServer) GoBack(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	if err := sess.page.NavigateBack(); err != nil {
 		return nil, status.Errorf(codes.Internal, "go back failed: %v", err)
 	}
+
 	return &pb.Empty{}, nil
 }
 
 func (s *ScoutServer) GoForward(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	if err := sess.page.NavigateForward(); err != nil {
 		return nil, status.Errorf(codes.Internal, "go forward failed: %v", err)
 	}
+
 	return &pb.Empty{}, nil
 }
 
 // ════════════════════════ Element Interaction ════════════════════════
 
 func (s *ScoutServer) Click(_ context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
-	el, err := sess.findElement(req.Selector, req.Xpath)
+
+	el, err := sess.findElement(req.GetSelector(), req.GetXpath())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "element %q not found: %v", req.Selector, err)
+		return nil, status.Errorf(codes.NotFound, "element %q not found: %v", req.GetSelector(), err)
 	}
+
 	if err := el.Click(); err != nil {
 		return nil, status.Errorf(codes.Internal, "click failed: %v", err)
 	}
+
 	return &pb.Empty{}, nil
 }
 
 func (s *ScoutServer) DoubleClick(_ context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
-	el, err := sess.findElement(req.Selector, req.Xpath)
+
+	el, err := sess.findElement(req.GetSelector(), req.GetXpath())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
 	}
+
 	if err := el.DoubleClick(); err != nil {
 		return nil, status.Errorf(codes.Internal, "double-click failed: %v", err)
 	}
+
 	return &pb.Empty{}, nil
 }
 
 func (s *ScoutServer) RightClick(_ context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
-	el, err := sess.findElement(req.Selector, req.Xpath)
+
+	el, err := sess.findElement(req.GetSelector(), req.GetXpath())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
 	}
+
 	if err := el.RightClick(); err != nil {
 		return nil, status.Errorf(codes.Internal, "right-click failed: %v", err)
 	}
+
 	return &pb.Empty{}, nil
 }
 
 func (s *ScoutServer) Hover(_ context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
-	el, err := sess.findElement(req.Selector, req.Xpath)
+
+	el, err := sess.findElement(req.GetSelector(), req.GetXpath())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
 	}
+
 	if err := el.Hover(); err != nil {
 		return nil, status.Errorf(codes.Internal, "hover failed: %v", err)
 	}
+
 	return &pb.Empty{}, nil
 }
 
 func (s *ScoutServer) Type(_ context.Context, req *pb.TypeRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
-	el, err := sess.page.Element(req.Selector)
+
+	el, err := sess.page.Element(req.GetSelector())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
 	}
-	if req.ClearFirst {
+
+	if req.GetClearFirst() {
 		_ = el.Clear()
 	}
-	if err := el.Input(req.Text); err != nil {
+
+	if err := el.Input(req.GetText()); err != nil {
 		return nil, status.Errorf(codes.Internal, "type failed: %v", err)
 	}
+
 	return &pb.Empty{}, nil
 }
 
 func (s *ScoutServer) SelectOption(_ context.Context, req *pb.SelectRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
-	el, err := sess.page.Element(req.Selector)
+
+	el, err := sess.page.Element(req.GetSelector())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
 	}
-	if err := el.SelectOption(req.Value); err != nil {
+
+	if err := el.SelectOption(req.GetValue()); err != nil {
 		return nil, status.Errorf(codes.Internal, "select option failed: %v", err)
 	}
+
 	return &pb.Empty{}, nil
 }
 
 func (s *ScoutServer) PressKey(_ context.Context, req *pb.KeyRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
-	key := mapKey(req.Key)
+
+	key := mapKey(req.GetKey())
 	if err := sess.page.KeyPress(key); err != nil {
 		return nil, status.Errorf(codes.Internal, "press key failed: %v", err)
 	}
+
 	return &pb.Empty{}, nil
 }
 
 // ════════════════════════ Query ════════════════════════
 
 func (s *ScoutServer) GetText(_ context.Context, req *pb.ElementRequest) (*pb.TextResponse, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
-	el, err := sess.findElement(req.Selector, req.Xpath)
+
+	el, err := sess.findElement(req.GetSelector(), req.GetXpath())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
 	}
+
 	text, err := el.Text()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get text failed: %v", err)
 	}
+
 	return &pb.TextResponse{Text: text}, nil
 }
 
 func (s *ScoutServer) GetAttribute(_ context.Context, req *pb.AttributeRequest) (*pb.TextResponse, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
-	el, err := sess.page.Element(req.Selector)
+
+	el, err := sess.page.Element(req.GetSelector())
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
 	}
-	val, _, err := el.Attribute(req.Attribute)
+
+	val, _, err := el.Attribute(req.GetAttribute())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get attribute failed: %v", err)
 	}
+
 	return &pb.TextResponse{Text: val}, nil
 }
 
 func (s *ScoutServer) GetTitle(_ context.Context, req *pb.SessionRequest) (*pb.TextResponse, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	title, err := sess.page.Title()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get title failed: %v", err)
 	}
+
 	return &pb.TextResponse{Text: title}, nil
 }
 
 func (s *ScoutServer) GetURL(_ context.Context, req *pb.SessionRequest) (*pb.TextResponse, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	url, err := sess.page.URL()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "get url failed: %v", err)
 	}
+
 	return &pb.TextResponse{Text: url}, nil
 }
 
 func (s *ScoutServer) Eval(_ context.Context, req *pb.EvalRequest) (*pb.EvalResponse, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
-	result, err := sess.page.Eval(req.Script)
+
+	result, err := sess.page.Eval(req.GetScript())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "eval failed: %v", err)
 	}
-	data, _ := json.Marshal(result)
+
+	data, err2 := json.Marshal(result) //nolint:musttag // result is dynamic eval output
+	if err2 != nil {
+		return nil, status.Errorf(codes.Internal, "marshal result failed: %v", err2)
+	}
+
 	return &pb.EvalResponse{Result: string(data)}, nil
 }
 
 func (s *ScoutServer) ElementExists(_ context.Context, req *pb.ElementRequest) (*pb.BoolResponse, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	var exists bool
-	if req.Xpath {
-		exists, _ = sess.page.HasXPath(req.Selector)
+	if req.GetXpath() {
+		exists, _ = sess.page.HasXPath(req.GetSelector())
 	} else {
-		exists, _ = sess.page.Has(req.Selector)
+		exists, _ = sess.page.Has(req.GetSelector())
 	}
+
 	return &pb.BoolResponse{Value: exists}, nil
 }
 
 // ════════════════════════ Capture ════════════════════════
 
 func (s *ScoutServer) Screenshot(_ context.Context, req *pb.ScreenshotRequest) (*pb.ScreenshotResponse, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	var data []byte
-	if req.FullPage {
+
+	if req.GetFullPage() {
 		data, err = sess.page.FullScreenshot()
 	} else {
 		data, err = sess.page.Screenshot()
 	}
+
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "screenshot failed: %v", err)
 	}
+
 	return &pb.ScreenshotResponse{
 		Data:   data,
 		Format: "png",
@@ -436,59 +511,70 @@ func (s *ScoutServer) Screenshot(_ context.Context, req *pb.ScreenshotRequest) (
 }
 
 func (s *ScoutServer) PDF(_ context.Context, req *pb.SessionRequest) (*pb.PDFResponse, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	data, err := sess.page.PDF()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "pdf failed: %v", err)
 	}
+
 	return &pb.PDFResponse{Data: data}, nil
 }
 
 // ════════════════════════ Forensic Recording ════════════════════════
 
 func (s *ScoutServer) StartRecording(_ context.Context, req *pb.RecordingRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	if sess.recorder != nil {
 		return nil, status.Error(codes.AlreadyExists, "recording already active")
 	}
+
 	recOpts := []scout.RecorderOption{}
-	if req.CaptureBody {
+	if req.GetCaptureBody() {
 		recOpts = append(recOpts, scout.WithCaptureBody(true))
 	}
+
 	sess.recorder = scout.NewNetworkRecorder(sess.page, recOpts...)
+
 	return &pb.Empty{}, nil
 }
 
 func (s *ScoutServer) StopRecording(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	if sess.recorder != nil {
 		sess.recorder.Stop()
 		sess.recorder = nil
 	}
+
 	return &pb.Empty{}, nil
 }
 
 func (s *ScoutServer) ExportHAR(_ context.Context, req *pb.SessionRequest) (*pb.HARResponse, error) {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
+
 	if sess.recorder == nil {
 		return nil, status.Error(codes.FailedPrecondition, "no active recording")
 	}
+
 	data, count, err := sess.recorder.ExportHAR()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "export failed: %v", err)
 	}
+
 	return &pb.HARResponse{
 		Data:       data,
 		EntryCount: int32(count),
@@ -498,12 +584,13 @@ func (s *ScoutServer) ExportHAR(_ context.Context, req *pb.SessionRequest) (*pb.
 // ════════════════════════ Event Streaming ════════════════════════
 
 func (s *ScoutServer) StreamEvents(req *pb.SessionRequest, stream pb.ScoutService_StreamEventsServer) error {
-	sess, err := s.getSession(req.SessionId)
+	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return err
 	}
 
 	subID := uuid.NewString()
+
 	ch := sess.subscribe(subID)
 	defer sess.unsubscribe(subID)
 
@@ -513,6 +600,7 @@ func (s *ScoutServer) StreamEvents(req *pb.SessionRequest, stream pb.ScoutServic
 			if !ok {
 				return nil
 			}
+
 			if err := stream.Send(ev); err != nil {
 				return err
 			}
@@ -525,29 +613,36 @@ func (s *ScoutServer) StreamEvents(req *pb.SessionRequest, stream pb.ScoutServic
 // ════════════════════════ Bidirectional Interactive ════════════════════════
 
 func (s *ScoutServer) Interactive(stream pb.ScoutService_InteractiveServer) error {
-	var sess *session
-	var subID string
-	var eventCh chan *pb.BrowserEvent
+	var (
+		sess    *session
+		subID   string
+		eventCh chan *pb.BrowserEvent
+	)
 
-	for {
+	for { //nolint:wsl
 		cmd, err := stream.Recv()
 		if err == io.EOF {
 			return nil
 		}
+
 		if err != nil {
 			return err
 		}
 
 		// Lazy session binding on first command
 		if sess == nil {
-			sess, err = s.getSession(cmd.SessionId)
+			sess, err = s.getSession(cmd.GetSessionId())
 			if err != nil {
 				return err
 			}
+
 			subID = uuid.NewString()
 			eventCh = sess.subscribe(subID)
+
 			defer sess.unsubscribe(subID)
-			_ = subID // used in defer above
+
+			_ = subID  // used in defer above
+			_ = eventCh // used in goroutine below
 
 			// Goroutine to forward events to client
 			go func() {
@@ -568,7 +663,7 @@ func (s *ScoutServer) Interactive(stream pb.ScoutService_InteractiveServer) erro
 				Event: &pb.BrowserEvent_Error{
 					Error: &pb.ErrorEvent{
 						Message: err.Error(),
-						Source:  fmt.Sprintf("command:%s", cmd.RequestId),
+						Source:  fmt.Sprintf("command:%s", cmd.GetRequestId()),
 					},
 				},
 			})
@@ -577,53 +672,62 @@ func (s *ScoutServer) Interactive(stream pb.ScoutService_InteractiveServer) erro
 }
 
 func (s *ScoutServer) executeCommand(sess *session, cmd *pb.Command) error {
-	switch action := cmd.Action.(type) {
+	switch action := cmd.Action.(type) { //nolint:protogetter // type switch requires field access
 	case *pb.Command_Navigate:
-		return sess.page.Navigate(action.Navigate.Url)
+		return sess.page.Navigate(action.Navigate.GetUrl())
 
 	case *pb.Command_Click:
-		el, err := sess.page.Element(action.Click.Selector)
+		el, err := sess.page.Element(action.Click.GetSelector())
 		if err != nil {
-			return fmt.Errorf("element %q not found: %w", action.Click.Selector, err)
+			return fmt.Errorf("element %q not found: %w", action.Click.GetSelector(), err)
 		}
+
 		return el.Click()
 
 	case *pb.Command_Type:
-		el, err := sess.page.Element(action.Type.Selector)
+		el, err := sess.page.Element(action.Type.GetSelector())
 		if err != nil {
-			return fmt.Errorf("element %q not found: %w", action.Type.Selector, err)
+			return fmt.Errorf("element %q not found: %w", action.Type.GetSelector(), err)
 		}
-		return el.Input(action.Type.Text)
+
+		return el.Input(action.Type.GetText())
 
 	case *pb.Command_PressKey:
-		key := mapKey(action.PressKey.Key)
+		key := mapKey(action.PressKey.GetKey())
 		return sess.page.KeyPress(key)
 
 	case *pb.Command_Eval:
-		_, err := sess.page.Eval(action.Eval.Script)
+		_, err := sess.page.Eval(action.Eval.GetScript())
 		return err
 
 	case *pb.Command_Screenshot:
-		var data []byte
-		var err error
-		if action.Screenshot.FullPage {
+		var (
+			data []byte
+			err  error
+		)
+
+		if action.Screenshot.GetFullPage() {
 			data, err = sess.page.FullScreenshot()
 		} else {
 			data, err = sess.page.Screenshot()
 		}
+
 		if err != nil {
 			return err
 		}
+
 		_ = data // screenshot data available via ExportHAR or separate RPC
+
 		return nil
 
 	case *pb.Command_Wait:
-		_, err := sess.page.Element(action.Wait.Selector)
+		_, err := sess.page.Element(action.Wait.GetSelector())
 		return err
 
 	case *pb.Command_Scroll:
-		script := fmt.Sprintf("window.scrollTo(%d, %d)", action.Scroll.X, action.Scroll.Y)
+		script := fmt.Sprintf("window.scrollTo(%d, %d)", action.Scroll.GetX(), action.Scroll.GetY())
 		_, err := sess.page.Eval(script)
+
 		return err
 
 	default:
@@ -683,17 +787,19 @@ func (s *ScoutServer) wireEvents(sess *session) {
 			})
 		},
 		func(e *proto.RuntimeConsoleAPICalled) {
-			var msg string
+			var sb strings.Builder
+
 			for _, arg := range e.Args {
 				if !arg.Value.Nil() {
-					msg += fmt.Sprintf("%v ", arg.Value.Val())
+					_, _ = fmt.Fprintf(&sb, "%v ", arg.Value.Val())
 				}
 			}
+
 			sess.broadcast(&pb.BrowserEvent{
 				Event: &pb.BrowserEvent_Console{
 					Console: &pb.ConsoleEvent{
 						Level:   string(e.Type),
-						Message: msg,
+						Message: sb.String(),
 					},
 				},
 			})
@@ -748,6 +854,7 @@ func mapKey(key string) input.Key {
 		if len(key) == 1 {
 			return input.Key(key[0])
 		}
+
 		return 0
 	}
 }

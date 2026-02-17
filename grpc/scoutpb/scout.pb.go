@@ -68,6 +68,8 @@ type CreateSessionRequest struct {
 	InitialUrl    string                 `protobuf:"bytes,7,opt,name=initial_url,json=initialUrl,proto3" json:"initial_url,omitempty"`
 	Record        bool                   `protobuf:"varint,8,opt,name=record,proto3" json:"record,omitempty"`                              // start recording immediately
 	CaptureBody   bool                   `protobuf:"varint,9,opt,name=capture_body,json=captureBody,proto3" json:"capture_body,omitempty"` // capture response bodies
+	Maximized     bool                   `protobuf:"varint,10,opt,name=maximized,proto3" json:"maximized,omitempty"`                       // start window maximized
+	Devtools      bool                   `protobuf:"varint,11,opt,name=devtools,proto3" json:"devtools,omitempty"`                         // open Chrome DevTools automatically
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -161,6 +163,20 @@ func (x *CreateSessionRequest) GetRecord() bool {
 func (x *CreateSessionRequest) GetCaptureBody() bool {
 	if x != nil {
 		return x.CaptureBody
+	}
+	return false
+}
+
+func (x *CreateSessionRequest) GetMaximized() bool {
+	if x != nil {
+		return x.Maximized
+	}
+	return false
+}
+
+func (x *CreateSessionRequest) GetDevtools() bool {
+	if x != nil {
+		return x.Devtools
 	}
 	return false
 }
@@ -2218,7 +2234,7 @@ var File_grpc_proto_scout_proto protoreflect.FileDescriptor
 const file_grpc_proto_scout_proto_rawDesc = "" +
 	"\n" +
 	"\x16grpc/proto/scout.proto\x12\bscout.v1\"\a\n" +
-	"\x05Empty\"\x8b\x02\n" +
+	"\x05Empty\"\xc5\x02\n" +
 	"\x14CreateSessionRequest\x12\x1a\n" +
 	"\bheadless\x18\x01 \x01(\bR\bheadless\x12\x18\n" +
 	"\astealth\x18\x02 \x01(\bR\astealth\x12\x14\n" +
@@ -2230,7 +2246,10 @@ const file_grpc_proto_scout_proto_rawDesc = "" +
 	"\vinitial_url\x18\a \x01(\tR\n" +
 	"initialUrl\x12\x16\n" +
 	"\x06record\x18\b \x01(\bR\x06record\x12!\n" +
-	"\fcapture_body\x18\t \x01(\bR\vcaptureBody\"^\n" +
+	"\fcapture_body\x18\t \x01(\bR\vcaptureBody\x12\x1c\n" +
+	"\tmaximized\x18\n" +
+	" \x01(\bR\tmaximized\x12\x1a\n" +
+	"\bdevtools\x18\v \x01(\bR\bdevtools\"^\n" +
 	"\x15CreateSessionResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x10\n" +

@@ -63,6 +63,8 @@ message CreateSessionRequest {
   string initial_url = 7;
   bool   record      = 8;  // start recording immediately
   bool   capture_body = 9; // capture response bodies
+  bool   maximized    = 10; // start window maximized
+  bool   devtools     = 11; // open Chrome DevTools automatically
 }
 
 message CreateSessionResponse {

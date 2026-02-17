@@ -41,6 +41,7 @@ type options struct {
 	xvfbArgs    []string
 	launchFlags  map[string][]string
 	extensions   []string
+	devtools     bool
 }
 
 func defaults() *options {
@@ -133,11 +134,21 @@ func WithWindowState(state WindowState) Option {
 	return func(o *options) { o.windowState = state }
 }
 
+// WithMaximized is a convenience shortcut for WithWindowState(WindowStateMaximized).
+func WithMaximized() Option {
+	return func(o *options) { o.windowState = WindowStateMaximized }
+}
+
 // WithExtension loads one or more unpacked Chrome extensions by directory path.
 // Extensions require --load-extension and --disable-extensions-except launch flags
 // which are set automatically at browser startup.
 func WithExtension(paths ...string) Option {
 	return func(o *options) { o.extensions = append(o.extensions, paths...) }
+}
+
+// WithDevTools opens Chrome DevTools automatically for each new tab.
+func WithDevTools() Option {
+	return func(o *options) { o.devtools = true }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.
