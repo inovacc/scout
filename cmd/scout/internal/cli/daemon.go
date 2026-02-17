@@ -89,8 +89,15 @@ func ensureDaemon(addr string) error {
 		return nil
 	}
 
-	// Only auto-start daemon for local addresses
+	// For remote addresses, also try a raw TCP dial — the server may require mTLS
+	// which isDaemonReachable (insecure gRPC) can't establish. A successful TCP
+	// connection means the port is open and the client should attempt mTLS.
 	if !isLocalAddr(addr) {
+		conn, err := net.DialTimeout("tcp", addr, 3*time.Second)
+		if err == nil {
+			_ = conn.Close()
+			return nil // port is open, let the caller try mTLS
+		}
 		return fmt.Errorf("scout: server at %s not reachable", addr)
 	}
 
