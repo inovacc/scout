@@ -1219,13 +1219,17 @@ func TestPageRace(t *testing.T) {
 		t.Fatalf("WaitLoad() error: %v", err)
 	}
 
-	el, _, err := page.Race("h1", "#nonexistent")
+	el, idx, err := page.Race("h1", "#nonexistent")
 	if err != nil {
 		t.Fatalf("Race() error: %v", err)
 	}
 
 	if el == nil {
 		t.Error("Race() should return the first matching element")
+	}
+
+	if idx != 0 {
+		t.Errorf("Race() index = %d, want 0", idx)
 	}
 
 	text, _ := el.Text()

@@ -2,11 +2,8 @@
 
 ## Open Issues
 
-### Race method does not return matched index
-- **Severity:** Medium
-- **Status:** Open
-- **Description:** `Page.Race()` always returns `-1` as the match index (page.go:518), even though the method signature promises to return the index of the matched selector. The rod `race.Do()` API does not directly expose which selector won.
-- **Workaround:** None. Callers cannot determine which selector matched.
+~~### Race method does not return matched index~~ [RESOLVED]
+- **Status:** Fixed — Race now uses `Matches()` to identify the winning selector index.
 
 ### gRPC server lacks test coverage
 - **Severity:** Medium
@@ -20,3 +17,4 @@
 |-------|------------|------|
 | Taskfile contains inapplicable tasks | Legacy template tasks (proto:generate, sqlc:generate, goreleaser) replaced with valid proto, grpc:server, grpc:client, grpc:workflow, grpc:build tasks | 2025 |
 | CI build workflow installs unneeded system packages | `.github/workflows/build.yml` removed; CI uses reusable `inovacc/workflows` | 2025 |
+| Race method does not return matched index | Fixed: uses `Matches()` on returned element to determine winning selector index | 2026-02 |

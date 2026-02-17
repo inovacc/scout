@@ -530,7 +530,17 @@ func (p *Page) Race(selectors ...string) (*Element, int, error) {
 		return nil, -1, fmt.Errorf("scout: race: %w", err)
 	}
 
-	return &Element{element: el}, -1, nil
+	// Determine which selector won by matching against the element.
+	idx := -1
+	for i, sel := range selectors {
+		matched, mErr := el.Matches(sel)
+		if mErr == nil && matched {
+			idx = i
+			break
+		}
+	}
+
+	return &Element{element: el}, idx, nil
 }
 
 // KeyPress presses and releases a single keyboard key on the page.
