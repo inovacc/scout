@@ -65,6 +65,7 @@ message CreateSessionRequest {
   bool   capture_body = 9; // capture response bodies
   bool   maximized    = 10; // start window maximized
   bool   devtools     = 11; // open Chrome DevTools automatically
+  bool   no_sandbox   = 12; // disable browser sandbox (containers/WSL)
 }
 
 message CreateSessionResponse {

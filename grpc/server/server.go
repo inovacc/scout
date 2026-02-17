@@ -205,6 +205,10 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 		opts = append(opts, scout.WithDevTools())
 	}
 
+	if req.GetNoSandbox() {
+		opts = append(opts, scout.WithNoSandbox())
+	}
+
 	browser, err := scout.New(opts...)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "browser launch failed: %v", err)
