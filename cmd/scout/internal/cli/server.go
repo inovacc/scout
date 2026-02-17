@@ -2,11 +2,11 @@ package cli
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
@@ -47,12 +47,12 @@ var serverCmd = &cobra.Command{
 		var (
 			grpcServer  *grpc.Server
 			scoutServer *server.ScoutServer
+			deviceID    string
 		)
 
 		if insecureMode {
 			grpcServer = grpc.NewServer(msgOpts...)
 			scoutServer = server.New()
-			log.Println("WARNING: running in insecure mode (no mTLS)")
 		} else {
 			dir, err := scoutDir()
 			if err != nil {
@@ -64,7 +64,7 @@ var serverCmd = &cobra.Command{
 				return fmt.Errorf("scout: load identity: %w", err)
 			}
 
-			log.Printf("Device ID: %s", id.DeviceID)
+			deviceID = id.DeviceID
 
 			trustStore, err := identity.NewTrustStore(filepath.Join(dir, "trusted"))
 			if err != nil {
@@ -77,6 +77,25 @@ var serverCmd = &cobra.Command{
 			}
 		}
 
+		info := server.ServerInfo{
+			DeviceID:   deviceID,
+			ListenAddr: addr,
+			Insecure:   insecureMode,
+			LocalIPs:   server.GetLocalIPs(),
+		}
+
+		// Print initial table
+		var displayMu sync.Mutex
+		printTable := func(peers []server.ConnectedPeer) {
+			displayMu.Lock()
+			defer displayMu.Unlock()
+			_, _ = fmt.Fprint(os.Stdout, "\033[2J\033[H") // clear screen + cursor home
+			server.PrintServerTable(os.Stdout, info, peers)
+		}
+
+		scoutServer.OnPeerChange = printTable
+		printTable(nil)
+
 		pb.RegisterScoutServiceServer(grpcServer, scoutServer)
 
 		if enableReflection {
@@ -88,11 +107,10 @@ var serverCmd = &cobra.Command{
 			sigCh := make(chan os.Signal, 1)
 			signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 			<-sigCh
-			log.Println("shutting down gRPC server...")
+			_, _ = fmt.Fprintln(os.Stdout, "\nshutting down gRPC server...")
 			grpcServer.GracefulStop()
 		}()
 
-		log.Printf("scout gRPC server listening on %s", addr)
 		if err := grpcServer.Serve(lis); err != nil {
 			return fmt.Errorf("scout: serve: %w", err)
 		}

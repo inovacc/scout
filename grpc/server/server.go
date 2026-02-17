@@ -12,9 +12,12 @@ import (
 	"github.com/go-rod/rod/lib/input"
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/google/uuid"
+	"github.com/inovacc/scout/pkg/identity"
 	"github.com/inovacc/scout/pkg/scout"
 	pb "github.com/inovacc/scout/grpc/scoutpb"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
 
@@ -77,11 +80,84 @@ type ScoutServer struct {
 	pb.UnimplementedScoutServiceServer
 
 	sessions sync.Map // map[string]*session
+	peers    sync.Map // map[deviceID]*ConnectedPeer
+
+	// sessionPeer tracks which device owns each session.
+	sessionPeer sync.Map // map[sessionID]deviceID
+
+	// OnPeerChange is called when peer list changes. Set by the CLI server command.
+	OnPeerChange func(peers []ConnectedPeer)
 }
 
 // New creates a new ScoutServer.
 func New() *ScoutServer {
 	return &ScoutServer{}
+}
+
+// Peers returns a snapshot of all connected peers.
+func (s *ScoutServer) Peers() []ConnectedPeer {
+	var result []ConnectedPeer
+	s.peers.Range(func(_, v any) bool {
+		p := v.(*ConnectedPeer)
+		result = append(result, *p)
+		return true
+	})
+	return result
+}
+
+func (s *ScoutServer) trackPeer(ctx context.Context, sessionID string) {
+	deviceID := "unknown"
+	addr := "unknown"
+
+	if p, ok := peer.FromContext(ctx); ok {
+		addr = p.Addr.String()
+		if tlsInfo, ok := p.AuthInfo.(credentials.TLSInfo); ok {
+			if len(tlsInfo.State.PeerCertificates) > 0 {
+				deviceID = identity.DeviceIDFromCert(tlsInfo.State.PeerCertificates[0])
+			}
+		}
+	}
+
+	s.sessionPeer.Store(sessionID, deviceID)
+
+	if v, ok := s.peers.Load(deviceID); ok {
+		p := v.(*ConnectedPeer)
+		p.Sessions++
+	} else {
+		s.peers.Store(deviceID, &ConnectedPeer{
+			DeviceID:    deviceID,
+			ShortID:     identity.ShortID(deviceID),
+			Addr:        addr,
+			ConnectedAt: time.Now(),
+			Sessions:    1,
+		})
+	}
+
+	s.notifyPeerChange()
+}
+
+func (s *ScoutServer) untrackPeer(sessionID string) {
+	v, ok := s.sessionPeer.LoadAndDelete(sessionID)
+	if !ok {
+		return
+	}
+	deviceID := v.(string)
+
+	if v, ok := s.peers.Load(deviceID); ok {
+		p := v.(*ConnectedPeer)
+		p.Sessions--
+		if p.Sessions <= 0 {
+			s.peers.Delete(deviceID)
+		}
+	}
+
+	s.notifyPeerChange()
+}
+
+func (s *ScoutServer) notifyPeerChange() {
+	if s.OnPeerChange != nil {
+		s.OnPeerChange(s.Peers())
+	}
 }
 
 func (s *ScoutServer) getSession(id string) (*session, error) {
@@ -95,7 +171,7 @@ func (s *ScoutServer) getSession(id string) (*session, error) {
 
 // ════════════════════════ Session Lifecycle ════════════════════════
 
-func (s *ScoutServer) CreateSession(_ context.Context, req *pb.CreateSessionRequest) (*pb.CreateSessionResponse, error) {
+func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.CreateSessionResponse, error) {
 	opts := []scout.Option{
 		scout.WithHeadless(req.GetHeadless()),
 	}
@@ -161,6 +237,7 @@ func (s *ScoutServer) CreateSession(_ context.Context, req *pb.CreateSessionRequ
 	}
 
 	s.sessions.Store(sess.id, sess)
+	s.trackPeer(ctx, sess.id)
 
 	title, _ := page.Title()
 	currentURL, _ := page.URL()
@@ -185,6 +262,7 @@ func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) 
 	_ = sess.browser.Close()
 
 	s.sessions.Delete(req.GetSessionId())
+	s.untrackPeer(req.GetSessionId())
 
 	return &pb.Empty{}, nil
 }
