@@ -41,10 +41,17 @@ flowchart TB
         Sessions["Session Tracking\n(~/.scout/)"]
     end
 
+    subgraph Firecrawl["Firecrawl Client (firecrawl/)"]
+        FC["Client\n(client.go)"]
+        FCScrape["Scrape / Crawl / Search\nMap / Batch / Extract"]
+        FCPoll["poll[T]\n(poll.go)"]
+    end
+
     subgraph External["External"]
         Chrome["Chromium / Chrome"]
         Rod["go-rod/rod"]
         Stealth["go-rod/stealth"]
+        FCAPI["Firecrawl API\n(REST)"]
     end
 
     Options -->|configures| Browser
@@ -66,6 +73,11 @@ flowchart TB
     CLI -->|auto-starts| Daemon
     Daemon -->|starts| Server
     CLI -->|calls| PB
+    CLI -->|uses| FC
+
+    FC -->|configures| FCScrape
+    FCScrape -->|async jobs| FCPoll
+    FC -->|HTTP REST| FCAPI
 
     Rod -->|CDP protocol| Chrome
     Stealth -->|patches| Page
@@ -229,6 +241,80 @@ sequenceDiagram
 
     Client->>Stream: CloseSend()
     Stream-->>Client: EOF
+```
+
+## Generic Auth Framework
+
+```mermaid
+flowchart TB
+    subgraph AuthFramework["scraper/auth/"]
+        Provider["Provider Interface"]
+        Registry["Registry"]
+        BrowserAuth["BrowserAuth\n(browser_auth.go)"]
+        BrowserCapture["BrowserCapture\n(capture all before close)"]
+        OAuth["OAuthServer\n(oauth.go)"]
+        Electron["ElectronSession\n(electron.go)"]
+        SessionPersist["SaveEncrypted / LoadEncrypted\n(session.go)"]
+    end
+
+    subgraph Providers["Provider Implementations"]
+        SlackProv["SlackProvider\n(scraper/slack/provider.go)"]
+        TeamsProv["TeamsProvider\n(planned)"]
+        DiscordProv["DiscordProvider\n(planned)"]
+    end
+
+    subgraph CLI["CLI Commands"]
+        AuthLogin["scout auth login --provider slack"]
+        AuthCapture["scout auth capture --url <any>"]
+        AuthStatus["scout auth status"]
+        AuthLogout["scout auth logout"]
+    end
+
+    Provider -->|implements| SlackProv
+    Provider -->|implements| TeamsProv
+    Provider -->|implements| DiscordProv
+    Registry -->|stores| Provider
+    BrowserAuth -->|uses| Provider
+    BrowserAuth -->|launches| Scout
+    BrowserCapture -->|launches| Scout
+    OAuth -->|local callback| BrowserAuth
+    Electron -->|CDP connect| Scout
+
+    AuthLogin -->|uses| BrowserAuth
+    AuthCapture -->|uses| BrowserCapture
+    BrowserAuth -->|saves| SessionPersist
+    BrowserCapture -->|saves| SessionPersist
+
+    Scout["scout.Browser\n+ scout.Page"]
+```
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant CLI as scout CLI
+    participant Auth as auth.BrowserAuth
+    participant Browser as Chromium
+    participant Provider as Provider.DetectAuth
+
+    CLI->>Auth: BrowserAuth(ctx, provider, opts)
+    Auth->>Browser: Launch (non-headless)
+    Auth->>Browser: Navigate to LoginURL()
+    CLI-->>User: "please log in..."
+
+    loop Poll every 2s
+        Auth->>Provider: DetectAuth(page)
+        Provider-->>Auth: false
+    end
+
+    User->>Browser: Complete login
+    Auth->>Provider: DetectAuth(page)
+    Provider-->>Auth: true
+    Auth->>Provider: CaptureSession(page)
+    Note over Auth,Browser: Captures cookies, localStorage,<br/>sessionStorage, tokens
+    Auth->>Browser: Close
+    Auth->>CLI: Session
+    CLI->>CLI: SaveEncrypted(session)
+    CLI-->>User: "session saved to slack-session.enc"
 ```
 
 ## Scraping Pipeline

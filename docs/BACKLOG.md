@@ -188,10 +188,10 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 - **Description:** HijackContext.Request(), ContinueRequest(), LoadResponse(), Skip(), HijackRequest methods (Method, URL, Header, Body), HijackResponse.SetHeader(), Fail() — all at 0% coverage.
 - **Effort:** Medium
 
-### Missing LICENSE File
+### ~~Missing LICENSE File~~ [DONE]
 
 - **Priority:** P1
-- **Description:** No LICENSE file in the repository. Required for open-source distribution.
+- **Status:** Complete — BSD 3-Clause LICENSE file added
 - **Effort:** Small
 
 ### gRPC Server Test Coverage
@@ -222,3 +222,5 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 | Remove Legacy Taskfile Tasks | Removed all non-applicable tasks, added lint:fix and slack-assist build | 2026-02 |
 | EvalResult Type Conversion Tests | Full coverage: String, Int, Float, Bool, IsNull, JSON, Decode | 2026-02 |
 | Unified CLI | Single Cobra binary `cmd/scout/` replaces cmd/server, cmd/client, cmd/slack-assist, cmd/example-workflow | 2026-02 |
+| Missing LICENSE File | BSD 3-Clause LICENSE file added | 2026-02 |
+| Firecrawl Integration | Pure HTTP Go client for Firecrawl v2 API with CLI commands | 2026-02 |
