@@ -168,13 +168,11 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 - **Effort:** Medium
 - **Dependencies:** Existing `RateLimiter` for throttling. Page pool pattern similar to crawl's semaphore.
 
-### URL Map / Link Discovery
+### ~~URL Map / Link Discovery~~ [DONE]
 
 - **Priority:** P2
-- **Description:** Lightweight URL-only discovery mode that collects all links on a site without performing full page extraction. Combines sitemap.xml parsing with on-page link harvesting. Faster and lower memory than a full crawl.
-- **Scope:** `pkg/scout/map.go` with `Map()` function. Filters for subdomains, path patterns, search terms. CLI `scout map <url> [--search=term] [--include-subdomains] [--limit=100]`.
+- **Status:** Complete — `pkg/scout/map.go` with `Map()` function, sitemap + BFS link harvesting, path/subdomain/search filters, CLI `scout map`
 - **Effort:** Medium
-- **Dependencies:** Existing `ParseSitemap()` and link extraction from crawl.go.
 
 ### LLM-Powered Extraction
 
@@ -202,16 +200,16 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 
 ---
 
-### Test Coverage Gaps
+### ~~Test Coverage Gaps~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Page methods at 0% coverage: NavigateForward, ScrollScreenshot, ScreenshotPNG, PDF, PDFWithOptions, ElementByJS, ElementByText, ElementFromPoint, Search, HasXPath, WaitStable, WaitDOMStable, WaitIdle, WaitXPath, SetWindow, Emulate, SetDocumentContent, AddScriptTag, AddStyleTag, StopLoading, Activate, HandleDialog, Race
+- **Status:** Complete — pkg/scout coverage raised from 69.9% to 80.1%. Page and element methods now have extensive test coverage.
 - **Effort:** Large
 
-### Element Method Test Coverage
+### ~~Element Method Test Coverage~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Element methods at 0% coverage: DoubleClick, RightClick, Hover, MoveMouseOut, Tap, InputTime, InputColor, Type, Press, SelectOptionByCSS, SetFiles, Focus, Blur, ScrollIntoView, Remove, SelectAllText, SelectText, Interactable, Disabled, ScreenshotJPEG, GetXPath, ContainsElement, Equal, CanvasToImage, BackgroundImage, Resource, Parent, Parents, Next, Previous, ShadowRoot, Frame, all Wait* methods
+- **Status:** Complete — DoubleClick, RightClick, Hover, Tap, Type, Press, SelectOptionByCSS, SetFiles, Focus, Blur, ScrollIntoView, Remove, SelectAllText, GetXPath, ContainsElement, Equal, CanvasToImage, BackgroundImage, Resource, Parents, Wait* all tested. Previous/ShadowRoot/Frame skip gracefully due to rod limitations.
 - **Effort:** Large
 
 ### ~~EvalResult Type Conversion Tests~~ [DONE]
@@ -220,10 +218,10 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 - **Status:** Complete — `eval_test.go` covers String, Int, Float, Bool, IsNull, JSON, Decode with table-driven tests
 - **Effort:** Small
 
-### Network Accessor Tests
+### ~~Network Accessor Tests~~ [DONE]
 
 - **Priority:** P2
-- **Description:** HijackContext.Request(), ContinueRequest(), LoadResponse(), Skip(), HijackRequest methods (Method, URL, Header, Body), HijackResponse.SetHeader(), Fail() — all at 0% coverage.
+- **Status:** Complete — HijackRequestAccessors, HijackLoadResponse, HijackSkip, HijackResponseFail, HandleAuth all tested
 - **Effort:** Medium
 
 ### ~~Missing LICENSE File~~ [DONE]
@@ -263,3 +261,7 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 | Missing LICENSE File | BSD 3-Clause LICENSE file added | 2026-02 |
 | Firecrawl Integration | Pure HTTP Go client for Firecrawl v2 API with CLI commands | 2026-02 |
 | HTML-to-Markdown Engine | Pure Go converter with readability scoring, `page.Markdown()`, CLI command | 2026-02 |
+| URL Map / Link Discovery | `Map()` with sitemap + BFS link harvesting, filters, CLI `scout map` | 2026-02 |
+| Test Coverage Gaps | pkg/scout coverage raised from 69.9% to 80.1% | 2026-02 |
+| Element Method Test Coverage | Comprehensive element method tests added | 2026-02 |
+| Network Accessor Tests | Hijack request/response accessor tests added | 2026-02 |

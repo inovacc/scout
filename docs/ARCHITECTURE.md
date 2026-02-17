@@ -18,6 +18,8 @@ flowchart TB
             Paginate["PaginateBy*\n(paginate.go)"]
             Search["Search\n(search.go)"]
             Crawl["Crawl\n(crawl.go)"]
+            Map["Map\n(map.go)"]
+            Markdown["Markdown\n(markdown.go)"]
             RateLimit["RateLimiter\n(ratelimit.go)"]
         end
 
@@ -62,6 +64,8 @@ flowchart TB
     Page -->|uses| Form
     Page -->|uses| Search
     Browser -->|uses| Crawl
+    Browser -->|uses| Map
+    Page -->|uses| Markdown
     Browser -->|uses| Paginate
     RateLimit -->|throttles| Page
 

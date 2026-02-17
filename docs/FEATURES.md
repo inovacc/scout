@@ -43,6 +43,14 @@
 - **Status:** Completed
 - **Description:** Pure HTTP Go client for the Firecrawl v2 REST API. Supports scrape, crawl, search, URL map, batch scrape, and AI-powered extraction endpoints. Typed errors, generic async polling, functional options. CLI commands under `scout firecrawl`. Implemented in `firecrawl/` package with no external dependencies beyond stdlib.
 
+### HTML-to-Markdown Engine
+- **Status:** Completed
+- **Description:** Pure Go HTML-to-Markdown converter using `golang.org/x/net/html`. Readability scoring to extract main content (article/nav/footer scoring, class/ID pattern matching, link density penalty). Supports headings, links, images, lists, tables, code blocks, bold/italic, blockquotes. `page.Markdown()` and `page.MarkdownContent()` methods. CLI `scout markdown`. Implemented in `markdown.go` and `readability.go`.
+
+### URL Map / Link Discovery
+- **Status:** Completed
+- **Description:** Lightweight URL-only discovery combining sitemap.xml parsing with on-page BFS link harvesting. Filters for subdomains, path patterns, search terms. Limit cap on discovered URLs. CLI `scout map <url>`. Implemented in `map.go`.
+
 ## Proposed Features
 
 ### Screen Recorder

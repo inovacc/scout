@@ -28,6 +28,8 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **gRPC Remote Control** - Multi-session browser control via gRPC with 25+ RPCs and event streaming
 - **Scraper Modes** - Pluggable scraper framework with encrypted session persistence; Slack mode with API client, browser auth, channel/message/thread/file/user extraction
 - **Encrypted Session Capture** - AES-256-GCM + Argon2id passphrase-based encryption for saved browser sessions via `slack-assist` CLI
+- **HTML-to-Markdown** - Convert page HTML to clean markdown with readability scoring for main content extraction (`page.Markdown()`, `page.MarkdownContent()`)
+- **URL Map / Link Discovery** - Lightweight URL-only discovery combining sitemap.xml + on-page link harvesting with path/subdomain/search filters
 - **Firecrawl Integration** - Pure HTTP Go client for the Firecrawl v2 REST API: scrape, crawl, search, map, batch scrape, and AI-powered extraction — all without a browser
 
 ## Installation
@@ -354,6 +356,8 @@ The `scout` CLI provides a unified interface to all library features. It communi
 | `scout block <pattern>` | Block URL pattern |
 | `scout search <query>` | Search engines (`--engine`, `--max-pages`) |
 | `scout crawl <url>` | BFS crawl (`--max-depth`, `--max-pages`, `--delay`) |
+| `scout map <url>` | URL discovery (`--search`, `--include-subdomains`, `--limit`) |
+| `scout markdown --url=<url>` | Convert page to markdown (`--main-only`, `--no-images`) |
 | `scout table` / `meta` | Extract tables/metadata (`--url`, `--selector`) |
 | `scout form detect\|fill\|submit` | Form interaction |
 | `scout slack capture\|load\|decrypt` | Slack session management |

@@ -81,7 +81,7 @@
 - [x] Remove old separate binaries
 - [x] Update documentation (README, CLAUDE.md, ROADMAP)
 - **New dependency:** `github.com/spf13/cobra`
-- **Test Coverage:** 33.3% total (pkg/scout 69.9%, scraper 84.3%, scraper/slack 64.4%)
+- **Test Coverage:** 40.5% total (pkg/scout 80.1%, scraper 84.3%, scraper/slack 60.4%)
 
 ## v0.6.0 - Firecrawl Integration [COMPLETE]
 **Goal:** Pure HTTP client for the Firecrawl v2 REST API.
@@ -94,7 +94,18 @@
 - [x] Unit tests with mock HTTP server, integration tests behind build tag
 - **No new external dependencies** — uses only standard library
 
-## v0.7.0 - Screen Recorder [PLANNED]
+## v0.7.0 - Markdown, URL Map & Coverage [IN PROGRESS]
+**Goal:** Native HTML-to-Markdown, URL discovery, and 80%+ test coverage.
+
+- [x] Pure Go HTML-to-Markdown converter with readability scoring (`markdown.go`, `readability.go`)
+- [x] `page.Markdown()` and `page.MarkdownContent()` methods
+- [x] CLI: `scout markdown --url=<url> [--main-only]`
+- [x] URL Map / Link Discovery (`map.go`) combining sitemap + BFS link harvesting
+- [x] CLI: `scout map <url> [--search=term] [--limit=N]`
+- [x] Increase pkg/scout test coverage from 69.9% to 80.1%
+- [ ] Tag and release v0.7.0
+
+## v0.8.0 - Screen Recorder [PLANNED]
 **Goal:** Capture browser sessions as video for forensic evidence.
 
 - [ ] ScreenRecorder type using CDP `Page.startScreencast`
@@ -102,7 +113,7 @@
 - [ ] gRPC RPCs and CLI commands (`scout record start/stop/export`)
 - [ ] Combined HAR+video forensic bundles
 
-## v0.8.0 - Distributed Crawling [PLANNED]
+## v0.9.0 - Distributed Crawling [PLANNED]
 **Goal:** Swarm-mode crawling across multiple browser instances.
 
 - [ ] Browser cluster / pool management
@@ -118,5 +129,5 @@
 - [x] LICENSE file
 - [ ] GoDoc examples for Browser, Page, Element, EvalResult, and new features
 - [ ] Integration test examples (login flow, form submission, scraping)
-- [ ] 80%+ test coverage
-- **Target Coverage:** 80%+
+- [x] 80%+ test coverage (pkg/scout: 80.1%)
+- **Coverage:** 40.5% total | pkg/scout 80.1% ✅

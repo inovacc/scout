@@ -81,6 +81,8 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `PaginateByClick/URL/Scroll/LoadMore` | Generic pagination | `paginate.go` |
 | `SearchResults`, `SearchResult` | SERP parsing | `search.go` |
 | `CrawlResult`, `SitemapURL` | Web crawling | `crawl.go` |
+| `MapOption` | URL map/link discovery options | `map.go` |
+| `MarkdownOption` | HTML-to-Markdown conversion options | `markdown.go` |
 | `storageAPI`, `SessionState` | Web storage & session persistence | `storage.go` |
 
 ### gRPC Service Layer
@@ -181,7 +183,9 @@ cmd/scout/
     ├── extract.go          # scout table/meta (standalone)
     ├── form.go             # scout form detect/fill/submit (standalone)
     ├── slack.go            # scout slack capture/load/decrypt
-    └── firecrawl.go        # scout firecrawl scrape/crawl/search/map/batch/extract
+    ├── firecrawl.go        # scout firecrawl scrape/crawl/search/map/batch/extract
+    ├── markdown.go         # scout markdown --url=<url> [--main-only]
+    └── map.go              # scout map <url> [--search=term] [--limit=N]
 ```
 
 Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessions/`
@@ -214,6 +218,9 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **Page keyboard methods**: `KeyPress(key)` and `KeyType(keys...)` operate at the page level (not element-scoped). Used by the gRPC server for `PressKey` RPC.
 - **Firecrawl error prefix**: All firecrawl errors use `"firecrawl:"` prefix. Typed errors: `*AuthError` (401/403), `*RateLimitError` (429), `*APIError` (other).
 - **Firecrawl polling**: `poll[T]()` generic function reused by `WaitForCrawl` and `WaitForBatch` for async job completion.
+- **HTML-to-Markdown**: `convertHTMLToMarkdown()` is a pure function testable without browser. `Page.Markdown()` wraps it with page HTML. `Page.MarkdownContent()` applies readability scoring first via `WithMainContentOnly()`.
+- **Readability scoring**: `extractMainContent()` uses tag-based scoring (article +20, nav -25), class/ID pattern matching, link density penalty. Returns highest-scoring DOM node.
+- **URL Map**: `Browser.Map()` combines sitemap.xml parsing + BFS on-page link harvesting. Reuses `visitedSet`, `normalizeURL`, `resolveLink` from crawl.go.
 
 ## Testing
 
@@ -225,6 +232,8 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Paginate routes: `/products-page{1,2,3}`, `/api/products`, `/infinite`, `/load-more`
 - Search routes: `/serp-google`, `/serp-google-page2`, `/serp-bing`, `/serp-ddg`
 - Crawl routes: `/crawl-start`, `/crawl-page{1,2,3}`, `/sitemap.xml`
+- Map routes: `/map-start`, `/map-page1`, `/map-page1-sub`, `/map-page2`, `/map-page3`
+- Markdown routes: `/markdown`
 - Recorder routes: `/recorder-page`, `/recorder-asset`, `/recorder-api`
 - Firecrawl tests: mock HTTP server in `firecrawl/testutil_test.go`; integration tests behind `//go:build integration` + `FIRECRAWL_API_KEY`
 - Window tests: no routes needed — window control operates on the browser window itself
@@ -238,6 +247,7 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - `github.com/go-rod/stealth` — anti-bot-detection page creation (enabled via `WithStealth()`)
 - `github.com/ysmood/gson` — JSON number handling for `EvalResult`
 - `golang.org/x/time/rate` — token bucket rate limiter for `RateLimiter`
+- `golang.org/x/net/html` — HTML tokenizer/parser for markdown converter (indirect dep)
 
 ### gRPC layer and CLI (grpc/ and cmd/scout/)
 - `google.golang.org/grpc` — gRPC framework

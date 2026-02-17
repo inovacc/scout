@@ -1,7 +1,7 @@
 # Project Roadmap
 
 ## Current Status
-**Overall Progress:** 90% Complete
+**Overall Progress:** 92% Complete
 
 ## Phases
 
@@ -40,7 +40,7 @@
 - [x] **Search Engine Integration** (`search.go`) — Google/Bing/DuckDuckGo SERP parsing
 - [x] **Crawling** (`crawl.go`) — BFS crawl with depth/page limits, domain filtering, sitemap parser
 
-### Phase 4: Testing & Quality [IN PROGRESS]
+### Phase 4: Testing & Quality [COMPLETE]
 - [x] Test infrastructure (httptest server, newTestBrowser helper)
 - [x] Browser lifecycle tests
 - [x] Basic page navigation and content tests
@@ -194,22 +194,13 @@
 
 ## Test Coverage
 
-**Current:** 33.3% (total project) | 69.9% (pkg/scout) | **Target:** 80%
+**Current:** 40.5% (total project) | 80.1% (pkg/scout) | **Target:** 80% ✅
 
-| File | Coverage | Status |
-|------|----------|--------|
-| option.go | 100.0% | Complete |
-| browser.go | ~60% | Needs improvement |
-| page.go | ~65% | Improved — PDF, scroll, search, DOM, emulation tested |
-| element.go | ~65% | Improved — click variants, input, traversal, state tested |
-| network.go | ~50% | Accessor methods untested |
-| eval.go | ~95% | Complete — String, Int, Float, Bool, IsNull, JSON, Decode |
-| extract.go | Tested | Complete |
-| form.go | Tested | Complete |
-| ratelimit.go | Tested | Complete |
-| paginate.go | Tested | Complete |
-| search.go | Tested | Complete |
-| crawl.go | Tested | Complete |
-| window.go | Tested | Complete |
-| storage.go | Tested | Complete |
-| recorder.go | Tested | Complete |
+| Package | Coverage | Status |
+|---------|----------|--------|
+| pkg/scout | 80.1% | ✅ Target met |
+| scraper | 84.3% | Complete |
+| firecrawl | 71.7% | Good |
+| scraper/slack | 60.4% | Adequate |
+| scraper/auth | 0.0% | No tests |
+| grpc/server | 0.0% | No tests |
