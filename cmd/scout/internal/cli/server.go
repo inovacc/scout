@@ -77,6 +77,7 @@ var serverCmd = &cobra.Command{
 			}
 		}
 
+		pairingAddr := ""
 		info := server.ServerInfo{
 			DeviceID:   deviceID,
 			ListenAddr: addr,
@@ -90,11 +91,11 @@ var serverCmd = &cobra.Command{
 			displayMu.Lock()
 			defer displayMu.Unlock()
 			_, _ = fmt.Fprint(os.Stdout, "\033[2J\033[H") // clear screen + cursor home
+			info.PairingAddr = pairingAddr
 			server.PrintServerTable(os.Stdout, info, peers)
 		}
 
 		scoutServer.OnPeerChange = printTable
-		printTable(nil)
 
 		pb.RegisterScoutServiceServer(grpcServer, scoutServer)
 
@@ -102,12 +103,42 @@ var serverCmd = &cobra.Command{
 			reflection.Register(grpcServer)
 		}
 
+		// Start pairing listener on port+1 when mTLS is enabled.
+		var pairingGRPC *grpc.Server
+		if !insecureMode {
+			dir, _ := scoutDir()
+			id, _ := identity.LoadOrGenerate(filepath.Join(dir, "identity"))
+			trustStore, _ := identity.NewTrustStore(filepath.Join(dir, "trusted"))
+
+			pairingAddr = fmt.Sprintf(":%d", port+1)
+			pairingLis, err := net.Listen("tcp", pairingAddr)
+			if err != nil {
+				return fmt.Errorf("scout: listen pairing on %s: %w", pairingAddr, err)
+			}
+
+			pairingGRPC = grpc.NewServer()
+			pairingSrv := server.NewPairingServer(id, trustStore)
+			pairingSrv.OnPaired = func(deviceID string) {
+				scoutServer.NotifyPeerChange()
+			}
+			pb.RegisterPairingServiceServer(pairingGRPC, pairingSrv)
+
+			go func() {
+				_ = pairingGRPC.Serve(pairingLis)
+			}()
+		}
+
+		printTable(nil)
+
 		// Graceful shutdown
 		go func() {
 			sigCh := make(chan os.Signal, 1)
 			signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 			<-sigCh
 			_, _ = fmt.Fprintln(os.Stdout, "\nshutting down gRPC server...")
+			if pairingGRPC != nil {
+				pairingGRPC.GracefulStop()
+			}
 			grpcServer.GracefulStop()
 		}()
 

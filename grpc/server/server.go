@@ -160,6 +160,11 @@ func (s *ScoutServer) notifyPeerChange() {
 	}
 }
 
+// NotifyPeerChange triggers a peer change notification externally (e.g. after pairing).
+func (s *ScoutServer) NotifyPeerChange() {
+	s.notifyPeerChange()
+}
+
 func (s *ScoutServer) getSession(id string) (*session, error) {
 	v, ok := s.sessions.Load(id)
 	if !ok {

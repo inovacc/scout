@@ -19,10 +19,11 @@ type ConnectedPeer struct {
 
 // ServerInfo holds server metadata for display.
 type ServerInfo struct {
-	DeviceID   string
-	ListenAddr string
-	Insecure   bool
-	LocalIPs   []string
+	DeviceID    string
+	ListenAddr  string
+	PairingAddr string
+	Insecure    bool
+	LocalIPs    []string
 }
 
 // PrintServerTable renders a box-drawing table with server info and connected peers.
@@ -52,6 +53,9 @@ func PrintServerTable(w io.Writer, info ServerInfo, peers []ConnectedPeer) {
 	// Info rows
 	printKV(w, width, "Device ID", truncate(deviceID, width-18))
 	printKV(w, width, "Listen", info.ListenAddr)
+	if info.PairingAddr != "" {
+		printKV(w, width, "Pairing", info.PairingAddr)
+	}
 	printKV(w, width, "Local IPs", truncate(ips, width-18))
 	printKV(w, width, "Mode", mode)
 

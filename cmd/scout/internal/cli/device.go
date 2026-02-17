@@ -1,19 +1,29 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	pb "github.com/inovacc/scout/grpc/scoutpb"
 	"github.com/inovacc/scout/pkg/discovery"
 	"github.com/inovacc/scout/pkg/identity"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func init() {
 	rootCmd.AddCommand(deviceCmd)
-	deviceCmd.AddCommand(deviceIDCmd, deviceTrustCmd, deviceListCmd, deviceRemoveCmd, deviceDiscoverCmd)
+	deviceCmd.AddCommand(deviceIDCmd, deviceTrustCmd, deviceListCmd, deviceRemoveCmd, deviceDiscoverCmd, devicePairCmd)
+
+	devicePairCmd.Flags().String("addr", "", "address of the remote pairing endpoint (host:port)")
+	devicePairCmd.Flags().String("server-id", "", "expected server device ID (skip interactive confirmation)")
+	_ = devicePairCmd.MarkFlagRequired("addr")
 }
 
 var deviceCmd = &cobra.Command{
@@ -124,6 +134,80 @@ var deviceRemoveCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed: %s\n", args[0])
+		return nil
+	},
+}
+
+var devicePairCmd = &cobra.Command{
+	Use:   "pair",
+	Short: "Pair with a remote scout server to exchange mTLS certificates",
+	Long:  "Connects to a remote server's pairing endpoint (insecure), sends this device's certificate, and receives the server's certificate. After pairing, mTLS connections work automatically.",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		addr, _ := cmd.Flags().GetString("addr")
+		expectedID, _ := cmd.Flags().GetString("server-id")
+
+		dir, err := scoutDir()
+		if err != nil {
+			return err
+		}
+
+		id, err := identity.LoadOrGenerate(filepath.Join(dir, "identity"))
+		if err != nil {
+			return fmt.Errorf("scout: load identity: %w", err)
+		}
+
+		trustStore, err := identity.NewTrustStore(filepath.Join(dir, "trusted"))
+		if err != nil {
+			return fmt.Errorf("scout: trust store: %w", err)
+		}
+
+		// Connect to the pairing endpoint (insecure).
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		conn, err := grpc.DialContext(ctx, addr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithBlock(),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: connect to pairing endpoint %s: %w", addr, err)
+		}
+		defer func() { _ = conn.Close() }()
+
+		client := pb.NewPairingServiceClient(conn)
+
+		resp, err := client.Pair(ctx, &pb.PairRequest{
+			DeviceId: id.DeviceID,
+			CertDer:  id.Certificate.Certificate[0],
+		})
+		if err != nil {
+			return fmt.Errorf("scout: pair: %w", err)
+		}
+
+		serverID := resp.GetServerDeviceId()
+
+		// Verify server identity.
+		if expectedID != "" {
+			if serverID != expectedID {
+				return fmt.Errorf("scout: server ID mismatch: expected %s, got %s",
+					identity.ShortID(expectedID), identity.ShortID(serverID))
+			}
+		} else {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Server device ID: %s\nTrust this server? [y/N] ", serverID)
+			reader := bufio.NewReader(os.Stdin)
+			answer, _ := reader.ReadString('\n')
+			answer = strings.TrimSpace(strings.ToLower(answer))
+			if answer != "y" && answer != "yes" {
+				return fmt.Errorf("scout: pairing cancelled by user")
+			}
+		}
+
+		// Store the server's certificate.
+		if err := trustStore.Trust(serverID, resp.GetServerCertDer()); err != nil {
+			return fmt.Errorf("scout: store server cert: %w", err)
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Paired with %s successfully.\n", identity.ShortID(serverID))
 		return nil
 	},
 }
