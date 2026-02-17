@@ -162,12 +162,8 @@ var devicePairCmd = &cobra.Command{
 		}
 
 		// Connect to the pairing endpoint (insecure).
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		conn, err := grpc.DialContext(ctx, addr,
+		conn, err := grpc.NewClient(addr,
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
-			grpc.WithBlock(),
 		)
 		if err != nil {
 			return fmt.Errorf("scout: connect to pairing endpoint %s: %w", addr, err)
@@ -175,6 +171,9 @@ var devicePairCmd = &cobra.Command{
 		defer func() { _ = conn.Close() }()
 
 		client := pb.NewPairingServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
 		resp, err := client.Pair(ctx, &pb.PairRequest{
 			DeviceId: id.DeviceID,
