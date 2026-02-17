@@ -2229,6 +2229,110 @@ func (x *ScrollAction) GetY() int32 {
 	return 0
 }
 
+type PairRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"` // client's device ID
+	CertDer       []byte                 `protobuf:"bytes,2,opt,name=cert_der,json=certDer,proto3" json:"cert_der,omitempty"`    // client's certificate in DER encoding
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PairRequest) Reset() {
+	*x = PairRequest{}
+	mi := &file_grpc_proto_scout_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PairRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PairRequest) ProtoMessage() {}
+
+func (x *PairRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_grpc_proto_scout_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PairRequest.ProtoReflect.Descriptor instead.
+func (*PairRequest) Descriptor() ([]byte, []int) {
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *PairRequest) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+func (x *PairRequest) GetCertDer() []byte {
+	if x != nil {
+		return x.CertDer
+	}
+	return nil
+}
+
+type PairResponse struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ServerDeviceId string                 `protobuf:"bytes,1,opt,name=server_device_id,json=serverDeviceId,proto3" json:"server_device_id,omitempty"` // server's device ID
+	ServerCertDer  []byte                 `protobuf:"bytes,2,opt,name=server_cert_der,json=serverCertDer,proto3" json:"server_cert_der,omitempty"`    // server's certificate in DER encoding
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PairResponse) Reset() {
+	*x = PairResponse{}
+	mi := &file_grpc_proto_scout_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PairResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PairResponse) ProtoMessage() {}
+
+func (x *PairResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_grpc_proto_scout_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PairResponse.ProtoReflect.Descriptor instead.
+func (*PairResponse) Descriptor() ([]byte, []int) {
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *PairResponse) GetServerDeviceId() string {
+	if x != nil {
+		return x.ServerDeviceId
+	}
+	return ""
+}
+
+func (x *PairResponse) GetServerCertDer() []byte {
+	if x != nil {
+		return x.ServerCertDer
+	}
+	return nil
+}
+
 var File_grpc_proto_scout_proto protoreflect.FileDescriptor
 
 const file_grpc_proto_scout_proto_rawDesc = "" +
@@ -2412,7 +2516,13 @@ const file_grpc_proto_scout_proto_rawDesc = "" +
 	"timeout_ms\x18\x02 \x01(\x05R\ttimeoutMs\"*\n" +
 	"\fScrollAction\x12\f\n" +
 	"\x01x\x18\x01 \x01(\x05R\x01x\x12\f\n" +
-	"\x01y\x18\x02 \x01(\x05R\x01y2\xab\f\n" +
+	"\x01y\x18\x02 \x01(\x05R\x01y\"E\n" +
+	"\vPairRequest\x12\x1b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x12\x19\n" +
+	"\bcert_der\x18\x02 \x01(\fR\acertDer\"`\n" +
+	"\fPairResponse\x12(\n" +
+	"\x10server_device_id\x18\x01 \x01(\tR\x0eserverDeviceId\x12&\n" +
+	"\x0fserver_cert_der\x18\x02 \x01(\fR\rserverCertDer2\xab\f\n" +
 	"\fScoutService\x12P\n" +
 	"\rCreateSession\x12\x1e.scout.v1.CreateSessionRequest\x1a\x1f.scout.v1.CreateSessionResponse\x12;\n" +
 	"\x0eDestroySession\x12\x18.scout.v1.SessionRequest\x1a\x0f.scout.v1.Empty\x12A\n" +
@@ -2441,7 +2551,9 @@ const file_grpc_proto_scout_proto_rawDesc = "" +
 	"\rStopRecording\x12\x18.scout.v1.SessionRequest\x1a\x0f.scout.v1.Empty\x12<\n" +
 	"\tExportHAR\x12\x18.scout.v1.SessionRequest\x1a\x15.scout.v1.HARResponse\x12B\n" +
 	"\fStreamEvents\x12\x18.scout.v1.SessionRequest\x1a\x16.scout.v1.BrowserEvent0\x01\x12<\n" +
-	"\vInteractive\x12\x11.scout.v1.Command\x1a\x16.scout.v1.BrowserEvent(\x010\x01B'Z%github.com/inovacc/scout/grpc/scoutpbb\x06proto3"
+	"\vInteractive\x12\x11.scout.v1.Command\x1a\x16.scout.v1.BrowserEvent(\x010\x012G\n" +
+	"\x0ePairingService\x125\n" +
+	"\x04Pair\x12\x15.scout.v1.PairRequest\x1a\x16.scout.v1.PairResponseB'Z%github.com/inovacc/scout/grpc/scoutpbb\x06proto3"
 
 var (
 	file_grpc_proto_scout_proto_rawDescOnce sync.Once
@@ -2455,7 +2567,7 @@ func file_grpc_proto_scout_proto_rawDescGZIP() []byte {
 	return file_grpc_proto_scout_proto_rawDescData
 }
 
-var file_grpc_proto_scout_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
+var file_grpc_proto_scout_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_grpc_proto_scout_proto_goTypes = []any{
 	(*Empty)(nil),                 // 0: scout.v1.Empty
 	(*CreateSessionRequest)(nil),  // 1: scout.v1.CreateSessionRequest
@@ -2492,8 +2604,10 @@ var file_grpc_proto_scout_proto_goTypes = []any{
 	(*ScreenshotAction)(nil),      // 32: scout.v1.ScreenshotAction
 	(*WaitAction)(nil),            // 33: scout.v1.WaitAction
 	(*ScrollAction)(nil),          // 34: scout.v1.ScrollAction
-	nil,                           // 35: scout.v1.NetworkRequestEvent.HeadersEntry
-	nil,                           // 36: scout.v1.NetworkResponseEvent.HeadersEntry
+	(*PairRequest)(nil),           // 35: scout.v1.PairRequest
+	(*PairResponse)(nil),          // 36: scout.v1.PairResponse
+	nil,                           // 37: scout.v1.NetworkRequestEvent.HeadersEntry
+	nil,                           // 38: scout.v1.NetworkResponseEvent.HeadersEntry
 }
 var file_grpc_proto_scout_proto_depIdxs = []int32{
 	21, // 0: scout.v1.BrowserEvent.request_sent:type_name -> scout.v1.NetworkRequestEvent
@@ -2501,8 +2615,8 @@ var file_grpc_proto_scout_proto_depIdxs = []int32{
 	23, // 2: scout.v1.BrowserEvent.console:type_name -> scout.v1.ConsoleEvent
 	24, // 3: scout.v1.BrowserEvent.page_event:type_name -> scout.v1.PageEvent
 	25, // 4: scout.v1.BrowserEvent.error:type_name -> scout.v1.ErrorEvent
-	35, // 5: scout.v1.NetworkRequestEvent.headers:type_name -> scout.v1.NetworkRequestEvent.HeadersEntry
-	36, // 6: scout.v1.NetworkResponseEvent.headers:type_name -> scout.v1.NetworkResponseEvent.HeadersEntry
+	37, // 5: scout.v1.NetworkRequestEvent.headers:type_name -> scout.v1.NetworkRequestEvent.HeadersEntry
+	38, // 6: scout.v1.NetworkResponseEvent.headers:type_name -> scout.v1.NetworkResponseEvent.HeadersEntry
 	27, // 7: scout.v1.Command.navigate:type_name -> scout.v1.NavigateAction
 	28, // 8: scout.v1.Command.click:type_name -> scout.v1.ClickAction
 	29, // 9: scout.v1.Command.type:type_name -> scout.v1.TypeAction
@@ -2537,34 +2651,36 @@ var file_grpc_proto_scout_proto_depIdxs = []int32{
 	3,  // 38: scout.v1.ScoutService.ExportHAR:input_type -> scout.v1.SessionRequest
 	3,  // 39: scout.v1.ScoutService.StreamEvents:input_type -> scout.v1.SessionRequest
 	26, // 40: scout.v1.ScoutService.Interactive:input_type -> scout.v1.Command
-	2,  // 41: scout.v1.ScoutService.CreateSession:output_type -> scout.v1.CreateSessionResponse
-	0,  // 42: scout.v1.ScoutService.DestroySession:output_type -> scout.v1.Empty
-	5,  // 43: scout.v1.ScoutService.Navigate:output_type -> scout.v1.NavigateResponse
-	0,  // 44: scout.v1.ScoutService.Reload:output_type -> scout.v1.Empty
-	0,  // 45: scout.v1.ScoutService.GoBack:output_type -> scout.v1.Empty
-	0,  // 46: scout.v1.ScoutService.GoForward:output_type -> scout.v1.Empty
-	0,  // 47: scout.v1.ScoutService.Click:output_type -> scout.v1.Empty
-	0,  // 48: scout.v1.ScoutService.DoubleClick:output_type -> scout.v1.Empty
-	0,  // 49: scout.v1.ScoutService.RightClick:output_type -> scout.v1.Empty
-	0,  // 50: scout.v1.ScoutService.Hover:output_type -> scout.v1.Empty
-	0,  // 51: scout.v1.ScoutService.Type:output_type -> scout.v1.Empty
-	0,  // 52: scout.v1.ScoutService.SelectOption:output_type -> scout.v1.Empty
-	0,  // 53: scout.v1.ScoutService.PressKey:output_type -> scout.v1.Empty
-	11, // 54: scout.v1.ScoutService.GetText:output_type -> scout.v1.TextResponse
-	11, // 55: scout.v1.ScoutService.GetAttribute:output_type -> scout.v1.TextResponse
-	11, // 56: scout.v1.ScoutService.GetTitle:output_type -> scout.v1.TextResponse
-	11, // 57: scout.v1.ScoutService.GetURL:output_type -> scout.v1.TextResponse
-	14, // 58: scout.v1.ScoutService.Eval:output_type -> scout.v1.EvalResponse
-	12, // 59: scout.v1.ScoutService.ElementExists:output_type -> scout.v1.BoolResponse
-	16, // 60: scout.v1.ScoutService.Screenshot:output_type -> scout.v1.ScreenshotResponse
-	17, // 61: scout.v1.ScoutService.PDF:output_type -> scout.v1.PDFResponse
-	0,  // 62: scout.v1.ScoutService.StartRecording:output_type -> scout.v1.Empty
-	0,  // 63: scout.v1.ScoutService.StopRecording:output_type -> scout.v1.Empty
-	19, // 64: scout.v1.ScoutService.ExportHAR:output_type -> scout.v1.HARResponse
-	20, // 65: scout.v1.ScoutService.StreamEvents:output_type -> scout.v1.BrowserEvent
-	20, // 66: scout.v1.ScoutService.Interactive:output_type -> scout.v1.BrowserEvent
-	41, // [41:67] is the sub-list for method output_type
-	15, // [15:41] is the sub-list for method input_type
+	35, // 41: scout.v1.PairingService.Pair:input_type -> scout.v1.PairRequest
+	2,  // 42: scout.v1.ScoutService.CreateSession:output_type -> scout.v1.CreateSessionResponse
+	0,  // 43: scout.v1.ScoutService.DestroySession:output_type -> scout.v1.Empty
+	5,  // 44: scout.v1.ScoutService.Navigate:output_type -> scout.v1.NavigateResponse
+	0,  // 45: scout.v1.ScoutService.Reload:output_type -> scout.v1.Empty
+	0,  // 46: scout.v1.ScoutService.GoBack:output_type -> scout.v1.Empty
+	0,  // 47: scout.v1.ScoutService.GoForward:output_type -> scout.v1.Empty
+	0,  // 48: scout.v1.ScoutService.Click:output_type -> scout.v1.Empty
+	0,  // 49: scout.v1.ScoutService.DoubleClick:output_type -> scout.v1.Empty
+	0,  // 50: scout.v1.ScoutService.RightClick:output_type -> scout.v1.Empty
+	0,  // 51: scout.v1.ScoutService.Hover:output_type -> scout.v1.Empty
+	0,  // 52: scout.v1.ScoutService.Type:output_type -> scout.v1.Empty
+	0,  // 53: scout.v1.ScoutService.SelectOption:output_type -> scout.v1.Empty
+	0,  // 54: scout.v1.ScoutService.PressKey:output_type -> scout.v1.Empty
+	11, // 55: scout.v1.ScoutService.GetText:output_type -> scout.v1.TextResponse
+	11, // 56: scout.v1.ScoutService.GetAttribute:output_type -> scout.v1.TextResponse
+	11, // 57: scout.v1.ScoutService.GetTitle:output_type -> scout.v1.TextResponse
+	11, // 58: scout.v1.ScoutService.GetURL:output_type -> scout.v1.TextResponse
+	14, // 59: scout.v1.ScoutService.Eval:output_type -> scout.v1.EvalResponse
+	12, // 60: scout.v1.ScoutService.ElementExists:output_type -> scout.v1.BoolResponse
+	16, // 61: scout.v1.ScoutService.Screenshot:output_type -> scout.v1.ScreenshotResponse
+	17, // 62: scout.v1.ScoutService.PDF:output_type -> scout.v1.PDFResponse
+	0,  // 63: scout.v1.ScoutService.StartRecording:output_type -> scout.v1.Empty
+	0,  // 64: scout.v1.ScoutService.StopRecording:output_type -> scout.v1.Empty
+	19, // 65: scout.v1.ScoutService.ExportHAR:output_type -> scout.v1.HARResponse
+	20, // 66: scout.v1.ScoutService.StreamEvents:output_type -> scout.v1.BrowserEvent
+	20, // 67: scout.v1.ScoutService.Interactive:output_type -> scout.v1.BrowserEvent
+	36, // 68: scout.v1.PairingService.Pair:output_type -> scout.v1.PairResponse
+	42, // [42:69] is the sub-list for method output_type
+	15, // [15:42] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
 	15, // [15:15] is the sub-list for extension extendee
 	0,  // [0:15] is the sub-list for field type_name
@@ -2598,9 +2714,9 @@ func file_grpc_proto_scout_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_grpc_proto_scout_proto_rawDesc), len(file_grpc_proto_scout_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   37,
+			NumMessages:   39,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_grpc_proto_scout_proto_goTypes,
 		DependencyIndexes: file_grpc_proto_scout_proto_depIdxs,

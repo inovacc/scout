@@ -240,3 +240,21 @@ message EvalAction     { string script = 1; }
 message ScreenshotAction { bool full_page = 1; }
 message WaitAction     { string selector = 1; int32 timeout_ms = 2; }
 message ScrollAction   { int32 x = 1; int32 y = 2; }
+
+// -------------------- Pairing Service --------------------
+
+// PairingService runs on an insecure listener to exchange certificates
+// between devices that want to establish mTLS trust.
+service PairingService {
+  rpc Pair(PairRequest) returns (PairResponse);
+}
+
+message PairRequest {
+  string device_id = 1;  // client's device ID
+  bytes  cert_der  = 2;  // client's certificate in DER encoding
+}
+
+message PairResponse {
+  string server_device_id = 1;  // server's device ID
+  bytes  server_cert_der  = 2;  // server's certificate in DER encoding
+}

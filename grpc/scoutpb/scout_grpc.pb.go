@@ -1087,3 +1087,111 @@ var ScoutService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Metadata: "grpc/proto/scout.proto",
 }
+
+const (
+	PairingService_Pair_FullMethodName = "/scout.v1.PairingService/Pair"
+)
+
+// PairingServiceClient is the client API for PairingService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// PairingService runs on an insecure listener to exchange certificates
+// between devices that want to establish mTLS trust.
+type PairingServiceClient interface {
+	Pair(ctx context.Context, in *PairRequest, opts ...grpc.CallOption) (*PairResponse, error)
+}
+
+type pairingServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewPairingServiceClient(cc grpc.ClientConnInterface) PairingServiceClient {
+	return &pairingServiceClient{cc}
+}
+
+func (c *pairingServiceClient) Pair(ctx context.Context, in *PairRequest, opts ...grpc.CallOption) (*PairResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PairResponse)
+	err := c.cc.Invoke(ctx, PairingService_Pair_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PairingServiceServer is the server API for PairingService service.
+// All implementations must embed UnimplementedPairingServiceServer
+// for forward compatibility.
+//
+// PairingService runs on an insecure listener to exchange certificates
+// between devices that want to establish mTLS trust.
+type PairingServiceServer interface {
+	Pair(context.Context, *PairRequest) (*PairResponse, error)
+	mustEmbedUnimplementedPairingServiceServer()
+}
+
+// UnimplementedPairingServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedPairingServiceServer struct{}
+
+func (UnimplementedPairingServiceServer) Pair(context.Context, *PairRequest) (*PairResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Pair not implemented")
+}
+func (UnimplementedPairingServiceServer) mustEmbedUnimplementedPairingServiceServer() {}
+func (UnimplementedPairingServiceServer) testEmbeddedByValue()                        {}
+
+// UnsafePairingServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to PairingServiceServer will
+// result in compilation errors.
+type UnsafePairingServiceServer interface {
+	mustEmbedUnimplementedPairingServiceServer()
+}
+
+func RegisterPairingServiceServer(s grpc.ServiceRegistrar, srv PairingServiceServer) {
+	// If the following call panics, it indicates UnimplementedPairingServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&PairingService_ServiceDesc, srv)
+}
+
+func _PairingService_Pair_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PairRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PairingServiceServer).Pair(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PairingService_Pair_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PairingServiceServer).Pair(ctx, req.(*PairRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// PairingService_ServiceDesc is the grpc.ServiceDesc for PairingService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var PairingService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "scout.v1.PairingService",
+	HandlerType: (*PairingServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Pair",
+			Handler:    _PairingService_Pair_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "grpc/proto/scout.proto",
+}
