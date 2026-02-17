@@ -154,9 +154,49 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 
 ## Core Features
 
-### Screen Recorder
+### HTML-to-Markdown Engine
+
+- **Priority:** P1
+- **Description:** Pure Go HTML→Markdown converter for LLM-ready output without relying on the Firecrawl API. Includes Mozilla Readability-like content scoring to extract main content and strip boilerplate (nav, footer, sidebar, ads). Supports headings, links, images, lists, tables, code blocks, bold/italic, blockquotes.
+- **Scope:** `pkg/scout/markdown.go` with `page.Markdown()` and `page.MarkdownContent()` methods. Functional options (`WithMainContentOnly`, `WithIncludeImages`, `WithIncludeLinks`). CLI `scout markdown --url=<url> [--main-only]`.
+- **Effort:** Large
+- **Dependencies:** May use or vendor a Go HTML-to-markdown library (e.g., `html-to-markdown`). Readability heuristics need content scoring algorithm.
+
+### Batch Scraper
+
+- **Priority:** P1
+- **Description:** Native concurrent batch scraping of multiple URLs with a page pool, error isolation, and progress reporting. Currently Scout can only process URLs sequentially (except crawl's concurrency). This brings Firecrawl-style batch operations locally.
+- **Scope:** `pkg/scout/batch.go` with `BatchScrape()` function. Configurable concurrency, per-URL error collection, progress callback, rate limiter integration. CLI `scout batch --urls=... --urls-file=... [--concurrency=5]`.
+- **Effort:** Medium
+- **Dependencies:** Existing `RateLimiter` for throttling. Page pool pattern similar to crawl's semaphore.
+
+### URL Map / Link Discovery
 
 - **Priority:** P2
+- **Description:** Lightweight URL-only discovery mode that collects all links on a site without performing full page extraction. Combines sitemap.xml parsing with on-page link harvesting. Faster and lower memory than a full crawl.
+- **Scope:** `pkg/scout/map.go` with `Map()` function. Filters for subdomains, path patterns, search terms. CLI `scout map <url> [--search=term] [--include-subdomains] [--limit=100]`.
+- **Effort:** Medium
+- **Dependencies:** Existing `ParseSitemap()` and link extraction from crawl.go.
+
+### LLM-Powered Extraction
+
+- **Priority:** P2
+- **Description:** AI-powered data extraction using LLM providers. Send page content (as markdown) plus a natural language prompt to an LLM and get structured data back. Supports multiple providers via interface: OpenAI, Anthropic, Ollama (local). Optional JSON schema validation on responses.
+- **Scope:** `pkg/scout/llm.go` with `ExtractWithLLM()` function and `LLMProvider` interface. Built-in providers for OpenAI, Anthropic, Ollama. CLI `scout extract-ai --url=<url> --prompt="..." [--provider=ollama] [--schema=file.json]`.
+- **Effort:** Large
+- **Dependencies:** Depends on HTML-to-Markdown engine (Phase 10) for page content preparation. HTTP clients for LLM APIs.
+
+### Async Job System
+
+- **Priority:** P3
+- **Description:** Job manager for long-running batch and crawl operations. Provides job IDs, status polling, cancellation, and persistent state. Enables running large crawls/batches in the background with progress tracking.
+- **Scope:** `pkg/scout/jobs.go` with job lifecycle management. Persistent state in `~/.scout/jobs/`. CLI `scout jobs list/status/cancel/wait`.
+- **Effort:** Medium
+- **Dependencies:** Integrates with batch scraper and crawl commands.
+
+### Screen Recorder
+
+- **Priority:** P3
 - **Description:** Capture browser sessions as video using Chrome DevTools Protocol `Page.startScreencast`. Record page interactions as WebM, GIF, or PNG frame sequences. Complement the existing `NetworkRecorder` (HAR) with synchronized video evidence. Pure-Go WebM encoding with optional ffmpeg fallback for MP4.
 - **Scope:** `ScreenRecorder` type in `pkg/scout/screenrecord.go` with functional options (`WithFrameRate`, `WithQuality`, `WithMaxDuration`, `WithFormat`). Start/Stop/Pause/Resume lifecycle. Export as WebM (primary), GIF (short clips), or PNG sequence. gRPC RPCs for remote control. CLI `scout record start/stop/export` commands. Combined HAR+video forensic bundles.
 - **Effort:** Large

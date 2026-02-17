@@ -1,6 +1,9 @@
 package scout
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 // Option configures a Browser instance.
 type Option func(*options)
@@ -27,8 +30,13 @@ type options struct {
 }
 
 func defaults() *options {
+	headless := true
+	if v := os.Getenv("SCOUT_HEADLESS"); v == "false" || v == "0" {
+		headless = false
+	}
+
 	return &options{
-		headless: true,
+		headless: headless,
 		windowW:  1920,
 		windowH:  1080,
 		timeout:  30 * time.Second,
