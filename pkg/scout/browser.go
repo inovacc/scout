@@ -7,7 +7,7 @@ import (
 	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/launcher/flags"
 	"github.com/go-rod/rod/lib/proto"
-	"github.com/go-rod/stealth"
+	"github.com/inovacc/scout/pkg/stealth"
 )
 
 // Browser wraps a rod browser instance with a simplified API.

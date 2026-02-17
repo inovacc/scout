@@ -1,0 +1,38 @@
+{
+  "module": "github.com/go-rod/stealth",
+  "version": "v0.4.9",
+  "upstream_commit": "ed621b636e263b35258a9466e8bc6309fcb651ae",
+  "internalized_at": "2026-02-17T00:00:00Z",
+  "local_package": "pkg/stealth",
+  "local_module": "github.com/inovacc/scout",
+  "license": "MIT",
+  "strategy": "full_copy",
+  "files": [
+    {
+      "upstream": "main.go",
+      "local": "pkg/stealth/main.go",
+      "copied": true
+    },
+    {
+      "upstream": "assets.go",
+      "local": "pkg/stealth/assets.go",
+      "copied": true
+    },
+    {
+      "upstream": "LICENSE",
+      "local": "pkg/stealth/LICENSE",
+      "copied": true
+    }
+  ],
+  "import_rewrites": {
+    "github.com/go-rod/stealth": "github.com/inovacc/scout/pkg/stealth"
+  },
+  "excluded_paths": [
+    "generate/",
+    "examples_test.go",
+    ".github/",
+    "go.mod",
+    "go.sum"
+  ],
+  "local_modifications": []
+}
