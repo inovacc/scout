@@ -27,6 +27,12 @@ func New(opts ...Option) (*Browser, error) {
 
 	if o.execPath != "" {
 		l = l.Bin(o.execPath)
+	} else if o.browserType != "" && o.browserType != BrowserChrome {
+		binPath, err := lookupBrowser(o.browserType)
+		if err != nil {
+			return nil, fmt.Errorf("scout: lookup %s browser: %w", o.browserType, err)
+		}
+		l = l.Bin(binPath)
 	}
 
 	if o.proxy != "" {

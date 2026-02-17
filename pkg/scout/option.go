@@ -5,10 +5,23 @@ import (
 	"time"
 )
 
+// BrowserType identifies a Chromium-based browser for auto-detection.
+type BrowserType string
+
+const (
+	// BrowserChrome uses rod's default Chrome/Chromium auto-detection.
+	BrowserChrome BrowserType = "chrome"
+	// BrowserBrave selects Brave Browser.
+	BrowserBrave BrowserType = "brave"
+	// BrowserEdge selects Microsoft Edge.
+	BrowserEdge BrowserType = "edge"
+)
+
 // Option configures a Browser instance.
 type Option func(*options)
 
 type options struct {
+	browserType BrowserType
 	headless    bool
 	stealth     bool
 	userAgent   string
@@ -41,6 +54,12 @@ func defaults() *options {
 		windowH:  1080,
 		timeout:  30 * time.Second,
 	}
+}
+
+// WithBrowser selects which Chromium-based browser to use. Default: chrome (rod auto-detect).
+// This is ignored if WithExecPath is also set.
+func WithBrowser(bt BrowserType) Option {
+	return func(o *options) { o.browserType = bt }
 }
 
 // WithHeadless sets whether the browser runs in headless mode. Default: true.
