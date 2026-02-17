@@ -5,7 +5,7 @@
 ### Race method does not return matched index
 - **Severity:** Medium
 - **Status:** Open
-- **Description:** `Page.Race()` always returns `-1` as the match index (page.go:478), even though the method signature promises to return the index of the matched selector. The rod `race.Do()` API does not directly expose which selector won.
+- **Description:** `Page.Race()` always returns `-1` as the match index (page.go:518), even though the method signature promises to return the index of the matched selector. The rod `race.Do()` API does not directly expose which selector won.
 - **Workaround:** None. Callers cannot determine which selector matched.
 
 ### gRPC server lacks test coverage
