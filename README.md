@@ -28,6 +28,7 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **gRPC Remote Control** - Multi-session browser control via gRPC with 25+ RPCs and event streaming
 - **Scraper Modes** - Pluggable scraper framework with encrypted session persistence; Slack mode with API client, browser auth, channel/message/thread/file/user extraction
 - **Encrypted Session Capture** - AES-256-GCM + Argon2id passphrase-based encryption for saved browser sessions via `slack-assist` CLI
+- **Firecrawl Integration** - Pure HTTP Go client for the Firecrawl v2 REST API: scrape, crawl, search, map, batch scrape, and AI-powered extraction — all without a browser
 
 ## Installation
 
@@ -116,6 +117,41 @@ scout crawl https://example.com --max-depth=2
 # Clean up
 scout session destroy --all
 ```
+
+## Firecrawl (LLM-Ready Scraping)
+
+Scout includes a pure HTTP client for the [Firecrawl](https://firecrawl.dev) v2 API — no browser required:
+
+```go
+import "github.com/inovacc/scout/firecrawl"
+
+client, _ := firecrawl.New("fc-xxx") // or FIRECRAWL_API_KEY env
+
+// Scrape a page as markdown
+doc, _ := client.Scrape(ctx, "https://example.com",
+    firecrawl.WithFormats(firecrawl.FormatMarkdown),
+)
+fmt.Println(doc.Markdown)
+
+// Search the web
+results, _ := client.Search(ctx, "golang web scraping")
+
+// Crawl a site asynchronously
+job, _ := client.Crawl(ctx, "https://example.com", firecrawl.WithCrawlLimit(100))
+job, _ = client.WaitForCrawl(ctx, job.ID, 2*time.Second)
+
+// AI extraction
+data, _ := client.Extract(ctx, []string{"https://example.com/pricing"},
+    firecrawl.WithExtractPrompt("get pricing plans"),
+)
+```
+
+CLI:
+```bash
+scout firecrawl scrape https://example.com --formats markdown
+scout firecrawl search "golang tutorial" --limit 10
+scout firecrawl crawl https://docs.example.com --limit 50 --wait
+scout firecrawl extract https://example.com/pricing --prompt "get pricing"
 ```
 
 ## Examples
@@ -323,6 +359,12 @@ The `scout` CLI provides a unified interface to all library features. It communi
 | `scout slack capture\|load\|decrypt` | Slack session management |
 | `scout server` | Run gRPC server directly |
 | `scout client` | Interactive REPL client |
+| `scout firecrawl scrape <url>` | Scrape URL via Firecrawl API |
+| `scout firecrawl crawl <url>` | Crawl website via Firecrawl |
+| `scout firecrawl search <query>` | Web search via Firecrawl |
+| `scout firecrawl map <url>` | Discover URLs on a website |
+| `scout firecrawl batch` | Batch scrape multiple URLs |
+| `scout firecrawl extract <url>` | AI-powered data extraction |
 | `scout version` | Show version info |
 
 ### Slack Session Management

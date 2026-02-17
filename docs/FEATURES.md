@@ -39,6 +39,10 @@
 - **Status:** Completed (via RateLimiter)
 - **Description:** Built-in retry logic for transient navigation and element-finding failures, with configurable backoff strategy. Implemented as `RateLimiter.Do()` and `Page.NavigateWithRetry()`.
 
+### Firecrawl Integration
+- **Status:** Completed
+- **Description:** Pure HTTP Go client for the Firecrawl v2 REST API. Supports scrape, crawl, search, URL map, batch scrape, and AI-powered extraction endpoints. Typed errors, generic async polling, functional options. CLI commands under `scout firecrawl`. Implemented in `firecrawl/` package with no external dependencies beyond stdlib.
+
 ## Proposed Features
 
 ### Screen Recorder

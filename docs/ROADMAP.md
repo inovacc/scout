@@ -77,10 +77,13 @@
 
 ### Phase 7: Scraper Modes [IN PROGRESS]
 - [x] **Scraper mode architecture** (`scraper/`) — base types (Credentials, Progress, AuthError, RateLimitError), ExportJSON, ProgressFunc callback
+- [x] **Generic auth framework** (`scraper/auth/`) — Provider interface, Registry, BrowserAuth flow, BrowserCapture (capture all data before close), OAuth2 PKCE server, Electron CDP connection, encrypted session persistence
 - [x] **Slack mode** (`scraper/slack/`) — workspace auth (token + browser), channel listing, message history with threads, file listing, user directory, search, channel export
+- [x] **Slack auth provider** (`scraper/slack/provider.go`) — SlackProvider implements auth.Provider for generic framework
 - [x] **Slack session capture** (`scraper/slack/session.go`) — CaptureFromPage, encrypted save/load (AES-256-GCM + Argon2id)
 - [x] **Encryption utilities** (`scraper/crypto.go`) — EncryptData/DecryptData with passphrase-based key derivation
 - [x] **Slack Assist CLI** (`cmd/slack-assist/`) — capture, load, decrypt subcommands for browser-assisted credential management
+- [x] **Generic auth CLI** (`cmd/scout/internal/cli/auth.go`) — `scout auth login/capture/status/logout/providers`
 - [ ] **Teams mode** (P2) — Microsoft SSO, chat/channel messages, meeting history, shared files
 - [ ] **Discord mode** (P2) — server/channel messages, threads, member lists, roles, pins
 - [ ] **Gmail mode** (P2) — Google auth + 2FA, email content, labels, attachments, contacts
@@ -105,7 +108,17 @@
 - [x] Remove old `cmd/server/`, `cmd/client/`, `cmd/example-workflow/`, `cmd/slack-assist/`
 - [x] Update documentation (README, CLAUDE.md)
 
-### Phase 9: Screen Recorder [PLANNED]
+### Phase 9: Firecrawl Integration [COMPLETE]
+- [x] Pure HTTP Go client for Firecrawl v2 REST API (`firecrawl/`)
+- [x] Scrape, crawl, search, map, batch scrape, and extract endpoints
+- [x] Typed errors (`AuthError`, `RateLimitError`, `APIError`)
+- [x] Generic `poll[T]()` for async job completion (crawl, batch)
+- [x] Functional options pattern for all endpoints
+- [x] CLI commands: `scout firecrawl scrape/crawl/search/map/batch/extract`
+- [x] Unit tests with mock HTTP server (13 tests, 80%+ coverage)
+- [x] Integration tests behind `//go:build integration` + `FIRECRAWL_API_KEY`
+
+### Phase 10: Screen Recorder [PLANNED]
 - [ ] **ScreenRecorder type** (`pkg/scout/screenrecord.go`) — capture page frames via CDP `Page.startScreencast`, assemble into video
 - [ ] Functional options: `WithFrameRate(fps)`, `WithQuality(0-100)`, `WithMaxDuration(d)`, `WithFormat("webm"|"mp4")`
 - [ ] Frame-by-frame capture using `Page.screencastFrame` CDP events, ACK-based flow control
@@ -119,23 +132,23 @@
 - [ ] Example: `examples/advanced/screen-recorder/`
 - [ ] Tests: start/stop lifecycle, frame capture, export formats, concurrent recording with HAR
 
-### Phase 10: Distributed Crawling [PLANNED]
+### Phase 11: Distributed Crawling [PLANNED]
 - [ ] Swarm mode: split crawl workloads across multiple browser instances
 - [ ] Multi-IP support: assign different proxies per browser in the cluster
 - [ ] Work distribution: BFS queue shared across workers
 - [ ] Result aggregation: merge results from all workers
 - [ ] Headless cluster configuration options
 
-### Phase 11: Documentation & Release [IN PROGRESS]
+### Phase 12: Documentation & Release [IN PROGRESS]
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)
-- [ ] Add LICENSE file
+- [x] Add LICENSE file
 - [ ] Add GoDoc examples for key functions
 - [ ] Write integration test examples
 
 ## Test Coverage
 
-**Current:** 69.9% (core package)  |  **Target:** 80%
+**Current:** 33.3% (total project) | 69.9% (pkg/scout) | **Target:** 80%
 
 | File | Coverage | Status |
 |------|----------|--------|
