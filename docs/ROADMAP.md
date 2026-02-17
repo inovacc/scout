@@ -118,7 +118,53 @@
 - [x] Unit tests with mock HTTP server (13 tests, 80%+ coverage)
 - [x] Integration tests behind `//go:build integration` + `FIRECRAWL_API_KEY`
 
-### Phase 10: Screen Recorder [PLANNED]
+### Phase 10: Native HTML-to-Markdown Engine [PLANNED]
+- [ ] Pure Go HTML→Markdown converter in `pkg/scout/markdown.go`
+- [ ] `page.Markdown()` — convert full page HTML to clean markdown
+- [ ] `page.MarkdownContent()` — main content only (readability heuristics)
+- [ ] Support: headings, links, images, lists, tables, code blocks, bold/italic, blockquotes
+- [ ] Mozilla Readability-like content scoring to strip nav/footer/sidebar/ads
+- [ ] Functional options: `WithMainContentOnly()`, `WithIncludeImages()`, `WithIncludeLinks()`
+- [ ] CLI: `scout markdown --url=<url> [--main-only]`
+- [ ] Tests with fixture HTML pages covering all markdown element types
+
+### Phase 11: Batch Scraper [PLANNED]
+- [ ] `BatchScrape(urls []string, fn func(*Page, string) error, ...BatchOption)` in `pkg/scout/batch.go`
+- [ ] Concurrent page pool with configurable parallelism (`WithBatchConcurrency(n)`)
+- [ ] Per-URL result collection with error isolation (one failure doesn't abort batch)
+- [ ] Progress callback (`WithBatchProgress(func(done, total int))`)
+- [ ] Rate limiting integration (`WithBatchRateLimit(rl *RateLimiter)`)
+- [ ] CLI: `scout batch --urls=u1,u2 --urls-file=file.txt [--concurrency=5] [--format=json]`
+- [ ] Tests: concurrency, error isolation, progress, rate limiting
+
+### Phase 12: URL Map / Link Discovery [PLANNED]
+- [ ] `Map(url string, ...MapOption) ([]string, error)` in `pkg/scout/map.go`
+- [ ] Lightweight link-only crawl — collect URLs without full page extraction
+- [ ] Combine sitemap.xml parsing + on-page link harvesting
+- [ ] Filters: `WithMapSubdomains()`, `WithMapIncludePaths(...)`, `WithMapExcludePaths(...)`, `WithMapSearch(term)`
+- [ ] `WithMapLimit(n)` to cap discovered URLs
+- [ ] CLI: `scout map <url> [--search=term] [--include-subdomains] [--limit=100]`
+- [ ] Tests: link dedup, subdomain filtering, search filtering, sitemap integration
+
+### Phase 13: LLM-Powered Extraction [PLANNED]
+- [ ] `ExtractWithLLM(page *Page, prompt string, ...LLMOption)` in `pkg/scout/llm.go`
+- [ ] Provider interface: `LLMProvider` with `Complete(ctx, systemPrompt, userPrompt) (string, error)`
+- [ ] Built-in providers: OpenAI, Anthropic, Ollama (local)
+- [ ] Pipeline: render page → convert to markdown → send markdown + prompt to LLM → parse response
+- [ ] Optional JSON schema validation on LLM response (`WithLLMSchema(schema)`)
+- [ ] `WithLLMProvider(provider)`, `WithLLMModel(model)`, `WithLLMTemperature(t)`
+- [ ] CLI: `scout extract-ai --url=<url> --prompt="..." [--provider=ollama] [--model=llama3] [--schema=file.json]`
+- [ ] Tests: mock LLM provider, prompt construction, schema validation
+
+### Phase 14: Async Job System [PLANNED]
+- [ ] Job manager in `pkg/scout/jobs.go` for long-running crawl/batch operations
+- [ ] Job lifecycle: create → running → completed/failed/cancelled
+- [ ] Job ID generation, status polling, cancellation
+- [ ] Persistent job state in `~/.scout/jobs/` (JSON files)
+- [ ] CLI: `scout jobs list`, `scout jobs status <id>`, `scout jobs cancel <id>`, `scout jobs wait <id>`
+- [ ] Integration with batch scraper and crawl commands
+
+### Phase 15: Screen Recorder [PLANNED]
 - [ ] **ScreenRecorder type** (`pkg/scout/screenrecord.go`) — capture page frames via CDP `Page.startScreencast`, assemble into video
 - [ ] Functional options: `WithFrameRate(fps)`, `WithQuality(0-100)`, `WithMaxDuration(d)`, `WithFormat("webm"|"mp4")`
 - [ ] Frame-by-frame capture using `Page.screencastFrame` CDP events, ACK-based flow control
@@ -132,14 +178,14 @@
 - [ ] Example: `examples/advanced/screen-recorder/`
 - [ ] Tests: start/stop lifecycle, frame capture, export formats, concurrent recording with HAR
 
-### Phase 11: Distributed Crawling [PLANNED]
+### Phase 16: Distributed Crawling [PLANNED]
 - [ ] Swarm mode: split crawl workloads across multiple browser instances
 - [ ] Multi-IP support: assign different proxies per browser in the cluster
 - [ ] Work distribution: BFS queue shared across workers
 - [ ] Result aggregation: merge results from all workers
 - [ ] Headless cluster configuration options
 
-### Phase 12: Documentation & Release [IN PROGRESS]
+### Phase 17: Documentation & Release [IN PROGRESS]
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)
 - [x] Add LICENSE file
