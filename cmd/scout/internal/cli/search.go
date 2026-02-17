@@ -41,7 +41,7 @@ var searchCmd = &cobra.Command{
 		}
 
 		browser, err := scout.New(
-			scout.WithHeadless(true),
+			scout.WithHeadless(isHeadless(cmd)),
 			scout.WithNoSandbox(),
 		)
 		if err != nil {
