@@ -40,6 +40,19 @@ Scout supports multiple Chromium-based browsers via `BrowserType`:
 
 Use `WithBrowser(BrowserBrave)` or CLI `--browser=brave`. `WithExecPath()` takes precedence if both are set. Firefox is not supported (CDP removed in Firefox 141, June 2025).
 
+### Chrome Extension Loading
+
+Load unpacked Chrome extensions via `WithExtension(paths...)`. This sets `--load-extension` and `--disable-extensions-except` launch flags automatically.
+
+```go
+b, _ := scout.New(scout.WithExtension("/path/to/ext1", "/path/to/ext2"))
+```
+
+CLI commands:
+- `scout extension load --path=<dir> [--url=<url>]` — interactive dev workflow (non-headless, blocks until Ctrl+C)
+- `scout extension test --path=<dir> [--screenshot=out.png]` — headless testing, lists loaded extensions
+- `scout extension list` — list extensions in the current user data directory
+
 ## Architecture
 
 ```
@@ -194,7 +207,8 @@ cmd/scout/
     ├── slack.go            # scout slack capture/load/decrypt
     ├── firecrawl.go        # scout firecrawl scrape/crawl/search/map/batch/extract
     ├── markdown.go         # scout markdown --url=<url> [--main-only]
-    └── map.go              # scout map <url> [--search=term] [--limit=N]
+    ├── map.go              # scout map <url> [--search=term] [--limit=N]
+    └── extension.go        # scout extension load/test/list
 ```
 
 Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessions/`
