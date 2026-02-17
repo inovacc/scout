@@ -76,6 +76,13 @@ func readPassphraseConfirm(w io.Writer) (string, error) {
 	return pass1, nil
 }
 
+// isHeadless reads the --headless persistent flag from the command.
+func isHeadless(cmd *cobra.Command) bool {
+	h, _ := cmd.Flags().GetBool("headless")
+
+	return h
+}
+
 // truncate truncates a string to maxLen, appending "..." if needed.
 func truncate(s string, maxLen int) string {
 	if len(s) <= maxLen {

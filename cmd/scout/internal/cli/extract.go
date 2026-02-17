@@ -29,7 +29,7 @@ var tableCmd = &cobra.Command{
 		}
 
 		browser, err := scout.New(
-			scout.WithHeadless(true),
+			scout.WithHeadless(isHeadless(cmd)),
 			scout.WithNoSandbox(),
 		)
 		if err != nil {
@@ -93,7 +93,7 @@ var metaCmd = &cobra.Command{
 		}
 
 		browser, err := scout.New(
-			scout.WithHeadless(true),
+			scout.WithHeadless(isHeadless(cmd)),
 			scout.WithNoSandbox(),
 		)
 		if err != nil {

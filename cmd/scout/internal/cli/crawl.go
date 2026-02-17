@@ -29,7 +29,7 @@ var crawlCmd = &cobra.Command{
 		domains, _ := cmd.Flags().GetStringSlice("domains")
 
 		browser, err := scout.New(
-			scout.WithHeadless(true),
+			scout.WithHeadless(isHeadless(cmd)),
 			scout.WithNoSandbox(),
 		)
 		if err != nil {

@@ -26,6 +26,7 @@ func init() {
 	rootCmd.PersistentFlags().StringP("output", "o", "", "output file path")
 	rootCmd.PersistentFlags().String("format", "text", "output format (text, json)")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
+	rootCmd.PersistentFlags().Bool("headless", true, "run browser in headless mode")
 }
 
 // Execute runs the root command.

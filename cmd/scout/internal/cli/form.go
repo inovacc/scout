@@ -38,7 +38,7 @@ var formDetectCmd = &cobra.Command{
 		}
 
 		browser, err := scout.New(
-			scout.WithHeadless(true),
+			scout.WithHeadless(isHeadless(cmd)),
 			scout.WithNoSandbox(),
 		)
 		if err != nil {
@@ -104,7 +104,7 @@ var formFillCmd = &cobra.Command{
 		}
 
 		browser, err := scout.New(
-			scout.WithHeadless(true),
+			scout.WithHeadless(isHeadless(cmd)),
 			scout.WithNoSandbox(),
 		)
 		if err != nil {
@@ -158,7 +158,7 @@ var formSubmitCmd = &cobra.Command{
 		}
 
 		browser, err := scout.New(
-			scout.WithHeadless(true),
+			scout.WithHeadless(isHeadless(cmd)),
 			scout.WithNoSandbox(),
 		)
 		if err != nil {
