@@ -163,26 +163,17 @@ credentials/session.
   `scout markdown`
 - **Effort:** Large
 
-### Multi-Engine Search Command
+### ~~Multi-Engine Search Command~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Add a `scout search` command with engine-specific subcommands for web search. Supports multiple search engines and specialized search targets. Syntax: `scout search:google "query"`,
-  `scout search:bing "query"`, `scout search:duckduckgo "query"`, `scout search:duckduckgo news "query"`, `scout search:wikipedia "query"`. Each engine navigates to the search page, fills the query,
-  extracts structured results (title, URL, snippet, date). Can use recipes internally.
-- **Scope:** `cmd/scout/internal/cli/search_engines.go` with engine registry. Engines: Google, Bing, DuckDuckGo (web + news + images), Wikipedia, Google Scholar, Google News. Structured output (
-  JSON/text). Pagination support (--pages=N). CLI `scout search --engine=google --query="..." [--type=news] [--pages=3]` or shorthand `scout search:google "query"`.
+- **Status:** Complete — `cmd/scout/search_engines.go` with engine registry (Google, Bing, DuckDuckGo, Wikipedia, Google Scholar, Google News), structured output, pagination
 - **Effort:** Medium
-- **Dependencies:** Existing `search.go` SERP parsing. Recipe system for engine definitions.
 
-### Batch Scraper
+### ~~Batch Scraper~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Native concurrent batch scraping of multiple URLs with a page pool, error isolation, and progress reporting. Currently Scout can only process URLs sequentially (except crawl's
-  concurrency). This brings Firecrawl-style batch operations locally.
-- **Scope:** `pkg/scout/batch.go` with `BatchScrape()` function. Configurable concurrency, per-URL error collection, progress callback, rate limiter integration. CLI
-  `scout batch --urls=... --urls-file=... [--concurrency=5]`.
+- **Status:** Complete — `pkg/scout/batch.go` with `BatchScrape()`, configurable concurrency, error isolation, progress callback, rate limiter integration, CLI `scout batch`
 - **Effort:** Medium
-- **Dependencies:** Existing `RateLimiter` for throttling. Page pool pattern similar to crawl's semaphore.
 
 ### ~~URL Map / Link Discovery~~ [DONE]
 
@@ -296,3 +287,5 @@ credentials/session.
 | Platform Session Defaults        | Auto `--no-sandbox` on Linux via build constraints                                                       | 2026-02 |
 | Firecrawl Removal                | `firecrawl/` package removed — project focuses on native browser scraping                                | 2026-02 |
 | Slack Removal                    | `scraper/slack/` package removed — replaced by generic auth framework                                    | 2026-02 |
+| Multi-Engine Search Command      | Engine registry with Google, Bing, DDG, Wikipedia, Scholar, News in `search_engines.go`                  | 2026-02 |
+| Batch Scraper                    | `BatchScrape()` with concurrency, error isolation, progress callback in `batch.go`                       | 2026-02 |

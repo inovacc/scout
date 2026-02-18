@@ -33,6 +33,9 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **Chrome Extension Loading** - Load unpacked extensions via `WithExtension(paths...)`
 - **Device Identity & Pairing** - Syncthing-style device IDs with Ed25519 keys, mTLS authentication, mDNS peer discovery
 - **Platform-Aware Defaults** - Auto-applies `--no-sandbox` on Linux containers; platform-specific session defaults via build constraints
+- **Batch Scraper** - Concurrent batch scraping of multiple URLs with page pool, error isolation, and progress reporting (`BatchScrape()`)
+- **Multi-Engine Search** - Engine-specific search subcommands for Google, Bing, DuckDuckGo, Wikipedia, Google Scholar, Google News
+- **Recipe System** - Declarative JSON recipes for extraction and automation playbooks (`scout recipe run/validate`)
 
 ## Installation
 
@@ -330,8 +333,13 @@ The `scout` CLI provides a unified interface to all library features. It communi
 | `scout form detect\|fill\|submit`           | Form interaction                                                                     |
 | `scout auth login\|capture\|status\|logout` | Generic auth framework                                                               |
 | `scout device pair\|list\|trust`            | Device pairing and identity                                                          |
+| `scout batch --urls=u1,u2`                  | Batch scrape URLs (`--concurrency`, `--urls-file`)                                   |
+| `scout recipe run --file=f.json`            | Run extraction/automation recipe                                                     |
+| `scout recipe validate --file=f.json`       | Validate recipe JSON schema                                                          |
 | `scout server`                              | Run gRPC server directly                                                             |
 | `scout client`                              | Interactive REPL client                                                              |
+| `scout aicontext [--json]`                  | Generate AI context document for the CLI                                             |
+| `scout cmdtree [--json]`                    | Visualize full command tree with flags                                               |
 | `scout version`                             | Show version info                                                                    |
 
 ## Development

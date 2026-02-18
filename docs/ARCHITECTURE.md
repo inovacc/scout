@@ -21,6 +21,8 @@ flowchart TB
             Map["Map\n(map.go)"]
             Markdown["Markdown\n(markdown.go)"]
             RateLimit["RateLimiter\n(ratelimit.go)"]
+            Batch["BatchScrape\n(batch.go)"]
+            Recipe["Recipe\n(recipe/)"]
         end
 
         subgraph Infrastructure["Infrastructure"]

@@ -87,13 +87,13 @@
 - [x] Remove old separate binaries
 - [x] Update documentation (README, CLAUDE.md, ROADMAP)
 - **New dependency:** `github.com/spf13/cobra`
-- **Test Coverage:** pkg/scout 79.2% | scraper 84.3%
+- **Test Coverage:** pkg/scout 76.7% | scraper 84.3%
 
 ## v0.6.0 - ~~Firecrawl Integration~~ [REMOVED]
 
 - ~~Firecrawl client removed — project focuses on native browser-based scraping~~
 
-## v0.7.0 - Markdown, URL Map, Identity & mTLS [IN PROGRESS]
+## v0.7.0 - Markdown, URL Map, Identity & mTLS [COMPLETE]
 
 **Goal:** Native HTML-to-Markdown, URL discovery, device identity, and mTLS.
 
@@ -110,8 +110,14 @@
 - [x] Device pairing handshake (`grpc/server/pairing.go`)
 - [x] mDNS peer discovery (`pkg/discovery/`)
 - [x] Platform-specific session defaults (`grpc/server/platform_*.go`)
-- [ ] Tag and release v0.7.0
-- **Coverage:** pkg/scout 79.2% | pkg/identity 81.1% | scraper 84.3%
+- [x] Batch scraper (`pkg/scout/batch.go`)
+- [x] Multi-engine search (`cmd/scout/search_engines.go`)
+- [x] Recipe system (`pkg/scout/recipe/`)
+- [x] CLI introspection: `scout aicontext`, `scout cmdtree`
+- [x] mTLS fix for all CLI commands
+- [x] Server session timeout fix (disable rod per-page timeout)
+- [x] Tagged v0.7.0, v0.7.1, v0.7.2
+- **Coverage:** pkg/scout 76.7% | pkg/identity 81.1% | scraper 84.3%
 
 ## v0.8.0 - Screen Recorder [PLANNED]
 
@@ -140,5 +146,5 @@
 - [x] LICENSE file
 - [ ] GoDoc examples for Browser, Page, Element, EvalResult, and new features
 - [ ] Integration test examples (login flow, form submission, scraping)
-- [x] 80%+ test coverage (pkg/scout: 80.1%)
-- **Coverage:** pkg/scout 79.2% | pkg/identity 81.1% | scraper 84.3%
+- [ ] 80%+ test coverage (pkg/scout: 76.7% — regressed with new features)
+- **Coverage:** pkg/scout 76.7% | pkg/identity 81.1% | scraper 84.3%
