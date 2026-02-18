@@ -39,9 +39,9 @@ type options struct {
 	windowState WindowState
 	xvfb        bool
 	xvfbArgs    []string
-	launchFlags  map[string][]string
-	extensions   []string
-	devtools     bool
+	launchFlags map[string][]string
+	extensions  []string
+	devtools    bool
 }
 
 func defaults() *options {

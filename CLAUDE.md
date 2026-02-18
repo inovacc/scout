@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Scout is a Go library (`github.com/inovacc/scout/pkg/scout`) that wraps [go-rod](https://github.com/go-rod/rod) to provide a simplified, Go-idiomatic API for headless browser automation, web scraping, search, and crawling. The core library is in `pkg/scout/`. A gRPC service layer (`grpc/`) provides remote browser control. A unified Cobra CLI (`cmd/scout/`) exposes all features as commands with a background daemon for session persistence.
+Scout is a Go library (`github.com/inovacc/scout/pkg/scout`) that wraps [go-rod](https://github.com/go-rod/rod) to provide a simplified, Go-idiomatic API for headless browser automation, web scraping,
+search, and crawling. The core library is in `pkg/scout/`. A gRPC service layer (`grpc/`) provides remote browser control. A unified Cobra CLI (`cmd/scout/`) exposes all features as commands with a
+background daemon for session persistence.
 
 ## Build & Test Commands
 
@@ -25,6 +27,7 @@ task grpc:client       # Run the interactive CLI client via scout CLI
 ```
 
 Run a single test:
+
 ```bash
 go test -v -run TestName ./...
 ```
@@ -34,6 +37,7 @@ Tests require a Chromium-based browser available on the system. `newTestBrowser`
 ### Browser Support
 
 Scout supports multiple Chromium-based browsers via `BrowserType`:
+
 - `BrowserChrome` (default) — rod auto-detect
 - `BrowserBrave` — auto-detects Brave on Windows, macOS, Linux
 - `BrowserEdge` — auto-detects Microsoft Edge on Windows, macOS, Linux
@@ -49,6 +53,7 @@ b, _ := scout.New(scout.WithExtension("/path/to/ext1", "/path/to/ext2"))
 ```
 
 CLI commands:
+
 - `scout extension load --path=<dir> [--url=<url>]` — interactive dev workflow (non-headless, blocks until Ctrl+C)
 - `scout extension test --path=<dir> [--screenshot=out.png]` — headless testing, lists loaded extensions
 - `scout extension list` — list extensions in the current user data directory
@@ -72,42 +77,43 @@ scout/
 └── docs/               # Documentation, ADRs, roadmap
 ```
 
-Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/inovacc/scout/pkg/scout`. The gRPC layer is in `grpc/`. The unified CLI is at `cmd/scout/`. Additional packages: `pkg/stealth/` (internalized go-rod/stealth), `pkg/identity/` (Syncthing-style device identity with Luhn check digits), `pkg/discovery/` (mDNS service discovery).
+Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/inovacc/scout/pkg/scout`. The gRPC layer is in `grpc/`. The unified CLI is at `cmd/scout/`. Additional packages:
+`pkg/stealth/` (internalized go-rod/stealth), `pkg/identity/` (Syncthing-style device identity with Luhn check digits), `pkg/discovery/` (mDNS service discovery).
 
 ### Core Types (rod wrappers)
 
-| Type | Wraps | File |
-|------|-------|------|
-| `Browser` | `*rod.Browser` | `pkg/scout/browser.go` |
-| `Page` | `*rod.Page` | `pkg/scout/page.go` |
-| `Element` | `*rod.Element` | `pkg/scout/element.go` |
-| `EvalResult` | JS eval results | `pkg/scout/eval.go` |
-| `HijackRouter`, `HijackContext` | rod hijack types | `pkg/scout/network.go` |
-| `WindowState`, `WindowBounds` | Window state control | `pkg/scout/window.go` |
-| `NetworkRecorder` | HAR 1.2 traffic capture | `pkg/scout/recorder.go` |
+| Type                            | Wraps                   | File                    |
+|---------------------------------|-------------------------|-------------------------|
+| `Browser`                       | `*rod.Browser`          | `pkg/scout/browser.go`  |
+| `Page`                          | `*rod.Page`             | `pkg/scout/page.go`     |
+| `Element`                       | `*rod.Element`          | `pkg/scout/element.go`  |
+| `EvalResult`                    | JS eval results         | `pkg/scout/eval.go`     |
+| `HijackRouter`, `HijackContext` | rod hijack types        | `pkg/scout/network.go`  |
+| `WindowState`, `WindowBounds`   | Window state control    | `pkg/scout/window.go`   |
+| `NetworkRecorder`               | HAR 1.2 traffic capture | `pkg/scout/recorder.go` |
 
 ### HAR Recording Types
 
-| Type | Purpose | File |
-|------|---------|------|
-| `NetworkRecorder` | Captures HTTP traffic via CDP, exports HAR | `recorder.go` |
-| `HARLog`, `HAREntry`, `HARRequest`, `HARResponse` | HAR 1.2 data model | `recorder.go` |
-| `HARHeader`, `HARContent`, `HARTimings`, `HARCreator` | HAR sub-types | `recorder.go` |
-| `RecorderOption` | Functional options (`WithCaptureBody`, `WithCreatorName`) | `recorder.go` |
+| Type                                                  | Purpose                                                   | File          |
+|-------------------------------------------------------|-----------------------------------------------------------|---------------|
+| `NetworkRecorder`                                     | Captures HTTP traffic via CDP, exports HAR                | `recorder.go` |
+| `HARLog`, `HAREntry`, `HARRequest`, `HARResponse`     | HAR 1.2 data model                                        | `recorder.go` |
+| `HARHeader`, `HARContent`, `HARTimings`, `HARCreator` | HAR sub-types                                             | `recorder.go` |
+| `RecorderOption`                                      | Functional options (`WithCaptureBody`, `WithCreatorName`) | `recorder.go` |
 
 ### Scraping Toolkit Types
 
-| Type | Purpose | File |
-|------|---------|------|
-| `TableData`, `MetaData` | Extraction results | `extract.go` |
-| `Form`, `FormField`, `FormWizard` | Form interaction | `form.go` |
-| `RateLimiter` | Rate limiting + retry | `ratelimit.go` |
-| `PaginateByClick/URL/Scroll/LoadMore` | Generic pagination | `paginate.go` |
-| `SearchResults`, `SearchResult` | SERP parsing | `search.go` |
-| `CrawlResult`, `SitemapURL` | Web crawling | `crawl.go` |
-| `MapOption` | URL map/link discovery options | `map.go` |
-| `MarkdownOption` | HTML-to-Markdown conversion options | `markdown.go` |
-| `storageAPI`, `SessionState` | Web storage & session persistence | `storage.go` |
+| Type                                  | Purpose                             | File           |
+|---------------------------------------|-------------------------------------|----------------|
+| `TableData`, `MetaData`               | Extraction results                  | `extract.go`   |
+| `Form`, `FormField`, `FormWizard`     | Form interaction                    | `form.go`      |
+| `RateLimiter`                         | Rate limiting + retry               | `ratelimit.go` |
+| `PaginateByClick/URL/Scroll/LoadMore` | Generic pagination                  | `paginate.go`  |
+| `SearchResults`, `SearchResult`       | SERP parsing                        | `search.go`    |
+| `CrawlResult`, `SitemapURL`           | Web crawling                        | `crawl.go`     |
+| `MapOption`                           | URL map/link discovery options      | `map.go`       |
+| `MarkdownOption`                      | HTML-to-Markdown conversion options | `markdown.go`  |
+| `storageAPI`, `SessionState`          | Web storage & session persistence   | `storage.go`   |
 
 ### gRPC Service Layer
 
@@ -125,9 +131,9 @@ grpc/
     platform_other.go      # Darwin/other session defaults (no-op)
 ```
 
-| Type | Purpose | File |
-|------|---------|------|
-| `ScoutServer` | Multi-session gRPC service | `grpc/server/server.go` |
+| Type                   | Purpose                                                   | File                     |
+|------------------------|-----------------------------------------------------------|--------------------------|
+| `ScoutServer`          | Multi-session gRPC service                                | `grpc/server/server.go`  |
 | `ScoutService` (proto) | 25+ RPCs: session, nav, interact, capture, record, stream | `grpc/proto/scout.proto` |
 
 ### Scraper Framework
@@ -139,11 +145,11 @@ scraper/
   auth/                   # Generic browser auth framework + encrypted session persistence
 ```
 
-| Type | Purpose | File |
-|------|---------|------|
-| `Credentials`, `Progress` | Base scraper types | `scraper/scraper.go` |
-| `AuthError`, `RateLimitError` | Typed error conditions | `scraper/scraper.go` |
-| `EncryptData`, `DecryptData` | AES-256-GCM + Argon2id encryption | `scraper/crypto.go` |
+| Type                          | Purpose                           | File                 |
+|-------------------------------|-----------------------------------|----------------------|
+| `Credentials`, `Progress`     | Base scraper types                | `scraper/scraper.go` |
+| `AuthError`, `RateLimitError` | Typed error conditions            | `scraper/scraper.go` |
+| `EncryptData`, `DecryptData`  | AES-256-GCM + Argon2id encryption | `scraper/crypto.go`  |
 
 ### Unified CLI (`cmd/scout/`)
 
@@ -186,33 +192,39 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 ### Examples
 
 `examples/` contains 18 standalone runnable programs:
+
 - `examples/simple/` — 8 examples: navigation, screenshots, extraction, JS eval, forms, cookies
 - `examples/advanced/` — 10 examples: search, pagination, crawling, rate limiting, hijacking, stealth, PDF, HAR recording
 - Each is a separate `package main` importing `github.com/inovacc/scout/pkg/scout`
 - Build individually: `cd examples/simple/basic-navigation && go build .`
 
-**Functional options pattern** for configuration: `New(opts ...Option)` with `With*()` functions in `option.go`. Each feature area has its own options (`ExtractOption`, `SearchOption`, `PaginateOption`, `CrawlOption`, `RateLimitOption`). Defaults: headless=true, 1920x1080, 30s timeout.
+**Functional options pattern** for configuration: `New(opts ...Option)` with `With*()` functions in `option.go`. Each feature area has its own options (`ExtractOption`, `SearchOption`,
+`PaginateOption`, `CrawlOption`, `RateLimitOption`). Defaults: headless=true, 1920x1080, 30s timeout.
 
 **Escape hatches**: `RodPage()` and `RodElement()` expose the underlying rod instances when the wrapper API is insufficient.
 
 ## Conventions
 
 - **WaitLoad**: `NewPage()` does not wait for DOM load. Call `page.WaitLoad()` before `Extract()`, `ExtractMeta()`, `PDF()`, etc. when targeting external sites.
-- **extractAll[T] (pagination)**: Finds first `scout:` tag match, walks to `parentElement`, extracts remaining fields within that parent. All struct fields must be resolvable within the parent of the first field's match.
+- **extractAll[T] (pagination)**: Finds first `scout:` tag match, walks to `parentElement`, extracts remaining fields within that parent. All struct fields must be resolvable within the parent of the
+  first field's match.
 - **Error wrapping**: All errors use `fmt.Errorf("scout: action: %w", err)` — consistent `scout:` prefix.
 - **Nil-safety**: `Browser.Close()` and key methods are nil-safe and idempotent. Methods guard with `if b == nil || b.browser == nil`.
 - **Cleanup patterns**: `SetHeaders()` and `EvalOnNewDocument()` return cleanup functions. `HijackRouter` has `Run()` (blocking, use in goroutine) and `Stop()`.
 - **Struct tags**: `scout:"selector"` or `scout:"selector@attr"` for extraction; `form:"field_name"` for form filling.
 - **Generics**: Pagination functions use type parameters (`PaginateByClick[T]`) — package-level functions because Go methods can't have type params.
 - **Nolint**: `Element.Interactable()` uses `//nolint:nilerr`; `RateLimiter.calculateBackoff` uses `//nolint:gosec` for jitter rand.
-- **Platform-specific options**: `WithXvfb()` lives in `option_unix.go` (`//go:build !windows`). The `xvfb`/`xvfbArgs` fields compile on all platforms but the option function is only available on Unix.
+- **Platform-specific options**: `WithXvfb()` lives in `option_unix.go` (`//go:build !windows`). The `xvfb`/`xvfbArgs` fields compile on all platforms but the option function is only available on
+  Unix.
 - **Window state transitions**: Chrome requires restoring to `normal` before changing between non-normal states. `setWindowState()` handles this automatically.
 - **NetworkRecorder**: Attach to a page, records all HTTP traffic via CDP events. `Stop()` is nil-safe and idempotent. `ExportHAR()` produces HAR 1.2 JSON. `Clear()` resets entries.
 - **Page keyboard methods**: `KeyPress(key)` and `KeyType(keys...)` operate at the page level (not element-scoped). Used by the gRPC server for `PressKey` RPC.
-- **HTML-to-Markdown**: `convertHTMLToMarkdown()` is a pure function testable without browser. `Page.Markdown()` wraps it with page HTML. `Page.MarkdownContent()` applies readability scoring first via `WithMainContentOnly()`.
+- **HTML-to-Markdown**: `convertHTMLToMarkdown()` is a pure function testable without browser. `Page.Markdown()` wraps it with page HTML. `Page.MarkdownContent()` applies readability scoring first via
+  `WithMainContentOnly()`.
 - **Readability scoring**: `extractMainContent()` uses tag-based scoring (article +20, nav -25), class/ID pattern matching, link density penalty. Returns highest-scoring DOM node.
 - **URL Map**: `Browser.Map()` combines sitemap.xml parsing + BFS on-page link harvesting. Reuses `visitedSet`, `normalizeURL`, `resolveLink` from crawl.go.
-- **Platform session defaults**: `grpc/server/platform_*.go` uses build constraints to apply OS-specific defaults in `CreateSession` (e.g., `--no-sandbox` on Linux). Follows the same pattern as `daemon_unix.go`/`daemon_windows.go`.
+- **Platform session defaults**: `grpc/server/platform_*.go` uses build constraints to apply OS-specific defaults in `CreateSession` (e.g., `--no-sandbox` on Linux). Follows the same pattern as
+  `daemon_unix.go`/`daemon_windows.go`.
 
 ## Testing
 
@@ -234,19 +246,23 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 ## Dependencies
 
 ### Core library (pkg/scout/)
+
 - `github.com/go-rod/rod` — core browser automation via Chrome DevTools Protocol
 - `github.com/ysmood/gson` — JSON number handling for `EvalResult`
 - `golang.org/x/time/rate` — token bucket rate limiter for `RateLimiter`
 - `golang.org/x/net/html` — HTML tokenizer/parser for markdown converter (indirect dep)
 
 ### Stealth (pkg/stealth/)
+
 - Internalized fork of `go-rod/stealth` — anti-bot-detection page creation (enabled via `WithStealth()`)
 
 ### Identity & Discovery (pkg/identity/, pkg/discovery/)
+
 - `golang.org/x/crypto` — Ed25519 key generation, certificate creation
 - `github.com/grandcat/zeroconf` — mDNS service advertisement and discovery
 
 ### gRPC layer and CLI (grpc/ and cmd/scout/)
+
 - `google.golang.org/grpc` — gRPC framework
 - `google.golang.org/protobuf` — Protocol Buffers runtime
 - `github.com/google/uuid` — session ID generation

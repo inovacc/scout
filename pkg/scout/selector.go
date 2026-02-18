@@ -1,6 +1,6 @@
 package scout
 
-import "github.com/go-rod/rod"
+import "github.com/inovacc/scout/pkg/rod"
 
 // SelectorType specifies how a <select> option selector matches content.
 // These re-export rod's SelectorType constants for convenience.

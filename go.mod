@@ -3,7 +3,6 @@ module github.com/inovacc/scout
 go 1.25
 
 require (
-	github.com/go-rod/rod v0.116.2
 	github.com/google/uuid v1.6.0
 	github.com/grandcat/zeroconf v1.0.0
 	github.com/spf13/cobra v1.10.2

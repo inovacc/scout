@@ -10,7 +10,8 @@ Accepted
 
 ## Context
 
-Scout's Slack scraper implements a browser-based authentication flow: launch browser, user logs in, extract tokens/cookies, persist encrypted session. This pattern is specific to Slack (xoxc token + d cookie extraction) but the underlying flow is identical for any web application:
+Scout's Slack scraper implements a browser-based authentication flow: launch browser, user logs in, extract tokens/cookies, persist encrypted session. This pattern is specific to Slack (xoxc token + d
+cookie extraction) but the underlying flow is identical for any web application:
 
 1. Launch browser to login URL
 2. Wait for user to authenticate
@@ -50,12 +51,12 @@ Extract the auth-then-scrape pattern into a generic framework at `scraper/auth/`
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `scraper/auth/provider.go` | Provider interface, Registry |
-| `scraper/auth/browser_auth.go` | BrowserAuth, BrowserCapture flows |
-| `scraper/auth/session.go` | Generic encrypted session persistence |
-| `scraper/auth/oauth.go` | OAuth2 PKCE local callback server |
-| `scraper/auth/electron.go` | Electron CDP connection |
-| `scraper/slack/provider.go` | SlackProvider implements auth.Provider |
-| `cmd/scout/internal/cli/auth.go` | CLI auth subcommands |
+| File                             | Purpose                                |
+|----------------------------------|----------------------------------------|
+| `scraper/auth/provider.go`       | Provider interface, Registry           |
+| `scraper/auth/browser_auth.go`   | BrowserAuth, BrowserCapture flows      |
+| `scraper/auth/session.go`        | Generic encrypted session persistence  |
+| `scraper/auth/oauth.go`          | OAuth2 PKCE local callback server      |
+| `scraper/auth/electron.go`       | Electron CDP connection                |
+| `scraper/slack/provider.go`      | SlackProvider implements auth.Provider |
+| `cmd/scout/internal/cli/auth.go` | CLI auth subcommands                   |

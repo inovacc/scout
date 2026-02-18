@@ -1,15 +1,17 @@
 # Backlog
 
 ## Priority Levels
-| Priority | Timeline |
-|----------|----------|
-| P1 | First month |
-| P2 | First quarter |
-| P3 | Future |
+
+| Priority | Timeline      |
+|----------|---------------|
+| P1       | First month   |
+| P2       | First quarter |
+| P3       | Future        |
 
 ## Scraper Modes
 
-Dedicated scraper modes for authenticated services. Each mode provides structured extraction of user data from web applications via headless browser automation. Requires valid user credentials/session.
+Dedicated scraper modes for authenticated services. Each mode provides structured extraction of user data from web applications via headless browser automation. Requires valid user
+credentials/session.
 
 ### ~~Slack Scraper Mode~~ [REMOVED]
 
@@ -157,22 +159,28 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 ### ~~HTML-to-Markdown Engine~~ [DONE]
 
 - **Priority:** P1
-- **Status:** Complete — `pkg/scout/markdown.go` + `readability.go` with `page.Markdown()`, `page.MarkdownContent()`, readability scoring, 17 pure-function tests + browser integration tests, CLI `scout markdown`
+- **Status:** Complete — `pkg/scout/markdown.go` + `readability.go` with `page.Markdown()`, `page.MarkdownContent()`, readability scoring, 17 pure-function tests + browser integration tests, CLI
+  `scout markdown`
 - **Effort:** Large
 
 ### Multi-Engine Search Command
 
 - **Priority:** P1
-- **Description:** Add a `scout search` command with engine-specific subcommands for web search. Supports multiple search engines and specialized search targets. Syntax: `scout search:google "query"`, `scout search:bing "query"`, `scout search:duckduckgo "query"`, `scout search:duckduckgo news "query"`, `scout search:wikipedia "query"`. Each engine navigates to the search page, fills the query, extracts structured results (title, URL, snippet, date). Can use recipes internally.
-- **Scope:** `cmd/scout/internal/cli/search_engines.go` with engine registry. Engines: Google, Bing, DuckDuckGo (web + news + images), Wikipedia, Google Scholar, Google News. Structured output (JSON/text). Pagination support (--pages=N). CLI `scout search --engine=google --query="..." [--type=news] [--pages=3]` or shorthand `scout search:google "query"`.
+- **Description:** Add a `scout search` command with engine-specific subcommands for web search. Supports multiple search engines and specialized search targets. Syntax: `scout search:google "query"`,
+  `scout search:bing "query"`, `scout search:duckduckgo "query"`, `scout search:duckduckgo news "query"`, `scout search:wikipedia "query"`. Each engine navigates to the search page, fills the query,
+  extracts structured results (title, URL, snippet, date). Can use recipes internally.
+- **Scope:** `cmd/scout/internal/cli/search_engines.go` with engine registry. Engines: Google, Bing, DuckDuckGo (web + news + images), Wikipedia, Google Scholar, Google News. Structured output (
+  JSON/text). Pagination support (--pages=N). CLI `scout search --engine=google --query="..." [--type=news] [--pages=3]` or shorthand `scout search:google "query"`.
 - **Effort:** Medium
 - **Dependencies:** Existing `search.go` SERP parsing. Recipe system for engine definitions.
 
 ### Batch Scraper
 
 - **Priority:** P1
-- **Description:** Native concurrent batch scraping of multiple URLs with a page pool, error isolation, and progress reporting. Currently Scout can only process URLs sequentially (except crawl's concurrency). This brings Firecrawl-style batch operations locally.
-- **Scope:** `pkg/scout/batch.go` with `BatchScrape()` function. Configurable concurrency, per-URL error collection, progress callback, rate limiter integration. CLI `scout batch --urls=... --urls-file=... [--concurrency=5]`.
+- **Description:** Native concurrent batch scraping of multiple URLs with a page pool, error isolation, and progress reporting. Currently Scout can only process URLs sequentially (except crawl's
+  concurrency). This brings Firecrawl-style batch operations locally.
+- **Scope:** `pkg/scout/batch.go` with `BatchScrape()` function. Configurable concurrency, per-URL error collection, progress callback, rate limiter integration. CLI
+  `scout batch --urls=... --urls-file=... [--concurrency=5]`.
 - **Effort:** Medium
 - **Dependencies:** Existing `RateLimiter` for throttling. Page pool pattern similar to crawl's semaphore.
 
@@ -185,15 +193,18 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 ### LLM-Powered Extraction
 
 - **Priority:** P2
-- **Description:** AI-powered data extraction using LLM providers. Send page content (as markdown) plus a natural language prompt to an LLM and get structured data back. Supports multiple providers via interface: OpenAI, Anthropic, Ollama (local). Optional JSON schema validation on responses.
-- **Scope:** `pkg/scout/llm.go` with `ExtractWithLLM()` function and `LLMProvider` interface. Built-in providers for OpenAI, Anthropic, Ollama. CLI `scout extract-ai --url=<url> --prompt="..." [--provider=ollama] [--schema=file.json]`.
+- **Description:** AI-powered data extraction using LLM providers. Send page content (as markdown) plus a natural language prompt to an LLM and get structured data back. Supports multiple providers
+  via interface: OpenAI, Anthropic, Ollama (local). Optional JSON schema validation on responses.
+- **Scope:** `pkg/scout/llm.go` with `ExtractWithLLM()` function and `LLMProvider` interface. Built-in providers for OpenAI, Anthropic, Ollama. CLI
+  `scout extract-ai --url=<url> --prompt="..." [--provider=ollama] [--schema=file.json]`.
 - **Effort:** Large
 - **Dependencies:** Depends on HTML-to-Markdown engine (Phase 10) for page content preparation. HTTP clients for LLM APIs.
 
 ### Async Job System
 
 - **Priority:** P3
-- **Description:** Job manager for long-running batch and crawl operations. Provides job IDs, status polling, cancellation, and persistent state. Enables running large crawls/batches in the background with progress tracking.
+- **Description:** Job manager for long-running batch and crawl operations. Provides job IDs, status polling, cancellation, and persistent state. Enables running large crawls/batches in the background
+  with progress tracking.
 - **Scope:** `pkg/scout/jobs.go` with job lifecycle management. Persistent state in `~/.scout/jobs/`. CLI `scout jobs list/status/cancel/wait`.
 - **Effort:** Medium
 - **Dependencies:** Integrates with batch scraper and crawl commands.
@@ -201,8 +212,10 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 ### Screen Recorder
 
 - **Priority:** P3
-- **Description:** Capture browser sessions as video using Chrome DevTools Protocol `Page.startScreencast`. Record page interactions as WebM, GIF, or PNG frame sequences. Complement the existing `NetworkRecorder` (HAR) with synchronized video evidence. Pure-Go WebM encoding with optional ffmpeg fallback for MP4.
-- **Scope:** `ScreenRecorder` type in `pkg/scout/screenrecord.go` with functional options (`WithFrameRate`, `WithQuality`, `WithMaxDuration`, `WithFormat`). Start/Stop/Pause/Resume lifecycle. Export as WebM (primary), GIF (short clips), or PNG sequence. gRPC RPCs for remote control. CLI `scout record start/stop/export` commands. Combined HAR+video forensic bundles.
+- **Description:** Capture browser sessions as video using Chrome DevTools Protocol `Page.startScreencast`. Record page interactions as WebM, GIF, or PNG frame sequences. Complement the existing
+  `NetworkRecorder` (HAR) with synchronized video evidence. Pure-Go WebM encoding with optional ffmpeg fallback for MP4.
+- **Scope:** `ScreenRecorder` type in `pkg/scout/screenrecord.go` with functional options (`WithFrameRate`, `WithQuality`, `WithMaxDuration`, `WithFormat`). Start/Stop/Pause/Resume lifecycle. Export
+  as WebM (primary), GIF (short clips), or PNG sequence. gRPC RPCs for remote control. CLI `scout record start/stop/export` commands. Combined HAR+video forensic bundles.
 - **Effort:** Large
 - **Dependencies:** CDP `Page.screencastFrame` events, go-rod's underlying protocol access. Pure-Go WebM/VP8 encoder or vendored library. Optional ffmpeg detection for MP4.
 
@@ -217,7 +230,8 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 ### ~~Element Method Test Coverage~~ [DONE]
 
 - **Priority:** P1
-- **Status:** Complete — DoubleClick, RightClick, Hover, Tap, Type, Press, SelectOptionByCSS, SetFiles, Focus, Blur, ScrollIntoView, Remove, SelectAllText, GetXPath, ContainsElement, Equal, CanvasToImage, BackgroundImage, Resource, Parents, Wait* all tested. Previous/ShadowRoot/Frame skip gracefully due to rod limitations.
+- **Status:** Complete — DoubleClick, RightClick, Hover, Tap, Type, Press, SelectOptionByCSS, SetFiles, Focus, Blur, ScrollIntoView, Remove, SelectAllText, GetXPath, ContainsElement, Equal,
+  CanvasToImage, BackgroundImage, Resource, Parents, Wait* all tested. Previous/ShadowRoot/Frame skip gracefully due to rod limitations.
 - **Effort:** Large
 
 ### ~~EvalResult Type Conversion Tests~~ [DONE]
@@ -241,7 +255,8 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 ### gRPC Server Test Coverage
 
 - **Priority:** P2
-- **Description:** The `grpc/server/` package has 0% test coverage. All 25+ RPCs (CreateSession, Navigate, Click, Type, Screenshot, etc.) are untested. Consider integration tests against a local httptest server with a real browser.
+- **Description:** The `grpc/server/` package has 0% test coverage. All 25+ RPCs (CreateSession, Navigate, Click, Type, Screenshot, etc.) are untested. Consider integration tests against a local
+  httptest server with a real browser.
 - **Effort:** Large
 
 ### GoDoc Examples
@@ -253,30 +268,31 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 ### ~~Remove Legacy Taskfile Tasks~~ [DONE]
 
 - **Priority:** P3
-- **Status:** Complete — removed `proto:generate`, `sqlc:generate`, `generate`, `build:dev`, `build:prod`, `run`, `release`, `release:snapshot`, `release:check`. Added `lint:fix`, `slack-assist` to `grpc:build`.
+- **Status:** Complete — removed `proto:generate`, `sqlc:generate`, `generate`, `build:dev`, `build:prod`, `run`, `release`, `release:snapshot`, `release:check`. Added `lint:fix`, `slack-assist` to
+  `grpc:build`.
 - **Effort:** Small
 
 ## Resolved Items
 
-| Item | Resolution | Date |
-|------|------------|------|
-| Missing Git Remote | Remote configured at `github.com/inovacc/scout.git` | 2025 |
-| Taskfile Cleanup | Legacy template tasks replaced with valid proto/grpc tasks | 2025 |
-| Slack Scraper Mode | Full implementation: API client, browser auth, encrypted session capture, CLI | 2026-02 |
-| Remove Legacy Taskfile Tasks | Removed all non-applicable tasks, added lint:fix and slack-assist build | 2026-02 |
-| EvalResult Type Conversion Tests | Full coverage: String, Int, Float, Bool, IsNull, JSON, Decode | 2026-02 |
-| Unified CLI | Single Cobra binary `cmd/scout/` replaces cmd/server, cmd/client, cmd/slack-assist, cmd/example-workflow | 2026-02 |
-| Missing LICENSE File | BSD 3-Clause LICENSE file added | 2026-02 |
-| Firecrawl Integration | Pure HTTP Go client for Firecrawl v2 API with CLI commands | 2026-02 |
-| HTML-to-Markdown Engine | Pure Go converter with readability scoring, `page.Markdown()`, CLI command | 2026-02 |
-| URL Map / Link Discovery | `Map()` with sitemap + BFS link harvesting, filters, CLI `scout map` | 2026-02 |
-| Test Coverage Gaps | pkg/scout coverage raised from 69.9% to 80.1% | 2026-02 |
-| Element Method Test Coverage | Comprehensive element method tests added | 2026-02 |
-| Network Accessor Tests | Hijack request/response accessor tests added | 2026-02 |
-| Stealth Internalization | `go-rod/stealth` internalized into `pkg/stealth/` | 2026-02 |
-| Browser Auto-Detection | Brave and Edge browser auto-detection via `WithBrowser()` | 2026-02 |
-| Chrome Extension Loading | `WithExtension(paths...)` for unpacked extension loading | 2026-02 |
-| Device Identity & mTLS | Syncthing-style device IDs, mTLS auth, mDNS discovery | 2026-02 |
-| Platform Session Defaults | Auto `--no-sandbox` on Linux via build constraints | 2026-02 |
-| Firecrawl Removal | `firecrawl/` package removed — project focuses on native browser scraping | 2026-02 |
-| Slack Removal | `scraper/slack/` package removed — replaced by generic auth framework | 2026-02 |
+| Item                             | Resolution                                                                                               | Date    |
+|----------------------------------|----------------------------------------------------------------------------------------------------------|---------|
+| Missing Git Remote               | Remote configured at `github.com/inovacc/scout.git`                                                      | 2025    |
+| Taskfile Cleanup                 | Legacy template tasks replaced with valid proto/grpc tasks                                               | 2025    |
+| Slack Scraper Mode               | Full implementation: API client, browser auth, encrypted session capture, CLI                            | 2026-02 |
+| Remove Legacy Taskfile Tasks     | Removed all non-applicable tasks, added lint:fix and slack-assist build                                  | 2026-02 |
+| EvalResult Type Conversion Tests | Full coverage: String, Int, Float, Bool, IsNull, JSON, Decode                                            | 2026-02 |
+| Unified CLI                      | Single Cobra binary `cmd/scout/` replaces cmd/server, cmd/client, cmd/slack-assist, cmd/example-workflow | 2026-02 |
+| Missing LICENSE File             | BSD 3-Clause LICENSE file added                                                                          | 2026-02 |
+| Firecrawl Integration            | Pure HTTP Go client for Firecrawl v2 API with CLI commands                                               | 2026-02 |
+| HTML-to-Markdown Engine          | Pure Go converter with readability scoring, `page.Markdown()`, CLI command                               | 2026-02 |
+| URL Map / Link Discovery         | `Map()` with sitemap + BFS link harvesting, filters, CLI `scout map`                                     | 2026-02 |
+| Test Coverage Gaps               | pkg/scout coverage raised from 69.9% to 80.1%                                                            | 2026-02 |
+| Element Method Test Coverage     | Comprehensive element method tests added                                                                 | 2026-02 |
+| Network Accessor Tests           | Hijack request/response accessor tests added                                                             | 2026-02 |
+| Stealth Internalization          | `go-rod/stealth` internalized into `pkg/stealth/`                                                        | 2026-02 |
+| Browser Auto-Detection           | Brave and Edge browser auto-detection via `WithBrowser()`                                                | 2026-02 |
+| Chrome Extension Loading         | `WithExtension(paths...)` for unpacked extension loading                                                 | 2026-02 |
+| Device Identity & mTLS           | Syncthing-style device IDs, mTLS auth, mDNS discovery                                                    | 2026-02 |
+| Platform Session Defaults        | Auto `--no-sandbox` on Linux via build constraints                                                       | 2026-02 |
+| Firecrawl Removal                | `firecrawl/` package removed — project focuses on native browser scraping                                | 2026-02 |
+| Slack Removal                    | `scraper/slack/` package removed — replaced by generic auth framework                                    | 2026-02 |

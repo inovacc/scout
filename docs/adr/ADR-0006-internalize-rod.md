@@ -1,8 +1,8 @@
 # ADR-0006: Internalize github.com/go-rod/rod
 
-**Status:** Proposed
-**Date:** 2026-02-17
-**Decision:** Pending
+**Status:** Accepted
+**Date:** 2026-02-18
+**Decision:** Internalize (full copy)
 
 ---
 
@@ -14,19 +14,19 @@ Evaluate whether to internalize `github.com/go-rod/rod` (the browser automation 
 
 ## 1. Summary
 
-| Field | Value |
-|-------|-------|
-| Module | `github.com/go-rod/rod` |
-| Version | `v0.116.2` (current in go.mod) |
-| License | MIT (Yad Smood, 2019) |
-| Total Go files | 113 (excl. tests, examples, fixtures, generators) |
-| Total LOC | ~41,686 (excl. tests, examples, fixtures, generators) |
-| Packages | 22 |
-| Test files | 35 |
-| Direct deps | 6 (all `ysmood/*`) |
-| Indirect deps | 1 (`ysmood/gop`) |
-| CGO / Assembly | None — pure Go |
-| Build tags | 2 files (`os_unix.go`, `os_windows.go` in launcher) |
+| Field          | Value                                                 |
+|----------------|-------------------------------------------------------|
+| Module         | `github.com/go-rod/rod`                               |
+| Version        | `v0.116.2` (current in go.mod)                        |
+| License        | MIT (Yad Smood, 2019)                                 |
+| Total Go files | 113 (excl. tests, examples, fixtures, generators)     |
+| Total LOC      | ~41,686 (excl. tests, examples, fixtures, generators) |
+| Packages       | 22                                                    |
+| Test files     | 35                                                    |
+| Direct deps    | 6 (all `ysmood/*`)                                    |
+| Indirect deps  | 1 (`ysmood/gop`)                                      |
+| CGO / Assembly | None — pure Go                                        |
+| Build tags     | 2 files (`os_unix.go`, `os_windows.go` in launcher)   |
 
 ---
 
@@ -34,23 +34,23 @@ Evaluate whether to internalize `github.com/go-rod/rod` (the browser automation 
 
 ### Rod package structure:
 
-| Package | Purpose | Used by Scout? |
-|---------|---------|----------------|
-| `rod` (root) | Core Browser/Page/Element API | **Yes** — heavily |
-| `lib/launcher` | Browser binary discovery & launch | **Yes** — browser setup |
-| `lib/launcher/flags` | Chrome flag constants | **Yes** — flag setting |
-| `lib/proto` | CDP protocol bindings (generated) | **Yes** — protocol types |
-| `lib/input` | Keyboard/mouse key constants | **Yes** — input simulation |
-| `lib/devices` | Device emulation presets | **Yes** — device emulation |
-| `lib/cdp` | WebSocket CDP client | **Yes** (indirect, via rod core) |
-| `lib/defaults` | Default configuration values | Likely (indirect) |
-| `lib/js` | JavaScript helper functions | Likely (indirect, embedded JS) |
-| `lib/utils` | Utility functions | Likely (indirect) |
-| `lib/assets` | Embedded static assets | Likely (indirect) |
-| `lib/docker` | Docker helper binary | No |
-| `lib/examples` | Example programs | No |
-| `lib/benchmark` | Benchmarks | No |
-| `fixtures/` | Test fixtures | No |
+| Package              | Purpose                           | Used by Scout?                   |
+|----------------------|-----------------------------------|----------------------------------|
+| `rod` (root)         | Core Browser/Page/Element API     | **Yes** — heavily                |
+| `lib/launcher`       | Browser binary discovery & launch | **Yes** — browser setup          |
+| `lib/launcher/flags` | Chrome flag constants             | **Yes** — flag setting           |
+| `lib/proto`          | CDP protocol bindings (generated) | **Yes** — protocol types         |
+| `lib/input`          | Keyboard/mouse key constants      | **Yes** — input simulation       |
+| `lib/devices`        | Device emulation presets          | **Yes** — device emulation       |
+| `lib/cdp`            | WebSocket CDP client              | **Yes** (indirect, via rod core) |
+| `lib/defaults`       | Default configuration values      | Likely (indirect)                |
+| `lib/js`             | JavaScript helper functions       | Likely (indirect, embedded JS)   |
+| `lib/utils`          | Utility functions                 | Likely (indirect)                |
+| `lib/assets`         | Embedded static assets            | Likely (indirect)                |
+| `lib/docker`         | Docker helper binary              | No                               |
+| `lib/examples`       | Example programs                  | No                               |
+| `lib/benchmark`      | Benchmarks                        | No                               |
+| `fixtures/`          | Test fixtures                     | No                               |
 
 ---
 
@@ -58,15 +58,15 @@ Evaluate whether to internalize `github.com/go-rod/rod` (the browser automation 
 
 All 6 direct dependencies are from the `ysmood` ecosystem:
 
-| Dependency | Purpose | Risk |
-|-----------|---------|------|
-| `github.com/ysmood/gson` | JSON encoding/decoding | **Low** — small, widely used in rod |
-| `github.com/ysmood/goob` | Observable/event pattern | **Low** — small utility |
-| `github.com/ysmood/leakless` | Process leak prevention | **Medium** — platform-specific binary embedding |
-| `github.com/ysmood/fetchup` | HTTP download with progress | **Low** — used only for browser downloads |
-| `github.com/ysmood/got` | Testing utilities (only `lib/lcs`) | **Low** — only LCS algorithm used at runtime |
-| `github.com/ysmood/gotrace` | Goroutine tracing/debugging | **None** — only used in examples |
-| `github.com/ysmood/gop` (indirect) | Pretty printer | **None** — indirect, dev utility |
+| Dependency                         | Purpose                            | Risk                                            |
+|------------------------------------|------------------------------------|-------------------------------------------------|
+| `github.com/ysmood/gson`           | JSON encoding/decoding             | **Low** — small, widely used in rod             |
+| `github.com/ysmood/goob`           | Observable/event pattern           | **Low** — small utility                         |
+| `github.com/ysmood/leakless`       | Process leak prevention            | **Medium** — platform-specific binary embedding |
+| `github.com/ysmood/fetchup`        | HTTP download with progress        | **Low** — used only for browser downloads       |
+| `github.com/ysmood/got`            | Testing utilities (only `lib/lcs`) | **Low** — only LCS algorithm used at runtime    |
+| `github.com/ysmood/gotrace`        | Goroutine tracing/debugging        | **None** — only used in examples                |
+| `github.com/ysmood/gop` (indirect) | Pretty printer                     | **None** — indirect, dev utility                |
 
 **Key observation:** Internalizing rod does NOT eliminate these deps — they would still be required as transitive dependencies unless also internalized or replaced.
 
@@ -95,6 +95,7 @@ github.com/go-rod/rod/lib/assets  → github.com/inovacc/scout/pkg/rod/lib/asset
 ## 5. Minimal Subset Analysis
 
 ### Directly used packages (6):
+
 - `rod` (root) — Browser, Page, Element, HijackRouter, Eval, SelectorType
 - `lib/launcher` — New, Headless, Bin, Proxy, Launch, etc.
 - `lib/launcher/flags` — Flag type
@@ -103,6 +104,7 @@ github.com/go-rod/rod/lib/assets  → github.com/inovacc/scout/pkg/rod/lib/asset
 - `lib/devices` — Device type
 
 ### Indirectly required (5):
+
 - `lib/cdp` — WebSocket CDP communication (used by rod core)
 - `lib/js` — Embedded JavaScript helpers (used by rod core)
 - `lib/utils` — Utility functions (used across lib/)
@@ -110,24 +112,29 @@ github.com/go-rod/rod/lib/assets  → github.com/inovacc/scout/pkg/rod/lib/asset
 - `lib/assets` — Static assets (used by lib/js)
 
 ### Excludable (4):
+
 - `lib/docker` — Docker binary, not used
 - `lib/examples` — Example code
 - `lib/benchmark` — Benchmarks
 - `fixtures/` — Test fixtures and generators
 
 ### Verdict: Subset copy is NOT practical
-The root `rod` package depends on nearly all `lib/` packages internally. Copying only the used packages still requires 11 of 15 packages (~73%). The "subset" would be nearly the full module minus examples/docker/benchmarks.
+
+The root `rod` package depends on nearly all `lib/` packages internally. Copying only the used packages still requires 11 of 15 packages (~73%). The "subset" would be nearly the full module minus
+examples/docker/benchmarks.
 
 ---
 
 ## 6. Risk Assessment
 
 ### License Compatibility
+
 - **Rod:** MIT License — **fully compatible** with BSD 3-Clause
 - MIT is permissive; only requires preserving copyright notice
 - **Action:** Include original LICENSE and copyright in `pkg/rod/`
 
 ### Maintenance Burden
+
 - **41,686 LOC** to maintain — this is substantial
 - Rod is actively maintained (regular releases, responsive maintainer)
 - Internalizing **freezes the version** — no upstream bugfixes, security patches, or Chrome protocol updates
@@ -135,12 +142,14 @@ The root `rod` package depends on nearly all `lib/` packages internally. Copying
 - The `lib/launcher/revision.go` pins a specific Chrome revision — needs manual updates
 
 ### Complexity Concerns
+
 - **Platform-specific code** in launcher (`os_unix.go`, `os_windows.go`) — manageable
 - **Generated code** in `lib/proto` — would need generator tooling or manual updates
 - **Chrome protocol evolution** — the protocol changes with each Chrome release; rod tracks this
 - **`leakless` dependency** — embeds platform-specific binaries for process management
 
 ### Breaking Changes Risk
+
 - Freezing at v0.116.2 means no new Chrome DevTools Protocol support
 - Chrome updates may break compatibility with frozen CDP bindings
 - **High risk** for a browser automation tool that depends on Chrome protocol stability
@@ -154,7 +163,8 @@ The root `rod` package depends on nearly all `lib/` packages internally. Copying
 **Justification:**
 
 1. **Size:** 41,686 LOC across 22 packages is too large to maintain as vendored code
-2. **Chrome coupling:** Rod's `lib/proto` package tracks Chrome DevTools Protocol changes — internalizing it would require rebuilding their code generation pipeline or manually updating protocol bindings
+2. **Chrome coupling:** Rod's `lib/proto` package tracks Chrome DevTools Protocol changes — internalizing it would require rebuilding their code generation pipeline or manually updating protocol
+   bindings
 3. **Active maintenance:** Rod receives regular updates for Chrome compatibility — losing these would degrade Scout over time
 4. **Minimal benefit:** Rod's 6 external deps are all small, single-author utilities — the dependency tree is already lean
 5. **`go-rod/stealth`** is also used and depends on `go-rod/rod` — internalizing rod would break stealth's compatibility
@@ -176,6 +186,7 @@ This preserves the ability to pull upstream updates while allowing modifications
 ## 8. Step-by-Step Execution Plan
 
 ### If keeping external (recommended):
+
 No action needed. Current setup is optimal.
 
 ### If forking (alternative):
@@ -208,9 +219,25 @@ No action needed. Current setup is optimal.
 
 ## Decision
 
-**Recommendation: Keep `github.com/go-rod/rod` as an external dependency.**
+**Accepted: Internalize `github.com/go-rod/rod` v0.116.2 into `pkg/rod/`.**
 
-The module is too large (41K LOC), too tightly coupled to Chrome's evolving protocol, and too actively maintained to justify internalization. The dependency tree is minimal (6 small deps from one author). If customization is needed, a fork with `replace` directive is the better approach.
+Full copy of the module (excluding tests, examples, docker, benchmarks, generators, and fixtures) into `pkg/rod/` with import paths rewritten from `github.com/go-rod/rod` to
+`github.com/inovacc/scout/pkg/rod`. The `ysmood/*` transitive dependencies remain as external deps. The original MIT license is preserved in `pkg/rod/LICENSE`.
+
+### Execution completed 2026-02-18:
+
+1. Cloned `go-rod/rod` at commit `1cd7eb98e9d3c5c032f08a4b6084a220f44a71f7`
+2. Copied 96 source files into `pkg/rod/` (13 root + 83 lib/)
+3. Rewrote all import paths across internalized code and Scout source files
+4. Removed `github.com/go-rod/rod` from `go.mod`
+5. Ran `go mod tidy` and `go build ./...` — clean build
+6. Generated tracking file at `pkg/rod/.dep-track.json`
+
+### Maintenance notes:
+
+- Chrome DevTools Protocol updates require regenerating `lib/proto/` files or manually updating
+- `lib/launcher/revision.go` pins a specific Chrome revision — update as needed
+- Use `/dep:update` to diff upstream changes against the internalized copy
 
 ---
 
@@ -219,3 +246,4 @@ The module is too large (41K LOC), too tightly coupled to Chrome's evolving prot
 - [go-rod/rod](https://github.com/go-rod/rod) — MIT License
 - [ADR-0001: Go Rod Wrapper](ADR-0001-go-rod-wrapper.md) — Original decision to use rod
 - [ADR-0002: No ChromeDP](ADR-0002-no-chromedp.md) — Why rod over chromedp
+- Tracking file: `pkg/rod/.dep-track.json`

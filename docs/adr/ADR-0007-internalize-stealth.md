@@ -14,35 +14,35 @@ Evaluate whether to internalize `github.com/go-rod/stealth` — a tiny anti-bot-
 
 ## 1. Summary
 
-| Field | Value |
-|-------|-------|
-| Module | `github.com/go-rod/stealth` |
-| Version | `v0.4.9` (current in go.mod) |
-| License | MIT (Rod, 2020) |
-| Total Go files | 2 (`main.go`, `assets.go`) |
-| Total LOC | ~45 (Go code) + large embedded JS constant |
-| Packages | 1 (root only) |
-| Test files | 1 (`examples_test.go`) |
-| Direct deps | 1 (`github.com/go-rod/rod`) |
-| CGO / Assembly | None |
-| Build tags | None |
+| Field          | Value                                                                   |
+|----------------|-------------------------------------------------------------------------|
+| Module         | `github.com/go-rod/stealth`                                             |
+| Version        | `v0.4.9` (current in go.mod)                                            |
+| License        | MIT (Rod, 2020)                                                         |
+| Total Go files | 2 (`main.go`, `assets.go`)                                              |
+| Total LOC      | ~45 (Go code) + large embedded JS constant                              |
+| Packages       | 1 (root only)                                                           |
+| Test files     | 1 (`examples_test.go`)                                                  |
+| Direct deps    | 1 (`github.com/go-rod/rod`)                                             |
+| CGO / Assembly | None                                                                    |
+| Build tags     | None                                                                    |
 | Generated code | `assets.go` — generated from puppeteer-extra-plugin-stealth JS (v2.7.3) |
 
 ---
 
 ## 2. Packages to Internalize
 
-| Package | Purpose | Action |
-|---------|---------|--------|
-| `stealth` (root) | `Page()` and `MustPage()` + embedded JS | **Copy to `pkg/stealth/`** |
-| `generate/` | Code generator for assets.go | Skip (only needed to regenerate JS) |
+| Package          | Purpose                                 | Action                              |
+|------------------|-----------------------------------------|-------------------------------------|
+| `stealth` (root) | `Page()` and `MustPage()` + embedded JS | **Copy to `pkg/stealth/`**          |
+| `generate/`      | Code generator for assets.go            | Skip (only needed to regenerate JS) |
 
 ---
 
 ## 3. Dependencies Brought Along
 
-| Dependency | Purpose | Impact |
-|-----------|---------|--------|
+| Dependency              | Purpose                       | Impact                     |
+|-------------------------|-------------------------------|----------------------------|
 | `github.com/go-rod/rod` | Already a direct dep of Scout | **None** — already present |
 
 **Internalizing stealth adds zero new dependencies.** It only imports `rod` and `rod/lib/proto`, both already in Scout's dependency tree.
@@ -62,6 +62,7 @@ github.com/go-rod/stealth → github.com/inovacc/scout/pkg/stealth
 ## 5. Minimal Subset Analysis
 
 The module is already minimal:
+
 - **`main.go`** (33 LOC): `Page()` function — creates a page and injects anti-detection JS via `EvalOnNewDocument`
 - **`assets.go`** (~large): Embedded JS constant from puppeteer-extra-plugin-stealth v2.7.3
 
@@ -72,21 +73,25 @@ Scout uses exactly one function: `stealth.Page(b.browser)`. The entire module is
 ## 6. Risk Assessment
 
 ### License Compatibility
+
 - **Stealth:** MIT — **fully compatible** with BSD 3-Clause
 - **Embedded JS:** Based on puppeteer-extra-plugin-stealth (MIT) — compatible
 - **Action:** Include original LICENSE in `pkg/stealth/`
 
 ### Maintenance Burden
+
 - **Extremely low** — 33 lines of Go code
 - The JS blob (`assets.go`) is the bulk — it's a snapshot of puppeteer-extra-plugin-stealth v2.7.3
 - Updates to the JS would require running the generator or manually updating the constant
 - The upstream repo is **infrequently updated** (last significant change was the JS version bump)
 
 ### Complexity
+
 - Zero — no build tags, no CGO, no platform-specific code
 - The `Page()` function is trivially simple: create page → inject JS → return
 
 ### Breaking Changes Risk
+
 - **Very low** — the API is a single function that wraps rod's existing `Page()` and `EvalOnNewDocument()`
 - The embedded JS may become stale as browsers evolve anti-bot detection, but this is independent of internalization
 - **Freezing is acceptable** — can manually update the JS constant when needed
@@ -123,7 +128,7 @@ Scout uses exactly one function: `stealth.Page(b.browser)`. The entire module is
    ```
 
 3. **Rewrite package imports in `pkg/stealth/main.go`:**
-   - No changes needed — it imports `github.com/go-rod/rod` which Scout already uses
+  - No changes needed — it imports `github.com/go-rod/rod` which Scout already uses
 
 4. **Update Scout's import in `pkg/scout/browser.go`:**
    ```go
@@ -161,7 +166,8 @@ Scout uses exactly one function: `stealth.Page(b.browser)`. The entire module is
 
 **Recommendation: Full copy into `pkg/stealth/`.**
 
-This is an ideal internalization candidate — 33 lines of Go, zero new dependencies, single function usage, MIT licensed, and infrequently updated upstream. The cost of maintaining it internally is essentially zero.
+This is an ideal internalization candidate — 33 lines of Go, zero new dependencies, single function usage, MIT licensed, and infrequently updated upstream. The cost of maintaining it internally is
+essentially zero.
 
 ---
 

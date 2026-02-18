@@ -242,8 +242,8 @@ func ExampleBrowser_Map() { //nolint:testableexamples // requires browser
 
 func ExampleNewRateLimiter() { //nolint:testableexamples // requires browser
 	rl := scout.NewRateLimiter(
-		scout.WithRateLimit(2),     // 2 requests/sec
-		scout.WithMaxRetries(3),    // retry up to 3 times
+		scout.WithRateLimit(2),  // 2 requests/sec
+		scout.WithMaxRetries(3), // retry up to 3 times
 		scout.WithBackoff(500*time.Millisecond),
 	)
 
