@@ -312,7 +312,7 @@ A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a pers
 
 #### Core: Communication Channel
 
-- [x] **Extension scaffold** (`pkg/scout/bridge_assets.go`) — Manifest V3 Chrome extension with service worker and content script, embedded via Go and written to temp dir at startup
+- [x] **Extension scaffold** (`extensions/scout-bridge/`) — Manifest V3 Chrome extension with service worker and content script, embedded via `extensions/extensions.go` using `embed.FS` and written to temp dir at startup
 - [ ] **WebSocket transport** (`extensions/scout-bridge/ws.go` + `background.js`) — Extension service worker connects to a local WebSocket server embedded in Scout's gRPC daemon; auto-reconnect with exponential backoff
 - [ ] **Message protocol** — JSON-RPC 2.0 over WebSocket: `{method, params, id}` request/response + `{method, params}` notifications; message types: `command` (Go→browser), `event` (browser→Go), `query` (Go→browser with response)
 - [ ] **Go WebSocket server** (`pkg/scout/bridge/server.go`) — Embedded in the gRPC daemon, accepts extension connections, routes messages to/from Scout sessions; multiplexes multiple tabs/pages
@@ -674,15 +674,16 @@ Orchestrate WebSearch + WebFetch + GitHub extraction into automated research wor
 
 ## Test Coverage
 
-**Current:** pkg/scout 75.4% | pkg/identity 81.1% | scraper 84.3% | **Target:** 80%
+**Current:** pkg/scout 75.3% | pkg/identity 81.1% | scraper 84.3% | **Target:** 80%
 
 | Package          | Coverage | Status                   |
 |------------------|----------|--------------------------|
-| pkg/scout        | 75.4%    | Below target             |
+| pkg/scout        | 75.3%    | Below target             |
 | pkg/identity     | 81.1%    | ✅ Target met             |
 | scraper          | 84.3%    | ✅ Complete               |
 | pkg/scout/recipe | 11.6%    | Needs tests              |
-| grpc/server      | 66.7%    | Integration tests added  |
+| grpc/server      | 67.7%    | Integration tests added  |
+| extensions       | 0.0%     | No tests (embed wrapper) |
 | pkg/stealth      | 0.0%     | No tests (asset wrapper) |
 | pkg/discovery    | 0.0%     | No tests                 |
 | scraper/auth     | 0.0%     | No tests                 |

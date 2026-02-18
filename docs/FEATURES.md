@@ -127,7 +127,7 @@
 ### Scout Bridge Extension (Partial)
 
 - **Status:** In Progress
-- **Description:** Built-in Manifest V3 Chrome extension for bidirectional Go↔browser communication. Extension scaffold embedded in `bridge_assets.go`, auto-loaded via `WithBridge()` option. Full WebSocket transport, event streaming, and remote command capabilities planned. Partially implemented in `pkg/scout/bridge.go` and `pkg/scout/bridge_assets.go`.
+- **Description:** Built-in Manifest V3 Chrome extension for bidirectional Go↔browser communication. Extension files in `extensions/scout-bridge/`, embedded via `extensions/extensions.go` using `embed.FS`, auto-loaded via `WithBridge()` option. Full WebSocket transport, event streaming, and remote command capabilities planned. Implemented in `pkg/scout/bridge.go` and `extensions/`.
 
 ### LLM-Powered Extraction
 
