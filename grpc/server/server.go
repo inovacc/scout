@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -75,6 +76,18 @@ func (s *session) findElement(selector string, xpath bool) (*scout.Element, erro
 	return s.page.Element(selector)
 }
 
+// SessionEvent records a server-side activity for the event log.
+type SessionEvent struct {
+	Time      time.Time
+	Type      string // "connect", "disconnect", "navigate", "screenshot", etc.
+	SessionID string
+	DeviceID  string
+	Detail    string
+}
+
+// maxEvents is the maximum number of events kept in the ring buffer.
+const maxEvents = 50
+
 // ScoutServer implements the gRPC ScoutService.
 type ScoutServer struct {
 	pb.UnimplementedScoutServiceServer
@@ -87,11 +100,73 @@ type ScoutServer struct {
 
 	// OnPeerChange is called when peer list changes. Set by the CLI server command.
 	OnPeerChange func(peers []ConnectedPeer)
+
+	// OnStatsChange is called when stats or events change.
+	OnStatsChange func()
+
+	stats struct {
+		sync.Mutex
+		totalSessions int64
+		totalRequests int64
+		events        []SessionEvent
+	}
 }
 
 // New creates a new ScoutServer.
 func New() *ScoutServer {
 	return &ScoutServer{}
+}
+
+// Stats returns cumulative session/request counts.
+func (s *ScoutServer) Stats() (totalSessions, totalRequests int64) {
+	s.stats.Lock()
+	defer s.stats.Unlock()
+	return s.stats.totalSessions, s.stats.totalRequests
+}
+
+// Events returns a copy of the recent event log.
+func (s *ScoutServer) Events() []SessionEvent {
+	s.stats.Lock()
+	defer s.stats.Unlock()
+	result := make([]SessionEvent, len(s.stats.events))
+	copy(result, s.stats.events)
+	return result
+}
+
+func (s *ScoutServer) recordEvent(typ, sessionID, deviceID, detail string) {
+	s.stats.Lock()
+	s.stats.events = append(s.stats.events, SessionEvent{
+		Time:      time.Now(),
+		Type:      typ,
+		SessionID: sessionID,
+		DeviceID:  deviceID,
+		Detail:    detail,
+	})
+	if len(s.stats.events) > maxEvents {
+		s.stats.events = s.stats.events[len(s.stats.events)-maxEvents:]
+	}
+	s.stats.totalRequests++
+	s.stats.Unlock()
+
+	if s.OnStatsChange != nil {
+		s.OnStatsChange()
+	}
+}
+
+// pathSanitizer matches local filesystem paths that should not be exposed to clients.
+var pathSanitizer = regexp.MustCompile(`(?i)([A-Z]:\\[^\s"']+|/(?:home|Users|tmp|var|root|etc)[^\s"']+|/\w+/\.\w+[^\s"']+)`)
+
+// sanitizeError strips local filesystem paths from error messages.
+func sanitizeError(err error) error {
+	if err == nil {
+		return nil
+	}
+	msg := err.Error()
+	sanitized := pathSanitizer.ReplaceAllString(msg, "[path-redacted]")
+	if sanitized == msg {
+		return err
+	}
+	return fmt.Errorf("%s", sanitized)
 }
 
 // Peers returns a snapshot of all connected peers.
@@ -120,19 +195,26 @@ func (s *ScoutServer) trackPeer(ctx context.Context, sessionID string) {
 
 	s.sessionPeer.Store(sessionID, deviceID)
 
+	shortID := identity.ShortID(deviceID)
+
 	if v, ok := s.peers.Load(deviceID); ok {
 		p := v.(*ConnectedPeer)
 		p.Sessions++
 	} else {
 		s.peers.Store(deviceID, &ConnectedPeer{
 			DeviceID:    deviceID,
-			ShortID:     identity.ShortID(deviceID),
+			ShortID:     shortID,
 			Addr:        addr,
 			ConnectedAt: time.Now(),
 			Sessions:    1,
 		})
 	}
 
+	s.stats.Lock()
+	s.stats.totalSessions++
+	s.stats.Unlock()
+
+	s.recordEvent("connect", sessionID, shortID, "session "+sessionID[:8])
 	s.notifyPeerChange()
 }
 
@@ -142,6 +224,7 @@ func (s *ScoutServer) untrackPeer(sessionID string) {
 		return
 	}
 	deviceID := v.(string)
+	shortID := identity.ShortID(deviceID)
 
 	if v, ok := s.peers.Load(deviceID); ok {
 		p := v.(*ConnectedPeer)
@@ -151,6 +234,7 @@ func (s *ScoutServer) untrackPeer(sessionID string) {
 		}
 	}
 
+	s.recordEvent("disconnect", sessionID, shortID, "session "+sessionID[:8])
 	s.notifyPeerChange()
 }
 
@@ -163,6 +247,14 @@ func (s *ScoutServer) notifyPeerChange() {
 // NotifyPeerChange triggers a peer change notification externally (e.g. after pairing).
 func (s *ScoutServer) NotifyPeerChange() {
 	s.notifyPeerChange()
+}
+
+func (s *ScoutServer) peerShortID(sessionID string) string {
+	v, ok := s.sessionPeer.Load(sessionID)
+	if !ok {
+		return "unknown"
+	}
+	return identity.ShortID(v.(string))
 }
 
 func (s *ScoutServer) getSession(id string) (*session, error) {
@@ -210,7 +302,7 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 
 	browser, err := scout.New(opts...)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "browser launch failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "browser launch failed: %v", sanitizeError(err))
 	}
 
 	url := "about:blank"
@@ -221,7 +313,7 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 	page, err := browser.NewPage(url)
 	if err != nil {
 		_ = browser.Close()
-		return nil, status.Errorf(codes.Internal, "page creation failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "page creation failed: %v", sanitizeError(err))
 	}
 
 	sess := &session{
@@ -284,7 +376,7 @@ func (s *ScoutServer) Navigate(_ context.Context, req *pb.NavigateRequest) (*pb.
 	}
 
 	if err := sess.page.Navigate(req.GetUrl()); err != nil {
-		return nil, status.Errorf(codes.Internal, "navigate failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "navigate failed: %v", sanitizeError(err))
 	}
 
 	if req.GetWaitStable() {
@@ -293,6 +385,8 @@ func (s *ScoutServer) Navigate(_ context.Context, req *pb.NavigateRequest) (*pb.
 
 	title, _ := sess.page.Title()
 	url, _ := sess.page.URL()
+
+	s.recordEvent("navigate", req.GetSessionId(), s.peerShortID(req.GetSessionId()), req.GetUrl())
 
 	return &pb.NavigateResponse{
 		Url:   url,
@@ -307,7 +401,7 @@ func (s *ScoutServer) Reload(_ context.Context, req *pb.SessionRequest) (*pb.Emp
 	}
 
 	if err := sess.page.Reload(); err != nil {
-		return nil, status.Errorf(codes.Internal, "reload failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "reload failed: %v", sanitizeError(err))
 	}
 
 	return &pb.Empty{}, nil
@@ -320,7 +414,7 @@ func (s *ScoutServer) GoBack(_ context.Context, req *pb.SessionRequest) (*pb.Emp
 	}
 
 	if err := sess.page.NavigateBack(); err != nil {
-		return nil, status.Errorf(codes.Internal, "go back failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "go back failed: %v", sanitizeError(err))
 	}
 
 	return &pb.Empty{}, nil
@@ -333,7 +427,7 @@ func (s *ScoutServer) GoForward(_ context.Context, req *pb.SessionRequest) (*pb.
 	}
 
 	if err := sess.page.NavigateForward(); err != nil {
-		return nil, status.Errorf(codes.Internal, "go forward failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "go forward failed: %v", sanitizeError(err))
 	}
 
 	return &pb.Empty{}, nil
@@ -349,11 +443,11 @@ func (s *ScoutServer) Click(_ context.Context, req *pb.ElementRequest) (*pb.Empt
 
 	el, err := sess.findElement(req.GetSelector(), req.GetXpath())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "element %q not found: %v", req.GetSelector(), err)
+		return nil, status.Errorf(codes.NotFound, "element %q not found: %v", req.GetSelector(), sanitizeError(err))
 	}
 
 	if err := el.Click(); err != nil {
-		return nil, status.Errorf(codes.Internal, "click failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "click failed: %v", sanitizeError(err))
 	}
 
 	return &pb.Empty{}, nil
@@ -367,11 +461,11 @@ func (s *ScoutServer) DoubleClick(_ context.Context, req *pb.ElementRequest) (*p
 
 	el, err := sess.findElement(req.GetSelector(), req.GetXpath())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
+		return nil, status.Errorf(codes.NotFound, "element not found: %v", sanitizeError(err))
 	}
 
 	if err := el.DoubleClick(); err != nil {
-		return nil, status.Errorf(codes.Internal, "double-click failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "double-click failed: %v", sanitizeError(err))
 	}
 
 	return &pb.Empty{}, nil
@@ -385,11 +479,11 @@ func (s *ScoutServer) RightClick(_ context.Context, req *pb.ElementRequest) (*pb
 
 	el, err := sess.findElement(req.GetSelector(), req.GetXpath())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
+		return nil, status.Errorf(codes.NotFound, "element not found: %v", sanitizeError(err))
 	}
 
 	if err := el.RightClick(); err != nil {
-		return nil, status.Errorf(codes.Internal, "right-click failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "right-click failed: %v", sanitizeError(err))
 	}
 
 	return &pb.Empty{}, nil
@@ -403,11 +497,11 @@ func (s *ScoutServer) Hover(_ context.Context, req *pb.ElementRequest) (*pb.Empt
 
 	el, err := sess.findElement(req.GetSelector(), req.GetXpath())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
+		return nil, status.Errorf(codes.NotFound, "element not found: %v", sanitizeError(err))
 	}
 
 	if err := el.Hover(); err != nil {
-		return nil, status.Errorf(codes.Internal, "hover failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "hover failed: %v", sanitizeError(err))
 	}
 
 	return &pb.Empty{}, nil
@@ -421,7 +515,7 @@ func (s *ScoutServer) Type(_ context.Context, req *pb.TypeRequest) (*pb.Empty, e
 
 	el, err := sess.page.Element(req.GetSelector())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
+		return nil, status.Errorf(codes.NotFound, "element not found: %v", sanitizeError(err))
 	}
 
 	if req.GetClearFirst() {
@@ -429,7 +523,7 @@ func (s *ScoutServer) Type(_ context.Context, req *pb.TypeRequest) (*pb.Empty, e
 	}
 
 	if err := el.Input(req.GetText()); err != nil {
-		return nil, status.Errorf(codes.Internal, "type failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "type failed: %v", sanitizeError(err))
 	}
 
 	return &pb.Empty{}, nil
@@ -443,11 +537,11 @@ func (s *ScoutServer) SelectOption(_ context.Context, req *pb.SelectRequest) (*p
 
 	el, err := sess.page.Element(req.GetSelector())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
+		return nil, status.Errorf(codes.NotFound, "element not found: %v", sanitizeError(err))
 	}
 
 	if err := el.SelectOption(req.GetValue()); err != nil {
-		return nil, status.Errorf(codes.Internal, "select option failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "select option failed: %v", sanitizeError(err))
 	}
 
 	return &pb.Empty{}, nil
@@ -461,7 +555,7 @@ func (s *ScoutServer) PressKey(_ context.Context, req *pb.KeyRequest) (*pb.Empty
 
 	key := mapKey(req.GetKey())
 	if err := sess.page.KeyPress(key); err != nil {
-		return nil, status.Errorf(codes.Internal, "press key failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "press key failed: %v", sanitizeError(err))
 	}
 
 	return &pb.Empty{}, nil
@@ -477,12 +571,12 @@ func (s *ScoutServer) GetText(_ context.Context, req *pb.ElementRequest) (*pb.Te
 
 	el, err := sess.findElement(req.GetSelector(), req.GetXpath())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
+		return nil, status.Errorf(codes.NotFound, "element not found: %v", sanitizeError(err))
 	}
 
 	text, err := el.Text()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get text failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "get text failed: %v", sanitizeError(err))
 	}
 
 	return &pb.TextResponse{Text: text}, nil
@@ -496,12 +590,12 @@ func (s *ScoutServer) GetAttribute(_ context.Context, req *pb.AttributeRequest) 
 
 	el, err := sess.page.Element(req.GetSelector())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "element not found: %v", err)
+		return nil, status.Errorf(codes.NotFound, "element not found: %v", sanitizeError(err))
 	}
 
 	val, _, err := el.Attribute(req.GetAttribute())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get attribute failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "get attribute failed: %v", sanitizeError(err))
 	}
 
 	return &pb.TextResponse{Text: val}, nil
@@ -515,7 +609,7 @@ func (s *ScoutServer) GetTitle(_ context.Context, req *pb.SessionRequest) (*pb.T
 
 	title, err := sess.page.Title()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get title failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "get title failed: %v", sanitizeError(err))
 	}
 
 	return &pb.TextResponse{Text: title}, nil
@@ -529,7 +623,7 @@ func (s *ScoutServer) GetURL(_ context.Context, req *pb.SessionRequest) (*pb.Tex
 
 	url, err := sess.page.URL()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get url failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "get url failed: %v", sanitizeError(err))
 	}
 
 	return &pb.TextResponse{Text: url}, nil
@@ -543,7 +637,7 @@ func (s *ScoutServer) Eval(_ context.Context, req *pb.EvalRequest) (*pb.EvalResp
 
 	result, err := sess.page.Eval(req.GetScript())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "eval failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "eval failed: %v", sanitizeError(err))
 	}
 
 	data, err2 := json.Marshal(result) //nolint:musttag // result is dynamic eval output
@@ -587,8 +681,14 @@ func (s *ScoutServer) Screenshot(_ context.Context, req *pb.ScreenshotRequest) (
 	}
 
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "screenshot failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "screenshot failed: %v", sanitizeError(err))
 	}
+
+	mode := "viewport"
+	if req.GetFullPage() {
+		mode = "fullpage"
+	}
+	s.recordEvent("screenshot", req.GetSessionId(), s.peerShortID(req.GetSessionId()), fmt.Sprintf("%s %dKB", mode, len(data)/1024))
 
 	return &pb.ScreenshotResponse{
 		Data:   data,
@@ -604,7 +704,7 @@ func (s *ScoutServer) PDF(_ context.Context, req *pb.SessionRequest) (*pb.PDFRes
 
 	data, err := sess.page.PDF()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "pdf failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "pdf failed: %v", sanitizeError(err))
 	}
 
 	return &pb.PDFResponse{Data: data}, nil
@@ -658,7 +758,7 @@ func (s *ScoutServer) ExportHAR(_ context.Context, req *pb.SessionRequest) (*pb.
 
 	data, count, err := sess.recorder.ExportHAR()
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "export failed: %v", err)
+		return nil, status.Errorf(codes.Internal, "export failed: %v", sanitizeError(err))
 	}
 
 	return &pb.HARResponse{

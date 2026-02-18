@@ -87,15 +87,21 @@ var serverCmd = &cobra.Command{
 
 		// Print initial table
 		var displayMu sync.Mutex
-		printTable := func(peers []server.ConnectedPeer) {
+		refreshDisplay := func() {
 			displayMu.Lock()
 			defer displayMu.Unlock()
 			_, _ = fmt.Fprint(os.Stdout, "\033[2J\033[H") // clear screen + cursor home
 			info.PairingAddr = pairingAddr
-			server.PrintServerTable(os.Stdout, info, peers)
+			info.TotalSessions, _ = scoutServer.Stats()
+			info.Events = scoutServer.Events()
+			server.PrintServerTable(os.Stdout, info, scoutServer.Peers())
+		}
+		printTable := func(_ []server.ConnectedPeer) {
+			refreshDisplay()
 		}
 
 		scoutServer.OnPeerChange = printTable
+		scoutServer.OnStatsChange = refreshDisplay
 
 		pb.RegisterScoutServiceServer(grpcServer, scoutServer)
 

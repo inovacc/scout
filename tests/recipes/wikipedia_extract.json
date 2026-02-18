@@ -1,0 +1,17 @@
+{
+  "version": "1",
+  "name": "wikipedia_infobox",
+  "type": "extract",
+  "url": "https://en.wikipedia.org/wiki/Go_(programming_language)",
+  "wait_for": ".infobox",
+  "items": {
+    "container": ".infobox tr",
+    "fields": {
+      "label": "th",
+      "value": "td"
+    }
+  },
+  "output": {
+    "format": "json"
+  }
+}

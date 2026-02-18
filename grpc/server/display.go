@@ -19,11 +19,13 @@ type ConnectedPeer struct {
 
 // ServerInfo holds server metadata for display.
 type ServerInfo struct {
-	DeviceID    string
-	ListenAddr  string
-	PairingAddr string
-	Insecure    bool
-	LocalIPs    []string
+	DeviceID      string
+	ListenAddr    string
+	PairingAddr   string
+	Insecure      bool
+	LocalIPs      []string
+	TotalSessions int64
+	Events        []SessionEvent
 }
 
 // PrintServerTable renders a box-drawing table with server info and connected peers.
@@ -61,7 +63,7 @@ func PrintServerTable(w io.Writer, info ServerInfo, peers []ConnectedPeer) {
 
 	// Connected instances section
 	_, _ = fmt.Fprintf(w, "├%s┴%s┤\n", strings.Repeat("─", 14), strings.Repeat("─", width-15))
-	_, _ = fmt.Fprintf(w, "│ %-*s│\n", width-1, fmt.Sprintf("Connected Instances (%d)", len(peers)))
+	_, _ = fmt.Fprintf(w, "│ %-*s│\n", width-1, fmt.Sprintf("Active: %d  Total: %d", len(peers), info.TotalSessions))
 
 	if len(peers) > 0 {
 		// Column widths: Short ID=10, Device ID=35, Address=17, Sessions=remainder
@@ -88,11 +90,32 @@ func PrintServerTable(w io.Writer, info ServerInfo, peers []ConnectedPeer) {
 				colSess-1, p.Sessions)
 		}
 
-		_, _ = fmt.Fprintf(w, "└%s┴%s┴%s┴%s┘\n",
+		_, _ = fmt.Fprintf(w, "├%s┴%s┴%s┴%s┤\n",
 			strings.Repeat("─", colShort), strings.Repeat("─", colDevice), strings.Repeat("─", colAddr), strings.Repeat("─", colSess))
 	} else {
-		_, _ = fmt.Fprintf(w, "└%s┘\n", strings.Repeat("─", width))
+		_, _ = fmt.Fprintf(w, "├%s┤\n", strings.Repeat("─", width))
 	}
+
+	// Recent activity event log
+	_, _ = fmt.Fprintf(w, "│ %-*s│\n", width-1, "Recent Activity")
+	_, _ = fmt.Fprintf(w, "├%s┤\n", strings.Repeat("─", width))
+
+	if len(info.Events) > 0 {
+		// Show last 10 events
+		start := 0
+		if len(info.Events) > 10 {
+			start = len(info.Events) - 10
+		}
+		for _, ev := range info.Events[start:] {
+			line := fmt.Sprintf("%s %-10s %-7s %s",
+				ev.Time.Format("15:04:05"), ev.Type, ev.DeviceID, truncate(ev.Detail, width-30))
+			_, _ = fmt.Fprintf(w, "│ %-*s│\n", width-1, truncate(line, width-2))
+		}
+	} else {
+		_, _ = fmt.Fprintf(w, "│ %-*s│\n", width-1, "(no activity yet)")
+	}
+
+	_, _ = fmt.Fprintf(w, "└%s┘\n", strings.Repeat("─", width))
 }
 
 func printKV(w io.Writer, width int, key, value string) {
