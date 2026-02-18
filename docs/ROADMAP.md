@@ -227,7 +227,80 @@ Pre-inject custom JavaScript files and Chrome extensions into browser sessions t
   - `scout session create --extension=~/.scout/extensions/adblocker` — load extension bundle
 - [ ] Tests: injection ordering, multi-file loading, communication bridge, extension bundle loading
 
-### Phase 17: Screen Recorder [PLANNED]
+### Phase 17: Scout Bridge Extension — Bidirectional Browser Control [PLANNED]
+
+A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a persistent bidirectional communication channel between the Scout Go backend and the browser runtime. Unlike CDP-only control (which operates from outside the browser), the bridge extension runs *inside* the browser context with full access to Chrome Extension APIs, enabling capabilities that CDP alone cannot provide.
+
+#### Core: Communication Channel
+
+- [ ] **Extension scaffold** (`extensions/scout-bridge/`) — Manifest V3 Chrome extension with service worker, content script, and popup
+- [ ] **WebSocket transport** (`extensions/scout-bridge/ws.go` + `background.js`) — Extension service worker connects to a local WebSocket server embedded in Scout's gRPC daemon; auto-reconnect with exponential backoff
+- [ ] **Message protocol** — JSON-RPC 2.0 over WebSocket: `{method, params, id}` request/response + `{method, params}` notifications; message types: `command` (Go→browser), `event` (browser→Go), `query` (Go→browser with response)
+- [ ] **Go WebSocket server** (`pkg/scout/bridge/server.go`) — Embedded in the gRPC daemon, accepts extension connections, routes messages to/from Scout sessions; multiplexes multiple tabs/pages
+- [ ] **Session binding** — Extension auto-discovers which Scout session owns the browser via a launch flag or cookie; messages are routed to the correct `*scout.Page`
+- [ ] **Heartbeat & health** — Periodic ping/pong between extension and server; connection status exposed via `scout bridge status`
+
+#### Browser→Go: Event Streaming
+
+- [ ] **DOM mutation observer** — Content script watches for DOM changes (element added/removed/modified) and streams structured events to Go: `{type: "mutation", selector, action, html}`
+- [ ] **User interaction capture** — Record clicks, keystrokes, form inputs, scrolls, selections as structured events; replay-friendly format compatible with recipe system
+- [ ] **Navigation events** — `beforeunload`, `hashchange`, `popstate`, SPA route changes (MutationObserver on `<title>` and URL), `pushState`/`replaceState` interception
+- [ ] **Network observer** — `chrome.webRequest` API for request/response headers, timing, status codes; complements CDP HAR recording with extension-level visibility (service worker requests, extension requests)
+- [ ] **Console & error forwarding** — Capture `console.log/warn/error`, uncaught exceptions, CSP violations; forward to Go with source location and stack traces
+- [ ] **Storage change events** — Monitor `localStorage`, `sessionStorage`, `IndexedDB`, `cookie` changes in real-time; stream deltas to Go
+- [ ] **Tab lifecycle events** — Tab created, activated, closed, moved, attached, detached; window focus/blur; complements CDP target events
+
+#### Go→Browser: Remote Commands
+
+- [ ] **DOM manipulation** — Insert/remove/modify elements, set attributes, change styles from Go without CDP `Runtime.evaluate`; extension content script executes with page privileges
+- [ ] **Form auto-fill** — Extension-native form filling using `chrome.autofill` and content script input simulation; handles shadow DOM, web components, and cross-origin iframes that CDP cannot reach
+- [ ] **Clipboard access** — Read/write clipboard via `chrome.clipboard` or `navigator.clipboard` from Go; CDP has no clipboard API
+- [ ] **Download management** — `chrome.downloads` API: trigger, monitor, cancel, open downloads from Go; get download progress events
+- [ ] **Notification control** — `chrome.notifications` API: create/clear browser notifications from Go; capture notification click events
+- [ ] **Tab management** — Create, close, reload, move, pin/unpin, mute/unmute, duplicate tabs from Go via `chrome.tabs`
+- [ ] **Bookmark & history access** — Read/write bookmarks and browsing history via `chrome.bookmarks` and `chrome.history`
+- [ ] **Cookie management (enhanced)** — `chrome.cookies` API for cross-domain cookie access with full partition key support; superior to CDP cookie methods for SameSite/Partitioned cookies
+- [ ] **Permission requests** — Trigger permission prompts (geolocation, camera, notifications) from Go and capture user responses
+
+#### Content Script Toolkit
+
+- [ ] **`window.__scout` API** — Global namespace injected by content script: `__scout.send(event)`, `__scout.on(command, handler)`, `__scout.query(method, params)` (returns Promise), `__scout.state` (shared state object)
+- [ ] **Shadow DOM traversal** — Content script utility to pierce shadow roots and interact with web component internals; `__scout.shadowQuery(hostSelector, innerSelector)`
+- [ ] **Cross-frame messaging** — Content script in each frame; `__scout.frame(selector).send(msg)` for cross-iframe communication without CDP frame targeting
+- [ ] **Anti-detection evasion** — Extension-based stealth patches (navigator, WebGL, canvas) that are harder to detect than CDP-injected scripts because they run in the extension's isolated world
+- [ ] **Page function injection** — `__scout.expose(name, fn)` to register Go-backed functions callable from page JavaScript; bidirectional RPC
+
+#### Library Integration
+
+- [ ] **`WithBridge()` option** (`pkg/scout/option.go`) — Enable bridge extension auto-loading; bundles the extension from embedded assets
+- [ ] **`Bridge` type** (`pkg/scout/bridge.go`) — `Browser.Bridge()` returns the bridge instance; `bridge.Send(method, params)`, `bridge.On(event, handler)`, `bridge.Query(method, params) (result, error)`
+- [ ] **Event subscriptions** — `bridge.OnMutation(selector, fn)`, `bridge.OnNavigation(fn)`, `bridge.OnConsole(fn)`, `bridge.OnNetwork(fn)`, `bridge.OnInteraction(fn)`
+- [ ] **Command methods** — `bridge.InsertElement(html, parent)`, `bridge.SetClipboard(text)`, `bridge.Download(url)`, `bridge.CreateTab(url)`, `bridge.GetHistory(query)`
+- [ ] **Fallback to CDP** — When bridge is unavailable (headless, no extension), methods gracefully degrade to CDP equivalents where possible; `bridge.Available() bool`
+
+#### gRPC Integration
+
+- [ ] **Bridge RPCs** in `grpc/proto/scout.proto` — `EnableBridge`, `BridgeSend`, `BridgeQuery`, `StreamBridgeEvents`
+- [ ] **Event multiplexing** — Bridge events merged into the existing `StreamEvents` RPC alongside CDP events; tagged with `source: "bridge"` or `source: "cdp"`
+
+#### CLI Commands
+
+- [ ] `scout bridge status` — Show bridge connection status, extension version, connected tabs
+- [ ] `scout bridge send <method> [params-json]` — Send command to browser via bridge
+- [ ] `scout bridge listen [--events=mutation,navigation,console]` — Stream bridge events to stdout
+- [ ] `scout bridge record` — Record all user interactions as a recipe-compatible action sequence
+- [ ] `scout session create --bridge` — Create session with bridge extension enabled
+
+#### Testing
+
+- [ ] WebSocket server unit tests (connect, disconnect, reconnect, message routing)
+- [ ] Message protocol tests (JSON-RPC serialization, error handling, timeout)
+- [ ] Integration tests with real extension loaded via `WithExtension()`
+- [ ] Content script tests (DOM mutation detection, shadow DOM traversal, cross-frame messaging)
+- [ ] Fallback behavior tests (bridge unavailable → CDP degradation)
+- [ ] Example: `examples/advanced/bridge-extension/`
+
+### Phase 18: Screen Recorder [PLANNED]
 
 - [ ] **ScreenRecorder type** (`pkg/scout/screenrecord.go`) — capture page frames via CDP `Page.startScreencast`, assemble into video
 - [ ] Functional options: `WithFrameRate(fps)`, `WithQuality(0-100)`, `WithMaxDuration(d)`, `WithFormat("webm"|"mp4")`
@@ -242,7 +315,7 @@ Pre-inject custom JavaScript files and Chrome extensions into browser sessions t
 - [ ] Example: `examples/advanced/screen-recorder/`
 - [ ] Tests: start/stop lifecycle, frame capture, export formats, concurrent recording with HAR
 
-### Phase 18: Swarm — Distributed Processing [PLANNED]
+### Phase 19: Swarm — Distributed Processing [PLANNED]
 
 Swarm distributes work units across multiple Scout instances (local or remote via gRPC), collects partial results, and merges them into a unified output. Each node processes a slice of the workload independently with its own browser, proxy, and identity.
 
@@ -270,7 +343,7 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [ ] **gRPC extensions** — `AssignWork`, `ReportResult`, `Heartbeat` RPCs in `grpc/proto/scout.proto`
 - [ ] Tests: local pool, remote worker mock, distribution strategies, merge logic, fault tolerance
 
-### Phase 19: Device Identity, mTLS & Discovery [COMPLETE]
+### Phase 20: Device Identity, mTLS & Discovery [COMPLETE]
 
 - [x] **Device identity** (`pkg/identity/`) — Syncthing-style device IDs with Ed25519 keys, Luhn check digits
 - [x] **mTLS authentication** (`grpc/server/tls.go`) — auto-generated certificates, mutual TLS for gRPC
@@ -281,7 +354,7 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [x] **DevTools option** — `WithDevTools()` for browser DevTools panel
 - [x] **CLI device commands** (`cmd/scout/internal/cli/device.go`) — `scout device pair/list/trust`
 
-### Phase 20: Documentation & Release [IN PROGRESS]
+### Phase 21: Documentation & Release [IN PROGRESS]
 
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)

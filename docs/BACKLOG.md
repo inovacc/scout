@@ -200,6 +200,14 @@ credentials/session.
 - **Effort:** Medium
 - **Dependencies:** Integrates with batch scraper and crawl commands.
 
+### Scout Bridge Extension — Bidirectional Browser Control
+
+- **Priority:** P2
+- **Description:** Built-in Chrome Manifest V3 extension (`extensions/scout-bridge/`) that establishes a persistent WebSocket channel between the Scout Go backend and the browser runtime. Enables capabilities CDP alone cannot provide: DOM mutation streaming, user interaction capture, shadow DOM traversal, cross-frame messaging, clipboard access, download management, tab control, cookie management with full partition key support. Provides `window.__scout` content script API for page-level bidirectional RPC. Graceful fallback to CDP when extension is unavailable.
+- **Scope:** Extension source in `extensions/scout-bridge/`, Go WebSocket server in `pkg/scout/bridge/`, `Bridge` type in `pkg/scout/bridge.go`, `WithBridge()` option, gRPC RPCs (`EnableBridge`, `BridgeSend`, `BridgeQuery`, `StreamBridgeEvents`), CLI `scout bridge status/send/listen/record`. Content script toolkit with `__scout.send()`, `__scout.on()`, `__scout.query()`, shadow DOM helpers, cross-frame messaging.
+- **Effort:** Extra Large
+- **Dependencies:** Existing `WithExtension()` infrastructure, gRPC daemon WebSocket embedding, Chrome Extension Manifest V3 APIs.
+
 ### Screen Recorder
 
 - **Priority:** P3
