@@ -1,0 +1,16 @@
+# GitHub Repository Exploration
+# Tests: repo page, full-page screenshot, stargazers, issues
+
+nav https://github.com/go-rod/rod
+shot
+title
+# Expect: contains "go-rod/rod"
+shot full
+nav https://github.com/go-rod/rod/stargazers
+shot
+title
+# Expect: contains "Stargazers"
+nav https://github.com/go-rod/rod/issues
+shot
+title
+# Expect: contains "Issues"

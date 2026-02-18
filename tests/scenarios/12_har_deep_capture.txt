@@ -1,0 +1,33 @@
+# Deep HAR Capture — API Calls + Multi-Site
+# Tests: in-page fetch, API response extraction, headers/IP/UA inspection, HAR export
+
+nav https://jsonplaceholder.typicode.com/
+shot
+title
+# Expect: "JSONPlaceholder - Free Fake REST API"
+eval () => fetch('/posts/1').then(r=>r.json()).then(d=>d.title)
+# Expect: "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+eval () => fetch('/users/1').then(r=>r.json()).then(d=>d.name)
+# Expect: "Leanne Graham"
+eval () => fetch('/todos?_limit=5').then(r=>r.json()).then(d=>d.length)
+# Expect: 5
+shot
+
+# Inspect browser fingerprint
+nav https://httpbin.org/headers
+shot
+text pre
+# Expect: JSON with request headers
+
+nav https://httpbin.org/ip
+shot
+text pre
+# Expect: JSON with origin IP
+
+nav https://httpbin.org/user-agent
+shot
+text pre
+# Expect: JSON with user-agent string
+
+har deep-capture.har
+# Expect: HAR file with 20+ entries across all sites

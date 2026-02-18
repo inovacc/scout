@@ -1,0 +1,39 @@
+# Shopping Flow — Saucedemo E2E
+# Tests: login, product browse, add-to-cart, checkout, order confirmation
+# Site: https://www.saucedemo.com/
+
+nav https://www.saucedemo.com/
+shot
+type #user-name standard_user
+type #password secret_sauce
+shot
+click #login-button
+title
+# Expect: "Swag Labs"
+shot
+eval () => document.querySelectorAll('.inventory_item').length
+# Expect: 6
+text .inventory_item:first-child .inventory_item_name
+# Expect: contains "Sauce Labs Backpack"
+click #add-to-cart-sauce-labs-backpack
+shot
+text .shopping_cart_badge
+# Expect: "1"
+click .shopping_cart_link
+title
+shot
+text .cart_item .inventory_item_name
+# Expect: "Sauce Labs Backpack"
+click #checkout
+type #first-name John
+type #last-name Doe
+type #postal-code 90210
+shot
+click #continue
+shot
+text .summary_total_label
+# Expect: "Total: $32.39"
+click #finish
+shot
+text .complete-header
+# Expect: "Thank you for your order!"
