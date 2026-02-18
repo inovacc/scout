@@ -22,8 +22,7 @@ var cookieGetCmd = &cobra.Command{
 	Use:   "get [urls...]",
 	Short: "Get cookies for current page or specified URLs",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -53,8 +52,7 @@ var cookieSetCmd = &cobra.Command{
 	Short: "Set a cookie (name=value; path=/; ...)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -83,8 +81,7 @@ var cookieClearCmd = &cobra.Command{
 	Use:   "clear",
 	Short: "Clear all cookies",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -117,8 +114,7 @@ var headerCmd = &cobra.Command{
 	Long:  "Set a custom header via JavaScript. Note: this sets headers via Eval and may require interceptor support.",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -150,8 +146,7 @@ var blockCmd = &cobra.Command{
 	Short: "Block requests matching a URL pattern",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}

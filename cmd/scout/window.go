@@ -22,8 +22,7 @@ var windowGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get current window bounds",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
