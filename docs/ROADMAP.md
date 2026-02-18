@@ -194,7 +194,27 @@
 - [ ] CLI: `scout jobs list`, `scout jobs status <id>`, `scout jobs cancel <id>`, `scout jobs wait <id>`
 - [ ] Integration with batch scraper and crawl commands
 
-### Phase 15: Screen Recorder [PLANNED]
+### Phase 15: Custom JS & Extension Injection [PLANNED]
+
+Pre-inject custom JavaScript files and Chrome extensions into browser sessions to enhance communication, data extraction, and page instrumentation before any page scripts run.
+
+- [ ] **JS injection API** (`pkg/scout/inject.go`) — `WithInjectJS(paths ...string)` option to load JS files at browser launch
+- [ ] **Per-page injection** — use `EvalOnNewDocument()` to inject scripts before page load on every navigation
+- [ ] **Script bundle loading** — load multiple JS files from a directory (`WithInjectDir(dir)`)
+- [ ] **Built-in extraction helpers** — bundled JS utilities for common extraction patterns (table scraping, infinite scroll detection, shadow DOM traversal, MutationObserver wrappers)
+- [ ] **Communication bridge** — JS↔Go message passing via `window.__scout.send(msg)` / `window.__scout.on(event, fn)` using CDP `Runtime.bindingCalled`
+- [ ] **Extension auto-loading** — extend `WithExtension()` to support pre-configured extension bundles (ad blockers, consent auto-clickers, custom data extractors)
+- [ ] **Extension marketplace** — `~/.scout/extensions/` directory for persistent extension storage, `scout extension install <url|name>`
+- [ ] **Session-scoped injection** — gRPC `InjectJS` RPC to inject scripts into running sessions dynamically
+- [ ] **Script templates** — parameterized JS templates with Go `text/template` syntax for reusable injection patterns
+- [ ] **CLI commands**:
+  - `scout inject --file=helper.js` — inject JS into current session
+  - `scout inject --dir=scripts/` — inject all JS from directory
+  - `scout session create --inject=helper.js,bridge.js` — inject at session creation
+  - `scout session create --extension=~/.scout/extensions/adblocker` — load extension bundle
+- [ ] Tests: injection ordering, multi-file loading, communication bridge, extension bundle loading
+
+### Phase 16: Screen Recorder [PLANNED]
 
 - [ ] **ScreenRecorder type** (`pkg/scout/screenrecord.go`) — capture page frames via CDP `Page.startScreencast`, assemble into video
 - [ ] Functional options: `WithFrameRate(fps)`, `WithQuality(0-100)`, `WithMaxDuration(d)`, `WithFormat("webm"|"mp4")`
@@ -209,7 +229,7 @@
 - [ ] Example: `examples/advanced/screen-recorder/`
 - [ ] Tests: start/stop lifecycle, frame capture, export formats, concurrent recording with HAR
 
-### Phase 16: Swarm — Distributed Processing [PLANNED]
+### Phase 17: Swarm — Distributed Processing [PLANNED]
 
 Swarm distributes work units across multiple Scout instances (local or remote via gRPC), collects partial results, and merges them into a unified output. Each node processes a slice of the workload independently with its own browser, proxy, and identity.
 
@@ -237,7 +257,7 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [ ] **gRPC extensions** — `AssignWork`, `ReportResult`, `Heartbeat` RPCs in `grpc/proto/scout.proto`
 - [ ] Tests: local pool, remote worker mock, distribution strategies, merge logic, fault tolerance
 
-### Phase 17: Device Identity, mTLS & Discovery [COMPLETE]
+### Phase 18: Device Identity, mTLS & Discovery [COMPLETE]
 
 - [x] **Device identity** (`pkg/identity/`) — Syncthing-style device IDs with Ed25519 keys, Luhn check digits
 - [x] **mTLS authentication** (`grpc/server/tls.go`) — auto-generated certificates, mutual TLS for gRPC
@@ -248,7 +268,7 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [x] **DevTools option** — `WithDevTools()` for browser DevTools panel
 - [x] **CLI device commands** (`cmd/scout/internal/cli/device.go`) — `scout device pair/list/trust`
 
-### Phase 18: Documentation & Release [IN PROGRESS]
+### Phase 19: Documentation & Release [IN PROGRESS]
 
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)
