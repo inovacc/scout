@@ -66,8 +66,8 @@ scout/
 ├── pkg/stealth/        # Internalized go-rod/stealth
 ├── pkg/identity/       # Device identity, Luhn check digits, trust
 ├── pkg/discovery/      # mDNS service discovery
-├── cmd/scout/          # Unified Cobra CLI binary
-│   └── internal/cli/   # CLI command implementations
+├── pkg/scout/recipe/   # Recipe system (extract + automate)
+├── cmd/scout/          # Unified Cobra CLI binary (package main)
 ├── grpc/               # gRPC service layer
 │   ├── proto/          # Protobuf definitions
 │   ├── scoutpb/        # Generated Go code
@@ -153,38 +153,42 @@ scraper/
 
 ### Unified CLI (`cmd/scout/`)
 
-Single binary `scout` with Cobra subcommands. Communicates with a background gRPC daemon for session persistence.
+Single binary `scout` with Cobra subcommands (package main). Communicates with a background gRPC daemon for session persistence.
 
 ```
 cmd/scout/
-├── main.go                 # Entry point: cli.Execute()
-└── internal/cli/
-    ├── root.go             # Root command + persistent flags (--addr, --session, --output, --format)
-    ├── daemon.go           # Auto-start gRPC daemon, getClient(), resolveSession()
-    ├── daemon_unix.go      # Unix process detach (Setsid)
-    ├── daemon_windows.go   # Windows process detach (CREATE_NEW_PROCESS_GROUP)
-    ├── helpers.go          # writeOutput(), readPassphrase(), truncate()
-    ├── version.go          # scout version
-    ├── session.go          # scout session create/destroy/list/use
-    ├── server.go           # scout server (gRPC server)
-    ├── client.go           # scout client (interactive REPL)
-    ├── navigate.go         # scout navigate/back/forward/reload
-    ├── screenshot.go       # scout screenshot/pdf
-    ├── har.go              # scout har start/stop/export
-    ├── interact.go         # scout click/type/select/hover/focus/clear/key
-    ├── inspect.go          # scout title/url/text/attr/eval/html
-    ├── window.go           # scout window get/min/max/full/restore
-    ├── storage.go          # scout storage get/set/list/clear
-    ├── network.go          # scout cookie/header/block
-    ├── search.go           # scout search (standalone)
-    ├── crawl.go            # scout crawl (standalone)
-    ├── extract.go          # scout table/meta (standalone)
-    ├── form.go             # scout form detect/fill/submit (standalone)
-    ├── markdown.go         # scout markdown --url=<url> [--main-only]
-    ├── map.go              # scout map <url> [--search=term] [--limit=N]
-    ├── extension.go        # scout extension load/test/list
-    ├── auth.go             # scout auth login/capture/status/logout/providers
-    └── device.go           # scout device pair/list/trust
+├── main.go                 # Entry point
+├── root.go                 # Root command + persistent flags (--addr, --session, --output, --format)
+├── daemon.go               # Auto-start gRPC daemon, getClient(), resolveSession()
+├── daemon_unix.go          # Unix process detach (Setsid)
+├── daemon_windows.go       # Windows process detach (CREATE_NEW_PROCESS_GROUP)
+├── helpers.go              # writeOutput(), readPassphrase(), truncate()
+├── version.go              # scout version
+├── session.go              # scout session create/destroy/list/use
+├── server.go               # scout server (gRPC server)
+├── client.go               # scout client (interactive REPL)
+├── navigate.go             # scout navigate/back/forward/reload
+├── screenshot.go           # scout screenshot/pdf
+├── har.go                  # scout har start/stop/export
+├── interact.go             # scout click/type/select/hover/focus/clear/key
+├── inspect.go              # scout title/url/text/attr/eval/html
+├── window.go               # scout window get/min/max/full/restore
+├── storage.go              # scout storage get/set/list/clear
+├── network.go              # scout cookie/header/block
+├── search.go               # scout search (standalone)
+├── search_engines.go       # scout search:google/bing/duckduckgo/wikipedia (multi-engine)
+├── batch.go                # scout batch --urls=... [--concurrency=N]
+├── crawl.go                # scout crawl (standalone)
+├── extract.go              # scout table/meta (standalone)
+├── form.go                 # scout form detect/fill/submit (standalone)
+├── markdown.go             # scout markdown --url=<url> [--main-only]
+├── map.go                  # scout map <url> [--search=term] [--limit=N]
+├── recipe.go               # scout recipe run/validate
+├── extension.go            # scout extension load/test/list
+├── auth.go                 # scout auth login/capture/status/logout/providers
+├── device.go               # scout device pair/list/trust
+├── aicontext.go            # scout aicontext [--json]
+└── cmdtree.go              # scout cmdtree [--json]
 ```
 
 Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessions/`

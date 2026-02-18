@@ -99,6 +99,26 @@
 - **Description:** Build-constraint-based platform defaults for gRPC server sessions. Auto-applies `--no-sandbox` on Linux (containers/WSL). Windows and macOS get no extra defaults. Implemented in
   `grpc/server/platform_*.go`.
 
+### Multi-Engine Search
+
+- **Status:** Completed
+- **Description:** Engine-specific search subcommands with registry pattern. Supports Google, Bing, DuckDuckGo (web, news, images), Wikipedia, Google Scholar, Google News. Structured JSON/text output with pagination. CLI `scout search --engine=google --query="..."` or shorthand `scout search:google "query"`. Implemented in `cmd/scout/search_engines.go`.
+
+### Batch Scraper
+
+- **Status:** Completed
+- **Description:** Concurrent batch scraping of multiple URLs with page pool, error isolation, and progress reporting. `BatchScrape()` function with configurable concurrency, per-URL error collection, progress callback, rate limiter integration. CLI `scout batch --urls=... [--concurrency=5]`. Implemented in `pkg/scout/batch.go`.
+
+### Recipe System
+
+- **Status:** Completed
+- **Description:** Declarative JSON recipe format for extraction and automation. Two recipe types: `extract` (data scraping with selectors and pagination) and `automate` (sequential action playbooks). CLI `scout recipe run --file=recipe.json`, `scout recipe validate --file=recipe.json`. Implemented in `pkg/scout/recipe/`.
+
+### CLI Introspection Commands
+
+- **Status:** Completed
+- **Description:** Built-in `scout aicontext` generates AI context document with categorized commands, structure, and examples. `scout cmdtree` visualizes the full command tree with flags. Both support `--json` output. Implemented in `cmd/scout/aicontext.go` and `cmd/scout/cmdtree.go`.
+
 ## Proposed Features
 
 ### Screen Recorder
