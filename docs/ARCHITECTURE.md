@@ -23,6 +23,7 @@ flowchart TB
             RateLimit["RateLimiter\n(ratelimit.go)"]
             Batch["BatchScrape\n(batch.go)"]
             Recipe["Recipe\n(recipe/)"]
+            Swagger["Swagger/OpenAPI\n(swagger.go)"]
         end
 
         subgraph Infrastructure["Infrastructure"]

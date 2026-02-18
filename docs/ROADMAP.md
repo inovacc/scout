@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Overall Progress:** 88% Complete
+**Overall Progress:** 89% Complete
 
 ## Phases
 
@@ -174,7 +174,20 @@
 - [x] Structured output (JSON/text), pagination support
 - [x] CLI: `scout search --engine=google --query="..."` or shorthand `scout search:google "query"`
 
-### Phase 13: LLM-Powered Extraction [PLANNED]
+### Phase 13: Swagger/OpenAPI Extraction [COMPLETE]
+
+- [x] **Swagger/OpenAPI detection** (`pkg/scout/swagger.go`) — auto-detect Swagger UI 3+, ReDoc, page title heuristics, inline spec from JS context
+- [x] **Spec extraction** — fetch and parse OpenAPI 3.x and Swagger 2.0 specifications
+- [x] **Data model** — `SwaggerSpec`, `SwaggerInfo`, `SwaggerPath`, `SwaggerServer`, `SwaggerParam`, `SwaggerSecurity` types
+- [x] **URL resolution** — handle relative/absolute spec URLs, inline specs from Swagger UI store
+- [x] **Schema parsing** — extract `components/schemas` (OpenAPI 3.x) and `definitions` (Swagger 2.0)
+- [x] **Security definitions** — extract `securitySchemes` / `securityDefinitions`
+- [x] **Functional options** — `WithSwaggerEndpointsOnly()`, `WithSwaggerRaw()`
+- [x] **Browser/Page methods** — `Browser.ExtractSwagger(url, ...)` and `Page.ExtractSwagger(...)`
+- [x] **CLI command** — `scout swagger <url> [--endpoints-only] [--raw] [--format=json|text] [--output=file]`
+- [x] **Tests** — detection (UI 3+, 2.0, ReDoc, non-swagger), extraction, endpoints-only, schema/security parsing, JSON marshaling
+
+### Phase 14: LLM-Powered Extraction [PLANNED]
 
 - [ ] `ExtractWithLLM(page *Page, prompt string, ...LLMOption)` in `pkg/scout/llm.go`
 - [ ] Provider interface: `LLMProvider` with `Complete(ctx, systemPrompt, userPrompt) (string, error)`
@@ -185,7 +198,7 @@
 - [ ] CLI: `scout extract-ai --url=<url> --prompt="..." [--provider=ollama] [--model=llama3] [--schema=file.json]`
 - [ ] Tests: mock LLM provider, prompt construction, schema validation
 
-### Phase 14: Async Job System [PLANNED]
+### Phase 15: Async Job System [PLANNED]
 
 - [ ] Job manager in `pkg/scout/jobs.go` for long-running crawl/batch operations
 - [ ] Job lifecycle: create → running → completed/failed/cancelled
@@ -194,7 +207,7 @@
 - [ ] CLI: `scout jobs list`, `scout jobs status <id>`, `scout jobs cancel <id>`, `scout jobs wait <id>`
 - [ ] Integration with batch scraper and crawl commands
 
-### Phase 15: Custom JS & Extension Injection [PLANNED]
+### Phase 16: Custom JS & Extension Injection [PLANNED]
 
 Pre-inject custom JavaScript files and Chrome extensions into browser sessions to enhance communication, data extraction, and page instrumentation before any page scripts run.
 
@@ -214,7 +227,7 @@ Pre-inject custom JavaScript files and Chrome extensions into browser sessions t
   - `scout session create --extension=~/.scout/extensions/adblocker` — load extension bundle
 - [ ] Tests: injection ordering, multi-file loading, communication bridge, extension bundle loading
 
-### Phase 16: Screen Recorder [PLANNED]
+### Phase 17: Screen Recorder [PLANNED]
 
 - [ ] **ScreenRecorder type** (`pkg/scout/screenrecord.go`) — capture page frames via CDP `Page.startScreencast`, assemble into video
 - [ ] Functional options: `WithFrameRate(fps)`, `WithQuality(0-100)`, `WithMaxDuration(d)`, `WithFormat("webm"|"mp4")`
@@ -229,7 +242,7 @@ Pre-inject custom JavaScript files and Chrome extensions into browser sessions t
 - [ ] Example: `examples/advanced/screen-recorder/`
 - [ ] Tests: start/stop lifecycle, frame capture, export formats, concurrent recording with HAR
 
-### Phase 17: Swarm — Distributed Processing [PLANNED]
+### Phase 18: Swarm — Distributed Processing [PLANNED]
 
 Swarm distributes work units across multiple Scout instances (local or remote via gRPC), collects partial results, and merges them into a unified output. Each node processes a slice of the workload independently with its own browser, proxy, and identity.
 
@@ -257,7 +270,7 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [ ] **gRPC extensions** — `AssignWork`, `ReportResult`, `Heartbeat` RPCs in `grpc/proto/scout.proto`
 - [ ] Tests: local pool, remote worker mock, distribution strategies, merge logic, fault tolerance
 
-### Phase 18: Device Identity, mTLS & Discovery [COMPLETE]
+### Phase 19: Device Identity, mTLS & Discovery [COMPLETE]
 
 - [x] **Device identity** (`pkg/identity/`) — Syncthing-style device IDs with Ed25519 keys, Luhn check digits
 - [x] **mTLS authentication** (`grpc/server/tls.go`) — auto-generated certificates, mutual TLS for gRPC
@@ -268,7 +281,7 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [x] **DevTools option** — `WithDevTools()` for browser DevTools panel
 - [x] **CLI device commands** (`cmd/scout/internal/cli/device.go`) — `scout device pair/list/trust`
 
-### Phase 19: Documentation & Release [IN PROGRESS]
+### Phase 20: Documentation & Release [IN PROGRESS]
 
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)

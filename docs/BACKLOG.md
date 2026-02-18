@@ -289,3 +289,4 @@ credentials/session.
 | Slack Removal                    | `scraper/slack/` package removed — replaced by generic auth framework                                    | 2026-02 |
 | Multi-Engine Search Command      | Engine registry with Google, Bing, DDG, Wikipedia, Scholar, News in `search_engines.go`                  | 2026-02 |
 | Batch Scraper                    | `BatchScrape()` with concurrency, error isolation, progress callback in `batch.go`                       | 2026-02 |
+| Swagger/OpenAPI Extraction       | `pkg/scout/swagger.go` with Swagger UI 3+/2.0 detection, spec parsing, schema/security extraction, CLI `scout swagger` | 2026-02 |
