@@ -1,0 +1,33 @@
+# Interaction Test Scenarios
+# Run: scout client --addr=localhost:50051
+
+# Navigate to a test page with interactive elements
+nav https://httpbin.org/forms/post
+
+# Type into a text field
+type input[name="custname"] "John Doe"
+
+# Read back the text
+text input[name="custname"]
+# Expect: "John Doe"
+
+# Click a button
+click input[type="submit"]
+
+# Verify page changed after submit
+title
+
+# --- Key press ---
+nav https://example.com
+key Tab
+key Enter
+
+# --- Eval ---
+eval document.title
+# Expect: JSON string with "Example Domain"
+
+eval 2 + 2
+# Expect: 4
+
+eval document.querySelectorAll('p').length
+# Expect: number >= 1

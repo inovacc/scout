@@ -1,0 +1,37 @@
+# JavaScript Eval Scenarios
+# Run: scout client --addr=localhost:50051
+
+nav https://example.com
+
+# Basic expressions
+eval 1 + 1
+# Expect: 2
+
+eval "hello " + "world"
+# Expect: "hello world"
+
+# DOM queries
+eval document.title
+# Expect: "Example Domain"
+
+eval document.querySelector('h1').textContent
+# Expect: "Example Domain"
+
+eval document.querySelectorAll('p').length
+# Expect: >= 1
+
+# DOM manipulation
+eval document.title = "Modified Title"
+title
+# Expect: "Modified Title"
+
+# Object return
+eval JSON.stringify({a: 1, b: 2})
+# Expect: {"a":1,"b":2}
+
+# Window properties
+eval window.innerWidth
+# Expect: number > 0
+
+eval navigator.userAgent
+# Expect: string containing browser info

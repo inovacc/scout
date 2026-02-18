@@ -1,0 +1,19 @@
+# Capture Test Scenarios
+# Run: scout client --addr=localhost:50051
+
+# Navigate to a visual page
+nav https://example.com
+
+# Take viewport screenshot
+shot
+# Expect: screenshot saved message with filename
+
+# Take full page screenshot
+shot full
+# Expect: full-page screenshot saved
+
+# HAR recording (export)
+# Note: HAR must be started at session creation or via Go API
+# If session was created with --record:
+har capture.har
+# Expect: HAR file written with entry count
