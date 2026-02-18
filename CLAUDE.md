@@ -76,6 +76,7 @@ scout/
 ├── pkg/identity/       # Device identity, Luhn check digits, trust
 ├── pkg/discovery/      # mDNS service discovery
 ├── pkg/scout/recipe/   # Recipe system (extract + automate)
+├── extensions/         # Embedded Chrome extensions (scout-bridge)
 ├── cmd/scout/          # Unified Cobra CLI binary (package main)
 ├── grpc/               # gRPC service layer
 │   ├── proto/          # Protobuf definitions
@@ -258,7 +259,7 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **LLM Provider interface**: `LLMProvider` has just `Name()` + `Complete(ctx, system, user)`. `OpenAIProvider` covers OpenAI, OpenRouter, DeepSeek, Gemini via configurable base URL. `AnthropicProvider` uses the Messages API. All use `net/http` directly (no SDK deps except Ollama).
 - **LLM Review pipeline**: `ExtractWithLLMReview()` extracts with LLM1, optionally reviews with LLM2. `WithLLMReview(provider)` enables the second pass. Results persisted to workspace via `WithLLMWorkspace(ws)`.
 - **LLM Workspace**: Filesystem-based job tracking at `<path>/sessions.json`, `<path>/jobs/jobs.json`, `<path>/jobs/<uuid>/job.json`. Extract and review output written to `extract.md` and `review.md` alongside job metadata.
-- **Bridge extension default**: The Scout Bridge extension is enabled by default (`bridge: true` in `defaults()`). It is embedded in Go for security and enhances browser communication. Disable with `WithoutBridge()` or `SCOUT_BRIDGE=false`.
+- **Bridge extension default**: The Scout Bridge extension is enabled by default (`bridge: true` in `defaults()`). Extension files are embedded via `extensions/extensions.go` using `embed.FS` and written to a temp dir at startup. Disable with `WithoutBridge()` or `SCOUT_BRIDGE=false`.
 - **gRPC default port**: The daemon and server default to port `9551` (not the standard gRPC `50051`) to avoid conflicts.
 
 ## Testing

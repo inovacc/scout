@@ -299,7 +299,7 @@ err := page.NavigateWithRetry("https://example.com", rl)
 | `WithXvfb(args...)`               | Enable Xvfb for headful mode without display (Unix only)     | disabled        |
 | `WithExtension(paths...)`         | Load unpacked Chrome extensions by directory path            | none            |
 | `WithExtensionByID(ids...)`       | Load downloaded Chrome extensions by Web Store ID            | none            |
-| `WithBridge()`                    | Enable Scout Bridge extension for Go↔browser communication   | disabled        |
+| `WithBridge()`                    | Enable Scout Bridge extension for Go↔browser communication   | enabled         |
 | `WithBrowser(BrowserType)`        | Select browser: chrome, brave, edge                          | chrome          |
 | `WithDevTools()`                  | Open Chrome DevTools for each tab                            | disabled        |
 

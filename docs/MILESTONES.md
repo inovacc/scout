@@ -150,7 +150,7 @@
 - [x] CLI: `scout extract-ai`, `scout ollama list/pull/status`, `scout ai-job list/show/session`
 - [x] 40+ tests with mock providers, httptest servers, workspace lifecycle
 - **New dependency:** `github.com/ollama/ollama`
-- **Coverage:** pkg/scout 75.4%
+- **Coverage:** pkg/scout 75.3%
 
 ## v0.8.0 - Screen Recorder [PLANNED]
 
@@ -179,5 +179,5 @@
 - [x] LICENSE file
 - [ ] GoDoc examples for Browser, Page, Element, EvalResult, and new features
 - [ ] Integration test examples (login flow, form submission, scraping)
-- [ ] 80%+ test coverage (pkg/scout: 75.4% — regressed with new features)
-- **Coverage:** pkg/scout 75.4% | pkg/identity 81.1% | scraper 84.3%
+- [ ] 80%+ test coverage (pkg/scout: 75.3% — regressed with new features)
+- **Coverage:** pkg/scout 75.3% | pkg/identity 81.1% | scraper 84.3%

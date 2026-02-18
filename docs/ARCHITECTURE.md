@@ -49,6 +49,7 @@ flowchart TB
         DeviceID["DeviceIdentity\n(pkg/identity/)"]
         Discovery["mDNS Discovery\n(pkg/discovery/)"]
         StealthPkg["Stealth\n(pkg/stealth/)"]
+        ExtPkg["Extensions\n(extensions/)"]
     end
 
     subgraph Commands["Unified CLI (cmd/scout/)"]
@@ -89,6 +90,7 @@ flowchart TB
     DeviceID -->|authenticates| TLS
     Discovery -->|finds peers| Server
     StealthPkg -->|patches| Page
+    ExtPkg -->|embeds| Bridge
 
     Rod -->|CDP protocol| Chrome
     Browser -->|wraps| Rod

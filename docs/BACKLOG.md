@@ -265,7 +265,7 @@ credentials/session.
 ### gRPC Server Test Coverage
 
 - **Priority:** P2
-- **Description:** The `grpc/server/` package has 66.7% test coverage. More targeted tests needed for individual RPCs and error paths.
+- **Description:** The `grpc/server/` package has 67.7% test coverage. More targeted tests needed for individual RPCs and error paths.
 - **Effort:** Medium
 
 ### GoDoc Examples
@@ -309,5 +309,5 @@ credentials/session.
 | Batch Scraper                    | `BatchScrape()` with concurrency, error isolation, progress callback in `batch.go`                       | 2026-02 |
 | Swagger/OpenAPI Extraction       | `pkg/scout/swagger.go` with Swagger UI 3+/2.0 detection, spec parsing, schema/security extraction, CLI `scout swagger` | 2026-02 |
 | Chrome Extension Download        | `DownloadExtension(id)` with CRX2/CRX3 parsing, `~/.scout/extensions/` storage, `WithExtensionByID()`, CLI download/remove | 2026-02 |
-| Scout Bridge Extension (partial) | `WithBridge()` option, embedded Manifest V3 extension in `bridge_assets.go`, auto-load at startup | 2026-02 |
+| Scout Bridge Extension (partial) | `WithBridge()` option, embedded Manifest V3 extension in `extensions/scout-bridge/` via `embed.FS`, auto-load at startup | 2026-02 |
 | LLM-Powered Extraction | `ExtractWithLLM()`, `ExtractWithLLMReview()`, workspace persistence, 6 providers (Ollama, OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini), CLI `extract-ai`/`ollama`/`ai-job` | 2026-02 |
