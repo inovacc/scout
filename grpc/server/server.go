@@ -270,6 +270,10 @@ func (s *ScoutServer) getSession(id string) (*session, error) {
 
 func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.CreateSessionResponse, error) {
 	opts := platformSessionDefaults()
+	// Disable per-page timeout for server sessions. Rod's Page.Timeout() creates
+	// a one-shot context that expires permanently after the duration, making the
+	// page unusable for long-lived sessions. The gRPC layer manages its own deadlines.
+	opts = append(opts, scout.WithTimeout(0))
 	opts = append(opts, scout.WithHeadless(req.GetHeadless()))
 
 	if req.GetStealth() {
