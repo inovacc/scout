@@ -108,8 +108,7 @@ var sessionDestroyCmd = &cobra.Command{
 	Use:   "destroy [id]",
 	Short: "Destroy a browser session",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}

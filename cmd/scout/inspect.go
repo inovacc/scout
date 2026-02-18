@@ -18,8 +18,7 @@ var titleCmd = &cobra.Command{
 	Use:   "title",
 	Short: "Get the page title",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -45,8 +44,7 @@ var urlCmd = &cobra.Command{
 	Use:   "url",
 	Short: "Get the current page URL",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -73,8 +71,7 @@ var textCmd = &cobra.Command{
 	Short: "Get text content of an element",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -104,8 +101,7 @@ var attrCmd = &cobra.Command{
 	Short: "Get an attribute value from an element",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -136,8 +132,7 @@ var evalCmd = &cobra.Command{
 	Short: "Evaluate JavaScript in the page context",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -166,8 +161,7 @@ var htmlCmd = &cobra.Command{
 	Use:   "html",
 	Short: "Get HTML content of the page or an element",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}

@@ -34,8 +34,7 @@ var storageGetCmd = &cobra.Command{
 	Short: "Get a value from web storage",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -66,8 +65,7 @@ var storageSetCmd = &cobra.Command{
 	Short: "Set a value in web storage",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -97,8 +95,7 @@ var storageListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all keys in web storage",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -128,8 +125,7 @@ var storageClearCmd = &cobra.Command{
 	Use:   "clear",
 	Short: "Clear all entries in web storage",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}

@@ -19,8 +19,7 @@ var clickCmd = &cobra.Command{
 	Short: "Click an element",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -50,8 +49,7 @@ var typeCmd = &cobra.Command{
 	Short: "Type text into an element",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -85,8 +83,7 @@ var selectCmd = &cobra.Command{
 	Short: "Select an option in a dropdown",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -117,8 +114,7 @@ var hoverCmd = &cobra.Command{
 	Short: "Hover over an element",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -148,8 +144,7 @@ var focusCmd = &cobra.Command{
 	Short: "Focus an element",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -180,8 +175,7 @@ var clearCmd = &cobra.Command{
 	Short: "Clear an input element",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -214,8 +208,7 @@ var keyCmd = &cobra.Command{
 	Short: "Press a key (Enter, Tab, Escape, etc.)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}

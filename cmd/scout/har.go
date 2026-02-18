@@ -25,8 +25,7 @@ var harStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start recording network traffic",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -57,8 +56,7 @@ var harStopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stop recording network traffic",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
@@ -84,8 +82,7 @@ var harExportCmd = &cobra.Command{
 	Use:   "export",
 	Short: "Export recorded HAR data",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		client, conn, err := getClient(addr)
+		client, conn, err := resolveClient(cmd)
 		if err != nil {
 			return err
 		}
