@@ -52,9 +52,7 @@ func windowEvalCmd(name, js string) *cobra.Command {
 		Use:   name,
 		Short: fmt.Sprintf("%s the browser window", name),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			addr, _ := cmd.Flags().GetString("addr")
-
-			client, conn, err := getClient(addr)
+			client, conn, err := resolveClient(cmd)
 			if err != nil {
 				return err
 			}
@@ -87,7 +85,7 @@ func windowEvalCmd(name, js string) *cobra.Command {
 
 var (
 	windowMinCmd     = windowEvalCmd("minimize", `window.minimize ? window.minimize() : null`)
-	windowMaxCmd     = windowEvalCmd("maximize", `window.moveTo(0,0); window.resizeTo(screen.availWidth, screen.availHeight)`)
+	windowMaxCmd     = windowEvalCmd("maximize", `(window.moveTo(0,0), window.resizeTo(screen.availWidth, screen.availHeight))`)
 	windowFullCmd    = windowEvalCmd("fullscreen", `document.documentElement.requestFullscreen()`)
-	windowRestoreCmd = windowEvalCmd("restore", `document.exitFullscreen && document.exitFullscreen()`)
+	windowRestoreCmd = windowEvalCmd("restore", `document.exitFullscreen ? document.exitFullscreen() : null`)
 )
