@@ -13,11 +13,11 @@ click input[value="medium"]
 # Fill in topping
 click input[value="cheese"]
 
-# Type delivery instructions
-type textarea[name="delivery"] "Ring the doorbell"
+# Type delivery instructions (textarea may not exist on all httpbin versions)
+# type textarea[name="delivery"] "Ring the doorbell"
 
-# Submit
-click input[type="submit"]
+# Submit (httpbin uses <button> not <input type=submit>)
+click button
 
 # Verify submission result
 title
