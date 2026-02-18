@@ -114,6 +114,7 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `MapOption`                           | URL map/link discovery options      | `map.go`       |
 | `MarkdownOption`                      | HTML-to-Markdown conversion options | `markdown.go`  |
 | `storageAPI`, `SessionState`          | Web storage & session persistence   | `storage.go`   |
+| `SwaggerSpec`, `SwaggerPath`, etc.    | OpenAPI/Swagger spec extraction     | `swagger.go`   |
 
 ### gRPC Service Layer
 
@@ -184,6 +185,7 @@ cmd/scout/
 ├── markdown.go             # scout markdown --url=<url> [--main-only]
 ├── map.go                  # scout map <url> [--search=term] [--limit=N]
 ├── recipe.go               # scout recipe run/validate
+├── swagger.go              # scout swagger <url> (detect + extract OpenAPI/Swagger specs)
 ├── extension.go            # scout extension load/test/list
 ├── auth.go                 # scout auth login/capture/status/logout/providers
 ├── device.go               # scout device pair/list/trust
@@ -203,7 +205,7 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Build individually: `cd examples/simple/basic-navigation && go build .`
 
 **Functional options pattern** for configuration: `New(opts ...Option)` with `With*()` functions in `option.go`. Each feature area has its own options (`ExtractOption`, `SearchOption`,
-`PaginateOption`, `CrawlOption`, `RateLimitOption`). Defaults: headless=true, 1920x1080, 30s timeout.
+`PaginateOption`, `CrawlOption`, `RateLimitOption`, `SwaggerOption`). Defaults: headless=true, 1920x1080, 30s timeout.
 
 **Escape hatches**: `RodPage()` and `RodElement()` expose the underlying rod instances when the wrapper API is insufficient.
 
@@ -242,6 +244,7 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Crawl routes: `/crawl-start`, `/crawl-page{1,2,3}`, `/sitemap.xml`
 - Map routes: `/map-start`, `/map-page1`, `/map-page1-sub`, `/map-page2`, `/map-page3`
 - Markdown routes: `/markdown`
+- Swagger routes: `/swagger/`, `/swagger/spec`, `/swagger/v2`, `/swagger/v2/spec`, `/redoc/`, `/not-swagger`
 - Recorder routes: `/recorder-page`, `/recorder-asset`, `/recorder-api`
 - Window tests: no routes needed — window control operates on the browser window itself
 - Tests use `t.Skipf` when browser is unavailable — they will not fail in headless CI without Chrome, they skip.
