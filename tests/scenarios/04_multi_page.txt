@@ -1,0 +1,26 @@
+# Multi-Page Navigation Scenarios
+# Run: scout client --addr=localhost:50051
+
+# Page 1
+nav https://example.com
+title
+# Expect: "Example Domain"
+url
+# Expect: "https://example.com/"
+
+# Page 2
+nav https://httpbin.org/html
+title
+# Expect: "Herman Melville - Moby Dick"
+url
+# Expect: "https://httpbin.org/html"
+
+# Page 3
+nav https://httpbin.org/get
+url
+# Expect: "https://httpbin.org/get"
+
+# Back to page 1
+nav https://example.com
+title
+# Expect: "Example Domain"

@@ -1,0 +1,25 @@
+# Form Flow Scenarios
+# Run: scout client --addr=localhost:50051
+
+# Navigate to httpbin form
+nav https://httpbin.org/forms/post
+
+# Fill in customer name
+type input[name="custname"] "Alice Smith"
+
+# Fill in size (radio — click instead)
+click input[value="medium"]
+
+# Fill in topping
+click input[value="cheese"]
+
+# Type delivery instructions
+type textarea[name="delivery"] "Ring the doorbell"
+
+# Submit
+click input[type="submit"]
+
+# Verify submission result
+title
+text pre
+# Expect: JSON with form data echoed back

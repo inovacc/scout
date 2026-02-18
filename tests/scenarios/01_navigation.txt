@@ -1,0 +1,33 @@
+# Navigation Test Scenarios
+# Run: scout client --addr=localhost:50051
+# Prerequisites: scout server running
+
+# Basic navigation
+nav https://example.com
+title
+# Expect: "Example Domain"
+
+url
+# Expect: "https://example.com/"
+
+# Navigate to another page
+nav https://httpbin.org/html
+title
+# Expect: "Herman Melville - Moby Dick"
+
+# Back/forward (REPL doesn't expose back/forward — use Go tests)
+# Instead, verify nav updates title/url each time
+
+# Reload — nav to same page, verify title unchanged
+nav https://example.com
+title
+# Expect: "Example Domain"
+
+# Navigate to a page with different title
+nav https://httpbin.org/get
+title
+# Expect: should contain page title or empty
+
+# Verify URL tracks correctly
+url
+# Expect: "https://httpbin.org/get"
