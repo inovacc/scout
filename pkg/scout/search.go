@@ -41,11 +41,12 @@ type SearchResults struct {
 type SearchOption func(*searchOptions)
 
 type searchOptions struct {
-	engine   SearchEngine
-	maxPages int
-	language string
-	region   string
-	delay    time.Duration
+	engine      SearchEngine
+	maxPages    int
+	language    string
+	region      string
+	delay       time.Duration
+	ddgType     string // DuckDuckGo search type: "web", "news", "images"
 }
 
 func searchDefaults() *searchOptions {
@@ -74,6 +75,11 @@ func WithSearchLanguage(lang string) SearchOption {
 // WithSearchRegion sets the region for search results (e.g. "us", "br").
 func WithSearchRegion(region string) SearchOption {
 	return func(o *searchOptions) { o.region = region }
+}
+
+// WithDDGSearchType sets the DuckDuckGo search type (web, news, images).
+func WithDDGSearchType(t string) SearchOption {
+	return func(o *searchOptions) { o.ddgType = t }
 }
 
 // Search performs a search query and returns the results from the first page.
@@ -174,6 +180,8 @@ func getParser(engine SearchEngine) *serpParser {
 		return &bingParser
 	case DuckDuckGo:
 		return &ddgParser
+	case Wikipedia:
+		return &wikipediaParser
 	default:
 		return &googleParser
 	}
@@ -219,11 +227,26 @@ var ddgParser = serpParser{
 	snippetSelector: "a.result__snippet, .result__body, .result__snippet",
 	nextSelector:    ".result--more__btn, button#more-results",
 	buildURL: func(query string, opts *searchOptions) string {
-		u := "https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query)
-		if opts.region != "" {
-			u += "&kl=" + url.QueryEscape(opts.region)
+		switch opts.ddgType {
+		case "news":
+			u := "https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query) + "&iar=news&ia=news"
+			if opts.region != "" {
+				u += "&kl=" + url.QueryEscape(opts.region)
+			}
+			return u
+		case "images":
+			u := "https://duckduckgo.com/?q=" + url.QueryEscape(query) + "&iar=images&iax=images&ia=images"
+			if opts.region != "" {
+				u += "&kl=" + url.QueryEscape(opts.region)
+			}
+			return u
+		default:
+			u := "https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query)
+			if opts.region != "" {
+				u += "&kl=" + url.QueryEscape(opts.region)
+			}
+			return u
 		}
-		return u
 	},
 }
 
