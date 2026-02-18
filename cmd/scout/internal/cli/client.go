@@ -113,11 +113,13 @@ var clientCmd = &cobra.Command{
 
 		ctx := context.Background()
 
+		headless, _ := cmd.Flags().GetBool("headless")
+
 		// Create sessions on all instances
 		for _, inst := range instances {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Creating session on %s...\n", inst.addr)
 			sess, err := inst.client.CreateSession(ctx, &pb.CreateSessionRequest{
-				Headless:    true,
+				Headless:    headless,
 				Stealth:     true,
 				InitialUrl:  url,
 				Record:      true,
