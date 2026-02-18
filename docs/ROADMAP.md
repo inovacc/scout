@@ -194,13 +194,33 @@
 - [ ] Example: `examples/advanced/screen-recorder/`
 - [ ] Tests: start/stop lifecycle, frame capture, export formats, concurrent recording with HAR
 
-### Phase 16: Distributed Crawling [PLANNED]
+### Phase 16: Swarm — Distributed Processing [PLANNED]
 
-- [ ] Swarm mode: split crawl workloads across multiple browser instances
-- [ ] Multi-IP support: assign different proxies per browser in the cluster
-- [ ] Work distribution: BFS queue shared across workers
-- [ ] Result aggregation: merge results from all workers
-- [ ] Headless cluster configuration options
+Swarm distributes work units across multiple Scout instances (local or remote via gRPC), collects partial results, and merges them into a unified output. Each node processes a slice of the workload independently with its own browser, proxy, and identity.
+
+- [ ] **Swarm coordinator** (`pkg/scout/swarm/coordinator.go`) — central dispatcher that splits work, assigns to workers, collects results
+- [ ] **Work unit model** — `WorkUnit{ID, Type, Payload}` with types: URL batch, search query, recipe, crawl subtree, custom
+- [ ] **Worker interface** — `Worker{Process(ctx, unit) (Result, error)}` implemented by local browser pool and remote gRPC peers
+- [ ] **Local worker pool** (`pkg/scout/swarm/local.go`) — N browser instances on the same machine, concurrency-limited
+- [ ] **Remote worker** (`pkg/scout/swarm/remote.go`) — proxy to a paired gRPC Scout server via mTLS, uses existing device identity
+- [ ] **Work distribution strategies** — round-robin, least-loaded, hash-based (consistent URL→worker mapping for cache affinity)
+- [ ] **Result merger** (`pkg/scout/swarm/merge.go`) — collect partial results, dedup, sort, merge into unified output (JSON, CSV, HAR bundle)
+- [ ] **Fault tolerance** — retry failed units on different workers, dead worker detection via heartbeat, partial result recovery
+- [ ] **Multi-IP support** — assign different proxies per worker for IP rotation (`WithSwarmProxies([]string)`)
+- [ ] **Crawl distribution** — split BFS frontier across workers, shared visited-set via coordinator, merge link graphs
+- [ ] **Batch distribution** — split URL list into chunks, fan-out to workers, fan-in results preserving input order
+- [ ] **Recipe distribution** — run same recipe on different URL sets across workers, merge extracted items
+- [ ] **Search distribution** — fan-out same query to multiple engines in parallel, merge and rank-fuse results
+- [ ] **Progress & monitoring** — real-time progress aggregation across all workers, event stream to coordinator display
+- [ ] **mDNS auto-discovery** — discover available Scout peers on LAN via existing `pkg/discovery/`, auto-add as workers
+- [ ] **CLI commands**:
+  - `scout swarm start [--workers=N] [--remote=addr1,addr2]` — start coordinator with local + remote workers
+  - `scout swarm status` — show worker pool, active units, progress
+  - `scout swarm run --recipe=file.json [--split-by=url]` — distribute recipe execution
+  - `scout swarm crawl <url> [--workers=N]` — distributed crawl
+  - `scout swarm batch --urls-file=file.txt [--workers=N]` — distributed batch
+- [ ] **gRPC extensions** — `AssignWork`, `ReportResult`, `Heartbeat` RPCs in `grpc/proto/scout.proto`
+- [ ] Tests: local pool, remote worker mock, distribution strategies, merge logic, fault tolerance
 
 ### Phase 17: Device Identity, mTLS & Discovery [COMPLETE]
 
