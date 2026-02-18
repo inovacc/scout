@@ -3,12 +3,14 @@ package scout
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/inovacc/scout/extensions"
 	"github.com/inovacc/scout/pkg/rod/lib/proto"
 )
 
@@ -309,22 +311,37 @@ func (b *Bridge) handleQueryResponse(data json.RawMessage) {
 // writeBridgeExtension writes the embedded bridge extension to a temp directory
 // and returns its path. The caller should ensure cleanup.
 func writeBridgeExtension() (string, error) {
+	extFS, err := extensions.BridgeExtension()
+	if err != nil {
+		return "", fmt.Errorf("scout: load embedded bridge extension: %w", err)
+	}
+
 	dir, err := os.MkdirTemp("", "scout-bridge-*")
 	if err != nil {
 		return "", fmt.Errorf("scout: create bridge temp dir: %w", err)
 	}
 
-	files := map[string]string{
-		"manifest.json": bridgeManifestJSON,
-		"content.js":    bridgeContentJS,
-		"background.js": bridgeBackgroundJS,
-	}
-
-	for name, content := range files {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
-			_ = os.RemoveAll(dir)
-			return "", fmt.Errorf("scout: write bridge %s: %w", name, err)
+	err = fs.WalkDir(extFS, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
+
+		target := filepath.Join(dir, path)
+
+		if d.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+
+		data, err := fs.ReadFile(extFS, path)
+		if err != nil {
+			return fmt.Errorf("read %s: %w", path, err)
+		}
+
+		return os.WriteFile(target, data, 0o644)
+	})
+	if err != nil {
+		_ = os.RemoveAll(dir)
+		return "", fmt.Errorf("scout: write bridge extension: %w", err)
 	}
 
 	return dir, nil
