@@ -84,8 +84,8 @@ func windowEvalCmd(name, js string) *cobra.Command {
 }
 
 var (
-	windowMinCmd     = windowEvalCmd("minimize", `window.minimize ? window.minimize() : null`)
-	windowMaxCmd     = windowEvalCmd("maximize", `(window.moveTo(0,0), window.resizeTo(screen.availWidth, screen.availHeight))`)
-	windowFullCmd    = windowEvalCmd("fullscreen", `document.documentElement.requestFullscreen()`)
-	windowRestoreCmd = windowEvalCmd("restore", `document.exitFullscreen ? document.exitFullscreen() : null`)
+	windowMinCmd     = windowEvalCmd("minimize", `() => { window.minimize && window.minimize(); return null }`)
+	windowMaxCmd     = windowEvalCmd("maximize", `() => { window.moveTo(0,0); window.resizeTo(screen.availWidth, screen.availHeight); return null }`)
+	windowFullCmd    = windowEvalCmd("fullscreen", `() => { document.documentElement.requestFullscreen(); return null }`)
+	windowRestoreCmd = windowEvalCmd("restore", `() => { if (document.exitFullscreen) document.exitFullscreen(); return null }`)
 )
