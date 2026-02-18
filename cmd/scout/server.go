@@ -20,7 +20,7 @@ import (
 func init() {
 	rootCmd.AddCommand(serverCmd)
 
-	serverCmd.Flags().Int("port", 50051, "gRPC server port")
+	serverCmd.Flags().Int("port", 9551, "gRPC server port")
 	serverCmd.Flags().Bool("reflection", true, "enable gRPC reflection")
 	serverCmd.Flags().Bool("insecure", false, "disable mTLS (no authentication)")
 }

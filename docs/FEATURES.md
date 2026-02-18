@@ -119,6 +119,21 @@
 - **Status:** Completed
 - **Description:** Built-in `scout aicontext` generates AI context document with categorized commands, structure, and examples. `scout cmdtree` visualizes the full command tree with flags. Both support `--json` output. Implemented in `cmd/scout/aicontext.go` and `cmd/scout/cmdtree.go`.
 
+### Chrome Extension Download & Management
+
+- **Status:** Completed
+- **Description:** Download Chrome extensions from the Web Store by ID, unpack CRX2/CRX3 files, and store persistently in `~/.scout/extensions/`. `DownloadExtension(id)` fetches and unpacks with zip-slip protection. `ListLocalExtensions()` and `RemoveExtension(id)` for management. `WithExtensionByID(ids...)` option loads downloaded extensions by ID at browser launch. CLI `scout extension download/remove/list`. Implemented in `pkg/scout/extension.go`.
+
+### Scout Bridge Extension (Partial)
+
+- **Status:** In Progress
+- **Description:** Built-in Manifest V3 Chrome extension for bidirectional Go↔browser communication. Extension scaffold embedded in `bridge_assets.go`, auto-loaded via `WithBridge()` option. Full WebSocket transport, event streaming, and remote command capabilities planned. Partially implemented in `pkg/scout/bridge.go` and `pkg/scout/bridge_assets.go`.
+
+### LLM-Powered Extraction
+
+- **Status:** Completed
+- **Description:** AI-powered data extraction using LLM providers. Send page content (as markdown) to an LLM with a natural language prompt, get structured data back. Pluggable `LLMProvider` interface with 6 built-in providers: Ollama (local), OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini. Optional JSON schema validation. LLM review pipeline (`ExtractWithLLMReview()`) sends extraction output to a second LLM for quality review. Workspace persistence tracks sessions and jobs in a filesystem directory with `sessions.json`, `jobs/jobs.json`, and per-job `jobs/<uuid>/` folders. CLI `scout extract-ai`, `scout ollama list/pull/status`, `scout ai-job list/show/session`. Implemented in `pkg/scout/llm.go`, `llm_ollama.go`, `llm_openai.go`, `llm_anthropic.go`, `llm_review.go`, `llm_workspace.go`, `cmd/scout/llm.go`.
+
 ## Proposed Features
 
 ### Screen Recorder

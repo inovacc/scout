@@ -2,6 +2,7 @@ package scout
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/inovacc/scout/pkg/rod"
@@ -22,6 +23,11 @@ func New(opts ...Option) (*Browser, error) {
 	o := defaults()
 	for _, fn := range opts {
 		fn(o)
+	}
+
+	// Default to maximized window in headed mode unless explicitly set.
+	if !o.headless && o.windowState == "" {
+		o.windowState = WindowStateMaximized
 	}
 
 	l := launcher.New().Headless(o.headless)
@@ -63,6 +69,20 @@ func New(opts ...Option) (*Browser, error) {
 
 	if o.devtools {
 		l = l.Set(flags.Flag("auto-open-devtools-for-tabs"))
+	}
+
+	// In headed mode, set --window-size so the OS window matches the desired dimensions.
+	// In headless mode, SetViewport (CDP emulation) handles this after connection.
+	if !o.headless && o.windowW > 0 && o.windowH > 0 {
+		l = l.Set(flags.WindowSize, strconv.Itoa(o.windowW)+","+strconv.Itoa(o.windowH))
+	}
+
+	for _, id := range o.extensionIDs {
+		dir, err := extensionPathByID(id)
+		if err != nil {
+			return nil, err
+		}
+		o.extensions = append(o.extensions, dir)
 	}
 
 	if o.bridge {

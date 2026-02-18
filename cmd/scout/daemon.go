@@ -108,7 +108,7 @@ func ensureDaemon(addr string) error {
 	}
 
 	// Extract port from addr
-	port := "50051"
+	port := "9551"
 	if parts := strings.SplitN(addr, ":", 2); len(parts) == 2 {
 		port = parts[1]
 	}

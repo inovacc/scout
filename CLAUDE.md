@@ -52,11 +52,20 @@ Load unpacked Chrome extensions via `WithExtension(paths...)`. This sets `--load
 b, _ := scout.New(scout.WithExtension("/path/to/ext1", "/path/to/ext2"))
 ```
 
+Download extensions from the Chrome Web Store via `DownloadExtension(id)`, which fetches CRX2/CRX3 files, unpacks to `~/.scout/extensions/<id>/`, and reads `manifest.json` for metadata. Load downloaded extensions by ID via `WithExtensionByID(ids...)`.
+
+```go
+info, _ := scout.DownloadExtension("cjpalhdlnbpafiamejdnhcphjbkeiagm") // uBlock Origin
+b, _ := scout.New(scout.WithExtensionByID("cjpalhdlnbpafiamejdnhcphjbkeiagm"))
+```
+
 CLI commands:
 
 - `scout extension load --path=<dir> [--url=<url>]` — interactive dev workflow (non-headless, blocks until Ctrl+C)
 - `scout extension test --path=<dir> [--screenshot=out.png]` — headless testing, lists loaded extensions
-- `scout extension list` — list extensions in the current user data directory
+- `scout extension list` — list downloaded extensions and browser-loaded extensions
+- `scout extension download <id>` — download + unpack from Chrome Web Store to `~/.scout/extensions/`
+- `scout extension remove <id>` — delete a locally downloaded extension
 
 ## Architecture
 
@@ -115,6 +124,19 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `MarkdownOption`                      | HTML-to-Markdown conversion options | `markdown.go`  |
 | `storageAPI`, `SessionState`          | Web storage & session persistence   | `storage.go`   |
 | `SwaggerSpec`, `SwaggerPath`, etc.    | OpenAPI/Swagger spec extraction     | `swagger.go`   |
+| `ExtensionInfo`                       | Chrome extension metadata + path    | `extension.go` |
+
+### LLM Extraction Types
+
+| Type                                          | Purpose                                        | File                |
+|-----------------------------------------------|-------------------------------------------------|---------------------|
+| `LLMProvider`                                 | Interface for LLM backends (Complete + Name)    | `llm.go`            |
+| `LLMOption`, `LLMJobResult`                   | Functional options and pipeline result          | `llm.go`, `llm_review.go` |
+| `OllamaProvider`                              | Ollama local LLM provider                       | `llm_ollama.go`     |
+| `OpenAIProvider`                              | OpenAI-compatible provider (OpenAI, OpenRouter, DeepSeek, Gemini) | `llm_openai.go` |
+| `AnthropicProvider`                           | Anthropic Messages API provider                  | `llm_anthropic.go`  |
+| `LLMWorkspace`, `LLMSession`, `LLMJob`       | Filesystem-based session/job persistence         | `llm_workspace.go`  |
+| `JobStatus`, `SessionIndex`, `JobIndex`       | Workspace state tracking types                   | `llm_workspace.go`  |
 
 ### gRPC Service Layer
 
@@ -186,7 +208,9 @@ cmd/scout/
 ├── map.go                  # scout map <url> [--search=term] [--limit=N]
 ├── recipe.go               # scout recipe run/validate
 ├── swagger.go              # scout swagger <url> (detect + extract OpenAPI/Swagger specs)
-├── extension.go            # scout extension load/test/list
+├── extension.go            # scout extension load/test/list/download/remove
+├── bridge.go               # scout bridge status/send/listen
+├── llm.go                  # scout extract-ai, scout ollama, scout ai-job
 ├── auth.go                 # scout auth login/capture/status/logout/providers
 ├── device.go               # scout device pair/list/trust
 ├── aicontext.go            # scout aicontext [--json]
@@ -231,6 +255,11 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **URL Map**: `Browser.Map()` combines sitemap.xml parsing + BFS on-page link harvesting. Reuses `visitedSet`, `normalizeURL`, `resolveLink` from crawl.go.
 - **Platform session defaults**: `grpc/server/platform_*.go` uses build constraints to apply OS-specific defaults in `CreateSession` (e.g., `--no-sandbox` on Linux). Follows the same pattern as
   `daemon_unix.go`/`daemon_windows.go`.
+- **LLM Provider interface**: `LLMProvider` has just `Name()` + `Complete(ctx, system, user)`. `OpenAIProvider` covers OpenAI, OpenRouter, DeepSeek, Gemini via configurable base URL. `AnthropicProvider` uses the Messages API. All use `net/http` directly (no SDK deps except Ollama).
+- **LLM Review pipeline**: `ExtractWithLLMReview()` extracts with LLM1, optionally reviews with LLM2. `WithLLMReview(provider)` enables the second pass. Results persisted to workspace via `WithLLMWorkspace(ws)`.
+- **LLM Workspace**: Filesystem-based job tracking at `<path>/sessions.json`, `<path>/jobs/jobs.json`, `<path>/jobs/<uuid>/job.json`. Extract and review output written to `extract.md` and `review.md` alongside job metadata.
+- **Bridge extension default**: The Scout Bridge extension is enabled by default (`bridge: true` in `defaults()`). It is embedded in Go for security and enhances browser communication. Disable with `WithoutBridge()` or `SCOUT_BRIDGE=false`.
+- **gRPC default port**: The daemon and server default to port `9551` (not the standard gRPC `50051`) to avoid conflicts.
 
 ## Testing
 
@@ -258,6 +287,7 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - `github.com/ysmood/gson` — JSON number handling for `EvalResult`
 - `golang.org/x/time/rate` — token bucket rate limiter for `RateLimiter`
 - `golang.org/x/net/html` — HTML tokenizer/parser for markdown converter (indirect dep)
+- `github.com/ollama/ollama` — Ollama Go client for local LLM inference
 
 ### Stealth (pkg/stealth/)
 

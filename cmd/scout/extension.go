@@ -13,7 +13,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(extensionCmd)
-	extensionCmd.AddCommand(extLoadCmd, extTestCmd, extListCmd)
+	extensionCmd.AddCommand(extLoadCmd, extTestCmd, extListCmd, extDownloadCmd, extRemoveCmd)
 
 	extLoadCmd.Flags().StringSlice("path", nil, "path(s) to unpacked extension directory (required, repeatable)")
 	extLoadCmd.Flags().String("url", "", "URL to navigate to after loading")
@@ -28,8 +28,43 @@ func init() {
 
 var extensionCmd = &cobra.Command{
 	Use:   "extension",
-	Short: "Load and test Chrome extensions",
-	Long:  `Commands for loading unpacked Chrome extensions into Scout-controlled browsers.`,
+	Short: "Manage, load, and test Chrome extensions",
+	Long:  `Commands for downloading, loading, and testing Chrome extensions in Scout-controlled browsers.`,
+}
+
+var extDownloadCmd = &cobra.Command{
+	Use:   "download <extension-id>",
+	Short: "Download an extension from the Chrome Web Store",
+	Long:  `Download a Chrome extension by its Web Store ID, unpack the CRX3 file, and store it locally in ~/.scout/extensions/.`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id := args[0]
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Downloading extension %s...\n", id)
+
+		info, err := scout.DownloadExtension(id)
+		if err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Downloaded: %s v%s\n  ID:   %s\n  Path: %s\n", info.Name, info.Version, info.ID, info.Path)
+		return nil
+	},
+}
+
+var extRemoveCmd = &cobra.Command{
+	Use:   "remove <extension-id>",
+	Short: "Remove a locally downloaded extension",
+	Long:  `Delete a previously downloaded extension from ~/.scout/extensions/.`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id := args[0]
+		if err := scout.RemoveExtension(id); err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed extension %s\n", id)
+		return nil
+	},
 }
 
 var extLoadCmd = &cobra.Command{
@@ -170,9 +205,23 @@ Optionally capture a screenshot and list detected extensions.`,
 
 var extListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List installed extensions",
-	Long:  `Open the browser and list extensions installed in the current user data directory.`,
+	Short: "List installed and downloaded extensions",
+	Long:  `List locally downloaded extensions from ~/.scout/extensions/ and optionally query the browser for loaded extensions.`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
+		// Show locally downloaded extensions first.
+		localExts, err := scout.ListLocalExtensions()
+		if err != nil {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Warning: could not list local extensions: %v\n", err)
+		} else {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Downloaded extensions (~/.scout/extensions/):")
+			if len(localExts) == 0 {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  (none)")
+			}
+			for _, ext := range localExts {
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  - %s v%s (id: %s)\n", ext.Name, ext.Version, ext.ID)
+			}
+		}
+
 		urlFlag, _ := cmd.Flags().GetString("url")
 
 		browser, err := scout.New(
@@ -209,7 +258,7 @@ var extListCmd = &cobra.Command{
 			return nil
 		}
 
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Installed extensions:")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "\nBrowser extensions:")
 		val := result.Value
 		if arr, ok := val.([]interface{}); ok {
 			if len(arr) == 0 {
