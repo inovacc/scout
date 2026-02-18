@@ -71,7 +71,9 @@ func runExtract(ctx context.Context, browser *scout.Browser, r *Recipe) (*Result
 		// Wait for content to settle after pagination
 		_ = page.WaitLoad()
 		if r.WaitFor != "" {
-			_, _ = page.Element(r.WaitFor)
+			if has, _ := page.Has(r.WaitFor); has {
+				_, _ = page.Element(r.WaitFor)
+			}
 		}
 	}
 
@@ -153,6 +155,10 @@ func advancePage(page *scout.Page, p *Pagination) bool {
 	switch p.Strategy {
 	case "click":
 		if p.NextSelector == "" {
+			return false
+		}
+		has, _ := page.Has(p.NextSelector)
+		if !has {
 			return false
 		}
 		el, err := page.Element(p.NextSelector)
