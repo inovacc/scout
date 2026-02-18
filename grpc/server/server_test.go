@@ -545,6 +545,82 @@ func TestStreamEvents(t *testing.T) {
 	}
 }
 
+func TestErrorPaths(t *testing.T) {
+	env := setupTestServer(t)
+	ctx := context.Background()
+
+	// Operations on invalid session
+	_, err := env.client.Navigate(ctx, &pb.NavigateRequest{SessionId: "nonexistent", Url: "http://x"})
+	if err == nil {
+		t.Error("expected error for invalid session navigate")
+	}
+
+	_, err = env.client.Click(ctx, &pb.ElementRequest{SessionId: "nonexistent", Selector: "#x"})
+	if err == nil {
+		t.Error("expected error for invalid session click")
+	}
+
+	_, err = env.client.Screenshot(ctx, &pb.ScreenshotRequest{SessionId: "nonexistent"})
+	if err == nil {
+		t.Error("expected error for invalid session screenshot")
+	}
+
+	_, err = env.client.GetTitle(ctx, &pb.SessionRequest{SessionId: "nonexistent"})
+	if err == nil {
+		t.Error("expected error for invalid session title")
+	}
+
+	// Element not found
+	sid := env.createSession(t)
+	env.navigate(t, sid, "/")
+
+	_, err = env.client.Click(ctx, &pb.ElementRequest{SessionId: sid, Selector: "#nonexistent"})
+	if err == nil {
+		t.Error("expected error for nonexistent element click")
+	}
+
+	_, err = env.client.GetText(ctx, &pb.ElementRequest{SessionId: sid, Selector: "#nonexistent"})
+	if err == nil {
+		t.Error("expected error for nonexistent element text")
+	}
+
+	// ExportHAR without recording
+	_, err = env.client.ExportHAR(ctx, &pb.SessionRequest{SessionId: sid})
+	if err == nil {
+		t.Error("expected error for export without recording")
+	}
+
+	// Double start recording
+	_, err = env.client.StartRecording(ctx, &pb.RecordingRequest{SessionId: sid})
+	if err != nil {
+		t.Fatalf("start recording: %v", err)
+	}
+	_, err = env.client.StartRecording(ctx, &pb.RecordingRequest{SessionId: sid})
+	if err == nil {
+		t.Error("expected error for double start recording")
+	}
+	_, _ = env.client.StopRecording(ctx, &pb.SessionRequest{SessionId: sid})
+}
+
+func TestStatsAfterOperations(t *testing.T) {
+	env := setupTestServer(t)
+	sid := env.createSession(t)
+	ctx := context.Background()
+
+	// After creating a session, stats should show totalSessions >= 1
+	// (we can't directly access server stats via gRPC, but we verify
+	// the session creates/navigates succeed - the stats tracking was
+	// verified in sanitize_test.go unit tests)
+
+	env.navigate(t, sid, "/")
+
+	// Screenshot to trigger event
+	_, err := env.client.Screenshot(ctx, &pb.ScreenshotRequest{SessionId: sid})
+	if err != nil {
+		t.Fatalf("screenshot: %v", err)
+	}
+}
+
 func TestInteractive(t *testing.T) {
 	env := setupTestServer(t)
 	sid := env.createSession(t)

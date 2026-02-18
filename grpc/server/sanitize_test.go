@@ -1,8 +1,11 @@
 package server
 
 import (
+	"bytes"
 	"errors"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestSanitizeError(t *testing.T) {
@@ -68,5 +71,81 @@ func TestEventRingBuffer(t *testing.T) {
 	events := srv.Events()
 	if len(events) != maxEvents {
 		t.Errorf("events count = %d, want %d", len(events), maxEvents)
+	}
+}
+
+func TestPrintServerTable_NoPeers(t *testing.T) {
+	var buf bytes.Buffer
+	info := ServerInfo{
+		DeviceID:      "TEST-DEVICE-ID",
+		ListenAddr:    ":50051",
+		Insecure:      true,
+		LocalIPs:      []string{"192.168.1.100"},
+		TotalSessions: 5,
+	}
+	PrintServerTable(&buf, info, nil)
+	out := buf.String()
+
+	if !strings.Contains(out, "Scout Server") {
+		t.Error("missing header")
+	}
+	if !strings.Contains(out, "Active: 0  Total: 5") {
+		t.Error("missing counters")
+	}
+	if !strings.Contains(out, "Insecure") {
+		t.Error("missing mode")
+	}
+	if !strings.Contains(out, "Recent Activity") {
+		t.Error("missing activity section")
+	}
+	if !strings.Contains(out, "(no activity yet)") {
+		t.Error("missing empty activity message")
+	}
+}
+
+func TestPrintServerTable_WithPeersAndEvents(t *testing.T) {
+	var buf bytes.Buffer
+	info := ServerInfo{
+		DeviceID:      "ABCDEFG",
+		ListenAddr:    ":50051",
+		PairingAddr:   ":50052",
+		LocalIPs:      []string{"10.0.0.1"},
+		TotalSessions: 3,
+		Events: []SessionEvent{
+			{Time: time.Date(2026, 1, 1, 22, 52, 8, 0, time.UTC), Type: "connect", SessionID: "abc", DeviceID: "HM2ASC3", Detail: "session abc"},
+			{Time: time.Date(2026, 1, 1, 22, 52, 9, 0, time.UTC), Type: "navigate", SessionID: "abc", DeviceID: "HM2ASC3", Detail: "https://example.com"},
+		},
+	}
+	peers := []ConnectedPeer{
+		{DeviceID: "full-device-id", ShortID: "HM2ASC3", Addr: "192.168.1.5:12345", Sessions: 2},
+	}
+	PrintServerTable(&buf, info, peers)
+	out := buf.String()
+
+	if !strings.Contains(out, "Active: 1  Total: 3") {
+		t.Error("missing counters")
+	}
+	if !strings.Contains(out, "HM2ASC3") {
+		t.Error("missing peer short ID")
+	}
+	if !strings.Contains(out, "connect") {
+		t.Error("missing connect event")
+	}
+	if !strings.Contains(out, "navigate") {
+		t.Error("missing navigate event")
+	}
+	if !strings.Contains(out, "Pairing") {
+		t.Error("missing pairing addr")
+	}
+}
+
+func TestOnStatsChangeCallback(t *testing.T) {
+	srv := New()
+	called := false
+	srv.OnStatsChange = func() { called = true }
+
+	srv.recordEvent("test", "s1", "d1", "detail")
+	if !called {
+		t.Error("OnStatsChange not called")
 	}
 }

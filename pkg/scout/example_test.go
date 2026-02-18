@@ -290,6 +290,170 @@ func ExampleNewNetworkRecorder() { //nolint:testableexamples // requires browser
 	fmt.Printf("Captured %d entries (%d bytes)\n", count, len(harJSON))
 }
 
+func ExamplePage_Element() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+
+	// Find an element by CSS selector.
+	el, err := page.Element("h1")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	text, _ := el.Text()
+	fmt.Println(text)
+}
+
+func ExampleElement_Click() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+
+	el, err := page.Element("a")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	// Click the element.
+	if err := el.Click(); err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+	title, _ := page.Title()
+	fmt.Println(title)
+}
+
+func ExampleElement_Input() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	el, err := page.Element("input[type=text]")
+	if err != nil {
+		fmt.Println("not found")
+		return
+	}
+
+	// Type text into the input field.
+	if err := el.Input("hello world"); err != nil {
+		fmt.Println("error:", err)
+	}
+}
+
+func ExampleBrowser_Search() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	results, err := b.Search("golang tutorial",
+		scout.WithSearchEngine(scout.Google),
+		scout.WithSearchMaxPages(1),
+	)
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	for _, r := range results.Results {
+		fmt.Printf("%d. %s\n   %s\n", r.Position, r.Title, r.URL)
+	}
+}
+
+func ExamplePage_Screenshot() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+
+	// Viewport screenshot.
+	data, err := page.Screenshot()
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	fmt.Printf("Screenshot: %d bytes\n", len(data))
+}
+
+func ExamplePage_WaitLoad() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	// Wait for the DOM load event before extracting content.
+	if err := page.WaitLoad(); err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	title, _ := page.Title()
+	fmt.Println(title)
+}
+
 func Example_convertHTMLToMarkdown() { //nolint:testableexamples // requires browser
 	// convertHTMLToMarkdown is a pure function (unexported).
 	// Use Page.Markdown() or Page.MarkdownContent() for the public API.
