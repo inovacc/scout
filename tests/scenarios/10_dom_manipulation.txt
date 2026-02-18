@@ -1,0 +1,21 @@
+# DOM Manipulation via Eval
+# Tests: style changes, element creation, DOM queries, title modification
+
+nav https://example.com
+shot
+eval () => { document.body.style.backgroundColor = '#1a1a2e'; document.body.style.color = '#eee'; return 'dark mode applied'; }
+shot
+eval () => { const h1 = document.querySelector('h1'); h1.style.color = '#e94560'; h1.style.fontSize = '3em'; return h1.textContent; }
+shot
+eval () => { const el = document.createElement('div'); el.id = 'injected'; el.innerHTML = '<h2 style="color:#0f3460">Injected by Scout</h2><p>This element was created via gRPC eval.</p>'; document.body.appendChild(el); return 'element injected'; }
+shot
+text #injected
+# Expect: "Injected by Scout\nThis element was created via gRPC eval."
+eval () => { const items = ['Alpha','Beta','Gamma','Delta']; const ul = document.createElement('ul'); items.forEach(i => { const li = document.createElement('li'); li.textContent = i; ul.appendChild(li); }); document.body.appendChild(ul); return items.length + ' items added'; }
+shot
+eval () => document.querySelectorAll('li').length
+# Expect: 4
+eval () => { document.title = 'Scout DOM Test Complete'; return document.title; }
+title
+# Expect: "Scout DOM Test Complete"
+shot full

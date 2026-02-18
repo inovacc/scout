@@ -1,0 +1,41 @@
+# Multi-Step Form Interaction — The Internet (Herokuapp)
+# Tests: login, dropdown, checkboxes, key press detection
+
+# Login flow
+nav https://the-internet.herokuapp.com/login
+shot
+type #username tomsmith
+type #password SuperSecretPassword!
+shot
+click button[type=submit]
+shot
+text #flash
+# Expect: "You logged into a secure area!"
+
+# Dropdown
+nav https://the-internet.herokuapp.com/dropdown
+shot
+eval () => document.querySelector('#dropdown').value
+# Expect: "" (no selection)
+eval () => { document.querySelector('#dropdown').value = '2'; document.querySelector('#dropdown').dispatchEvent(new Event('change')); return document.querySelector('#dropdown').value; }
+# Expect: "2"
+shot
+
+# Checkboxes
+nav https://the-internet.herokuapp.com/checkboxes
+shot
+eval () => Array.from(document.querySelectorAll('input[type=checkbox]')).map(c=>c.checked)
+# Expect: [false, true]
+click input[type=checkbox]
+shot
+eval () => Array.from(document.querySelectorAll('input[type=checkbox]')).map(c=>c.checked)
+# Expect: [true, true]
+
+# Key press detection
+nav https://the-internet.herokuapp.com/key_presses
+shot
+click #target
+key Enter
+text #result
+# Expect: "You entered: ENTER"
+shot

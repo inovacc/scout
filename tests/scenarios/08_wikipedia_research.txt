@@ -1,0 +1,27 @@
+# Wikipedia Research — Search, Navigate, Extract Info
+# Tests: search, page navigation, text extraction, full-page screenshot, link click
+
+nav https://en.wikipedia.org/wiki/Main_Page
+shot
+title
+# Expect: "Wikipedia, the free encyclopedia"
+type #searchInput Go (programming language)
+key Enter
+shot
+title
+# Expect: "Go (programming language) - Wikipedia"
+text .mw-page-title-main
+# Expect: "Go (programming language)"
+eval () => document.querySelector('#firstHeading').textContent
+eval () => document.querySelectorAll('.mw-heading h2').length
+# Expect: number of section headings
+text .infobox th
+# Expect: infobox labels (Paradigm, Designed by, etc.)
+shot full
+click a[href='/wiki/Google']
+shot
+title
+# Expect: "Google - Wikipedia"
+text .mw-page-title-main
+# Expect: "Google"
+shot
