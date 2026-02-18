@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"encoding/json"
@@ -29,35 +29,51 @@ type CMD struct {
 
 // aiCategoryMap maps command names to categories
 var aiCategoryMap = map[string]string{
-	"clone": "repo", "add": "repo", "remove": "repo", "list": "repo",
-	"open": "repo", "favorite": "repo", "unfavorite": "repo", "map": "repo",
+	// Navigation
+	"navigate": "nav", "back": "nav", "forward": "nav", "reload": "nav",
 
-	"pull": "git", "push": "git", "commit": "git", "checkout": "git",
-	"merge": "git", "stash": "git", "tag": "git", "scan": "git",
-	"branches": "git", "diff": "git", "status": "git", "reauthor": "git",
+	// Interaction
+	"click": "interact", "type": "interact", "select": "interact",
+	"hover": "interact", "focus": "interact", "clear": "interact", "key": "interact",
 
-	"gh": "github", "org": "github",
+	// Inspection
+	"title": "inspect", "url": "inspect", "text": "inspect", "attr": "inspect",
+	"eval": "inspect", "html": "inspect",
 
-	"pm": "pm", "ai": "ai",
+	// Capture
+	"screenshot": "capture", "pdf": "capture", "har": "capture",
 
-	"gmail": "services", "teams": "services", "outlook": "services", "slack": "services",
+	// Scraping
+	"crawl": "scrape", "search": "scrape", "table": "scrape", "meta": "scrape",
+	"markdown": "scrape", "map": "scrape", "batch": "scrape", "form": "scrape",
+	"recipe": "scrape",
 
-	"configure": "config", "profile": "config",
+	// Session & browser
+	"session": "session", "window": "session", "cookie": "session",
+	"storage": "session", "header": "session", "block": "session",
+	"extension": "session",
 
-	"server": "infra", "service": "infra", "mirror": "infra",
+	// Auth & identity
+	"auth": "identity", "device": "identity",
 
-	"workspace": "tools", "data": "tools", "update": "tools", "version": "tools",
-	"cmdtree": "tools", "aicontext": "tools", "nerds": "tools", "monitor": "tools",
+	// Bridge
+	"bridge": "infra",
+
+	// Infrastructure
+	"server": "infra", "client": "infra",
+
+	// Tools
+	"version": "tools", "cmdtree": "tools", "aicontext": "tools",
 }
 
 var aiCategoryNames = map[string]string{
-	"repo":     "Repository",
-	"git":      "Git",
-	"github":   "GitHub",
-	"pm":       "Project Management",
-	"ai":       "AI Planning",
-	"services": "Services",
-	"config":   "Configuration",
+	"nav":      "Navigation",
+	"interact": "Interaction",
+	"inspect":  "Inspection",
+	"capture":  "Capture",
+	"scrape":   "Scraping & Extraction",
+	"session":  "Session & Browser",
+	"identity": "Auth & Identity",
 	"infra":    "Infrastructure",
 	"tools":    "Tools",
 }
@@ -68,9 +84,9 @@ var aicontextCmd = &cobra.Command{
 	Long: `Generate concise context for AI coding agents.
 
 Examples:
-  kody aicontext              # Markdown output
-  kody aicontext --json       # JSON output
-  kody aicontext -c github    # Filter by category`,
+  scout aicontext              # Markdown output
+  scout aicontext --json       # JSON output
+  scout aicontext -c scrape    # Filter by category`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		jsonOut, _ := cmd.Flags().GetBool("json")
 		cat, _ := cmd.Flags().GetString("category")
@@ -153,19 +169,23 @@ func buildContext(root *cobra.Command, filterCat string, noStruct bool) AIContex
 	}
 
 	ctx := AIContext{
-		App:        "kody",
-		Desc:       "Your code companion - Git repository manager with AI-powered planning",
+		App:        "scout",
+		Desc:       "Headless browser automation, web scraping, search, crawling, and forensic capture",
 		Categories: categories,
 	}
 
 	if !noStruct {
 		ctx.Structure = map[string]string{
-			"cmd/":           "CLI commands",
-			"internal/ai/":   "AI personas",
-			"internal/core/": "Business logic",
-			"internal/git/":  "Git client",
-			"tests/":         "Go integration tests",
-			"testing/":       "Python black-box tests",
+			"cmd/scout/":    "Unified Cobra CLI binary",
+			"pkg/scout/":    "Core library (browser, page, element wrappers)",
+			"pkg/stealth/":  "Anti-bot-detection stealth module",
+			"pkg/identity/": "Device identity and mTLS certificates",
+			"pkg/discovery/": "mDNS service discovery",
+			"grpc/proto/":   "Protobuf definitions",
+			"grpc/server/":  "gRPC server with mTLS and pairing",
+			"scraper/":      "Auth framework and encrypted sessions",
+			"examples/":     "Runnable example programs",
+			"tests/":        "Integration tests and recipes",
 		}
 	}
 
