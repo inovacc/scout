@@ -1,0 +1,19 @@
+{
+  "version": "1",
+  "name": "httpbin_fingerprint",
+  "type": "automate",
+  "steps": [
+    {"action": "navigate", "url": "https://httpbin.org/headers"},
+    {"action": "extract", "selector": "pre", "as": "headers"},
+    {"action": "screenshot", "name": "headers_page"},
+    {"action": "navigate", "url": "https://httpbin.org/ip"},
+    {"action": "extract", "selector": "pre", "as": "ip_info"},
+    {"action": "screenshot", "name": "ip_page"},
+    {"action": "navigate", "url": "https://httpbin.org/user-agent"},
+    {"action": "extract", "selector": "pre", "as": "user_agent"},
+    {"action": "screenshot", "name": "ua_page"}
+  ],
+  "output": {
+    "format": "json"
+  }
+}

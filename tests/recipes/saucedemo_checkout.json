@@ -1,0 +1,22 @@
+{
+  "version": "1",
+  "name": "saucedemo_checkout",
+  "type": "automate",
+  "steps": [
+    {"action": "navigate", "url": "https://www.saucedemo.com/"},
+    {"action": "screenshot", "name": "login_page"},
+    {"action": "type", "selector": "#user-name", "text": "standard_user"},
+    {"action": "type", "selector": "#password", "text": "secret_sauce"},
+    {"action": "click", "selector": "#login-button"},
+    {"action": "wait", "selector": ".inventory_item"},
+    {"action": "screenshot", "name": "products"},
+    {"action": "extract", "selector": ".inventory_item_name", "as": "products"},
+    {"action": "eval", "script": "() => document.querySelectorAll('.inventory_item').length", "as": "product_count"},
+    {"action": "click", "selector": "#add-to-cart-sauce-labs-backpack"},
+    {"action": "extract", "selector": ".shopping_cart_badge", "as": "cart_count"},
+    {"action": "screenshot", "name": "cart_added"}
+  ],
+  "output": {
+    "format": "json"
+  }
+}

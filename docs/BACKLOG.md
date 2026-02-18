@@ -160,6 +160,14 @@ Dedicated scraper modes for authenticated services. Each mode provides structure
 - **Status:** Complete — `pkg/scout/markdown.go` + `readability.go` with `page.Markdown()`, `page.MarkdownContent()`, readability scoring, 17 pure-function tests + browser integration tests, CLI `scout markdown`
 - **Effort:** Large
 
+### Multi-Engine Search Command
+
+- **Priority:** P1
+- **Description:** Add a `scout search` command with engine-specific subcommands for web search. Supports multiple search engines and specialized search targets. Syntax: `scout search:google "query"`, `scout search:bing "query"`, `scout search:duckduckgo "query"`, `scout search:duckduckgo news "query"`, `scout search:wikipedia "query"`. Each engine navigates to the search page, fills the query, extracts structured results (title, URL, snippet, date). Can use recipes internally.
+- **Scope:** `cmd/scout/internal/cli/search_engines.go` with engine registry. Engines: Google, Bing, DuckDuckGo (web + news + images), Wikipedia, Google Scholar, Google News. Structured output (JSON/text). Pagination support (--pages=N). CLI `scout search --engine=google --query="..." [--type=news] [--pages=3]` or shorthand `scout search:google "query"`.
+- **Effort:** Medium
+- **Dependencies:** Existing `search.go` SERP parsing. Recipe system for engine definitions.
+
 ### Batch Scraper
 
 - **Priority:** P1
