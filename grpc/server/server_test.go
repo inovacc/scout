@@ -611,7 +611,6 @@ func TestErrorPaths(t *testing.T) {
 func TestStatsAfterOperations(t *testing.T) {
 	env := setupTestServer(t)
 	sid := env.createSession(t)
-	ctx := context.Background()
 
 	// After creating a session, stats should show totalSessions >= 1
 	// (we can't directly access server stats via gRPC, but we verify
@@ -620,7 +619,11 @@ func TestStatsAfterOperations(t *testing.T) {
 
 	env.navigate(t, sid, "/")
 
-	// Screenshot to trigger event
+	// Screenshot to trigger event — use timeout to avoid flaky hangs
+	// on closed connections during test cleanup
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
 	_, err := env.client.Screenshot(ctx, &pb.ScreenshotRequest{SessionId: sid})
 	if err != nil {
 		t.Fatalf("screenshot: %v", err)
