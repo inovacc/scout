@@ -1,6 +1,7 @@
 # Milestones
 
 ## v0.1.0 - Core API [COMPLETE]
+
 **Goal:** Functional browser automation library with essential features.
 
 - [x] Browser creation with functional options
@@ -17,6 +18,7 @@
 - **Test Coverage:** 33.2% (option 100%, browser ~60%, page/element/network partial)
 
 ## v0.2.0 - Scraping Toolkit [COMPLETE]
+
 **Goal:** Full-featured web scraping, search, and interaction toolkit.
 
 - [x] Struct-tag extraction engine (`scout:"selector"` / `scout:"selector@attr"`)
@@ -34,6 +36,7 @@
 - **New dependency:** `golang.org/x/time/rate`
 
 ## v0.1.5 - Window Control & Storage [COMPLETE]
+
 **Goal:** Browser state management and window control.
 
 - [x] Window control: minimize, maximize, fullscreen, restore
@@ -45,6 +48,7 @@
 - [x] Tests for window control and storage features
 
 ## v0.3.0 - HAR Recording & gRPC Remote Control [COMPLETE]
+
 **Goal:** Network traffic recording and remote browser control via gRPC.
 
 - [x] HAR 1.2 network recording via CDP events (`recorder.go`)
@@ -60,6 +64,7 @@
 - **New dependencies:** `google.golang.org/grpc`, `google.golang.org/protobuf`, `github.com/google/uuid`
 
 ## v0.4.0 - Scraper Modes & Encrypted Sessions [COMPLETE]
+
 **Goal:** Pluggable scraper framework with encrypted session persistence.
 
 - [x] Base scraper types (Credentials, Progress, AuthError, RateLimitError)
@@ -70,6 +75,7 @@
 - **Test Coverage:** scraper 84.3% (Slack mode removed)
 
 ## v0.5.0 - Unified CLI [COMPLETE]
+
 **Goal:** Single Cobra CLI binary replacing all separate command binaries.
 
 - [x] Move core library to `pkg/scout/` (import: `github.com/inovacc/scout/pkg/scout`)
@@ -84,9 +90,11 @@
 - **Test Coverage:** pkg/scout 79.2% | scraper 84.3%
 
 ## v0.6.0 - ~~Firecrawl Integration~~ [REMOVED]
+
 - ~~Firecrawl client removed — project focuses on native browser-based scraping~~
 
 ## v0.7.0 - Markdown, URL Map, Identity & mTLS [IN PROGRESS]
+
 **Goal:** Native HTML-to-Markdown, URL discovery, device identity, and mTLS.
 
 - [x] Pure Go HTML-to-Markdown converter with readability scoring (`markdown.go`, `readability.go`)
@@ -106,6 +114,7 @@
 - **Coverage:** pkg/scout 79.2% | pkg/identity 81.1% | scraper 84.3%
 
 ## v0.8.0 - Screen Recorder [PLANNED]
+
 **Goal:** Capture browser sessions as video for forensic evidence.
 
 - [ ] ScreenRecorder type using CDP `Page.startScreencast`
@@ -114,6 +123,7 @@
 - [ ] Combined HAR+video forensic bundles
 
 ## v0.9.0 - Distributed Crawling [PLANNED]
+
 **Goal:** Swarm-mode crawling across multiple browser instances.
 
 - [ ] Browser cluster / pool management
@@ -122,6 +132,7 @@
 - [ ] Result aggregation
 
 ## v1.0.0 - Documentation & Release [IN PROGRESS]
+
 **Goal:** Comprehensive documentation and stable release.
 
 - [x] Published to GitHub with git remote

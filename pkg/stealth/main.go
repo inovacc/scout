@@ -4,8 +4,8 @@
 package stealth
 
 import (
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/rod"
+	"github.com/inovacc/scout/pkg/rod/lib/proto"
 )
 
 // Page creates a stealth page that can't be detected as bot.

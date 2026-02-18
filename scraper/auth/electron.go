@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/rod"
+	"github.com/inovacc/scout/pkg/rod/lib/proto"
 	"github.com/inovacc/scout/pkg/scout"
 )
 

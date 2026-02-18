@@ -1,11 +1,13 @@
 # Project Roadmap
 
 ## Current Status
+
 **Overall Progress:** 85% Complete
 
 ## Phases
 
 ### Phase 1: Core API [COMPLETE]
+
 - [x] Browser lifecycle management (New, Close, Pages, Version)
 - [x] Functional options pattern for configuration (13 options)
 - [x] Page navigation (Navigate, NavigateBack, NavigateForward, Reload)
@@ -18,6 +20,7 @@
 - [x] Consistent error wrapping with `scout:` prefix
 
 ### Phase 2: Advanced Features [COMPLETE]
+
 - [x] Screenshots: viewport, full-page, scroll, PNG/JPEG with quality control
 - [x] PDF generation with configurable options (margins, scale, headers/footers)
 - [x] Network interception via HijackRouter with glob-pattern matching
@@ -33,6 +36,7 @@
 - [x] Dialog handling, element race, page activation
 
 ### Phase 3: Scraping Toolkit [COMPLETE]
+
 - [x] **Extraction Engine** (`extract.go`) — struct-tag extraction, table/list/meta parsing, convenience text/attribute extractors
 - [x] **Form Interaction** (`form.go`) — form detection, fill by map/struct, CSRF token, submit, multi-step wizard
 - [x] **Rate Limiting** (`ratelimit.go`) — token bucket rate limiter, retry with exponential backoff, NavigateWithRetry
@@ -41,6 +45,7 @@
 - [x] **Crawling** (`crawl.go`) — BFS crawl with depth/page limits, domain filtering, sitemap parser
 
 ### Phase 4: Testing & Quality [COMPLETE]
+
 - [x] Test infrastructure (httptest server, newTestBrowser helper)
 - [x] Browser lifecycle tests
 - [x] Basic page navigation and content tests
@@ -62,12 +67,14 @@
 - [x] Increase core test coverage from 69.9% to 80%+ (achieved 80.1%)
 
 ### Phase 5: Storage & Session Management [COMPLETE]
+
 - [x] Session storage get/set/clear (`storage.go`)
 - [x] Local storage get/set/clear (`storage.go`)
 - [x] Save/load full session state (URL, cookies, storage) (`storage.go`)
 - [x] Window control: minimize, maximize, fullscreen, restore, bounds (`window.go`)
 
 ### Phase 6: HAR Recording & gRPC Remote Control [COMPLETE]
+
 - [x] **HAR Network Recording** (`recorder.go`) — capture HTTP traffic via CDP events, export HAR 1.2 format
 - [x] **Keyboard Input** (`page.go`) — `KeyPress(key)` and `KeyType(keys...)` for page-level keyboard control
 - [x] **gRPC Service Layer** (`grpc/`) — protobuf service definition, multi-session server with 25+ RPCs
@@ -76,8 +83,10 @@
 - [x] **Example Workflow** (`cmd/example-workflow/`) — bidirectional streaming demo
 
 ### Phase 7: Scraper Modes [IN PROGRESS]
+
 - [x] **Scraper mode architecture** (`scraper/`) — base types (Credentials, Progress, AuthError, RateLimitError), ExportJSON, ProgressFunc callback
-- [x] **Generic auth framework** (`scraper/auth/`) — Provider interface, Registry, BrowserAuth flow, BrowserCapture (capture all data before close), OAuth2 PKCE server, Electron CDP connection, encrypted session persistence
+- [x] **Generic auth framework** (`scraper/auth/`) — Provider interface, Registry, BrowserAuth flow, BrowserCapture (capture all data before close), OAuth2 PKCE server, Electron CDP connection,
+  encrypted session persistence
 - [x] **Encryption utilities** (`scraper/crypto.go`) — EncryptData/DecryptData with passphrase-based key derivation
 - [x] **Generic auth CLI** (`cmd/scout/internal/cli/auth.go`) — `scout auth login/capture/status/logout/providers`
 - ~~[x] **Slack mode** — removed in favor of generic auth framework~~
@@ -92,6 +101,7 @@
 - [ ] **Cloud/monitoring modes** (P3) — AWS/GCP/Azure consoles, Grafana, Datadog
 
 ### Phase 8: Unified CLI [IN PROGRESS]
+
 - [x] Move core library to `pkg/scout/` (import: `github.com/inovacc/scout/pkg/scout`)
 - [x] Cobra CLI scaffold with persistent flags, daemon management, session tracking
 - [x] Port `cmd/server/` and `cmd/client/` into `scout server` / `scout client` subcommands
@@ -106,9 +116,11 @@
 - [x] Update documentation (README, CLAUDE.md)
 
 ### Phase 9: ~~Firecrawl Integration~~ [REMOVED]
+
 - ~~Firecrawl client removed — project focuses on native browser-based scraping~~
 
 ### Phase 10: Native HTML-to-Markdown Engine [COMPLETE]
+
 - [x] Pure Go HTML→Markdown converter in `pkg/scout/markdown.go`
 - [x] `page.Markdown()` — convert full page HTML to clean markdown
 - [x] `page.MarkdownContent()` — main content only (readability heuristics)
@@ -120,14 +132,15 @@
 
 ### Browser Support
 
-| Browser | Status | Notes |
-|---------|--------|-------|
-| Chrome/Chromium | ✅ Default | rod auto-detect |
-| Brave | ✅ Supported | `WithBrowser(BrowserBrave)` or `--browser=brave` |
-| Microsoft Edge | ✅ Supported | `WithBrowser(BrowserEdge)` or `--browser=edge` |
-| Firefox | ❌ Blocked | CDP removed in Firefox 141 (June 2025). Requires WebDriver BiDi maturity in Go ecosystem. |
+| Browser         | Status      | Notes                                                                                     |
+|-----------------|-------------|-------------------------------------------------------------------------------------------|
+| Chrome/Chromium | ✅ Default   | rod auto-detect                                                                           |
+| Brave           | ✅ Supported | `WithBrowser(BrowserBrave)` or `--browser=brave`                                          |
+| Microsoft Edge  | ✅ Supported | `WithBrowser(BrowserEdge)` or `--browser=edge`                                            |
+| Firefox         | ❌ Blocked   | CDP removed in Firefox 141 (June 2025). Requires WebDriver BiDi maturity in Go ecosystem. |
 
 ### Phase 11: Batch Scraper [PLANNED]
+
 - [ ] `BatchScrape(urls []string, fn func(*Page, string) error, ...BatchOption)` in `pkg/scout/batch.go`
 - [ ] Concurrent page pool with configurable parallelism (`WithBatchConcurrency(n)`)
 - [ ] Per-URL result collection with error isolation (one failure doesn't abort batch)
@@ -137,6 +150,7 @@
 - [ ] Tests: concurrency, error isolation, progress, rate limiting
 
 ### Phase 12: URL Map / Link Discovery [COMPLETE]
+
 - [x] `Map(url string, ...MapOption) ([]string, error)` in `pkg/scout/map.go`
 - [x] Lightweight link-only crawl — collect URLs without full page extraction
 - [x] Combine sitemap.xml parsing + on-page link harvesting
@@ -146,6 +160,7 @@
 - [x] Tests: link dedup, subdomain filtering, search filtering, sitemap integration
 
 ### Phase 13: LLM-Powered Extraction [PLANNED]
+
 - [ ] `ExtractWithLLM(page *Page, prompt string, ...LLMOption)` in `pkg/scout/llm.go`
 - [ ] Provider interface: `LLMProvider` with `Complete(ctx, systemPrompt, userPrompt) (string, error)`
 - [ ] Built-in providers: OpenAI, Anthropic, Ollama (local)
@@ -156,6 +171,7 @@
 - [ ] Tests: mock LLM provider, prompt construction, schema validation
 
 ### Phase 14: Async Job System [PLANNED]
+
 - [ ] Job manager in `pkg/scout/jobs.go` for long-running crawl/batch operations
 - [ ] Job lifecycle: create → running → completed/failed/cancelled
 - [ ] Job ID generation, status polling, cancellation
@@ -164,6 +180,7 @@
 - [ ] Integration with batch scraper and crawl commands
 
 ### Phase 15: Screen Recorder [PLANNED]
+
 - [ ] **ScreenRecorder type** (`pkg/scout/screenrecord.go`) — capture page frames via CDP `Page.startScreencast`, assemble into video
 - [ ] Functional options: `WithFrameRate(fps)`, `WithQuality(0-100)`, `WithMaxDuration(d)`, `WithFormat("webm"|"mp4")`
 - [ ] Frame-by-frame capture using `Page.screencastFrame` CDP events, ACK-based flow control
@@ -178,6 +195,7 @@
 - [ ] Tests: start/stop lifecycle, frame capture, export formats, concurrent recording with HAR
 
 ### Phase 16: Distributed Crawling [PLANNED]
+
 - [ ] Swarm mode: split crawl workloads across multiple browser instances
 - [ ] Multi-IP support: assign different proxies per browser in the cluster
 - [ ] Work distribution: BFS queue shared across workers
@@ -185,6 +203,7 @@
 - [ ] Headless cluster configuration options
 
 ### Phase 17: Device Identity, mTLS & Discovery [COMPLETE]
+
 - [x] **Device identity** (`pkg/identity/`) — Syncthing-style device IDs with Ed25519 keys, Luhn check digits
 - [x] **mTLS authentication** (`grpc/server/tls.go`) — auto-generated certificates, mutual TLS for gRPC
 - [x] **Device pairing** (`grpc/server/pairing.go`) — handshake protocol for mTLS certificate exchange
@@ -195,6 +214,7 @@
 - [x] **CLI device commands** (`cmd/scout/internal/cli/device.go`) — `scout device pair/list/trust`
 
 ### Phase 18: Documentation & Release [IN PROGRESS]
+
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)
 - [x] Add LICENSE file
@@ -205,12 +225,12 @@
 
 **Current:** pkg/scout 79.2% | pkg/identity 81.1% | scraper 84.3% | **Target:** 80%
 
-| Package | Coverage | Status |
-|---------|----------|--------|
-| pkg/scout | 79.2% | Near target |
-| pkg/identity | 81.1% | ✅ Target met |
-| scraper | 84.3% | ✅ Complete |
-| pkg/stealth | 0.0% | No tests (asset wrapper) |
-| pkg/discovery | 0.0% | No tests |
-| scraper/auth | 0.0% | No tests |
-| grpc/server | 0.0% | No tests |
+| Package       | Coverage | Status                   |
+|---------------|----------|--------------------------|
+| pkg/scout     | 79.2%    | Near target              |
+| pkg/identity  | 81.1%    | ✅ Target met             |
+| scraper       | 84.3%    | ✅ Complete               |
+| pkg/stealth   | 0.0%     | No tests (asset wrapper) |
+| pkg/discovery | 0.0%     | No tests                 |
+| scraper/auth  | 0.0%     | No tests                 |
+| grpc/server   | 0.0%     | No tests                 |

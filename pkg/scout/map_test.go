@@ -294,4 +294,3 @@ func TestMapOptions(t *testing.T) {
 		t.Error("path options not applied")
 	}
 }
-

@@ -37,11 +37,13 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 ## Installation
 
 **Library:**
+
 ```bash
 go get github.com/inovacc/scout/pkg/scout
 ```
 
 **CLI:**
+
 ```bash
 go install github.com/inovacc/scout/cmd/scout@latest
 ```
@@ -271,66 +273,66 @@ err := page.NavigateWithRetry("https://example.com", rl)
 
 ## Browser Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `WithHeadless(bool)` | Run in headless mode | `true` |
-| `WithStealth()` | Enable anti-bot-detection | disabled |
-| `WithProxy(url)` | Set proxy server | none |
-| `WithUserAgent(ua)` | Custom User-Agent | browser default |
-| `WithWindowSize(w, h)` | Browser window size | 1920x1080 |
-| `WithTimeout(d)` | Default operation timeout | 30s |
-| `WithSlowMotion(d)` | Delay between actions (debugging) | none |
-| `WithIgnoreCerts()` | Skip TLS verification | disabled |
-| `WithExecPath(path)` | Path to browser binary | auto-detect |
-| `WithUserDataDir(dir)` | Persistent session directory | temp |
-| `WithIncognito()` | Incognito mode | disabled |
-| `WithEnv(env...)` | Set environment variables for browser | none |
-| `WithNoSandbox()` | Disable sandbox (containers) | disabled |
-| `WithWindowState(state)` | Initial window state (normal/minimized/maximized/fullscreen) | normal |
-| `WithLaunchFlag(name, values...)` | Add custom Chrome CLI flag | none |
-| `WithXvfb(args...)` | Enable Xvfb for headful mode without display (Unix only) | disabled |
+| Option                            | Description                                                  | Default         |
+|-----------------------------------|--------------------------------------------------------------|-----------------|
+| `WithHeadless(bool)`              | Run in headless mode                                         | `true`          |
+| `WithStealth()`                   | Enable anti-bot-detection                                    | disabled        |
+| `WithProxy(url)`                  | Set proxy server                                             | none            |
+| `WithUserAgent(ua)`               | Custom User-Agent                                            | browser default |
+| `WithWindowSize(w, h)`            | Browser window size                                          | 1920x1080       |
+| `WithTimeout(d)`                  | Default operation timeout                                    | 30s             |
+| `WithSlowMotion(d)`               | Delay between actions (debugging)                            | none            |
+| `WithIgnoreCerts()`               | Skip TLS verification                                        | disabled        |
+| `WithExecPath(path)`              | Path to browser binary                                       | auto-detect     |
+| `WithUserDataDir(dir)`            | Persistent session directory                                 | temp            |
+| `WithIncognito()`                 | Incognito mode                                               | disabled        |
+| `WithEnv(env...)`                 | Set environment variables for browser                        | none            |
+| `WithNoSandbox()`                 | Disable sandbox (containers)                                 | disabled        |
+| `WithWindowState(state)`          | Initial window state (normal/minimized/maximized/fullscreen) | normal          |
+| `WithLaunchFlag(name, values...)` | Add custom Chrome CLI flag                                   | none            |
+| `WithXvfb(args...)`               | Enable Xvfb for headful mode without display (Unix only)     | disabled        |
 
 ## CLI Reference
 
 The `scout` CLI provides a unified interface to all library features. It communicates with a background gRPC daemon for session persistence across invocations.
 
-| Command | Description |
-|---------|-------------|
-| `scout session create` | Create a browser session (`--headless`, `--stealth`, `--proxy`, `--url`, `--record`) |
-| `scout session destroy [id]` | Destroy a session (`--all` for all) |
-| `scout session list` | List tracked sessions |
-| `scout session use <id>` | Set active session |
-| `scout navigate <url>` | Navigate to URL |
-| `scout back` / `forward` / `reload` | Browser history navigation |
-| `scout click <sel>` | Click an element |
-| `scout type <sel> <text>` | Type into an element |
-| `scout key <key>` | Press a keyboard key |
-| `scout select <sel> <val>` | Select a dropdown option |
-| `scout hover <sel>` / `focus` / `clear` | Element interaction |
-| `scout title` / `url` | Get page title or URL |
-| `scout text <sel>` | Get element text |
-| `scout attr <sel> <attr>` | Get element attribute |
-| `scout eval <js>` | Execute JavaScript |
-| `scout html [--selector=sel]` | Get page/element HTML |
-| `scout screenshot` | Capture screenshot (`--full`, `--format`, `--quality`) |
-| `scout pdf` | Generate PDF |
-| `scout har start` / `stop` / `export` | HAR network recording |
-| `scout window get\|min\|max\|full\|restore` | Window control |
-| `scout storage get\|set\|list\|clear` | Web storage (`--session-storage`) |
-| `scout cookie get\|set\|clear` | Cookie management |
-| `scout header set <key> <val>` | Set extra headers |
-| `scout block <pattern>` | Block URL pattern |
-| `scout search <query>` | Search engines (`--engine`, `--max-pages`) |
-| `scout crawl <url>` | BFS crawl (`--max-depth`, `--max-pages`, `--delay`) |
-| `scout map <url>` | URL discovery (`--search`, `--include-subdomains`, `--limit`) |
-| `scout markdown --url=<url>` | Convert page to markdown (`--main-only`, `--no-images`) |
-| `scout table` / `meta` | Extract tables/metadata (`--url`, `--selector`) |
-| `scout form detect\|fill\|submit` | Form interaction |
-| `scout auth login\|capture\|status\|logout` | Generic auth framework |
-| `scout device pair\|list\|trust` | Device pairing and identity |
-| `scout server` | Run gRPC server directly |
-| `scout client` | Interactive REPL client |
-| `scout version` | Show version info |
+| Command                                     | Description                                                                          |
+|---------------------------------------------|--------------------------------------------------------------------------------------|
+| `scout session create`                      | Create a browser session (`--headless`, `--stealth`, `--proxy`, `--url`, `--record`) |
+| `scout session destroy [id]`                | Destroy a session (`--all` for all)                                                  |
+| `scout session list`                        | List tracked sessions                                                                |
+| `scout session use <id>`                    | Set active session                                                                   |
+| `scout navigate <url>`                      | Navigate to URL                                                                      |
+| `scout back` / `forward` / `reload`         | Browser history navigation                                                           |
+| `scout click <sel>`                         | Click an element                                                                     |
+| `scout type <sel> <text>`                   | Type into an element                                                                 |
+| `scout key <key>`                           | Press a keyboard key                                                                 |
+| `scout select <sel> <val>`                  | Select a dropdown option                                                             |
+| `scout hover <sel>` / `focus` / `clear`     | Element interaction                                                                  |
+| `scout title` / `url`                       | Get page title or URL                                                                |
+| `scout text <sel>`                          | Get element text                                                                     |
+| `scout attr <sel> <attr>`                   | Get element attribute                                                                |
+| `scout eval <js>`                           | Execute JavaScript                                                                   |
+| `scout html [--selector=sel]`               | Get page/element HTML                                                                |
+| `scout screenshot`                          | Capture screenshot (`--full`, `--format`, `--quality`)                               |
+| `scout pdf`                                 | Generate PDF                                                                         |
+| `scout har start` / `stop` / `export`       | HAR network recording                                                                |
+| `scout window get\|min\|max\|full\|restore` | Window control                                                                       |
+| `scout storage get\|set\|list\|clear`       | Web storage (`--session-storage`)                                                    |
+| `scout cookie get\|set\|clear`              | Cookie management                                                                    |
+| `scout header set <key> <val>`              | Set extra headers                                                                    |
+| `scout block <pattern>`                     | Block URL pattern                                                                    |
+| `scout search <query>`                      | Search engines (`--engine`, `--max-pages`)                                           |
+| `scout crawl <url>`                         | BFS crawl (`--max-depth`, `--max-pages`, `--delay`)                                  |
+| `scout map <url>`                           | URL discovery (`--search`, `--include-subdomains`, `--limit`)                        |
+| `scout markdown --url=<url>`                | Convert page to markdown (`--main-only`, `--no-images`)                              |
+| `scout table` / `meta`                      | Extract tables/metadata (`--url`, `--selector`)                                      |
+| `scout form detect\|fill\|submit`           | Form interaction                                                                     |
+| `scout auth login\|capture\|status\|logout` | Generic auth framework                                                               |
+| `scout device pair\|list\|trust`            | Device pairing and identity                                                          |
+| `scout server`                              | Run gRPC server directly                                                             |
+| `scout client`                              | Interactive REPL client                                                              |
+| `scout version`                             | Show version info                                                                    |
 
 ## Development
 
@@ -355,24 +357,24 @@ task grpc:client   # Run interactive CLI client
 
 **Core library** (no gRPC — library-only consumers do not pull gRPC deps):
 
-| Package | Purpose |
-|---------|---------|
-| [go-rod/rod](https://github.com/go-rod/rod) | Headless browser automation via Chrome DevTools Protocol |
-| pkg/stealth (internalized) | Anti-bot-detection page creation (forked from go-rod/stealth) |
-| [ysmood/gson](https://github.com/ysmood/gson) | JSON number handling for JS evaluation results |
-| [golang.org/x/time](https://pkg.go.dev/golang.org/x/time) | Token bucket rate limiter |
-| [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | Argon2id key derivation for session encryption |
-| [golang.org/x/term](https://pkg.go.dev/golang.org/x/term) | Secure passphrase input (no-echo terminal) |
+| Package                                                       | Purpose                                                       |
+|---------------------------------------------------------------|---------------------------------------------------------------|
+| [go-rod/rod](https://github.com/go-rod/rod)                   | Headless browser automation via Chrome DevTools Protocol      |
+| pkg/stealth (internalized)                                    | Anti-bot-detection page creation (forked from go-rod/stealth) |
+| [ysmood/gson](https://github.com/ysmood/gson)                 | JSON number handling for JS evaluation results                |
+| [golang.org/x/time](https://pkg.go.dev/golang.org/x/time)     | Token bucket rate limiter                                     |
+| [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | Argon2id key derivation for session encryption                |
+| [golang.org/x/term](https://pkg.go.dev/golang.org/x/term)     | Secure passphrase input (no-echo terminal)                    |
 
 **gRPC layer and CLI** (`grpc/` and `cmd/` only):
 
-| Package | Purpose |
-|---------|---------|
-| [google.golang.org/grpc](https://pkg.go.dev/google.golang.org/grpc) | gRPC framework |
-| [google.golang.org/protobuf](https://pkg.go.dev/google.golang.org/protobuf) | Protocol Buffers runtime |
-| [google/uuid](https://github.com/google/uuid) | Session ID generation |
-| [spf13/cobra](https://github.com/spf13/cobra) | CLI framework |
-| [grandcat/zeroconf](https://github.com/grandcat/zeroconf) | mDNS service discovery for device pairing |
+| Package                                                                     | Purpose                                   |
+|-----------------------------------------------------------------------------|-------------------------------------------|
+| [google.golang.org/grpc](https://pkg.go.dev/google.golang.org/grpc)         | gRPC framework                            |
+| [google.golang.org/protobuf](https://pkg.go.dev/google.golang.org/protobuf) | Protocol Buffers runtime                  |
+| [google/uuid](https://github.com/google/uuid)                               | Session ID generation                     |
+| [spf13/cobra](https://github.com/spf13/cobra)                               | CLI framework                             |
+| [grandcat/zeroconf](https://github.com/grandcat/zeroconf)                   | mDNS service discovery for device pairing |
 
 ## License
 

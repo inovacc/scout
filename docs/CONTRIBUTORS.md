@@ -2,8 +2,8 @@
 
 ## Maintainers
 
-| Name | GitHub | Role |
-|------|--------|------|
+| Name         | GitHub                                         | Role                 |
+|--------------|------------------------------------------------|----------------------|
 | Dyam Marcano | [@dyammarcano](https://github.com/dyammarcano) | Creator & Maintainer |
 
 ## Contributing

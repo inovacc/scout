@@ -1,0 +1,538 @@
+{
+  "module": "github.com/go-rod/rod",
+  "version": "v0.116.2",
+  "upstream_commit": "1cd7eb98e9d3c5c032f08a4b6084a220f44a71f7",
+  "internalized_at": "2026-02-18T00:00:00Z",
+  "local_package": "pkg/rod",
+  "local_module": "github.com/inovacc/scout",
+  "license": "MIT",
+  "strategy": "full_copy",
+  "files": [
+    {
+      "upstream": "browser.go",
+      "local": "pkg/rod/browser.go",
+      "copied": true
+    },
+    {
+      "upstream": "context.go",
+      "local": "pkg/rod/context.go",
+      "copied": true
+    },
+    {
+      "upstream": "dev_helpers.go",
+      "local": "pkg/rod/dev_helpers.go",
+      "copied": true
+    },
+    {
+      "upstream": "element.go",
+      "local": "pkg/rod/element.go",
+      "copied": true
+    },
+    {
+      "upstream": "error.go",
+      "local": "pkg/rod/error.go",
+      "copied": true
+    },
+    {
+      "upstream": "hijack.go",
+      "local": "pkg/rod/hijack.go",
+      "copied": true
+    },
+    {
+      "upstream": "input.go",
+      "local": "pkg/rod/input.go",
+      "copied": true
+    },
+    {
+      "upstream": "must.go",
+      "local": "pkg/rod/must.go",
+      "copied": true
+    },
+    {
+      "upstream": "page.go",
+      "local": "pkg/rod/page.go",
+      "copied": true
+    },
+    {
+      "upstream": "page_eval.go",
+      "local": "pkg/rod/page_eval.go",
+      "copied": true
+    },
+    {
+      "upstream": "query.go",
+      "local": "pkg/rod/query.go",
+      "copied": true
+    },
+    {
+      "upstream": "states.go",
+      "local": "pkg/rod/states.go",
+      "copied": true
+    },
+    {
+      "upstream": "utils.go",
+      "local": "pkg/rod/utils.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/assets/assets.go",
+      "local": "pkg/rod/lib/assets/assets.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/cdp/client.go",
+      "local": "pkg/rod/lib/cdp/client.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/cdp/error.go",
+      "local": "pkg/rod/lib/cdp/error.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/cdp/format.go",
+      "local": "pkg/rod/lib/cdp/format.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/cdp/utils.go",
+      "local": "pkg/rod/lib/cdp/utils.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/cdp/websocket.go",
+      "local": "pkg/rod/lib/cdp/websocket.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/defaults/defaults.go",
+      "local": "pkg/rod/lib/defaults/defaults.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/devices/device.go",
+      "local": "pkg/rod/lib/devices/device.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/devices/list.go",
+      "local": "pkg/rod/lib/devices/list.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/devices/utils.go",
+      "local": "pkg/rod/lib/devices/utils.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/input/keyboard.go",
+      "local": "pkg/rod/lib/input/keyboard.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/input/keymap.go",
+      "local": "pkg/rod/lib/input/keymap.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/input/mac_comands.go",
+      "local": "pkg/rod/lib/input/mac_comands.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/input/mouse.go",
+      "local": "pkg/rod/lib/input/mouse.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/js/helper.go",
+      "local": "pkg/rod/lib/js/helper.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/js/js.go",
+      "local": "pkg/rod/lib/js/js.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/launcher/browser.go",
+      "local": "pkg/rod/lib/launcher/browser.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/launcher/error.go",
+      "local": "pkg/rod/lib/launcher/error.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/launcher/flags/flags.go",
+      "local": "pkg/rod/lib/launcher/flags/flags.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/launcher/launcher.go",
+      "local": "pkg/rod/lib/launcher/launcher.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/launcher/manager.go",
+      "local": "pkg/rod/lib/launcher/manager.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/launcher/os_unix.go",
+      "local": "pkg/rod/lib/launcher/os_unix.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/launcher/os_windows.go",
+      "local": "pkg/rod/lib/launcher/os_windows.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/launcher/revision.go",
+      "local": "pkg/rod/lib/launcher/revision.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/launcher/url_parser.go",
+      "local": "pkg/rod/lib/launcher/url_parser.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/launcher/utils.go",
+      "local": "pkg/rod/lib/launcher/utils.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/a_interface.go",
+      "local": "pkg/rod/lib/proto/a_interface.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/a_patch.go",
+      "local": "pkg/rod/lib/proto/a_patch.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/a_utils.go",
+      "local": "pkg/rod/lib/proto/a_utils.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/accessibility.go",
+      "local": "pkg/rod/lib/proto/accessibility.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/animation.go",
+      "local": "pkg/rod/lib/proto/animation.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/audits.go",
+      "local": "pkg/rod/lib/proto/audits.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/autofill.go",
+      "local": "pkg/rod/lib/proto/autofill.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/background_service.go",
+      "local": "pkg/rod/lib/proto/background_service.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/browser.go",
+      "local": "pkg/rod/lib/proto/browser.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/cache_storage.go",
+      "local": "pkg/rod/lib/proto/cache_storage.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/cast.go",
+      "local": "pkg/rod/lib/proto/cast.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/console.go",
+      "local": "pkg/rod/lib/proto/console.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/css.go",
+      "local": "pkg/rod/lib/proto/css.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/database.go",
+      "local": "pkg/rod/lib/proto/database.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/debugger.go",
+      "local": "pkg/rod/lib/proto/debugger.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/definitions.go",
+      "local": "pkg/rod/lib/proto/definitions.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/device_access.go",
+      "local": "pkg/rod/lib/proto/device_access.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/device_orientation.go",
+      "local": "pkg/rod/lib/proto/device_orientation.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/dom.go",
+      "local": "pkg/rod/lib/proto/dom.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/dom_debugger.go",
+      "local": "pkg/rod/lib/proto/dom_debugger.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/dom_snapshot.go",
+      "local": "pkg/rod/lib/proto/dom_snapshot.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/dom_storage.go",
+      "local": "pkg/rod/lib/proto/dom_storage.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/emulation.go",
+      "local": "pkg/rod/lib/proto/emulation.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/event_breakpoints.go",
+      "local": "pkg/rod/lib/proto/event_breakpoints.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/extensions.go",
+      "local": "pkg/rod/lib/proto/extensions.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/fed_cm.go",
+      "local": "pkg/rod/lib/proto/fed_cm.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/fetch.go",
+      "local": "pkg/rod/lib/proto/fetch.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/headless_experimental.go",
+      "local": "pkg/rod/lib/proto/headless_experimental.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/heap_profiler.go",
+      "local": "pkg/rod/lib/proto/heap_profiler.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/indexed_db.go",
+      "local": "pkg/rod/lib/proto/indexed_db.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/input.go",
+      "local": "pkg/rod/lib/proto/input.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/inspector.go",
+      "local": "pkg/rod/lib/proto/inspector.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/io.go",
+      "local": "pkg/rod/lib/proto/io.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/layer_tree.go",
+      "local": "pkg/rod/lib/proto/layer_tree.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/log.go",
+      "local": "pkg/rod/lib/proto/log.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/media.go",
+      "local": "pkg/rod/lib/proto/media.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/memory.go",
+      "local": "pkg/rod/lib/proto/memory.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/network.go",
+      "local": "pkg/rod/lib/proto/network.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/overlay.go",
+      "local": "pkg/rod/lib/proto/overlay.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/page.go",
+      "local": "pkg/rod/lib/proto/page.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/performance.go",
+      "local": "pkg/rod/lib/proto/performance.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/performance_timeline.go",
+      "local": "pkg/rod/lib/proto/performance_timeline.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/preload.go",
+      "local": "pkg/rod/lib/proto/preload.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/profiler.go",
+      "local": "pkg/rod/lib/proto/profiler.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/pwa.go",
+      "local": "pkg/rod/lib/proto/pwa.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/runtime.go",
+      "local": "pkg/rod/lib/proto/runtime.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/schema.go",
+      "local": "pkg/rod/lib/proto/schema.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/security.go",
+      "local": "pkg/rod/lib/proto/security.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/service_worker.go",
+      "local": "pkg/rod/lib/proto/service_worker.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/storage.go",
+      "local": "pkg/rod/lib/proto/storage.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/system_info.go",
+      "local": "pkg/rod/lib/proto/system_info.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/target.go",
+      "local": "pkg/rod/lib/proto/target.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/tethering.go",
+      "local": "pkg/rod/lib/proto/tethering.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/tracing.go",
+      "local": "pkg/rod/lib/proto/tracing.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/web_audio.go",
+      "local": "pkg/rod/lib/proto/web_audio.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/proto/web_authn.go",
+      "local": "pkg/rod/lib/proto/web_authn.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/utils/imageutil.go",
+      "local": "pkg/rod/lib/utils/imageutil.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/utils/sleeper.go",
+      "local": "pkg/rod/lib/utils/sleeper.go",
+      "copied": true
+    },
+    {
+      "upstream": "lib/utils/utils.go",
+      "local": "pkg/rod/lib/utils/utils.go",
+      "copied": true
+    }
+  ],
+  "import_rewrites": {
+    "github.com/go-rod/rod": "github.com/inovacc/scout/pkg/rod",
+    "github.com/go-rod/rod/lib/cdp": "github.com/inovacc/scout/pkg/rod/lib/cdp",
+    "github.com/go-rod/rod/lib/proto": "github.com/inovacc/scout/pkg/rod/lib/proto",
+    "github.com/go-rod/rod/lib/launcher": "github.com/inovacc/scout/pkg/rod/lib/launcher",
+    "github.com/go-rod/rod/lib/launcher/flags": "github.com/inovacc/scout/pkg/rod/lib/launcher/flags",
+    "github.com/go-rod/rod/lib/input": "github.com/inovacc/scout/pkg/rod/lib/input",
+    "github.com/go-rod/rod/lib/devices": "github.com/inovacc/scout/pkg/rod/lib/devices",
+    "github.com/go-rod/rod/lib/defaults": "github.com/inovacc/scout/pkg/rod/lib/defaults",
+    "github.com/go-rod/rod/lib/js": "github.com/inovacc/scout/pkg/rod/lib/js",
+    "github.com/go-rod/rod/lib/utils": "github.com/inovacc/scout/pkg/rod/lib/utils",
+    "github.com/go-rod/rod/lib/assets": "github.com/inovacc/scout/pkg/rod/lib/assets"
+  },
+  "excluded_paths": [
+    "lib/docker/",
+    "lib/examples/",
+    "lib/benchmark/",
+    "fixtures/",
+    "lib/assets/generate/",
+    "lib/devices/generate/",
+    "lib/js/generate/",
+    "lib/proto/generate/",
+    "lib/launcher/fixtures/",
+    "lib/launcher/revision/",
+    "lib/launcher/rod-manager/",
+    "lib/utils/check-issue/",
+    "lib/utils/ci-test/",
+    "lib/utils/get-browser/",
+    "lib/utils/lint/",
+    "lib/utils/rename/",
+    "lib/utils/setup/",
+    "lib/utils/shell/",
+    "lib/utils/simple-check/",
+    "*_test.go"
+  ],
+  "local_modifications": []
+}

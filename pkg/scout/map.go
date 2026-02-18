@@ -11,14 +11,14 @@ import (
 type MapOption func(*mapOptions)
 
 type mapOptions struct {
-	limit           int
-	includeSubdoms  bool
-	includePaths    []string
-	excludePaths    []string
-	search          string
-	useSitemap      bool
-	delay           time.Duration
-	maxDepth        int
+	limit          int
+	includeSubdoms bool
+	includePaths   []string
+	excludePaths   []string
+	search         string
+	useSitemap     bool
+	delay          time.Duration
+	maxDepth       int
 }
 
 func mapDefaults() *mapOptions {

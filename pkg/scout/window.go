@@ -3,7 +3,7 @@ package scout
 import (
 	"fmt"
 
-	"github.com/go-rod/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/rod/lib/proto"
 )
 
 // WindowState represents the state of a browser window.

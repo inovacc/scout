@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/launcher"
-	"github.com/go-rod/rod/lib/launcher/flags"
-	"github.com/go-rod/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/rod"
+	"github.com/inovacc/scout/pkg/rod/lib/launcher"
+	"github.com/inovacc/scout/pkg/rod/lib/launcher/flags"
+	"github.com/inovacc/scout/pkg/rod/lib/proto"
 	"github.com/inovacc/scout/pkg/stealth"
 )
 

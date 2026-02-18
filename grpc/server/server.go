@@ -10,12 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-rod/rod/lib/input"
-	"github.com/go-rod/rod/lib/proto"
 	"github.com/google/uuid"
-	"github.com/inovacc/scout/pkg/identity"
-	"github.com/inovacc/scout/pkg/scout"
 	pb "github.com/inovacc/scout/grpc/scoutpb"
+	"github.com/inovacc/scout/pkg/identity"
+	"github.com/inovacc/scout/pkg/rod/lib/input"
+	"github.com/inovacc/scout/pkg/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
@@ -827,7 +827,7 @@ func (s *ScoutServer) Interactive(stream pb.ScoutService_InteractiveServer) erro
 
 			defer sess.unsubscribe(subID)
 
-			_ = subID  // used in defer above
+			_ = subID   // used in defer above
 			_ = eventCh // used in goroutine below
 
 			// Goroutine to forward events to client

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-rod/rod/lib/devices"
-	"github.com/go-rod/rod/lib/input"
-	"github.com/go-rod/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/rod/lib/devices"
+	"github.com/inovacc/scout/pkg/rod/lib/input"
+	"github.com/inovacc/scout/pkg/rod/lib/proto"
 )
 
 func TestPageNavigateAndTitle(t *testing.T) {
@@ -1353,4 +1353,3 @@ func TestPageKeyPressAndType(t *testing.T) {
 		t.Fatalf("KeyPress() error: %v", err)
 	}
 }
-

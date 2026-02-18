@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-rod/rod/lib/input"
+	"github.com/inovacc/scout/pkg/rod/lib/input"
 )
 
 func init() {
@@ -1619,4 +1619,3 @@ func TestElementClear(t *testing.T) {
 		t.Errorf("value after clear = %q, want empty", val)
 	}
 }
-
