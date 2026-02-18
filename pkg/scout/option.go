@@ -42,6 +42,7 @@ type options struct {
 	launchFlags map[string][]string
 	extensions  []string
 	devtools    bool
+	bridge      bool
 }
 
 func defaults() *options {
@@ -149,6 +150,13 @@ func WithExtension(paths ...string) Option {
 // WithDevTools opens Chrome DevTools automatically for each new tab.
 func WithDevTools() Option {
 	return func(o *options) { o.devtools = true }
+}
+
+// WithBridge enables the built-in Scout Bridge extension for bidirectional
+// Go↔browser communication via CDP bindings. The extension is written to a
+// temp directory at startup and loaded automatically.
+func WithBridge() Option {
+	return func(o *options) { o.bridge = true }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.

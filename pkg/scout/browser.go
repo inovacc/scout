@@ -65,6 +65,15 @@ func New(opts ...Option) (*Browser, error) {
 		l = l.Set(flags.Flag("auto-open-devtools-for-tabs"))
 	}
 
+	if o.bridge {
+		bridgeDir, err := writeBridgeExtension()
+		if err != nil {
+			return nil, err
+		}
+
+		o.extensions = append(o.extensions, bridgeDir)
+	}
+
 	if len(o.extensions) > 0 {
 		joined := strings.Join(o.extensions, ",")
 		l = l.Set(flags.Flag("load-extension"), joined)
