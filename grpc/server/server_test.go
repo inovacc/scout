@@ -570,16 +570,22 @@ func TestErrorPaths(t *testing.T) {
 		t.Error("expected error for invalid session title")
 	}
 
-	// Element not found
+	// Element not found — use a short timeout so rod doesn't retry forever
 	sid := env.createSession(t)
 	env.navigate(t, sid, "/")
 
-	_, err = env.client.Click(ctx, &pb.ElementRequest{SessionId: sid, Selector: "#nonexistent"})
+	shortCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	_, err = env.client.Click(shortCtx, &pb.ElementRequest{SessionId: sid, Selector: "#nonexistent"})
 	if err == nil {
 		t.Error("expected error for nonexistent element click")
 	}
 
-	_, err = env.client.GetText(ctx, &pb.ElementRequest{SessionId: sid, Selector: "#nonexistent"})
+	shortCtx2, cancel2 := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel2()
+
+	_, err = env.client.GetText(shortCtx2, &pb.ElementRequest{SessionId: sid, Selector: "#nonexistent"})
 	if err == nil {
 		t.Error("expected error for nonexistent element text")
 	}
