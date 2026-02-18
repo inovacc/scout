@@ -24,9 +24,12 @@ flowchart TB
             Batch["BatchScrape\n(batch.go)"]
             Recipe["Recipe\n(recipe/)"]
             Swagger["Swagger/OpenAPI\n(swagger.go)"]
+            Extension["Extension DL\n(extension.go)"]
+            LLM["LLM Extraction\n(llm*.go)"]
         end
 
         subgraph Infrastructure["Infrastructure"]
+            Bridge["Bridge\n(bridge.go)"]
             Network["HijackRouter\n(network.go)"]
             Storage["Storage / Session\n(storage.go)"]
             Window["WindowState\n(window.go)"]

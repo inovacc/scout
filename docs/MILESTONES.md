@@ -117,7 +117,40 @@
 - [x] mTLS fix for all CLI commands
 - [x] Server session timeout fix (disable rod per-page timeout)
 - [x] Tagged v0.7.0, v0.7.1, v0.7.2
-- **Coverage:** pkg/scout 76.7% | pkg/identity 81.1% | scraper 84.3%
+- **Coverage:** pkg/scout 75.0% | pkg/identity 81.1% | scraper 84.3%
+
+## v0.7.4 - Extension Download & CRX Support [IN PROGRESS]
+
+**Goal:** Download Chrome extensions from Web Store, CRX2/CRX3 unpacking, persistent extension storage.
+
+- [x] `DownloadExtension(id)` — download CRX from Chrome Web Store, unpack to `~/.scout/extensions/<id>/`
+- [x] CRX3 format parsing (magic + version + protobuf header + ZIP)
+- [x] CRX2 format parsing (magic + version + pubkey + sig + ZIP)
+- [x] HTTP timeout (60s) for CRX downloads
+- [x] `ListLocalExtensions()`, `RemoveExtension(id)`, `ExtensionDir()`
+- [x] `WithExtensionByID(ids...)` option to load downloaded extensions by ID
+- [x] Extension ID resolution in `New()` before browser launch
+- [x] CLI: `scout extension download <id>`, `scout extension remove <id>`
+- [x] Updated `scout extension list` to show `~/.scout/extensions/` entries
+- [x] Zip-slip protection in CRX extraction
+- [x] Unit tests for CRX2/CRX3 unpacking, manifest parsing, listing, removal
+- **Coverage:** pkg/scout 75.0%
+
+## v0.7.5 - LLM-Powered Extraction [COMPLETE]
+
+**Goal:** AI-powered data extraction with multi-provider LLM support and review pipeline.
+
+- [x] `LLMProvider` interface with `Name()` + `Complete(ctx, system, user) (string, error)`
+- [x] Ollama provider (`llm_ollama.go`) — local LLM via `github.com/ollama/ollama/api`
+- [x] OpenAI-compatible provider (`llm_openai.go`) — covers OpenAI, OpenRouter, DeepSeek, Gemini
+- [x] Anthropic provider (`llm_anthropic.go`) — Messages API
+- [x] `ExtractWithLLM()` and `ExtractWithLLMJSON()` on `*Page`
+- [x] LLM Review pipeline: `ExtractWithLLMReview()` — extract with LLM1, review with LLM2
+- [x] Workspace persistence: filesystem session/job tracking (`llm_workspace.go`)
+- [x] CLI: `scout extract-ai`, `scout ollama list/pull/status`, `scout ai-job list/show/session`
+- [x] 40+ tests with mock providers, httptest servers, workspace lifecycle
+- **New dependency:** `github.com/ollama/ollama`
+- **Coverage:** pkg/scout 75.4%
 
 ## v0.8.0 - Screen Recorder [PLANNED]
 
@@ -146,5 +179,5 @@
 - [x] LICENSE file
 - [ ] GoDoc examples for Browser, Page, Element, EvalResult, and new features
 - [ ] Integration test examples (login flow, form submission, scraping)
-- [ ] 80%+ test coverage (pkg/scout: 76.7% — regressed with new features)
-- **Coverage:** pkg/scout 76.7% | pkg/identity 81.1% | scraper 84.3%
+- [ ] 80%+ test coverage (pkg/scout: 75.4% — regressed with new features)
+- **Coverage:** pkg/scout 75.4% | pkg/identity 81.1% | scraper 84.3%

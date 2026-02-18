@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Overall Progress:** 89% Complete
+**Overall Progress:** 91% Complete
 
 ## Phases
 
@@ -167,6 +167,82 @@
 - [x] CLI: `scout recipe run --file=recipe.json`, `scout recipe validate --file=recipe.json`
 - [x] Unit tests for recipe parsing (`pkg/scout/recipe/recipe_test.go`)
 
+### Phase 12c: Recipe Creator — AI-Assisted Recipe Generation [PLANNED]
+
+Automatically analyze a target website and generate a ready-to-run recipe JSON file. Scout navigates the site, inspects the DOM structure, identifies interactive elements and data patterns, and produces an `extract` or `automate` recipe. Optionally uses an LLM to resolve ambiguous selectors, name fields semantically, and plan multi-step automation flows.
+
+#### Site Analysis Engine
+
+- [ ] **`AnalyzeSite(url string, ...AnalyzeOption) (*SiteAnalysis, error)`** (`pkg/scout/recipe/analyze.go`) — navigate to URL, inspect DOM, classify page type
+- [ ] **Page classification** — detect page type: product listing, detail page, search results, login form, multi-step wizard, dashboard, article/blog, table/grid, API docs
+- [ ] **Container detection** — find repeated DOM structures (lists, grids, tables) via sibling-similarity scoring; rank by count, depth, and attribute consistency
+- [ ] **Field discovery** — within each container, identify text nodes, links, images, prices, dates, badges, and map to candidate field names
+- [ ] **Selector generation** — produce robust CSS selectors: prefer `[data-*]`, `[role]`, semantic tags over brittle `.class-hash` chains; validate uniqueness
+- [ ] **Selector resilience scoring** — score selectors by stability heuristics (attribute-based > class-based > nth-child); warn on fragile selectors
+- [ ] **Pagination detection** — identify next-page buttons, infinite scroll triggers, URL-pattern pagination (`?page=N`), load-more buttons
+- [ ] **Form detection** — find `<form>` elements, map input fields (name, type, label), detect submit buttons, CSRF tokens
+- [ ] **Interactive element mapping** — catalog clickable elements, dropdowns, tabs, modals, accordions with their trigger selectors
+- [ ] **SiteAnalysis type**:
+  ```go
+  type SiteAnalysis struct {
+      URL           string
+      PageType      string               // "listing", "detail", "form", "search", etc.
+      Containers    []ContainerCandidate  // ranked repeated structures
+      Forms         []FormCandidate       // detected forms with fields
+      Pagination    *PaginationCandidate  // detected pagination pattern
+      Interactables []InteractableElement // buttons, tabs, dropdowns
+      Metadata      map[string]string     // page title, description, og:tags
+  }
+  ```
+
+#### Recipe Generation (Rule-Based)
+
+- [ ] **`GenerateRecipe(analysis *SiteAnalysis, ...GenerateOption) (*Recipe, error)`** (`pkg/scout/recipe/generate.go`)
+- [ ] **Extract recipe generation** — from top-ranked container + fields, build `items.container`, `items.fields` map, detect `@attr` for links/images
+- [ ] **Automate recipe generation** — from form + interactable analysis, build sequential steps (navigate → fill → click → wait → extract)
+- [ ] **Pagination wiring** — attach detected pagination to recipe (strategy, next_selector, max_pages)
+- [ ] **WaitFor inference** — set `wait_for` to the container selector for dynamic pages (SPA detection via script count, framework markers)
+- [ ] **Output defaults** — set format to `json`, name derived from page title or domain
+- [ ] **`WithGenerateType("extract"|"automate")` option** — force recipe type instead of auto-detect
+- [ ] **`WithGenerateFields(fields ...string)` option** — only include specified fields in extraction recipe
+- [ ] **`WithGenerateMaxPages(n)` option** — set pagination max pages
+
+#### AI-Assisted Generation (Optional LLM Enhancement)
+
+- [ ] **`WithAI(provider LLMProvider)` option** — enable LLM-assisted recipe generation (reuses Phase 14 LLM provider interface)
+- [ ] **Semantic field naming** — send container HTML sample to LLM, ask for meaningful field names ("price", "title", "rating") instead of generic ("text_1", "link_2")
+- [ ] **Selector refinement** — LLM suggests more stable selectors when rule-based ones are fragile (class-hash dependent)
+- [ ] **Automation planning** — given a goal description (`WithGoal("login and export CSV")`), LLM plans the step sequence: which fields to fill, buttons to click, waits to add
+- [ ] **Multi-page flow detection** — LLM analyzes page transitions (login → dashboard → settings) and generates multi-step automate recipe
+- [ ] **Validation prompts** — after generation, LLM reviews the recipe for completeness and suggests missing steps or error handling
+- [ ] **Prompt templates** — structured prompts with page HTML context, selector candidates, and recipe schema as system prompt; user goal as user prompt
+- [ ] **Fallback** — if LLM unavailable or errors, fall back to rule-based generation silently
+
+#### Recipe Validation & Testing
+
+- [ ] **Dry-run mode** — `ValidateRecipe(browser, recipe) (*ValidationResult, error)` navigates to URL, checks all selectors resolve, reports missing fields
+- [ ] **Selector health check** — for each selector in recipe, verify it matches expected count of elements
+- [ ] **Sample extraction** — run recipe on first page only, return sample items for user review before full run
+- [ ] **Auto-fix suggestions** — when selectors fail, re-analyze page and suggest updated selectors
+
+#### CLI Commands
+
+- [ ] `scout recipe create <url> [--type=extract|automate] [--output=recipe.json]` — analyze site + generate recipe
+- [ ] `scout recipe create <url> --ai [--goal="scrape all products"] [--provider=ollama]` — AI-assisted generation
+- [ ] `scout recipe create <url> --interactive` — step-by-step guided creation: show candidates, let user pick containers/fields
+- [ ] `scout recipe test --file=recipe.json` — dry-run validation with sample output
+- [ ] `scout recipe fix --file=recipe.json` — re-analyze site, update broken selectors in existing recipe
+
+#### Testing
+
+- [ ] Container detection tests (product grids, tables, lists, nested structures)
+- [ ] Selector generation tests (preference for data attributes, uniqueness validation)
+- [ ] Pagination detection tests (click-next, URL pattern, infinite scroll, load-more)
+- [ ] Form detection tests (login forms, search bars, multi-step wizards)
+- [ ] End-to-end: analyze test page → generate recipe → run recipe → verify extracted data matches expected
+- [ ] AI integration tests with mock LLM provider
+- [ ] CLI integration tests for `recipe create` and `recipe test`
+
 ### Multi-Engine Search [COMPLETE]
 
 - [x] Engine-specific search subcommands (`cmd/scout/search_engines.go`)
@@ -187,16 +263,19 @@
 - [x] **CLI command** — `scout swagger <url> [--endpoints-only] [--raw] [--format=json|text] [--output=file]`
 - [x] **Tests** — detection (UI 3+, 2.0, ReDoc, non-swagger), extraction, endpoints-only, schema/security parsing, JSON marshaling
 
-### Phase 14: LLM-Powered Extraction [PLANNED]
+### Phase 14: LLM-Powered Extraction [COMPLETE]
 
-- [ ] `ExtractWithLLM(page *Page, prompt string, ...LLMOption)` in `pkg/scout/llm.go`
-- [ ] Provider interface: `LLMProvider` with `Complete(ctx, systemPrompt, userPrompt) (string, error)`
-- [ ] Built-in providers: OpenAI, Anthropic, Ollama (local)
-- [ ] Pipeline: render page → convert to markdown → send markdown + prompt to LLM → parse response
-- [ ] Optional JSON schema validation on LLM response (`WithLLMSchema(schema)`)
-- [ ] `WithLLMProvider(provider)`, `WithLLMModel(model)`, `WithLLMTemperature(t)`
-- [ ] CLI: `scout extract-ai --url=<url> --prompt="..." [--provider=ollama] [--model=llama3] [--schema=file.json]`
-- [ ] Tests: mock LLM provider, prompt construction, schema validation
+- [x] `ExtractWithLLM(prompt string, ...LLMOption) (string, error)` on `*Page` in `pkg/scout/llm.go`
+- [x] `ExtractWithLLMJSON(prompt string, target any, ...LLMOption) error` for typed extraction
+- [x] Provider interface: `LLMProvider` with `Name() string` + `Complete(ctx, systemPrompt, userPrompt) (string, error)`
+- [x] Built-in providers: Ollama (`llm_ollama.go`), OpenAI-compatible (`llm_openai.go` — covers OpenAI, OpenRouter, DeepSeek, Gemini), Anthropic (`llm_anthropic.go`)
+- [x] Pipeline: page.Markdown()/MarkdownContent() → build prompt → provider.Complete() → optional JSON schema validation
+- [x] LLM Review pipeline (`llm_review.go`): `ExtractWithLLMReview()` — extract with LLM1, review with LLM2
+- [x] Workspace persistence (`llm_workspace.go`): filesystem session/job tracking with `sessions.json`, `jobs/jobs.json`, `jobs/<uuid>/` structure
+- [x] Functional options: `WithLLMProvider`, `WithLLMModel`, `WithLLMTemperature`, `WithLLMMaxTokens`, `WithLLMSchema`, `WithLLMSystemPrompt`, `WithLLMTimeout`, `WithLLMMainContent`, `WithLLMReview`, `WithLLMReviewModel`, `WithLLMReviewPrompt`, `WithLLMWorkspace`, `WithLLMSessionID`, `WithLLMMetadata`
+- [x] CLI: `scout extract-ai --url=<url> --prompt="..." [--provider=ollama] [--model=...] [--schema=file.json] [--review] [--review-provider=...] [--workspace=dir]`
+- [x] CLI: `scout ollama list/pull/status`, `scout ai-job list/show/session list/session create/session use`
+- [x] Tests: 40+ tests covering mock providers, prompt construction, schema validation, workspace lifecycle, review pipeline, OpenAI/Anthropic httptest servers
 
 ### Phase 15: Async Job System [PLANNED]
 
@@ -227,13 +306,13 @@ Pre-inject custom JavaScript files and Chrome extensions into browser sessions t
   - `scout session create --extension=~/.scout/extensions/adblocker` — load extension bundle
 - [ ] Tests: injection ordering, multi-file loading, communication bridge, extension bundle loading
 
-### Phase 17: Scout Bridge Extension — Bidirectional Browser Control [PLANNED]
+### Phase 17: Scout Bridge Extension — Bidirectional Browser Control [IN PROGRESS]
 
 A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a persistent bidirectional communication channel between the Scout Go backend and the browser runtime. Unlike CDP-only control (which operates from outside the browser), the bridge extension runs *inside* the browser context with full access to Chrome Extension APIs, enabling capabilities that CDP alone cannot provide.
 
 #### Core: Communication Channel
 
-- [ ] **Extension scaffold** (`extensions/scout-bridge/`) — Manifest V3 Chrome extension with service worker, content script, and popup
+- [x] **Extension scaffold** (`pkg/scout/bridge_assets.go`) — Manifest V3 Chrome extension with service worker and content script, embedded via Go and written to temp dir at startup
 - [ ] **WebSocket transport** (`extensions/scout-bridge/ws.go` + `background.js`) — Extension service worker connects to a local WebSocket server embedded in Scout's gRPC daemon; auto-reconnect with exponential backoff
 - [ ] **Message protocol** — JSON-RPC 2.0 over WebSocket: `{method, params, id}` request/response + `{method, params}` notifications; message types: `command` (Go→browser), `event` (browser→Go), `query` (Go→browser with response)
 - [ ] **Go WebSocket server** (`pkg/scout/bridge/server.go`) — Embedded in the gRPC daemon, accepts extension connections, routes messages to/from Scout sessions; multiplexes multiple tabs/pages
@@ -272,7 +351,7 @@ A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a pers
 
 #### Library Integration
 
-- [ ] **`WithBridge()` option** (`pkg/scout/option.go`) — Enable bridge extension auto-loading; bundles the extension from embedded assets
+- [x] **`WithBridge()` option** (`pkg/scout/option.go`) — Enable bridge extension auto-loading; writes extension to temp dir and loads via `WithExtension()`
 - [ ] **`Bridge` type** (`pkg/scout/bridge.go`) — `Browser.Bridge()` returns the bridge instance; `bridge.Send(method, params)`, `bridge.On(event, handler)`, `bridge.Query(method, params) (result, error)`
 - [ ] **Event subscriptions** — `bridge.OnMutation(selector, fn)`, `bridge.OnNavigation(fn)`, `bridge.OnConsole(fn)`, `bridge.OnNetwork(fn)`, `bridge.OnInteraction(fn)`
 - [ ] **Command methods** — `bridge.InsertElement(html, parent)`, `bridge.SetClipboard(text)`, `bridge.Download(url)`, `bridge.CreateTab(url)`, `bridge.GetHistory(query)`
@@ -300,7 +379,139 @@ A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a pers
 - [ ] Fallback behavior tests (bridge unavailable → CDP degradation)
 - [ ] Example: `examples/advanced/bridge-extension/`
 
-### Phase 18: Screen Recorder [PLANNED]
+### Phase 17b: AI-Powered Bot Protection Bypass [PLANNED]
+
+Use LLM vision and the Scout Bridge extension to detect and solve Cloudflare challenges, CAPTCHAs, and other bot protection mechanisms automatically. The bridge extension (now enabled by default) provides the in-browser instrumentation needed for real-time challenge detection and interaction.
+
+#### Challenge Detection
+
+- [ ] **Challenge detector** (`pkg/scout/challenge.go`) — detect Cloudflare "Just a moment...", hCaptcha, reCAPTCHA, Turnstile, DataDome, PerimeterX, Akamai Bot Manager by page title, DOM markers, and URL patterns
+- [ ] **Challenge type enum** — `ChallengeCloudflare`, `ChallengeHCaptcha`, `ChallengeRecaptcha`, `ChallengeTurnstile`, `ChallengeDataDome`, `ChallengeUnknown`
+- [ ] **Auto-detect on navigation** — `WithAutoBypass()` option to automatically detect and attempt to solve challenges after every `Navigate()` / `NewPage()`
+- [ ] **Bridge integration** — use `window.__scout` content script to detect challenge iframes, mutation-observe challenge DOM changes, and report challenge state back to Go
+
+#### Cloudflare Bypass Strategies
+
+- [ ] **Wait-based bypass** — Cloudflare JS challenge often resolves after a few seconds; detect and wait with exponential backoff up to timeout
+- [ ] **Turnstile solver** — use LLM vision (`ExtractWithLLM` + screenshot) to identify Turnstile checkbox position, click via CDP
+- [ ] **Cookie persistence** — after solving a challenge, capture `cf_clearance` and related cookies; persist via User Profile (Phase 18) for reuse across sessions
+- [ ] **Browser fingerprint consistency** — ensure stealth mode + bridge extension produce consistent fingerprints that pass Cloudflare's TLS/JA3/HTTP2 checks
+- [ ] **TLS fingerprint rotation** — configure Chrome launch flags to vary TLS fingerprint signatures
+
+#### CAPTCHA Solving
+
+- [ ] **Screenshot-based solving** — take screenshot of CAPTCHA region, send to LLM vision provider (GPT-4o, Claude, Gemini) for answer extraction
+- [ ] **hCaptcha image classification** — LLM vision identifies correct images from the grid
+- [ ] **reCAPTCHA v2 click** — detect and click the "I'm not a robot" checkbox; if image challenge appears, use LLM vision
+- [ ] **Audio CAPTCHA fallback** — download audio challenge, transcribe with Whisper/LLM, submit text answer
+- [ ] **Third-party solver integration** — `WithCAPTCHASolver(solver)` interface for 2Captcha, Anti-Captcha, CapSolver services as fallback
+
+#### API & Options
+
+- [ ] **`BypassChallenge(page *Page, ...BypassOption) error`** — attempt to solve the current challenge on the page
+- [ ] **`WithBypassTimeout(d time.Duration)`** — max time to spend on challenge solving (default: 30s)
+- [ ] **`WithBypassLLM(provider LLMProvider)`** — LLM provider for vision-based CAPTCHA solving
+- [ ] **`WithBypassRetries(n int)`** — max retry attempts per challenge
+- [ ] **`WithAutoBypass()`** — enable automatic challenge detection and solving on every navigation
+- [ ] **`WithBypassCallback(fn func(ChallengeType))`** — notification when a challenge is detected/solved
+- [ ] **`NavigateWithBypass(url string) error`** — convenience method: navigate + auto-bypass if challenged
+
+#### CLI Commands
+
+- [ ] `scout navigate <url> --bypass` — navigate with auto-bypass enabled
+- [ ] `scout challenge detect` — check if current page has a bot challenge
+- [ ] `scout challenge solve [--provider=openai] [--timeout=30s]` — attempt to solve current challenge
+- [ ] `scout batch --urls=... --bypass` — batch scraping with auto-bypass per URL
+
+#### Testing
+
+- [ ] Challenge detection tests (mock Cloudflare/hCaptcha/reCAPTCHA HTML pages)
+- [ ] Wait-based bypass tests (JS challenge that resolves after delay)
+- [ ] Cookie persistence tests (solve → capture cookies → new session → verify bypass)
+- [ ] LLM vision mock tests (screenshot → mock LLM response → verify click coordinates)
+
+### Phase 18: User Profile — Portable Browser Identity [PLANNED]
+
+A self-contained profile file (`.scoutprofile`) that captures everything needed to launch a browser that looks and behaves like a returning user. Profiles are portable, versionable, and can be shared across machines. On `New()` or `scout session create --profile=<file>`, Scout reads the profile, configures the browser, and hydrates all stored state — no manual setup required.
+
+#### Profile File Format
+
+- [ ] **`.scoutprofile` format** (`pkg/scout/profile.go`) — single JSON (or encrypted JSON) file containing all browser identity data
+- [ ] **Schema versioning** — `{"version": 1, ...}` header for forward-compatible migration
+- [ ] **Profile sections**:
+  ```go
+  type UserProfile struct {
+      Version     int                `json:"version"`
+      Name        string             `json:"name"`                   // human label ("work", "shopping-br")
+      CreatedAt   time.Time          `json:"created_at"`
+      UpdatedAt   time.Time          `json:"updated_at"`
+      Browser     ProfileBrowser     `json:"browser"`                // browser type, exec path, window size
+      Identity    ProfileIdentity    `json:"identity"`               // user-agent, language, timezone, locale, geolocation
+      Cookies     []ProfileCookie    `json:"cookies"`                // all cookies with domain, path, expiry, SameSite
+      Storage     ProfileStorage     `json:"storage"`                // per-origin localStorage + sessionStorage
+      Headers     map[string]string  `json:"headers,omitempty"`      // extra headers to inject
+      Extensions  []string           `json:"extensions,omitempty"`   // extension IDs (resolved via ~/.scout/extensions/)
+      LaunchFlags map[string]string  `json:"launch_flags,omitempty"` // custom Chrome flags
+      Proxy       string             `json:"proxy,omitempty"`        // proxy URL
+      Notes       string             `json:"notes,omitempty"`        // freeform annotation
+  }
+  ```
+
+#### Profile Capture (Browser → File)
+
+- [ ] **`CaptureProfile(page *Page, ...ProfileOption) (*UserProfile, error)`** — snapshot the current browser state into a profile
+- [ ] **Cookie capture** — dump all cookies across domains via CDP `Network.getAllCookies`
+- [ ] **Storage capture** — enumerate origins, read localStorage + sessionStorage via JS eval per origin
+- [ ] **Identity capture** — read current user-agent, language, timezone, viewport, geolocation from browser
+- [ ] **Extension capture** — list loaded extension IDs that exist in `~/.scout/extensions/`
+- [ ] **Save to file** — `profile.Save(path string) error` writes `.scoutprofile` JSON
+- [ ] **Encrypted save** — `profile.SaveEncrypted(path, passphrase string) error` using existing `scraper/crypto.go` AES-256-GCM + Argon2id
+
+#### Profile Load (File → Browser)
+
+- [ ] **`WithProfile(path string)` option** — load profile at browser creation, configure all settings before launch
+- [ ] **`WithProfileData(p *UserProfile)` option** — load from in-memory struct
+- [ ] **Browser config** — apply browser type, window size, proxy, launch flags, extensions from profile
+- [ ] **Identity injection** — set user-agent, accept-language, timezone override, geolocation override via CDP
+- [ ] **Cookie hydration** — set all cookies via CDP `Network.setCookies` after page creation
+- [ ] **Storage hydration** — navigate to each origin, inject localStorage + sessionStorage via JS eval
+- [ ] **Header injection** — apply custom headers via `SetHeaders()`
+- [ ] **Extension resolution** — resolve extension IDs to local paths via `extensionPathByID()`, warn if missing
+
+#### Profile Management
+
+- [ ] **`LoadProfile(path string) (*UserProfile, error)`** — read and parse `.scoutprofile` file
+- [ ] **`LoadProfileEncrypted(path, passphrase string) (*UserProfile, error)`** — decrypt and parse
+- [ ] **`MergeProfiles(base, overlay *UserProfile) *UserProfile`** — merge two profiles (overlay wins on conflict)
+- [ ] **`DiffProfiles(a, b *UserProfile) ProfileDiff`** — compare two profiles, list changes
+- [ ] **Profile validation** — `profile.Validate() error` checks required fields, cookie format, extension availability
+
+#### CLI Commands
+
+- [ ] `scout profile capture [--output=my.scoutprofile] [--encrypt]` — capture current session state to file
+- [ ] `scout profile load <file.scoutprofile>` — create session from profile
+- [ ] `scout profile show <file.scoutprofile>` — display profile summary (name, cookies count, origins, extensions)
+- [ ] `scout profile merge <base> <overlay> [--output=merged.scoutprofile]` — merge two profiles
+- [ ] `scout profile diff <a> <b>` — show differences between profiles
+- [ ] `scout session create --profile=<file>` — create new session with profile applied
+
+#### gRPC Integration
+
+- [ ] **`CreateSession` extension** — accept optional profile payload in session creation request
+- [ ] **`CaptureProfile` RPC** — capture running session state as profile, return serialized bytes
+- [ ] **`LoadProfile` RPC** — apply profile to existing session
+
+#### Testing
+
+- [ ] Profile round-trip tests (capture → save → load → verify all fields match)
+- [ ] Encrypted profile tests (save encrypted → load with correct/wrong passphrase)
+- [ ] Cookie hydration tests (set cookies → capture → new browser → load → verify cookies present)
+- [ ] Storage hydration tests (set localStorage → capture → new browser → load → verify storage present)
+- [ ] Identity injection tests (user-agent, timezone, language preserved across capture/load)
+- [ ] Merge and diff tests
+- [ ] CLI integration tests
+
+### Phase 19: Screen Recorder [PLANNED]
 
 - [ ] **ScreenRecorder type** (`pkg/scout/screenrecord.go`) — capture page frames via CDP `Page.startScreencast`, assemble into video
 - [ ] Functional options: `WithFrameRate(fps)`, `WithQuality(0-100)`, `WithMaxDuration(d)`, `WithFormat("webm"|"mp4")`
@@ -315,7 +526,7 @@ A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a pers
 - [ ] Example: `examples/advanced/screen-recorder/`
 - [ ] Tests: start/stop lifecycle, frame capture, export formats, concurrent recording with HAR
 
-### Phase 19: Swarm — Distributed Processing [PLANNED]
+### Phase 20: Swarm — Distributed Processing [PLANNED]
 
 Swarm distributes work units across multiple Scout instances (local or remote via gRPC), collects partial results, and merges them into a unified output. Each node processes a slice of the workload independently with its own browser, proxy, and identity.
 
@@ -343,7 +554,7 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [ ] **gRPC extensions** — `AssignWork`, `ReportResult`, `Heartbeat` RPCs in `grpc/proto/scout.proto`
 - [ ] Tests: local pool, remote worker mock, distribution strategies, merge logic, fault tolerance
 
-### Phase 20: Device Identity, mTLS & Discovery [COMPLETE]
+### Phase 21: Device Identity, mTLS & Discovery [COMPLETE]
 
 - [x] **Device identity** (`pkg/identity/`) — Syncthing-style device IDs with Ed25519 keys, Luhn check digits
 - [x] **mTLS authentication** (`grpc/server/tls.go`) — auto-generated certificates, mutual TLS for gRPC
@@ -354,7 +565,7 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [x] **DevTools option** — `WithDevTools()` for browser DevTools panel
 - [x] **CLI device commands** (`cmd/scout/internal/cli/device.go`) — `scout device pair/list/trust`
 
-### Phase 21: Documentation & Release [IN PROGRESS]
+### Phase 22: Documentation & Release [IN PROGRESS]
 
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)
@@ -362,17 +573,116 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [ ] Add GoDoc examples for key functions
 - [ ] Write integration test examples
 
+### Phase 23: WebFetch & WebSearch — GitHub Data Extraction [PLANNED]
+
+A high-level web intelligence toolkit inspired by Claude Code's `WebFetch()` and `WebSearch()` tools. Provides URL fetching with automatic content extraction (HTML→Markdown), web searching with result aggregation, and a dedicated GitHub data extraction pipeline. Built on top of Scout's existing crawl, search, markdown, and extract engines.
+
+#### Sub-phase 23a: WebFetch — URL Content Extraction
+
+Fetch any URL and return clean, structured content (markdown, metadata, links). Combines navigation + readability + markdown conversion into a single call.
+
+- [ ] **`WebFetch` type** (`pkg/scout/webfetch.go`) — `Browser.WebFetch(url string, ...WebFetchOption) (*WebFetchResult, error)`
+- [ ] **WebFetchResult** — `{URL, Title, Markdown, HTML, Meta MetaData, Links []string, StatusCode int, FetchedAt time.Time}`
+- [ ] **Content modes** — `WithFetchMode("markdown"|"html"|"text"|"links"|"meta")` to control what gets extracted
+- [ ] **Main content extraction** — Reuse `MarkdownContent()` readability scoring to strip nav/ads/footer, return only article body
+- [ ] **Prompt-based extraction** — `WithFetchPrompt(prompt string)` that pipes markdown through an LLM provider (Phase 14 dependency) for targeted extraction
+- [ ] **Caching** — `WithFetchCache(ttl time.Duration)` for in-memory content cache keyed by URL; avoid re-fetching within TTL
+- [ ] **Follow redirects** — Track and report redirect chain in result
+- [ ] **Error resilience** — Retry on network errors with exponential backoff (reuse `RateLimiter`), graceful timeout
+- [ ] **Batch fetch** — `Browser.WebFetchBatch(urls []string, ...WebFetchOption) ([]WebFetchResult, error)` using `BatchScrape` internally
+- [ ] **CLI** — `scout fetch <url> [--mode=markdown] [--main-only] [--cache=5m] [--output=file]`
+- [ ] **Tests** — content extraction accuracy, caching behavior, batch fetch, redirect tracking
+
+#### Sub-phase 23b: WebSearch — Search + Fetch Pipeline
+
+Search the web and optionally fetch top results, returning structured search results with optional full content. Combines SERP parsing with WebFetch for a research-grade pipeline.
+
+- [ ] **`WebSearch` type** (`pkg/scout/websearch.go`) — `Browser.WebSearch(query string, ...WebSearchOption) (*WebSearchResult, error)`
+- [ ] **WebSearchResult** — `{Query, Engine, Results []WebSearchResultItem, TotalResults string, SearchedAt time.Time}`
+- [ ] **WebSearchResultItem** — `{Title, URL, Snippet string, Content *WebFetchResult}` where Content is populated when `WithSearchFetch()` is set
+- [ ] **Fetch top N results** — `WithSearchFetch(n int)` to auto-fetch and extract content from top N results
+- [ ] **Multi-engine aggregation** — `WithSearchEngines(Google, Bing, DuckDuckGo)` to run same query across engines, merge and deduplicate by URL
+- [ ] **Rank fusion** — Reciprocal Rank Fusion (RRF) scoring when merging multi-engine results
+- [ ] **Domain filtering** — `WithSearchDomain("github.com")`, `WithSearchExcludeDomain("pinterest.com")`
+- [ ] **Time filtering** — `WithSearchRecent(duration)` for time-bounded searches
+- [ ] **CLI** — `scout websearch "query" [--engine=google,bing] [--fetch=5] [--domain=github.com] [--format=json]`
+- [ ] **Tests** — single engine, multi-engine merge, rank fusion, domain filter, fetch integration
+
+#### Sub-phase 23c: GitHub Data Extraction
+
+Dedicated GitHub extraction toolkit using WebFetch + WebSearch + Scout's existing crawl/extract infrastructure. Provides structured access to GitHub repos, issues, PRs, code, discussions, and user profiles without API rate limits.
+
+- [ ] **`GitHubExtractor` type** (`pkg/scout/github.go`) — high-level GitHub data extraction API
+- [ ] **Repository info** — `ExtractRepo(owner, repo string) (*GitHubRepo, error)` — name, description, stars, forks, language, topics, license, README (as markdown)
+- [ ] **Issue extraction** — `ExtractIssues(owner, repo string, ...GitHubOption) ([]GitHubIssue, error)` — title, body, labels, assignees, comments, state, timeline
+- [ ] **PR extraction** — `ExtractPRs(owner, repo string, ...GitHubOption) ([]GitHubPR, error)` — title, body, diff stats, review comments, CI status, merge state
+- [ ] **Code search** — `SearchCode(query string, ...GitHubOption) ([]GitHubCodeResult, error)` — file path, repo, matched lines, context
+- [ ] **Discussion extraction** — `ExtractDiscussions(owner, repo string) ([]GitHubDiscussion, error)` — title, body, category, answers, comments
+- [ ] **File/tree browsing** — `ExtractTree(owner, repo, path string) (*GitHubTree, error)` — directory listing, file content as markdown
+- [ ] **User/org profiles** — `ExtractUser(username string) (*GitHubUser, error)` — bio, repos, contributions, pinned items
+- [ ] **Release notes** — `ExtractReleases(owner, repo string) ([]GitHubRelease, error)` — tag, body, assets, date
+- [ ] **GitHub search** — `SearchRepos(query string) ([]GitHubRepo, error)`, `SearchIssues(query string) ([]GitHubIssue, error)`
+- [ ] **Pagination** — All list methods support `WithGitHubMaxPages(n)`, automatic next-page navigation
+- [ ] **Rate limiting** — Built-in rate limiter for polite scraping (reuse `RateLimiter`)
+- [ ] **Struct tags for extraction** — Use `scout:"selector"` tags for GitHub page element mapping
+- [ ] **Data types**:
+  ```go
+  type GitHubRepo struct {
+      Owner, Name, Description, Language, License string
+      Stars, Forks, Watchers, OpenIssues          int
+      Topics                                       []string
+      README                                       string // markdown
+      DefaultBranch                                string
+  }
+  type GitHubIssue struct {
+      Number int
+      Title, Body, State, Author string
+      Labels   []string
+      Comments []GitHubComment
+      CreatedAt, UpdatedAt time.Time
+  }
+  type GitHubPR struct {
+      Number int
+      Title, Body, State, Author, BaseBranch, HeadBranch string
+      Additions, Deletions, ChangedFiles int
+      Labels   []string
+      Reviews  []GitHubReview
+      Comments []GitHubComment
+      Merged   bool
+      MergedAt *time.Time
+  }
+  ```
+- [ ] **CLI commands**:
+  - `scout github repo <owner/repo>` — extract repository info + README
+  - `scout github issues <owner/repo> [--state=open] [--labels=bug] [--max-pages=5]`
+  - `scout github prs <owner/repo> [--state=open] [--max-pages=5]`
+  - `scout github code <query> [--repo=owner/repo]`
+  - `scout github user <username>`
+  - `scout github releases <owner/repo>`
+  - `scout github tree <owner/repo> [path]`
+- [ ] **Tests** — mock GitHub HTML pages in httptest, extraction accuracy, pagination, rate limiting
+
+#### Sub-phase 23d: Research Agent Pipeline
+
+Orchestrate WebSearch + WebFetch + GitHub extraction into automated research workflows.
+
+- [ ] **`Research` type** (`pkg/scout/research.go`) — `Browser.Research(query string, ...ResearchOption) (*ResearchResult, error)`
+- [ ] **Multi-source research** — search → fetch top results → extract structured data → merge into report
+- [ ] **GitHub-focused research** — `WithResearchGitHub(owner, repo)` to include repo issues, PRs, discussions in research context
+- [ ] **Output formats** — markdown report, JSON structured data, combined summary
+- [ ] **CLI** — `scout research "query" [--github=owner/repo] [--depth=shallow|deep] [--format=markdown]`
+
 ## Test Coverage
 
-**Current:** pkg/scout 76.7% | pkg/identity 81.1% | scraper 84.3% | **Target:** 80%
+**Current:** pkg/scout 75.4% | pkg/identity 81.1% | scraper 84.3% | **Target:** 80%
 
 | Package          | Coverage | Status                   |
 |------------------|----------|--------------------------|
-| pkg/scout        | 76.7%    | Near target              |
+| pkg/scout        | 75.4%    | Below target             |
 | pkg/identity     | 81.1%    | ✅ Target met             |
 | scraper          | 84.3%    | ✅ Complete               |
-| pkg/scout/recipe | 11.8%    | Needs tests              |
-| grpc/server      | ~30%     | Integration tests added  |
+| pkg/scout/recipe | 11.6%    | Needs tests              |
+| grpc/server      | 66.7%    | Integration tests added  |
 | pkg/stealth      | 0.0%     | No tests (asset wrapper) |
 | pkg/discovery    | 0.0%     | No tests                 |
 | scraper/auth     | 0.0%     | No tests                 |

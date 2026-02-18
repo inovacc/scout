@@ -56,6 +56,12 @@ var aiCategoryMap = map[string]string{
 	// Auth & identity
 	"auth": "identity", "device": "identity",
 
+	// LLM
+	"extract-ai": "llm", "ollama": "llm", "ai-job": "llm",
+
+	// API extraction
+	"swagger": "scrape",
+
 	// Bridge
 	"bridge": "infra",
 
@@ -75,6 +81,7 @@ var aiCategoryNames = map[string]string{
 	"session":  "Session & Browser",
 	"identity": "Auth & Identity",
 	"infra":    "Infrastructure",
+	"llm":      "LLM & AI Extraction",
 	"tools":    "Tools",
 }
 
@@ -176,16 +183,16 @@ func buildContext(root *cobra.Command, filterCat string, noStruct bool) AIContex
 
 	if !noStruct {
 		ctx.Structure = map[string]string{
-			"cmd/scout/":    "Unified Cobra CLI binary",
-			"pkg/scout/":    "Core library (browser, page, element wrappers)",
-			"pkg/stealth/":  "Anti-bot-detection stealth module",
-			"pkg/identity/": "Device identity and mTLS certificates",
+			"cmd/scout/":     "Unified Cobra CLI binary",
+			"pkg/scout/":     "Core library (browser, page, element wrappers)",
+			"pkg/stealth/":   "Anti-bot-detection stealth module",
+			"pkg/identity/":  "Device identity and mTLS certificates",
 			"pkg/discovery/": "mDNS service discovery",
-			"grpc/proto/":   "Protobuf definitions",
-			"grpc/server/":  "gRPC server with mTLS and pairing",
-			"scraper/":      "Auth framework and encrypted sessions",
-			"examples/":     "Runnable example programs",
-			"tests/":        "Integration tests and recipes",
+			"grpc/proto/":    "Protobuf definitions",
+			"grpc/server/":   "gRPC server with mTLS and pairing",
+			"scraper/":       "Auth framework and encrypted sessions",
+			"examples/":      "Runnable example programs",
+			"tests/":         "Integration tests and recipes",
 		}
 	}
 

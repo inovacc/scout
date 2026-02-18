@@ -21,28 +21,29 @@ const (
 type Option func(*options)
 
 type options struct {
-	browserType BrowserType
-	headless    bool
-	stealth     bool
-	userAgent   string
-	proxy       string
-	windowW     int
-	windowH     int
-	timeout     time.Duration
-	slowMotion  time.Duration
-	ignoreCerts bool
-	execPath    string
-	userDataDir string
-	env         []string
-	incognito   bool
-	noSandbox   bool
-	windowState WindowState
-	xvfb        bool
-	xvfbArgs    []string
-	launchFlags map[string][]string
-	extensions  []string
-	devtools    bool
-	bridge      bool
+	browserType  BrowserType
+	headless     bool
+	stealth      bool
+	userAgent    string
+	proxy        string
+	windowW      int
+	windowH      int
+	timeout      time.Duration
+	slowMotion   time.Duration
+	ignoreCerts  bool
+	execPath     string
+	userDataDir  string
+	env          []string
+	incognito    bool
+	noSandbox    bool
+	windowState  WindowState
+	xvfb         bool
+	xvfbArgs     []string
+	launchFlags  map[string][]string
+	extensions   []string
+	extensionIDs []string
+	devtools     bool
+	bridge       bool
 }
 
 func defaults() *options {
@@ -51,8 +52,14 @@ func defaults() *options {
 		headless = false
 	}
 
+	bridge := true
+	if v := os.Getenv("SCOUT_BRIDGE"); v == "false" || v == "0" {
+		bridge = false
+	}
+
 	return &options{
 		headless: headless,
+		bridge:   bridge,
 		windowW:  1920,
 		windowH:  1080,
 		timeout:  30 * time.Second,
@@ -147,16 +154,28 @@ func WithExtension(paths ...string) Option {
 	return func(o *options) { o.extensions = append(o.extensions, paths...) }
 }
 
+// WithExtensionByID loads one or more Chrome extensions by their Chrome Web Store ID.
+// The extensions must have been previously downloaded with DownloadExtension.
+func WithExtensionByID(ids ...string) Option {
+	return func(o *options) { o.extensionIDs = append(o.extensionIDs, ids...) }
+}
+
 // WithDevTools opens Chrome DevTools automatically for each new tab.
 func WithDevTools() Option {
 	return func(o *options) { o.devtools = true }
 }
 
 // WithBridge enables the built-in Scout Bridge extension for bidirectional
-// Go↔browser communication via CDP bindings. The extension is written to a
-// temp directory at startup and loaded automatically.
+// Go↔browser communication via CDP bindings. The extension is embedded for
+// security and written to a temp directory at startup. Enabled by default;
+// disable with WithoutBridge() or SCOUT_BRIDGE=false.
 func WithBridge() Option {
 	return func(o *options) { o.bridge = true }
+}
+
+// WithoutBridge disables the built-in Scout Bridge extension.
+func WithoutBridge() Option {
+	return func(o *options) { o.bridge = false }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.

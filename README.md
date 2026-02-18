@@ -30,13 +30,15 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **HTML-to-Markdown** - Convert page HTML to clean markdown with readability scoring for main content extraction (`page.Markdown()`, `page.MarkdownContent()`)
 - **URL Map / Link Discovery** - Lightweight URL-only discovery combining sitemap.xml + on-page link harvesting with path/subdomain/search filters
 - **Multi-Browser Support** - Chrome (default), Brave, and Microsoft Edge auto-detection via `WithBrowser()`
-- **Chrome Extension Loading** - Load unpacked extensions via `WithExtension(paths...)`
+- **Chrome Extension Loading** - Load unpacked extensions via `WithExtension(paths...)`, download from Chrome Web Store via `DownloadExtension(id)`, load by ID via `WithExtensionByID(ids...)`
 - **Device Identity & Pairing** - Syncthing-style device IDs with Ed25519 keys, mTLS authentication, mDNS peer discovery
 - **Platform-Aware Defaults** - Auto-applies `--no-sandbox` on Linux containers; platform-specific session defaults via build constraints
 - **Batch Scraper** - Concurrent batch scraping of multiple URLs with page pool, error isolation, and progress reporting (`BatchScrape()`)
 - **Multi-Engine Search** - Engine-specific search subcommands for Google, Bing, DuckDuckGo, Wikipedia, Google Scholar, Google News
 - **Swagger/OpenAPI Extraction** - Auto-detect Swagger UI / ReDoc pages, fetch and parse OpenAPI 3.x / Swagger 2.0 specs, extract endpoints, schemas, and security definitions
 - **Recipe System** - Declarative JSON recipes for extraction and automation playbooks (`scout recipe run/validate`)
+- **LLM-Powered Extraction** - AI-powered data extraction via pluggable `LLMProvider` interface with 6 built-in providers: Ollama (local), OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini. `ExtractWithLLM()` sends page markdown + prompt to LLM; `ExtractWithLLMJSON()` for typed extraction with schema validation
+- **LLM Review Pipeline** - Two-pass extraction: extract with LLM1, review with LLM2. `ExtractWithLLMReview()` with workspace persistence tracking sessions and jobs in filesystem directories
 
 ## Installation
 
@@ -295,6 +297,11 @@ err := page.NavigateWithRetry("https://example.com", rl)
 | `WithWindowState(state)`          | Initial window state (normal/minimized/maximized/fullscreen) | normal          |
 | `WithLaunchFlag(name, values...)` | Add custom Chrome CLI flag                                   | none            |
 | `WithXvfb(args...)`               | Enable Xvfb for headful mode without display (Unix only)     | disabled        |
+| `WithExtension(paths...)`         | Load unpacked Chrome extensions by directory path            | none            |
+| `WithExtensionByID(ids...)`       | Load downloaded Chrome extensions by Web Store ID            | none            |
+| `WithBridge()`                    | Enable Scout Bridge extension for Go↔browser communication   | disabled        |
+| `WithBrowser(BrowserType)`        | Select browser: chrome, brave, edge                          | chrome          |
+| `WithDevTools()`                  | Open Chrome DevTools for each tab                            | disabled        |
 
 ## CLI Reference
 
@@ -338,6 +345,15 @@ The `scout` CLI provides a unified interface to all library features. It communi
 | `scout recipe run --file=f.json`            | Run extraction/automation recipe                                                     |
 | `scout recipe validate --file=f.json`       | Validate recipe JSON schema                                                          |
 | `scout swagger <url>`                       | Extract Swagger/OpenAPI spec (`--endpoints-only`, `--raw`, `--format`, `--output`)   |
+| `scout extension download <id>`             | Download extension from Chrome Web Store                                             |
+| `scout extension remove <id>`               | Remove a downloaded extension                                                        |
+| `scout extension load --path=<dir>`         | Load unpacked extension (non-headless, blocks until Ctrl+C)                          |
+| `scout extension test --path=<dir>`         | Test extension in headless mode                                                      |
+| `scout extension list`                      | List downloaded and browser-loaded extensions                                        |
+| `scout extract-ai --url=<url> --prompt=...` | AI extraction (`--provider`, `--model`, `--review`, `--workspace`)                   |
+| `scout ollama list\|pull\|status`           | Ollama model management                                                              |
+| `scout ai-job list\|show`                   | LLM workspace job management                                                         |
+| `scout ai-job session list\|create\|use`    | LLM workspace session management                                                     |
 | `scout server`                              | Run gRPC server directly                                                             |
 | `scout client`                              | Interactive REPL client                                                              |
 | `scout aicontext [--json]`                  | Generate AI context document for the CLI                                             |
@@ -359,7 +375,7 @@ task fmt           # Format code (go fmt + goimports)
 
 # gRPC
 task proto         # Generate protobuf code
-task grpc:server   # Run gRPC server (default :50051)
+task grpc:server   # Run gRPC server (default :9551)
 task grpc:client   # Run interactive CLI client
 ```
 
@@ -375,6 +391,7 @@ task grpc:client   # Run interactive CLI client
 | [golang.org/x/time](https://pkg.go.dev/golang.org/x/time)     | Token bucket rate limiter                                     |
 | [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | Argon2id key derivation for session encryption                |
 | [golang.org/x/term](https://pkg.go.dev/golang.org/x/term)     | Secure passphrase input (no-echo terminal)                    |
+| [ollama/ollama](https://github.com/ollama/ollama)              | Ollama Go client for local LLM provider                       |
 
 **gRPC layer and CLI** (`grpc/` and `cmd/` only):
 

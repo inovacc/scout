@@ -96,12 +96,11 @@ credentials/session.
 - **Scope:** Workspace pages, database views, page content (blocks), comments, shared pages.
 - **Effort:** Medium
 
-### GitHub Scraper Mode
+### ~~GitHub Scraper Mode~~ [SUPERSEDED → Phase 23]
 
-- **Priority:** P3
-- **Description:** Scrape GitHub via browser automation for data beyond API limits. Extract repo content, issues, PRs, discussions, wikis, and actions.
-- **Scope:** Repo metadata, issue/PR threads, discussions, wiki pages, actions logs, user profiles.
-- **Effort:** Medium
+- **Priority:** P1
+- **Status:** Superseded by Phase 23 (WebFetch & WebSearch — GitHub Data Extraction). The new design provides a comprehensive GitHub extraction toolkit (`pkg/scout/github.go`) plus general-purpose `WebFetch`/`WebSearch` tools, inspired by Claude Code's `Fetch()` and `WebSearch()` mechanisms.
+- **Effort:** Large
 
 ### Google Drive Scraper Mode
 
@@ -181,15 +180,19 @@ credentials/session.
 - **Status:** Complete — `pkg/scout/map.go` with `Map()` function, sitemap + BFS link harvesting, path/subdomain/search filters, CLI `scout map`
 - **Effort:** Medium
 
-### LLM-Powered Extraction
+### WebFetch & WebSearch — GitHub Data Extraction (Phase 23)
+
+- **Priority:** P1
+- **Description:** High-level web intelligence toolkit inspired by Claude Code's `WebFetch()` and `WebSearch()` tools. Four sub-phases: (a) `WebFetch` — single-call URL→Markdown extraction with caching and batch support, (b) `WebSearch` — multi-engine search with auto-fetch and rank fusion, (c) `GitHubExtractor` — dedicated GitHub repo/issue/PR/code/discussion extraction without API rate limits, (d) Research Agent — orchestrated multi-source research workflows.
+- **Scope:** `pkg/scout/webfetch.go`, `pkg/scout/websearch.go`, `pkg/scout/github.go`, `pkg/scout/research.go`. CLI: `scout fetch`, `scout websearch`, `scout github repo/issues/prs/code/user/releases/tree`, `scout research`.
+- **Effort:** Extra Large
+- **Dependencies:** HTML-to-Markdown engine (done), search engine integration (done), crawl (done), batch scraper (done). Optional: LLM-Powered Extraction (Phase 14) for prompt-based content extraction.
+
+### ~~LLM-Powered Extraction~~ [DONE]
 
 - **Priority:** P2
-- **Description:** AI-powered data extraction using LLM providers. Send page content (as markdown) plus a natural language prompt to an LLM and get structured data back. Supports multiple providers
-  via interface: OpenAI, Anthropic, Ollama (local). Optional JSON schema validation on responses.
-- **Scope:** `pkg/scout/llm.go` with `ExtractWithLLM()` function and `LLMProvider` interface. Built-in providers for OpenAI, Anthropic, Ollama. CLI
-  `scout extract-ai --url=<url> --prompt="..." [--provider=ollama] [--schema=file.json]`.
+- **Status:** Complete — `pkg/scout/llm.go`, `llm_ollama.go`, `llm_openai.go`, `llm_anthropic.go`, `llm_review.go`, `llm_workspace.go` with `ExtractWithLLM()`, `ExtractWithLLMJSON()`, `ExtractWithLLMReview()`, workspace persistence, 6 providers (Ollama, OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini), CLI `scout extract-ai`, `scout ollama`, `scout ai-job`
 - **Effort:** Large
-- **Dependencies:** Depends on HTML-to-Markdown engine (Phase 10) for page content preparation. HTTP clients for LLM APIs.
 
 ### Async Job System
 
@@ -207,6 +210,14 @@ credentials/session.
 - **Scope:** Extension source in `extensions/scout-bridge/`, Go WebSocket server in `pkg/scout/bridge/`, `Bridge` type in `pkg/scout/bridge.go`, `WithBridge()` option, gRPC RPCs (`EnableBridge`, `BridgeSend`, `BridgeQuery`, `StreamBridgeEvents`), CLI `scout bridge status/send/listen/record`. Content script toolkit with `__scout.send()`, `__scout.on()`, `__scout.query()`, shadow DOM helpers, cross-frame messaging.
 - **Effort:** Extra Large
 - **Dependencies:** Existing `WithExtension()` infrastructure, gRPC daemon WebSocket embedding, Chrome Extension Manifest V3 APIs.
+
+### AI-Powered Bot Protection Bypass (Phase 17b)
+
+- **Priority:** P1
+- **Description:** Detect and bypass Cloudflare challenges, CAPTCHAs (hCaptcha, reCAPTCHA, Turnstile), and other bot protection using LLM vision analysis and the Scout Bridge extension. Auto-detect challenges after navigation, wait for JS challenges to resolve, use LLM vision for image CAPTCHAs, persist bypass cookies across sessions. The bridge extension (now default) provides in-browser challenge detection via DOM mutation observers.
+- **Scope:** `pkg/scout/challenge.go` with `BypassChallenge()`, `WithAutoBypass()`, `NavigateWithBypass()`. Challenge detection by DOM markers/title patterns. Cloudflare wait-based bypass, Turnstile click, cookie persistence. LLM vision CAPTCHA solving. Third-party solver interface (2Captcha, CapSolver). CLI: `scout challenge detect/solve`, `scout navigate --bypass`, `scout batch --bypass`.
+- **Effort:** Large
+- **Dependencies:** Scout Bridge extension (Phase 17), LLM providers (Phase 14), User Profile for cookie persistence (Phase 18), Stealth mode.
 
 ### Screen Recorder
 
@@ -254,9 +265,8 @@ credentials/session.
 ### gRPC Server Test Coverage
 
 - **Priority:** P2
-- **Description:** The `grpc/server/` package has 0% test coverage. All 25+ RPCs (CreateSession, Navigate, Click, Type, Screenshot, etc.) are untested. Consider integration tests against a local
-  httptest server with a real browser.
-- **Effort:** Large
+- **Description:** The `grpc/server/` package has 66.7% test coverage. More targeted tests needed for individual RPCs and error paths.
+- **Effort:** Medium
 
 ### GoDoc Examples
 
@@ -298,3 +308,6 @@ credentials/session.
 | Multi-Engine Search Command      | Engine registry with Google, Bing, DDG, Wikipedia, Scholar, News in `search_engines.go`                  | 2026-02 |
 | Batch Scraper                    | `BatchScrape()` with concurrency, error isolation, progress callback in `batch.go`                       | 2026-02 |
 | Swagger/OpenAPI Extraction       | `pkg/scout/swagger.go` with Swagger UI 3+/2.0 detection, spec parsing, schema/security extraction, CLI `scout swagger` | 2026-02 |
+| Chrome Extension Download        | `DownloadExtension(id)` with CRX2/CRX3 parsing, `~/.scout/extensions/` storage, `WithExtensionByID()`, CLI download/remove | 2026-02 |
+| Scout Bridge Extension (partial) | `WithBridge()` option, embedded Manifest V3 extension in `bridge_assets.go`, auto-load at startup | 2026-02 |
+| LLM-Powered Extraction | `ExtractWithLLM()`, `ExtractWithLLMReview()`, workspace persistence, 6 providers (Ollama, OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini), CLI `extract-ai`/`ollama`/`ai-job` | 2026-02 |

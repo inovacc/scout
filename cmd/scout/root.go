@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +17,7 @@ or run standalone for one-shot operations.`,
 }
 
 func init() {
-	rootCmd.PersistentFlags().String("addr", "localhost:50051", "gRPC daemon address (deprecated, use --target)")
+	rootCmd.PersistentFlags().String("addr", "localhost:9551", "gRPC daemon address (deprecated, use --target)")
 	rootCmd.PersistentFlags().StringSlice("target", nil, "target server address(es), repeatable")
 	rootCmd.PersistentFlags().Bool("standalone", false, "run without daemon (one-shot browser)")
 	rootCmd.PersistentFlags().String("session", "", "session ID to use")
@@ -35,9 +32,5 @@ func init() {
 }
 
 func main() {
-	if err := rootCmd.Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-
-		os.Exit(1)
-	}
+	cobra.CheckErr(rootCmd.Execute())
 }
