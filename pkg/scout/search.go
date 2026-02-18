@@ -291,12 +291,14 @@ func (sp *serpParser) parse(page *Page, query string, engine SearchEngine) (*Sea
 		}
 	}
 
-	// Next page URL
-	nextEl, err := page.Element(sp.nextSelector)
-	if err == nil {
-		href, _, _ := nextEl.Attribute("href")
-		if href != "" {
-			sr.NextPageURL = resolveURL(page, href)
+	// Next page URL — use Has() to avoid blocking retry on missing element
+	if has, _ := page.Has(sp.nextSelector); has {
+		nextEl, err := page.Element(sp.nextSelector)
+		if err == nil {
+			href, _, _ := nextEl.Attribute("href")
+			if href != "" {
+				sr.NextPageURL = resolveURL(page, href)
+			}
 		}
 	}
 
