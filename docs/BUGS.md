@@ -2,7 +2,13 @@
 
 ## Open Bugs
 
-(none)
+### Window maximize blank space
+
+- **Severity:** Medium
+- **Reported:** 2026-02-18
+- **Description:** Browser window maximize (`WithWindowState(WindowMaximized)` or `scout window max`) leaves blank/white space in the viewport instead of filling the entire screen area.
+- **Reproduction:** Launch browser with `WithHeadless(false)`, call `window.SetMaximized()` or use CLI `scout window max`.
+- **Suspected cause:** Chrome window state transition timing — viewport may not resize to match the maximized window bounds.
 
 ## Resolved Bugs
 

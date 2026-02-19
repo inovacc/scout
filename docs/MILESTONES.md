@@ -119,7 +119,7 @@
 - [x] Tagged v0.7.0, v0.7.1, v0.7.2
 - **Coverage:** pkg/scout 75.0% | pkg/identity 81.1% | scraper 84.3%
 
-## v0.7.4 - Extension Download & CRX Support [IN PROGRESS]
+## v0.7.4 - Extension Download & CRX Support [COMPLETE]
 
 **Goal:** Download Chrome extensions from Web Store, CRX2/CRX3 unpacking, persistent extension storage.
 
@@ -150,7 +150,7 @@
 - [x] CLI: `scout extract-ai`, `scout ollama list/pull/status`, `scout ai-job list/show/session`
 - [x] 40+ tests with mock providers, httptest servers, workspace lifecycle
 - **New dependency:** `github.com/ollama/ollama`
-- **Coverage:** pkg/scout 75.3%
+- **Coverage:** pkg/scout 75.7%
 
 ## v0.8.0 - Screen Recorder [PLANNED]
 
@@ -179,5 +179,23 @@
 - [x] LICENSE file
 - [ ] GoDoc examples for Browser, Page, Element, EvalResult, and new features
 - [ ] Integration test examples (login flow, form submission, scraping)
-- [ ] 80%+ test coverage (pkg/scout: 75.3% — regressed with new features)
-- **Coverage:** pkg/scout 75.3% | pkg/identity 81.1% | scraper 84.3%
+- [ ] 80%+ test coverage (pkg/scout: 75.7% — below target; total: 53.6%)
+- **Coverage:** pkg/scout 75.7% | pkg/identity 81.1% | scraper 84.3% | grpc/server 63.1% | Total 53.6%
+
+## v0.7.6 - Bridge DOM & Sitemap Extract [IN PROGRESS]
+
+**Goal:** Crawl + bridge-based DOM extraction for entire sites.
+
+- [x] `SitemapExtract()` — BFS crawl with bridge DOM JSON + Markdown extraction per page
+- [x] Functional options: `WithSitemapMaxDepth`, `WithSitemapMaxPages`, `WithSitemapSelector`, `WithSitemapMainOnly`, `WithSitemapSkipJSON`, `WithSitemapSkipMarkdown`, `WithSitemapOutputDir`
+- [x] Per-page output files (`dom.json`, `dom.md`) and index files (`index.json`, `index.md`)
+- [x] CLI: `scout sitemap extract <url>` with full flag support
+- [x] Updated `examples/advanced/bridge-dom/` to use `SitemapExtract()`
+- [x] Tests: `TestSitemapExtract`, `TestSitemapExtractOutputDir`, `TestSitemapExtractOptions`, `TestSitemapOptionDefaults`, `TestURLToDir`
+- [x] Browser auto-download: Brave auto-downloads from GitHub releases if not installed locally
+- [x] `resolveBrowser()` fallback chain: local lookup → auto-download → error with download URL (Edge)
+- [x] `ListDownloadedBrowsers()` and `BrowserCacheDir()` for `~/.scout/browsers/` management
+- [x] CLI: `scout browser list` — show detected and downloaded browsers
+- [x] 7 tests for browser download (asset naming, zip extraction, resolve fallback)
+- [ ] Docker images (Phase 21b) — multi-stage Dockerfile, gRPC server image, slim CLI image
+- **Coverage:** pkg/scout 75.7% | grpc/server 63.1%

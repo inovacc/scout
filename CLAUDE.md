@@ -38,11 +38,11 @@ Tests require a Chromium-based browser available on the system. `newTestBrowser`
 
 Scout supports multiple Chromium-based browsers via `BrowserType`:
 
-- `BrowserChrome` (default) — rod auto-detect
-- `BrowserBrave` — auto-detects Brave on Windows, macOS, Linux
-- `BrowserEdge` — auto-detects Microsoft Edge on Windows, macOS, Linux
+- `BrowserChrome` (default) — rod auto-detect + auto-download
+- `BrowserBrave` — auto-detects locally, auto-downloads from GitHub releases if not installed
+- `BrowserEdge` — auto-detects locally, error includes download URL if not installed
 
-Use `WithBrowser(BrowserBrave)` or CLI `--browser=brave`. `WithExecPath()` takes precedence if both are set. Firefox is not supported (CDP removed in Firefox 141, June 2025).
+Use `WithBrowser(BrowserBrave)` or CLI `--browser=brave`. `WithExecPath()` takes precedence if both are set. Firefox is not supported (CDP removed in Firefox 141, June 2025). Downloaded browsers are cached in `~/.scout/browsers/`. Use `scout browser list` to see detected and downloaded browsers.
 
 ### Chrome Extension Loading
 
@@ -126,6 +126,15 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `storageAPI`, `SessionState`          | Web storage & session persistence   | `storage.go`   |
 | `SwaggerSpec`, `SwaggerPath`, etc.    | OpenAPI/Swagger spec extraction     | `swagger.go`   |
 | `ExtensionInfo`                       | Chrome extension metadata + path    | `extension.go` |
+| `DownloadBrave`, `ListDownloadedBrowsers` | Browser auto-download + cache   | `browser_download.go` |
+
+### Sitemap Extract Types
+
+| Type                                          | Purpose                                        | File                |
+|-----------------------------------------------|-------------------------------------------------|---------------------|
+| `SitemapPage`                                 | Per-page DOM + Markdown extraction result       | `sitemap.go`        |
+| `SitemapResult`                               | Full sitemap extraction output                  | `sitemap.go`        |
+| `SitemapOption`                               | Functional options for `SitemapExtract()`        | `sitemap.go`        |
 
 ### LLM Extraction Types
 
@@ -181,8 +190,7 @@ Single binary `scout` with Cobra subcommands (package main). Communicates with a
 
 ```
 cmd/scout/
-├── main.go                 # Entry point
-├── root.go                 # Root command + persistent flags (--addr, --session, --output, --format)
+├── root.go                 # Entry point (main()) + root command + persistent flags (--addr, --session, --output, --format)
 ├── daemon.go               # Auto-start gRPC daemon, getClient(), resolveSession()
 ├── daemon_unix.go          # Unix process detach (Setsid)
 ├── daemon_windows.go       # Windows process detach (CREATE_NEW_PROCESS_GROUP)
@@ -210,6 +218,8 @@ cmd/scout/
 ├── recipe.go               # scout recipe run/validate
 ├── swagger.go              # scout swagger <url> (detect + extract OpenAPI/Swagger specs)
 ├── extension.go            # scout extension load/test/list/download/remove
+├── sitemap.go              # scout sitemap extract
+├── browser.go              # scout browser list
 ├── bridge.go               # scout bridge status/send/listen
 ├── llm.go                  # scout extract-ai, scout ollama, scout ai-job
 ├── auth.go                 # scout auth login/capture/status/logout/providers
@@ -260,6 +270,7 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **LLM Review pipeline**: `ExtractWithLLMReview()` extracts with LLM1, optionally reviews with LLM2. `WithLLMReview(provider)` enables the second pass. Results persisted to workspace via `WithLLMWorkspace(ws)`.
 - **LLM Workspace**: Filesystem-based job tracking at `<path>/sessions.json`, `<path>/jobs/jobs.json`, `<path>/jobs/<uuid>/job.json`. Extract and review output written to `extract.md` and `review.md` alongside job metadata.
 - **Bridge extension default**: The Scout Bridge extension is enabled by default (`bridge: true` in `defaults()`). Extension files are embedded via `extensions/extensions.go` using `embed.FS` and written to a temp dir at startup. Disable with `WithoutBridge()` or `SCOUT_BRIDGE=false`.
+- **SitemapExtract**: `Browser.SitemapExtract()` combines BFS crawl with bridge DOM/Markdown extraction. Reuses a single page + bridge across navigations. Outputs per-page `dom.json`/`dom.md` files plus `index.json`/`index.md` when `WithSitemapOutputDir()` is set.
 - **gRPC default port**: The daemon and server default to port `9551` (not the standard gRPC `50051`) to avoid conflicts.
 
 ## Testing

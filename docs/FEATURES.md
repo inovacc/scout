@@ -71,11 +71,11 @@
 - **Description:** Lightweight URL-only discovery combining sitemap.xml parsing with on-page BFS link harvesting. Filters for subdomains, path patterns, search terms. Limit cap on discovered URLs. CLI
   `scout map <url>`. Implemented in `map.go`.
 
-### Multi-Browser Support
+### Multi-Browser Support & Auto-Download
 
 - **Status:** Completed
 - **Description:** Auto-detection for Brave and Microsoft Edge browsers on Windows, macOS, and Linux. `WithBrowser(BrowserBrave)` or `--browser=brave`. Platform-specific path resolution in
-  `browser_path_*.go`.
+  `browser_path_*.go`. Brave auto-downloads from GitHub releases if not installed locally (`browser_download.go`). Edge provides download URL in error message. Downloaded browsers cached in `~/.scout/browsers/`. CLI `scout browser list` shows detected and downloaded browsers.
 
 ### Chrome Extension Loading
 
@@ -133,6 +133,11 @@
 
 - **Status:** Completed
 - **Description:** AI-powered data extraction using LLM providers. Send page content (as markdown) to an LLM with a natural language prompt, get structured data back. Pluggable `LLMProvider` interface with 6 built-in providers: Ollama (local), OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini. Optional JSON schema validation. LLM review pipeline (`ExtractWithLLMReview()`) sends extraction output to a second LLM for quality review. Workspace persistence tracks sessions and jobs in a filesystem directory with `sessions.json`, `jobs/jobs.json`, and per-job `jobs/<uuid>/` folders. CLI `scout extract-ai`, `scout ollama list/pull/status`, `scout ai-job list/show/session`. Implemented in `pkg/scout/llm.go`, `llm_ollama.go`, `llm_openai.go`, `llm_anthropic.go`, `llm_review.go`, `llm_workspace.go`, `cmd/scout/llm.go`.
+
+### Sitemap Extract
+
+- **Status:** Completed
+- **Description:** Crawl an entire site and extract DOM JSON + Markdown for every page using the bridge extension. `Browser.SitemapExtract()` performs BFS crawl reusing a single page + bridge across navigations. Functional options for depth, max pages, delay, DOM depth, CSS selector scoping, main-only markdown, skip JSON/Markdown, and output directory. Per-page output files (`dom.json`, `dom.md`) plus `index.json` and `index.md`. CLI `scout sitemap extract <url>`. Implemented in `pkg/scout/sitemap.go`, `cmd/scout/sitemap.go`.
 
 ## Proposed Features
 

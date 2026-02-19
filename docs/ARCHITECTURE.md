@@ -25,7 +25,9 @@ flowchart TB
             Recipe["Recipe\n(recipe/)"]
             Swagger["Swagger/OpenAPI\n(swagger.go)"]
             Extension["Extension DL\n(extension.go)"]
+            BrowserDL["Browser Download\n(browser_download.go)"]
             LLM["LLM Extraction\n(llm*.go)"]
+            Sitemap["SitemapExtract\n(sitemap.go)"]
         end
 
         subgraph Infrastructure["Infrastructure"]
