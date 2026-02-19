@@ -28,6 +28,7 @@ flowchart TB
             BrowserDL["Browser Download\n(browser_download.go)"]
             LLM["LLM Extraction\n(llm*.go)"]
             Sitemap["SitemapExtract\n(sitemap.go)"]
+            WebFetch["WebFetch\n(webfetch.go)"]
         end
 
         subgraph Infrastructure["Infrastructure"]

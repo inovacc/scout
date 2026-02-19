@@ -179,8 +179,8 @@
 - [x] LICENSE file
 - [ ] GoDoc examples for Browser, Page, Element, EvalResult, and new features
 - [ ] Integration test examples (login flow, form submission, scraping)
-- [ ] 80%+ test coverage (pkg/scout: 75.7% — below target; total: 53.6%)
-- **Coverage:** pkg/scout 75.7% | pkg/identity 81.1% | scraper 84.3% | grpc/server 63.1% | Total 53.6%
+- [ ] 80%+ test coverage (pkg/scout: 75.7% — below target; total: 54.9%)
+- **Coverage:** pkg/scout 75.7% | pkg/identity 81.1% | scraper 84.3% | pkg/stealth 50.0% | pkg/scout/recipe 81.5% | grpc/server 67.7% | Total 54.9%
 
 ## v0.7.6 - Bridge DOM & Sitemap Extract [IN PROGRESS]
 
@@ -197,5 +197,9 @@
 - [x] `ListDownloadedBrowsers()` and `BrowserCacheDir()` for `~/.scout/browsers/` management
 - [x] CLI: `scout browser list` — show detected and downloaded browsers
 - [x] 7 tests for browser download (asset naming, zip extraction, resolve fallback)
-- [ ] Docker images (Phase 21b) — multi-stage Dockerfile, gRPC server image, slim CLI image
-- **Coverage:** pkg/scout 75.7% | grpc/server 63.1%
+- [x] Docker images (Phase 21b) — `Dockerfile`, `Dockerfile.slim`, `.dockerignore`, `docker-compose.yml`
+- [x] WebFetch — `webfetch.go` with 6 content modes, caching, batch, 13 tests (88%+), CLI `scout fetch`
+- [x] Recipe Creator — `analyze.go` + `generate.go` with site analysis, recipe generation, 11 tests (81.5%)
+- [x] Stealth expansion — `stealth_extra.go` (5 evasions), `disable-blink-features` launch flag, bot detection integration tests
+- [x] CLI `baseOpts` refactor — unified browser option composition via `helpers.go`
+- **Coverage:** pkg/scout 75.7% | pkg/stealth 50.0% | pkg/scout/recipe 81.5% | grpc/server 67.7%

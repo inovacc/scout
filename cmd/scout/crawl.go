@@ -28,11 +28,7 @@ var crawlCmd = &cobra.Command{
 		delay, _ := cmd.Flags().GetDuration("delay")
 		domains, _ := cmd.Flags().GetStringSlice("domains")
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}

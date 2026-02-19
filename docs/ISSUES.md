@@ -10,15 +10,13 @@
 
 - **Severity:** Low
 - **Status:** Partially resolved
-- **Description:** The `grpc/server/` package has integration tests (`server_test.go`) with 63.1% coverage. Still below 80% target. Needs more targeted tests for individual RPCs and error paths.
+- **Description:** The `grpc/server/` package has integration tests (`server_test.go`) with 67.7% coverage. Still below 80% target. Needs more targeted tests for individual RPCs and error paths.
 - **Workaround:** Manual testing with `scout client` REPL, `scout` CLI commands, or `.scripts/test-client-server.sh`.
 
-### Window maximize leaves blank space
+### ~~Window maximize leaves blank space~~ [RESOLVED]
 
 - **Severity:** Medium
-- **Status:** Open
-- **Description:** When using `WithWindowState(WindowMaximized)` or `scout window max`, the browser window maximizes but leaves blank/white space in the viewport. May be related to Chrome's window state transitions or viewport resize timing.
-- **Workaround:** None currently. Investigate whether `setWindowState()` auto-restore logic needs a resize delay.
+- **Status:** Fixed — `setWindowState()` now clears `EmulationDeviceMetricsOverride` after maximize/fullscreen so Chrome uses actual window dimensions instead of the initial 1920x1080 viewport pin.
 
 ## Resolved Issues
 

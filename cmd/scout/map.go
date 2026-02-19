@@ -35,11 +35,7 @@ var mapCmd = &cobra.Command{
 		delay, _ := cmd.Flags().GetDuration("delay")
 		maxDepth, _ := cmd.Flags().GetInt("max-depth")
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}

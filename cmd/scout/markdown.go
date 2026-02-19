@@ -29,11 +29,7 @@ var markdownCmd = &cobra.Command{
 		noImages, _ := cmd.Flags().GetBool("no-images")
 		noLinks, _ := cmd.Flags().GetBool("no-links")
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}

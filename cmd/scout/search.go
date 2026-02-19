@@ -40,11 +40,7 @@ var searchCmd = &cobra.Command{
 			return fmt.Errorf("scout: unknown engine %q (use google, bing, or ddg)", engine)
 		}
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}

@@ -1,0 +1,22 @@
+services:
+  scout-server:
+    build: ..
+    image: scout:latest
+    command: ["server"]
+    ports:
+      - "9551:9551"
+      - "9552:9552"
+    environment:
+      - SCOUT_HEADLESS=true
+    tmpfs:
+      - /dev/shm:size=2g
+    volumes:
+      - scout-data:/home/scout/.scout
+    healthcheck:
+      test: ["CMD", "scout", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  scout-data:

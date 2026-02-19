@@ -28,11 +28,7 @@ var tableCmd = &cobra.Command{
 			return fmt.Errorf("scout: --url is required for standalone table extraction")
 		}
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
@@ -93,11 +89,7 @@ var metaCmd = &cobra.Command{
 			return fmt.Errorf("scout: --url is required for standalone meta extraction")
 		}
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}

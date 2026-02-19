@@ -139,13 +139,8 @@ Optionally capture a screenshot and list detected extensions.`,
 		screenshotFile, _ := cmd.Flags().GetString("screenshot")
 		timeout, _ := cmd.Flags().GetDuration("timeout")
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			scout.WithTimeout(timeout),
-			scout.WithExtension(paths...),
-			browserOpt(cmd),
-		)
+		opts := append(baseOpts(cmd), scout.WithTimeout(timeout), scout.WithExtension(paths...))
+		browser, err := scout.New(opts...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
@@ -224,11 +219,7 @@ var extListCmd = &cobra.Command{
 
 		urlFlag, _ := cmd.Flags().GetString("url")
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}

@@ -37,11 +37,7 @@ var formDetectCmd = &cobra.Command{
 			return fmt.Errorf("scout: --url is required")
 		}
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
@@ -104,11 +100,7 @@ var formFillCmd = &cobra.Command{
 			return fmt.Errorf("scout: invalid JSON: %w", err)
 		}
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
@@ -159,11 +151,7 @@ var formSubmitCmd = &cobra.Command{
 			return fmt.Errorf("scout: --url is required")
 		}
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}

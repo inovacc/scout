@@ -227,11 +227,10 @@ credentials/session.
 - **Effort:** Large
 - **Dependencies:** Current browser auto-download (done), Chrome Extension infrastructure (done).
 
-### Docker Images — Container Deployment (Phase 21b)
+### ~~Docker Images — Container Deployment (Phase 21b)~~ [PARTIALLY DONE]
 
 - **Priority:** P1
-- **Description:** Pre-built Docker images for running Scout in containers. Multi-stage Dockerfile with Chromium + fonts, gRPC server variant, slim CLI-only variant. Docker Compose for local dev, GitHub Actions for GHCR publishing, multi-arch `linux/amd64` + `linux/arm64` builds. Helm chart for Kubernetes deployment with proper `/dev/shm` volume and resource limits.
-- **Scope:** `Dockerfile` (multi-stage), `Dockerfile.slim` (no browser), `docker-compose.yml`, `.dockerignore`, `deploy/helm/scout/` Helm chart, GitHub Actions workflow for image build/push, `examples/docker/` example. Environment variables: `SCOUT_HEADLESS`, `SCOUT_NO_SANDBOX`, `SCOUT_BRIDGE`, `SCOUT_ADDR`.
+- **Status:** Core done — `Dockerfile`, `Dockerfile.slim`, `.dockerignore`, `docker-compose.yml`, `scout browser download` command. Remaining: CI/CD image publishing (GHCR), multi-arch builds, Helm chart, Kubernetes job template, `examples/docker/`.
 - **Effort:** Medium
 - **Dependencies:** Unified CLI (done), gRPC server (done), platform detection (done).
 
@@ -281,13 +280,13 @@ credentials/session.
 ### gRPC Server Test Coverage
 
 - **Priority:** P2
-- **Description:** The `grpc/server/` package has 67.1% test coverage. More targeted tests needed for individual RPCs and error paths.
+- **Description:** The `grpc/server/` package has 67.7% test coverage. More targeted tests needed for individual RPCs and error paths.
 - **Effort:** Medium
 
-### Window Maximize Blank Space Bug
+### ~~Window Maximize Blank Space Bug~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Browser window maximize leaves blank/white space in the viewport. Likely a timing issue between Chrome's window state transition and viewport resize. Investigate whether `setWindowState()` needs a post-maximize viewport resize or delay.
+- **Status:** Fixed — `setWindowState()` clears `EmulationClearDeviceMetricsOverride` after maximize/fullscreen
 - **Effort:** Small
 
 ### Robot/Bot Detection Framework (Phase 17b prerequisite)
@@ -348,3 +347,8 @@ credentials/session.
 | LLM-Powered Extraction | `ExtractWithLLM()`, `ExtractWithLLMReview()`, workspace persistence, 6 providers (Ollama, OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini), CLI `extract-ai`/`ollama`/`ai-job` | 2026-02 |
 | Sitemap Extract | `SitemapExtract()` — BFS crawl + bridge DOM/Markdown extraction per page, output directory support, CLI `scout sitemap extract` | 2026-02 |
 | Browser Type Selector | `scout browser list`, Brave auto-download from GitHub releases, Edge download URL in error, `browser_download.go` + `cmd/scout/browser.go` | 2026-02 |
+| Docker Images (core) | `Dockerfile` (Chromium + scout), `Dockerfile.slim` (distroless), `.dockerignore`, `docker-compose.yml`, `scout browser download` command | 2026-02 |
+| WebFetch implementation | `webfetch.go` with 6 content modes, caching, batch, 13 tests at 88%+ coverage, CLI `scout fetch` | 2026-02 |
+| Recipe Creator | `analyze.go` + `generate.go` with site analysis, container/field detection, recipe generation, 11 tests at 81.5% coverage | 2026-02 |
+| Stealth Mode Expansion | `stealth_extra.go` with 5 evasions, `disable-blink-features` launch flag, bot detection integration tests against 6 real sites | 2026-02 |
+| Window Maximize Bug | Fixed: `setWindowState()` clears DeviceMetricsOverride after maximize/fullscreen | 2026-02 |

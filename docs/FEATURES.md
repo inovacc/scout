@@ -139,6 +139,21 @@
 - **Status:** Completed
 - **Description:** Crawl an entire site and extract DOM JSON + Markdown for every page using the bridge extension. `Browser.SitemapExtract()` performs BFS crawl reusing a single page + bridge across navigations. Functional options for depth, max pages, delay, DOM depth, CSS selector scoping, main-only markdown, skip JSON/Markdown, and output directory. Per-page output files (`dom.json`, `dom.md`) plus `index.json` and `index.md`. CLI `scout sitemap extract <url>`. Implemented in `pkg/scout/sitemap.go`, `cmd/scout/sitemap.go`.
 
+### Stealth Mode — Anti-Bot-Detection
+
+- **Status:** Completed
+- **Description:** Comprehensive stealth system combining Chrome launch flags (`disable-blink-features=AutomationControlled`), core JS injection from `extract-stealth-evasions` (navigator.webdriver, chrome.runtime, Permissions, WebGL, plugins, etc.), and custom `ExtraJS` evasions (canvas/audio fingerprint noise, WebGL vendor spoofing, navigator.connection, Notification.permission). Enabled via `WithStealth()` option, `--stealth` CLI flag, or `SCOUT_STEALTH=true`. Integration tests against real bot-detection sites (bot.sannysoft.com, arh.antoinevastel.com, pixelscan.net, brotector, fingerprint.com). Implemented in `pkg/stealth/` and `pkg/scout/browser.go`.
+
+### WebFetch — URL Content Extraction
+
+- **Status:** Completed
+- **Description:** Fetch any URL and return clean, structured content. `Browser.WebFetch(url, ...WebFetchOption)` returns markdown, metadata, links, and optionally raw HTML. Content modes: full, markdown, html, text, links, meta. Main content extraction via readability scoring. In-memory caching with TTL. Batch fetching with `WebFetchBatch()`. CLI `scout fetch <url> [--mode=...] [--main-only]`. Implemented in `pkg/scout/webfetch.go`, `cmd/scout/fetch.go`.
+
+### Recipe Creator — Site Analysis & Generation
+
+- **Status:** Completed
+- **Description:** Automatically analyze a target website and generate a ready-to-run recipe JSON file. `AnalyzeSite()` navigates, inspects DOM, classifies page type (listing/form/article/table), detects containers, fields, forms, pagination, and interactable elements. `GenerateRecipe()` produces extract or automate recipes from analysis. CLI `scout recipe create <url>`. Implemented in `pkg/scout/recipe/analyze.go`, `pkg/scout/recipe/generate.go`.
+
 ## Proposed Features
 
 ### Screen Recorder

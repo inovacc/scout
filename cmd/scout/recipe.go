@@ -14,15 +14,18 @@ import (
 
 func init() {
 	rootCmd.AddCommand(recipeCmd)
-	recipeCmd.AddCommand(recipeRunCmd, recipeValidateCmd)
+	recipeCmd.AddCommand(recipeRunCmd, recipeValidateCmd, recipeCreateCmd)
 
 	recipeRunCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
 	recipeRunCmd.Flags().StringP("output", "o", "", "output file for results")
-	recipeRunCmd.Flags().Bool("headless", true, "run browser in headless mode")
 	_ = recipeRunCmd.MarkFlagRequired("file")
 
 	recipeValidateCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
 	_ = recipeValidateCmd.MarkFlagRequired("file")
+
+	recipeCreateCmd.Flags().StringP("output", "o", "", "output file for generated recipe")
+	recipeCreateCmd.Flags().String("type", "", "force recipe type (extract or automate)")
+	recipeCreateCmd.Flags().Int("max-pages", 5, "max pages for pagination")
 }
 
 var recipeCmd = &cobra.Command{
@@ -36,17 +39,13 @@ var recipeRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		file, _ := cmd.Flags().GetString("file")
 		output, _ := cmd.Flags().GetString("output")
-		headless, _ := cmd.Flags().GetBool("headless")
 
 		r, err := recipe.LoadFile(file)
 		if err != nil {
 			return err
 		}
 
-		browser, err := scout.New(
-			scout.WithHeadless(headless),
-			scout.WithNoSandbox(),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
@@ -105,6 +104,63 @@ var recipeValidateCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(os.Stdout, "valid %s recipe: %s (type=%s)\n", r.Version, r.Name, r.Type)
+		return nil
+	},
+}
+
+var recipeCreateCmd = &cobra.Command{
+	Use:   "create <url>",
+	Short: "Analyze a site and generate a recipe",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		url := args[0]
+		output, _ := cmd.Flags().GetString("output")
+		forceType, _ := cmd.Flags().GetString("type")
+		maxPages, _ := cmd.Flags().GetInt("max-pages")
+
+		browser, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return fmt.Errorf("scout: browser launch: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		_, _ = fmt.Fprintf(os.Stderr, "analyzing %s...\n", url)
+
+		analysis, err := recipe.AnalyzeSite(context.Background(), browser, url)
+		if err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(os.Stderr, "detected page type: %s\n", analysis.PageType)
+		_, _ = fmt.Fprintf(os.Stderr, "containers: %d, forms: %d\n", len(analysis.Containers), len(analysis.Forms))
+
+		var genOpts []recipe.GenerateOption
+		if forceType != "" {
+			genOpts = append(genOpts, recipe.WithGenerateType(forceType))
+		}
+		if maxPages > 0 {
+			genOpts = append(genOpts, recipe.WithGenerateMaxPages(maxPages))
+		}
+
+		r, err := recipe.GenerateRecipe(analysis, genOpts...)
+		if err != nil {
+			return err
+		}
+
+		data, err := json.MarshalIndent(r, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal recipe: %w", err)
+		}
+
+		if output != "" {
+			if err := os.WriteFile(output, data, 0o644); err != nil {
+				return err
+			}
+			_, _ = fmt.Fprintf(os.Stderr, "recipe written to %s\n", output)
+			return nil
+		}
+
+		_, _ = fmt.Fprintln(os.Stdout, string(data))
 		return nil
 	},
 }

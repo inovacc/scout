@@ -139,6 +139,18 @@
 | Microsoft Edge  | ✅ Supported | ❌ Installer only | `WithBrowser(BrowserEdge)` — error message includes download URL                         |
 | Firefox         | ❌ Blocked   | N/A           | CDP removed in Firefox 141 (June 2025). Requires WebDriver BiDi maturity in Go ecosystem. |
 
+#### Pre-Existing Browser Detection [PLANNED]
+
+Automatically detect all Chromium-based browsers installed on the system (Chrome, Brave, Edge, Vivaldi, Opera, Arc, Chromium) and add them to the available browser list. Currently Scout only checks known paths per `BrowserType`; this feature does a full system scan.
+
+- [ ] **System scanner** (`pkg/scout/browser_detect.go`) — scan common install paths per OS (Program Files, /Applications, /usr/bin, snap, flatpak)
+- [ ] **Registry scan (Windows)** — read `HKLM\SOFTWARE\Clients\StartMenuInternet` and `App Paths` for browser executables
+- [ ] **Version extraction** — run `browser --version` or parse manifest/plist to get version string
+- [ ] **`DetectBrowsers() []BrowserInfo`** — return all found browsers with name, path, version, type
+- [ ] **`scout browser list --detect`** — enhanced list showing all system browsers, not just Scout-managed ones
+- [ ] **`WithAutoDetect()` option** — pick best available browser automatically (prefer Chrome > Brave > Edge > Chromium)
+- [ ] **Tests** — mock filesystem paths, registry stubs, version parsing
+
 ### Phase 11: Batch Scraper [COMPLETE]
 
 - [x] `BatchScrape(urls []string, fn func(*Page, string) error, ...BatchOption)` in `pkg/scout/batch.go`
@@ -167,45 +179,34 @@
 - [x] CLI: `scout recipe run --file=recipe.json`, `scout recipe validate --file=recipe.json`
 - [x] Unit tests for recipe parsing (`pkg/scout/recipe/recipe_test.go`)
 
-### Phase 12c: Recipe Creator — AI-Assisted Recipe Generation [PLANNED]
+### Phase 12c: Recipe Creator — AI-Assisted Recipe Generation [IN PROGRESS]
 
 Automatically analyze a target website and generate a ready-to-run recipe JSON file. Scout navigates the site, inspects the DOM structure, identifies interactive elements and data patterns, and produces an `extract` or `automate` recipe. Optionally uses an LLM to resolve ambiguous selectors, name fields semantically, and plan multi-step automation flows.
 
 #### Site Analysis Engine
 
-- [ ] **`AnalyzeSite(url string, ...AnalyzeOption) (*SiteAnalysis, error)`** (`pkg/scout/recipe/analyze.go`) — navigate to URL, inspect DOM, classify page type
-- [ ] **Page classification** — detect page type: product listing, detail page, search results, login form, multi-step wizard, dashboard, article/blog, table/grid, API docs
-- [ ] **Container detection** — find repeated DOM structures (lists, grids, tables) via sibling-similarity scoring; rank by count, depth, and attribute consistency
-- [ ] **Field discovery** — within each container, identify text nodes, links, images, prices, dates, badges, and map to candidate field names
+- [x] **`AnalyzeSite(ctx, browser, url, ...AnalyzeOption) (*SiteAnalysis, error)`** (`pkg/scout/recipe/analyze.go`) — navigate to URL, inspect DOM, classify page type
+- [x] **Page classification** — detect page type: listing, form, article, table, unknown — via heuristic scoring
+- [x] **Container detection** — find repeated DOM structures (article, card, item, product, result, li, tr, row) via count + field scoring
+- [x] **Field discovery** — JS-based child inspection: headings→title, a[href]→link, img[src]→image, price patterns, time/date elements
 - [ ] **Selector generation** — produce robust CSS selectors: prefer `[data-*]`, `[role]`, semantic tags over brittle `.class-hash` chains; validate uniqueness
 - [ ] **Selector resilience scoring** — score selectors by stability heuristics (attribute-based > class-based > nth-child); warn on fragile selectors
-- [ ] **Pagination detection** — identify next-page buttons, infinite scroll triggers, URL-pattern pagination (`?page=N`), load-more buttons
-- [ ] **Form detection** — find `<form>` elements, map input fields (name, type, label), detect submit buttons, CSRF tokens
-- [ ] **Interactive element mapping** — catalog clickable elements, dropdowns, tabs, modals, accordions with their trigger selectors
-- [ ] **SiteAnalysis type**:
-  ```go
-  type SiteAnalysis struct {
-      URL           string
-      PageType      string               // "listing", "detail", "form", "search", etc.
-      Containers    []ContainerCandidate  // ranked repeated structures
-      Forms         []FormCandidate       // detected forms with fields
-      Pagination    *PaginationCandidate  // detected pagination pattern
-      Interactables []InteractableElement // buttons, tabs, dropdowns
-      Metadata      map[string]string     // page title, description, og:tags
-  }
-  ```
+- [x] **Pagination detection** — identify next-page buttons via `a[rel="next"]`, `.next`, `[aria-label*="next"]`, `.pagination a:last-child`; URL pattern detection
+- [x] **Form detection** — find `<form>` elements via `DetectForms()`, map input fields (name, type, selector, placeholder, required)
+- [x] **Interactive element mapping** — detect buttons (non-submit), tabs (`[role="tab"]`), toggles (`[data-toggle]`)
+- [x] **SiteAnalysis type** — `URL`, `PageType`, `Containers`, `Forms`, `Pagination`, `Interactables`, `Metadata`
 
 #### Recipe Generation (Rule-Based)
 
-- [ ] **`GenerateRecipe(analysis *SiteAnalysis, ...GenerateOption) (*Recipe, error)`** (`pkg/scout/recipe/generate.go`)
-- [ ] **Extract recipe generation** — from top-ranked container + fields, build `items.container`, `items.fields` map, detect `@attr` for links/images
-- [ ] **Automate recipe generation** — from form + interactable analysis, build sequential steps (navigate → fill → click → wait → extract)
-- [ ] **Pagination wiring** — attach detected pagination to recipe (strategy, next_selector, max_pages)
-- [ ] **WaitFor inference** — set `wait_for` to the container selector for dynamic pages (SPA detection via script count, framework markers)
-- [ ] **Output defaults** — set format to `json`, name derived from page title or domain
-- [ ] **`WithGenerateType("extract"|"automate")` option** — force recipe type instead of auto-detect
-- [ ] **`WithGenerateFields(fields ...string)` option** — only include specified fields in extraction recipe
-- [ ] **`WithGenerateMaxPages(n)` option** — set pagination max pages
+- [x] **`GenerateRecipe(analysis *SiteAnalysis, ...GenerateOption) (*Recipe, error)`** (`pkg/scout/recipe/generate.go`)
+- [x] **Extract recipe generation** — from top-ranked container + fields, build `items.container`, `items.fields` map, detect `@attr` for links/images
+- [x] **Automate recipe generation** — from form + interactable analysis, build sequential steps (navigate → type per field → click submit)
+- [x] **Pagination wiring** — attach detected click pagination to recipe (strategy, next_selector, max_pages)
+- [x] **WaitFor inference** — set `wait_for` to the container selector
+- [x] **Output defaults** — set format to `json`, name derived from page title or domain
+- [x] **`WithGenerateType("extract"|"automate")` option** — force recipe type instead of auto-detect
+- [x] **`WithGenerateFields(fields ...string)` option** — only include specified fields in extraction recipe
+- [x] **`WithGenerateMaxPages(n)` option** — set pagination max pages
 
 #### AI-Assisted Generation (Optional LLM Enhancement)
 
@@ -227,7 +228,7 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 
 #### CLI Commands
 
-- [ ] `scout recipe create <url> [--type=extract|automate] [--output=recipe.json]` — analyze site + generate recipe
+- [x] `scout recipe create <url> [--type=extract|automate] [--output=recipe.json]` — analyze site + generate recipe
 - [ ] `scout recipe create <url> --ai [--goal="scrape all products"] [--provider=ollama]` — AI-assisted generation
 - [ ] `scout recipe create <url> --interactive` — step-by-step guided creation: show candidates, let user pick containers/fields
 - [ ] `scout recipe test --file=recipe.json` — dry-run validation with sample output
@@ -235,11 +236,14 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 
 #### Testing
 
-- [ ] Container detection tests (product grids, tables, lists, nested structures)
-- [ ] Selector generation tests (preference for data attributes, uniqueness validation)
-- [ ] Pagination detection tests (click-next, URL pattern, infinite scroll, load-more)
-- [ ] Form detection tests (login forms, search bars, multi-step wizards)
-- [ ] End-to-end: analyze test page → generate recipe → run recipe → verify extracted data matches expected
+- [x] Container detection tests (product listing with 4 items)
+- [x] Pagination detection tests (click-next with `.next` selector)
+- [x] Form detection tests (login form with username/password)
+- [x] Article detection tests (og:type article classification)
+- [x] Metadata extraction tests (title, description from meta tags)
+- [x] Generate extract recipe tests (container + fields + validate + run end-to-end)
+- [x] Generate automate recipe tests (form → steps with navigate + type + click)
+- [x] Force type tests (WithGenerateType override)
 - [ ] AI integration tests with mock LLM provider
 - [ ] CLI integration tests for `recipe create` and `recipe test`
 
@@ -378,6 +382,47 @@ A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a pers
 - [ ] Content script tests (DOM mutation detection, shadow DOM traversal, cross-frame messaging)
 - [ ] Fallback behavior tests (bridge unavailable → CDP degradation)
 - [ ] Example: `examples/advanced/bridge-extension/`
+
+### Phase 17a: Stealth Mode — Anti-Bot-Detection [IN PROGRESS]
+
+Comprehensive stealth system that prevents headless browser detection across multiple vectors. Combines Chrome launch flags, JS injection (via `extract-stealth-evasions` + custom evasions), and fingerprint spoofing.
+
+#### Core Evasions (extract-stealth-evasions v2.7.3)
+
+- [x] `navigator.webdriver` — hidden/false
+- [x] `chrome.runtime` — present and truthy
+- [x] `Permissions` API — query overrides
+- [x] `WebGLRenderingContext` — parameter interception
+- [x] `hardwareConcurrency` — spoofed
+- [x] `languages` / `plugins` / `mimeTypes` — populated
+- [x] `iframe.contentWindow` — patched
+
+#### Extra Evasions (custom `ExtraJS`)
+
+- [x] **Canvas fingerprint noise** — subtle random noise on `toDataURL` and `getImageData` (unique per page)
+- [x] **AudioContext fingerprint noise** — micro-gain noise on oscillator output
+- [x] **WebGL vendor/renderer spoofing** — reports "Intel Inc." / "Intel Iris OpenGL Engine"
+- [x] **`navigator.connection` spoofing** — effectiveType "4g", downlink 10, rtt 50
+- [x] **`Notification.permission`** — returns "default"
+
+#### Chrome Launch Flags
+
+- [x] **`disable-blink-features=AutomationControlled`** — removes `navigator.webdriver=true` at Chrome level
+
+#### Bot Detection Integration Tests
+
+- [x] **`TestBotDetection_NoStealth`** — visits bot-detection sites without stealth, confirms bot IS detected (validates test sites work)
+- [x] **`TestBotDetection_WithStealth`** — visits same sites with stealth, confirms bot is NOT detected
+- [x] **Test sites**: bot.sannysoft.com, arh.antoinevastel.com/bots/areyouheadless, infosimples/detect-headless, pixelscan.net, seleniumbase/brotector, demo.fingerprint.com/playground
+
+#### Planned
+
+- [ ] **TLS/JA3 fingerprint rotation** — vary TLS fingerprint signatures via Chrome flags
+- [ ] **Font fingerprint spoofing** — spoof `document.fonts` enumeration
+- [ ] **Screen resolution consistency** — ensure `screen.width/height` match viewport settings
+- [ ] **WebRTC leak prevention** — disable or spoof WebRTC local IP leak
+- [ ] **Battery API spoofing** — consistent battery status across pages
+- [ ] **More test sites** — creepjs.com, overpoweredjs.com, nobotspls.com, datadome.co/browserscan
 
 ### Phase 17b: AI-Powered Bot Protection Bypass [PLANNED]
 
@@ -565,22 +610,23 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [x] **DevTools option** — `WithDevTools()` for browser DevTools panel
 - [x] **CLI device commands** (`cmd/scout/internal/cli/device.go`) — `scout device pair/list/trust`
 
-### Phase 21b: Docker Images — Container Deployment [PLANNED]
+### Phase 21b: Docker Images — Container Deployment [IN PROGRESS]
 
 Provide pre-built Docker images for running Scout CLI and gRPC server in containers. Supports headless browser automation in CI/CD pipelines, Kubernetes jobs, and serverless environments.
 
 #### Docker Images
 
-- [ ] **`Dockerfile`** — Multi-stage build: Go builder + Chromium runtime image
-- [ ] **Base image** — `debian:bookworm-slim` with Chromium, fonts (CJK, emoji), and `dumb-init`
-- [ ] **Minimal image** — `gcr.io/distroless/static-debian12:nonroot` variant for scout CLI (no browser, gRPC client only)
-- [ ] **Image variants**:
+- [x] **`Dockerfile`** — Multi-stage build: Go 1.25 builder + `debian:bookworm-slim` runtime with Chromium, fonts (CJK, emoji, Noto), `dumb-init`, non-root `scout` user
+- [x] **Base image** — `debian:bookworm-slim` with Chromium, fonts (CJK, emoji), and `dumb-init`
+- [x] **Minimal image** — `gcr.io/distroless/static-debian12:nonroot` variant for scout CLI (no browser, gRPC client only) as `Dockerfile.slim`
+- [x] **Image variants**:
   - `scout:latest` / `scout:<version>` — full image with Chromium + scout CLI
-  - `scout:server` — gRPC server with Chromium, exposes port 9551
   - `scout:slim` — CLI-only (no browser), for gRPC client usage
-- [ ] **Docker Compose** — `docker-compose.yml` with scout-server service, healthcheck, volume mounts for output/profiles
-- [ ] **Environment variables** — `SCOUT_HEADLESS=true`, `SCOUT_NO_SANDBOX=true`, `SCOUT_BRIDGE=true`, `SCOUT_ADDR=:9551`
-- [ ] **Auto `--no-sandbox`** — detect container runtime (cgroup, `/.dockerenv`) and auto-apply `--no-sandbox` (existing `platform_linux.go` already does this for gRPC sessions)
+- [x] **Docker Compose** — `docker-compose.yml` with scout-server service, healthcheck, tmpfs `/dev/shm`, volume for state
+- [x] **`.dockerignore`** — excludes `.git`, `bin/`, `output/`, `examples/`, `.scripts/`, `.claude/`
+- [x] **Environment variables** — `SCOUT_HEADLESS=true`, `SCOUT_NO_SANDBOX=true`
+- [x] **`scout browser download` command** — download browsers in containers (`scout browser download brave`)
+- [x] **Auto `--no-sandbox`** — existing `platform_linux.go` handles this for gRPC sessions
 
 #### CI/CD Integration
 
@@ -666,17 +712,17 @@ A high-level web intelligence toolkit inspired by Claude Code's `WebFetch()` and
 
 Fetch any URL and return clean, structured content (markdown, metadata, links). Combines navigation + readability + markdown conversion into a single call.
 
-- [ ] **`WebFetch` type** (`pkg/scout/webfetch.go`) — `Browser.WebFetch(url string, ...WebFetchOption) (*WebFetchResult, error)`
-- [ ] **WebFetchResult** — `{URL, Title, Markdown, HTML, Meta MetaData, Links []string, StatusCode int, FetchedAt time.Time}`
-- [ ] **Content modes** — `WithFetchMode("markdown"|"html"|"text"|"links"|"meta")` to control what gets extracted
-- [ ] **Main content extraction** — Reuse `MarkdownContent()` readability scoring to strip nav/ads/footer, return only article body
+- [x] **`WebFetch` type** (`pkg/scout/webfetch.go`) — `Browser.WebFetch(url string, ...WebFetchOption) (*WebFetchResult, error)`
+- [x] **WebFetchResult** — `{URL, Title, Markdown, HTML, Meta MetaData, Links []string, StatusCode int, FetchedAt time.Time}`
+- [x] **Content modes** — `WithFetchMode("markdown"|"html"|"text"|"links"|"meta"|"full")` to control what gets extracted
+- [x] **Main content extraction** — Reuse `MarkdownContent()` readability scoring to strip nav/ads/footer, return only article body
 - [ ] **Prompt-based extraction** — `WithFetchPrompt(prompt string)` that pipes markdown through an LLM provider (Phase 14 dependency) for targeted extraction
-- [ ] **Caching** — `WithFetchCache(ttl time.Duration)` for in-memory content cache keyed by URL; avoid re-fetching within TTL
+- [x] **Caching** — `WithFetchCache(ttl time.Duration)` for in-memory content cache keyed by URL; avoid re-fetching within TTL
 - [ ] **Follow redirects** — Track and report redirect chain in result
 - [ ] **Error resilience** — Retry on network errors with exponential backoff (reuse `RateLimiter`), graceful timeout
-- [ ] **Batch fetch** — `Browser.WebFetchBatch(urls []string, ...WebFetchOption) ([]WebFetchResult, error)` using `BatchScrape` internally
+- [x] **Batch fetch** — `Browser.WebFetchBatch(urls []string, ...WebFetchOption) []*WebFetchResult` with concurrent fetching
 - [ ] **CLI** — `scout fetch <url> [--mode=markdown] [--main-only] [--cache=5m] [--output=file]`
-- [ ] **Tests** — content extraction accuracy, caching behavior, batch fetch, redirect tracking
+- [x] **Tests** — 13 tests: all modes, caching, cache expiry, batch, error isolation, link dedup (88%+ coverage)
 
 #### Sub-phase 23b: WebSearch — Search + Fetch Pipeline
 
@@ -759,16 +805,16 @@ Orchestrate WebSearch + WebFetch + GitHub extraction into automated research wor
 
 ## Test Coverage
 
-**Current:** pkg/scout 75.7% | pkg/identity 81.1% | scraper 84.3% | **Total: 53.6%** | **Target:** 80%
+**Current:** pkg/scout 75.7% | pkg/identity 81.1% | scraper 84.3% | **Total: 54.9%** | **Target:** 80%
 
 | Package          | Coverage | Status                   |
 |------------------|----------|--------------------------|
 | pkg/scout        | 75.7%    | Below target             |
+| pkg/scout/recipe | 81.5%    | ✅ Target met             |
 | pkg/identity     | 81.1%    | ✅ Target met             |
 | scraper          | 84.3%    | ✅ Complete               |
-| pkg/scout/recipe | 11.6%    | Needs tests              |
-| grpc/server      | 63.1%    | Integration tests added  |
+| grpc/server      | 67.7%    | Integration tests added  |
+| pkg/stealth      | 50.0%    | Tests added              |
 | extensions       | 0.0%     | No tests (embed wrapper) |
-| pkg/stealth      | 0.0%     | No tests (asset wrapper) |
 | pkg/discovery    | 0.0%     | No tests                 |
 | scraper/auth     | 0.0%     | No tests                 |

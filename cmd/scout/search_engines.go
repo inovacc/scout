@@ -74,11 +74,7 @@ func runSearch(cmd *cobra.Command, query string, engine scout.SearchEngine, extr
 	language, _ := cmd.InheritedFlags().GetString("language")
 	region, _ := cmd.InheritedFlags().GetString("region")
 
-	browser, err := scout.New(
-		scout.WithHeadless(isHeadless(cmd)),
-		scout.WithNoSandbox(),
-		browserOpt(cmd),
-	)
+	browser, err := scout.New(baseOpts(cmd)...)
 	if err != nil {
 		return fmt.Errorf("scout: launch browser: %w", err)
 	}

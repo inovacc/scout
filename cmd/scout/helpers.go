@@ -90,6 +90,26 @@ func browserOpt(cmd *cobra.Command) scout.Option {
 	return scout.WithBrowser(scout.BrowserType(b))
 }
 
+// stealthOpts returns WithStealth if the --stealth flag is set, or nil.
+func stealthOpts(cmd *cobra.Command) []scout.Option {
+	s, _ := cmd.Flags().GetBool("stealth")
+	if s {
+		return []scout.Option{scout.WithStealth()}
+	}
+	return nil
+}
+
+// baseOpts returns the common browser options derived from persistent flags.
+func baseOpts(cmd *cobra.Command) []scout.Option {
+	opts := []scout.Option{
+		scout.WithHeadless(isHeadless(cmd)),
+		scout.WithNoSandbox(),
+		browserOpt(cmd),
+	}
+	opts = append(opts, stealthOpts(cmd)...)
+	return opts
+}
+
 // truncate truncates a string to maxLen, appending "..." if needed.
 func truncate(s string, maxLen int) string {
 	if len(s) <= maxLen {

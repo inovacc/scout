@@ -57,8 +57,14 @@ func defaults() *options {
 		bridge = false
 	}
 
+	stealthMode := false
+	if v := os.Getenv("SCOUT_STEALTH"); v == "true" || v == "1" {
+		stealthMode = true
+	}
+
 	return &options{
 		headless: headless,
+		stealth:  stealthMode,
 		bridge:   bridge,
 		windowW:  1920,
 		windowH:  1080,

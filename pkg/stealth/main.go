@@ -1,6 +1,5 @@
-//go:generate go run ./generate
-
 // Package stealth is a package for anti-bot-detection with rod
+// Generate assets: task generate:stealth (requires Node.js/npx)
 package stealth
 
 import (
@@ -16,6 +15,11 @@ func Page(b *rod.Browser) (*rod.Page, error) {
 	}
 
 	_, err = p.EvalOnNewDocument(JS)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.EvalOnNewDocument(ExtraJS)
 	if err != nil {
 		return nil, err
 	}

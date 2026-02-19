@@ -64,6 +64,10 @@ func New(opts ...Option) (*Browser, error) {
 		l = l.XVFB(o.xvfbArgs...)
 	}
 
+	if o.stealth {
+		l = l.Set(flags.Flag("disable-blink-features"), "AutomationControlled")
+	}
+
 	for name, values := range o.launchFlags {
 		l = l.Set(flags.Flag(name), values...)
 	}

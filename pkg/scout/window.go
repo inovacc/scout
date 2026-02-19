@@ -105,5 +105,12 @@ func (p *Page) setWindowState(state WindowState) error {
 		return fmt.Errorf("scout: set window state %s: %w", state, err)
 	}
 
+	// After maximize/fullscreen, clear the viewport override so Chrome uses the
+	// actual window dimensions. Without this, the initial SetViewport (e.g. 1920x1080)
+	// pins the viewport and causes blank/white space in the rendered page.
+	if state == WindowStateMaximized || state == WindowStateFullscreen {
+		_ = proto.EmulationClearDeviceMetricsOverride{}.Call(p.page)
+	}
+
 	return nil
 }

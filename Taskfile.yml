@@ -28,6 +28,16 @@ tasks:
     generates:
       - grpc/scoutpb/*.pb.go
 
+  generate:stealth:
+    desc: Regenerate stealth anti-detection JS assets (requires Node.js/npx)
+    dir: pkg/stealth
+    cmds:
+      - go run ./generate
+    sources:
+      - generate/main.go
+    generates:
+      - assets.go
+
   # === BUILD ===
   build:
     desc: Build the scout CLI binary
