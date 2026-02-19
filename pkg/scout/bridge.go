@@ -308,6 +308,110 @@ func (b *Bridge) handleQueryResponse(data json.RawMessage) {
 	}
 }
 
+// DOMNode represents a DOM node as a JSON tree.
+type DOMNode struct {
+	Tag        string            `json:"tag"`
+	Attributes map[string]string `json:"attributes,omitempty"`
+	Children   []DOMNode         `json:"children,omitempty"`
+	Text       string            `json:"text,omitempty"`
+}
+
+// DOMOption configures DOM extraction via the bridge.
+type DOMOption func(*domOptions)
+
+type domOptions struct {
+	selector string
+	depth    int
+	mainOnly bool
+}
+
+// WithDOMSelector scopes extraction to elements matching the CSS selector.
+func WithDOMSelector(s string) DOMOption {
+	return func(o *domOptions) { o.selector = s }
+}
+
+// WithDOMDepth sets the maximum tree depth for JSON extraction.
+func WithDOMDepth(n int) DOMOption {
+	return func(o *domOptions) { o.depth = n }
+}
+
+// WithDOMMainOnly uses a heuristic to find the main content area (markdown only).
+func WithDOMMainOnly() DOMOption {
+	return func(o *domOptions) { o.mainOnly = true }
+}
+
+// DOM returns the page DOM as a JSON tree via the bridge extension.
+func (b *Bridge) DOM(opts ...DOMOption) (*DOMNode, error) {
+	if b == nil {
+		return nil, fmt.Errorf("scout: bridge is nil")
+	}
+
+	o := &domOptions{depth: 50}
+	for _, fn := range opts {
+		fn(o)
+	}
+
+	params := map[string]any{}
+	if o.selector != "" {
+		params["selector"] = o.selector
+	}
+	if o.depth != 50 {
+		params["depth"] = o.depth
+	}
+
+	raw, err := b.Query("dom_json", params)
+	if err != nil {
+		return nil, fmt.Errorf("scout: bridge dom_json: %w", err)
+	}
+
+	// Check for error response.
+	var errResp struct {
+		Error string `json:"error"`
+	}
+	if json.Unmarshal(raw, &errResp) == nil && errResp.Error != "" {
+		return nil, fmt.Errorf("scout: bridge dom_json: %s", errResp.Error)
+	}
+
+	var node DOMNode
+	if err := json.Unmarshal(raw, &node); err != nil {
+		return nil, fmt.Errorf("scout: bridge dom_json unmarshal: %w", err)
+	}
+
+	return &node, nil
+}
+
+// DOMMarkdown returns the page content as markdown, converted in-browser by the bridge extension.
+func (b *Bridge) DOMMarkdown(opts ...DOMOption) (string, error) {
+	if b == nil {
+		return "", fmt.Errorf("scout: bridge is nil")
+	}
+
+	o := &domOptions{}
+	for _, fn := range opts {
+		fn(o)
+	}
+
+	params := map[string]any{}
+	if o.selector != "" {
+		params["selector"] = o.selector
+	}
+	if o.mainOnly {
+		params["mainOnly"] = true
+	}
+
+	raw, err := b.Query("dom_markdown", params)
+	if err != nil {
+		return "", fmt.Errorf("scout: bridge dom_markdown: %w", err)
+	}
+
+	var md string
+	if err := json.Unmarshal(raw, &md); err != nil {
+		return "", fmt.Errorf("scout: bridge dom_markdown unmarshal: %w", err)
+	}
+
+	return md, nil
+}
+
 // writeBridgeExtension writes the embedded bridge extension to a temp directory
 // and returns its path. The caller should ensure cleanup.
 func writeBridgeExtension() (string, error) {
