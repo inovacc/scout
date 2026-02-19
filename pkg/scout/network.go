@@ -243,3 +243,10 @@ func (p *Page) SetBlockedURLs(urls ...string) error {
 
 	return nil
 }
+
+// Block is a convenience alias for SetBlockedURLs. It blocks requests matching
+// the given URL patterns on this page. Use preset slices (BlockAds, BlockTrackers,
+// BlockFonts, BlockImages) or custom wildcard patterns.
+func (p *Page) Block(patterns ...string) error {
+	return p.SetBlockedURLs(patterns...)
+}

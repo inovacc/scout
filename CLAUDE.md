@@ -142,6 +142,7 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `ExtensionInfo`                       | Chrome extension metadata + path    | `extension.go` |
 | `DownloadBrave`, `ListDownloadedBrowsers` | Browser auto-download + cache   | `browser_download.go` |
 | `WebFetchResult`, `WebFetchOption`        | URL content extraction + cache  | `webfetch.go`         |
+| `BlockAds`, `BlockTrackers`, `BlockFonts`, `BlockImages` | URL blocking preset pattern slices | `option.go` |
 
 ### Sitemap Extract Types
 
@@ -285,6 +286,9 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **LLM Provider interface**: `LLMProvider` has just `Name()` + `Complete(ctx, system, user)`. `OpenAIProvider` covers OpenAI, OpenRouter, DeepSeek, Gemini via configurable base URL. `AnthropicProvider` uses the Messages API. All use `net/http` directly (no SDK deps except Ollama).
 - **LLM Review pipeline**: `ExtractWithLLMReview()` extracts with LLM1, optionally reviews with LLM2. `WithLLMReview(provider)` enables the second pass. Results persisted to workspace via `WithLLMWorkspace(ws)`.
 - **LLM Workspace**: Filesystem-based job tracking at `<path>/sessions.json`, `<path>/jobs/jobs.json`, `<path>/jobs/<uuid>/job.json`. Extract and review output written to `extract.md` and `review.md` alongside job metadata.
+- **Remote CDP**: `WithRemoteCDP(endpoint)` connects to an existing Chrome DevTools Protocol endpoint (e.g. `"ws://127.0.0.1:9222"`) instead of launching a local browser. Skips the entire launcher; most launch-related options are ignored. Use for managed browser services (BrightData, Browserless) or remote Chrome instances.
+- **Request blocking presets**: `WithBlockPatterns(BlockAds...)` sets URL patterns blocked on every `NewPage()` via `SetBlockedURLs()`. Presets: `BlockAds`, `BlockTrackers`, `BlockFonts`, `BlockImages`. `Page.Block(patterns...)` for ad-hoc per-page blocking.
+- **Named recipe selectors**: Recipe JSON supports a `selectors` map with `$name` references in fields and steps. References are resolved at parse time. The `+` sibling prefix and `@attr` suffix are preserved through resolution. Unknown `$refs` produce a clear error.
 - **Bridge extension default**: The Scout Bridge extension is enabled by default (`bridge: true` in `defaults()`). Extension files are embedded via `extensions/extensions.go` using `embed.FS` and written to a temp dir at startup. Disable with `WithoutBridge()` or `SCOUT_BRIDGE=false`.
 - **SitemapExtract**: `Browser.SitemapExtract()` combines BFS crawl with bridge DOM/Markdown extraction. Reuses a single page + bridge across navigations. Outputs per-page `dom.json`/`dom.md` files plus `index.json`/`index.md` when `WithSitemapOutputDir()` is set.
 - **gRPC default port**: The daemon and server default to port `9551` (not the standard gRPC `50051`) to avoid conflicts.

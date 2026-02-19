@@ -5,21 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/inovacc/scout/pkg/scout"
 )
 
 // Recipe defines a declarative scraping or automation playbook.
 type Recipe struct {
-	Version    string      `json:"version"`
-	Name       string      `json:"name"`
-	Type       string      `json:"type"` // "extract" or "automate"
-	URL        string      `json:"url,omitempty"`
-	WaitFor    string      `json:"wait_for,omitempty"`
-	Items      *ItemSpec   `json:"items,omitempty"`
-	Pagination *Pagination `json:"pagination,omitempty"`
-	Steps      []Step      `json:"steps,omitempty"`
-	Output     Output      `json:"output,omitempty"`
+	Version    string            `json:"version"`
+	Name       string            `json:"name"`
+	Type       string            `json:"type"` // "extract" or "automate"
+	URL        string            `json:"url,omitempty"`
+	WaitFor    string            `json:"wait_for,omitempty"`
+	Selectors  map[string]string `json:"selectors,omitempty"` // named selectors; referenced as "$name" in fields/steps
+	Items      *ItemSpec         `json:"items,omitempty"`
+	Pagination *Pagination       `json:"pagination,omitempty"`
+	Steps      []Step            `json:"steps,omitempty"`
+	Output     Output            `json:"output,omitempty"`
 }
 
 // ItemSpec defines how to extract structured data from a page.
@@ -83,6 +85,10 @@ func Parse(data []byte) (*Recipe, error) {
 		return nil, err
 	}
 
+	if err := r.resolveAllSelectors(); err != nil {
+		return nil, err
+	}
+
 	return &r, nil
 }
 
@@ -96,6 +102,98 @@ func Run(ctx context.Context, browser *scout.Browser, r *Recipe) (*Result, error
 	default:
 		return nil, fmt.Errorf("recipe: unknown type %q", r.Type)
 	}
+}
+
+// resolveSelector replaces a "$name" reference with its value from the selectors map.
+// Non-$ref strings and the "+" sibling prefix are preserved.
+func resolveSelector(sel string, selectors map[string]string) (string, error) {
+	if len(selectors) == 0 {
+		return sel, nil
+	}
+
+	// Preserve sibling prefix
+	prefix := ""
+	s := sel
+	if len(s) > 0 && s[0] == '+' {
+		prefix = "+"
+		s = s[1:]
+	}
+
+	// Check for $name reference (with optional @attr suffix)
+	if len(s) > 0 && s[0] == '$' {
+		name := s[1:]
+		attrSuffix := ""
+		if idx := strings.Index(name, "@"); idx >= 0 {
+			attrSuffix = name[idx:]
+			name = name[:idx]
+		}
+
+		resolved, ok := selectors[name]
+		if !ok {
+			return "", fmt.Errorf("recipe: unknown selector reference $%s", name)
+		}
+
+		return prefix + resolved + attrSuffix, nil
+	}
+
+	return sel, nil
+}
+
+// resolveAllSelectors resolves $name references in all fields and steps.
+func (r *Recipe) resolveAllSelectors() error {
+	if len(r.Selectors) == 0 {
+		return nil
+	}
+
+	// Resolve wait_for
+	if r.WaitFor != "" {
+		resolved, err := resolveSelector(r.WaitFor, r.Selectors)
+		if err != nil {
+			return err
+		}
+		r.WaitFor = resolved
+	}
+
+	// Resolve item spec fields
+	if r.Items != nil {
+		if r.Items.Container != "" {
+			resolved, err := resolveSelector(r.Items.Container, r.Selectors)
+			if err != nil {
+				return err
+			}
+			r.Items.Container = resolved
+		}
+
+		for name, sel := range r.Items.Fields {
+			resolved, err := resolveSelector(sel, r.Selectors)
+			if err != nil {
+				return fmt.Errorf("recipe: field %q: %w", name, err)
+			}
+			r.Items.Fields[name] = resolved
+		}
+	}
+
+	// Resolve pagination next_selector
+	if r.Pagination != nil && r.Pagination.NextSelector != "" {
+		resolved, err := resolveSelector(r.Pagination.NextSelector, r.Selectors)
+		if err != nil {
+			return err
+		}
+		r.Pagination.NextSelector = resolved
+	}
+
+	// Resolve step selectors
+	for i := range r.Steps {
+		if r.Steps[i].Selector != "" {
+			resolved, err := resolveSelector(r.Steps[i].Selector, r.Selectors)
+			if err != nil {
+				return fmt.Errorf("recipe: step %d: %w", i, err)
+			}
+			r.Steps[i].Selector = resolved
+		}
+	}
+
+	return nil
 }
 
 // Validate checks that a recipe has all required fields.

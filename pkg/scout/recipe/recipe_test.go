@@ -909,3 +909,173 @@ func TestRun_AutomateEndToEnd(t *testing.T) {
 		t.Errorf("result = %v, want %q", result.Variables["result"], "clicked")
 	}
 }
+
+func TestParse_NamedSelectors(t *testing.T) {
+	data := `{
+		"version": "1",
+		"name": "sel_test",
+		"type": "extract",
+		"url": "http://example.com",
+		"selectors": {
+			"item": ".product",
+			"title": "h2",
+			"link": "a"
+		},
+		"wait_for": "$item",
+		"items": {
+			"container": "$item",
+			"fields": {
+				"name": "$title",
+				"url": "$link@href",
+				"price": ".price",
+				"total": "+$title"
+			}
+		}
+	}`
+
+	r, err := Parse([]byte(data))
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+
+	if r.WaitFor != ".product" {
+		t.Errorf("wait_for = %q, want %q", r.WaitFor, ".product")
+	}
+	if r.Items.Container != ".product" {
+		t.Errorf("container = %q, want %q", r.Items.Container, ".product")
+	}
+	if r.Items.Fields["name"] != "h2" {
+		t.Errorf("fields[name] = %q, want %q", r.Items.Fields["name"], "h2")
+	}
+	if r.Items.Fields["url"] != "a@href" {
+		t.Errorf("fields[url] = %q, want %q", r.Items.Fields["url"], "a@href")
+	}
+	if r.Items.Fields["price"] != ".price" {
+		t.Errorf("fields[price] = %q, want %q (should be unchanged)", r.Items.Fields["price"], ".price")
+	}
+	if r.Items.Fields["total"] != "+h2" {
+		t.Errorf("fields[total] = %q, want %q", r.Items.Fields["total"], "+h2")
+	}
+}
+
+func TestParse_NamedSelectorsUnknownRef(t *testing.T) {
+	data := `{
+		"version": "1",
+		"name": "bad_ref",
+		"type": "extract",
+		"url": "http://example.com",
+		"selectors": {"item": ".product"},
+		"items": {
+			"container": ".product",
+			"fields": {"name": "$unknown"}
+		}
+	}`
+
+	_, err := Parse([]byte(data))
+	if err == nil {
+		t.Fatal("expected error for unknown $ref, got nil")
+	}
+}
+
+func TestParse_NamedSelectorsInSteps(t *testing.T) {
+	data := `{
+		"version": "1",
+		"name": "step_ref",
+		"type": "automate",
+		"selectors": {"btn": "#submit", "input": "#email"},
+		"steps": [
+			{"action": "navigate", "url": "http://example.com"},
+			{"action": "type", "selector": "$input", "text": "test"},
+			{"action": "click", "selector": "$btn"}
+		]
+	}`
+
+	r, err := Parse([]byte(data))
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+
+	if r.Steps[1].Selector != "#email" {
+		t.Errorf("step[1].selector = %q, want %q", r.Steps[1].Selector, "#email")
+	}
+	if r.Steps[2].Selector != "#submit" {
+		t.Errorf("step[2].selector = %q, want %q", r.Steps[2].Selector, "#submit")
+	}
+}
+
+func TestParse_NamedSelectorsInPagination(t *testing.T) {
+	data := `{
+		"version": "1",
+		"name": "pag_ref",
+		"type": "extract",
+		"url": "http://example.com",
+		"selectors": {"next": "a.next-page", "item": ".card"},
+		"items": {
+			"container": "$item",
+			"fields": {"title": "h2"}
+		},
+		"pagination": {
+			"strategy": "click",
+			"next_selector": "$next",
+			"max_pages": 3
+		}
+	}`
+
+	r, err := Parse([]byte(data))
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+
+	if r.Items.Container != ".card" {
+		t.Errorf("container = %q, want %q", r.Items.Container, ".card")
+	}
+	if r.Pagination.NextSelector != "a.next-page" {
+		t.Errorf("next_selector = %q, want %q", r.Pagination.NextSelector, "a.next-page")
+	}
+}
+
+func TestRun_ExtractWithNamedSelectors(t *testing.T) {
+	ts := newTestServer()
+	defer ts.Close()
+	b := newTestBrowser(t)
+
+	data := fmt.Sprintf(`{
+		"version": "1",
+		"name": "e2e_selectors",
+		"type": "extract",
+		"url": "%s/recipe-extract",
+		"selectors": {
+			"item": ".item",
+			"heading": "h2",
+			"link": "a"
+		},
+		"items": {
+			"container": "$item",
+			"fields": {
+				"title": "$heading",
+				"url": "$link@href"
+			}
+		}
+	}`, ts.URL)
+
+	r, err := Parse([]byte(data))
+	if err != nil {
+		t.Fatalf("Parse failed: %v", err)
+	}
+
+	result, err := Run(context.Background(), b, r)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	if len(result.Items) != 3 {
+		t.Fatalf("got %d items, want 3", len(result.Items))
+	}
+
+	if result.Items[0]["title"] != "Item A" {
+		t.Errorf("items[0].title = %q, want %q", result.Items[0]["title"], "Item A")
+	}
+	if result.Items[0]["url"] != "/a" {
+		t.Errorf("items[0].url = %q, want %q", result.Items[0]["url"], "/a")
+	}
+}

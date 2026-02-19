@@ -4,6 +4,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+
+	"github.com/inovacc/scout/pkg/rod/lib/launcher"
 )
 
 func TestSetHeaders(t *testing.T) {
@@ -338,6 +340,126 @@ func TestHijackResponseFail(t *testing.T) {
 
 	// Navigate to JSON — it should fail, which is expected
 	_ = page.Navigate(srv.URL + "/json")
+}
+
+func TestWithBlockPatterns(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b, err := New(
+		WithHeadless(true),
+		WithNoSandbox(),
+		WithBlockPatterns("*json*"),
+	)
+	if err != nil {
+		t.Skipf("skipping: browser unavailable: %v", err)
+	}
+	defer func() { _ = b.Close() }()
+
+	// Blocked pattern should be set automatically on new pages
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	// The page should open fine (root page is not blocked)
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+}
+
+func TestBlockPresetVariables(t *testing.T) {
+	// Verify preset slices are non-empty
+	if len(BlockAds) == 0 {
+		t.Error("BlockAds should not be empty")
+	}
+	if len(BlockTrackers) == 0 {
+		t.Error("BlockTrackers should not be empty")
+	}
+	if len(BlockFonts) == 0 {
+		t.Error("BlockFonts should not be empty")
+	}
+	if len(BlockImages) == 0 {
+		t.Error("BlockImages should not be empty")
+	}
+}
+
+func TestWithBlockPatternsMultiplePresets(t *testing.T) {
+	// Verify combining presets works at option level
+	o := defaults()
+	WithBlockPatterns(BlockAds...)(o)
+	WithBlockPatterns(BlockFonts...)(o)
+
+	expected := len(BlockAds) + len(BlockFonts)
+	if len(o.blockPatterns) != expected {
+		t.Errorf("blockPatterns length = %d, want %d", len(o.blockPatterns), expected)
+	}
+}
+
+func TestPageBlock(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL)
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	// Block should work like SetBlockedURLs
+	if err := page.Block("*json*"); err != nil {
+		t.Fatalf("Block() error: %v", err)
+	}
+
+	// Block with presets
+	if err := page.Block(BlockAds...); err != nil {
+		t.Fatalf("Block(BlockAds) error: %v", err)
+	}
+}
+
+func TestWithRemoteCDP(t *testing.T) {
+	// Launch a browser via the launcher to get a WebSocket CDP endpoint
+	l := launcher.New().Headless(true).NoSandbox(true)
+	u, err := l.Launch()
+	if err != nil {
+		t.Skipf("skipping: browser unavailable: %v", err)
+	}
+	defer l.Kill()
+
+	// Connect via WithRemoteCDP — should skip local launcher
+	b, err := New(WithRemoteCDP(u))
+	if err != nil {
+		t.Fatalf("New(WithRemoteCDP) error: %v", err)
+	}
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("about:blank")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	title, err := page.Title()
+	if err != nil {
+		t.Fatalf("Title() error: %v", err)
+	}
+
+	// Verify we got a valid page (title is empty or "about:blank" depending on browser)
+	if title != "" && title != "about:blank" {
+		t.Errorf("Title() = %q, want empty or about:blank", title)
+	}
+}
+
+func TestWithRemoteCDPOptionSetsField(t *testing.T) {
+	o := defaults()
+	WithRemoteCDP("ws://127.0.0.1:9222")(o)
+
+	if o.remoteCDP != "ws://127.0.0.1:9222" {
+		t.Errorf("remoteCDP = %q, want %q", o.remoteCDP, "ws://127.0.0.1:9222")
+	}
 }
 
 func TestHandleAuth(t *testing.T) {
