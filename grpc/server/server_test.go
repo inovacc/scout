@@ -680,3 +680,301 @@ func TestInteractive(t *testing.T) {
 	// Close send direction
 	_ = stream.CloseSend()
 }
+
+func TestInteractive_Type(t *testing.T) {
+	env := setupTestServer(t)
+	sid := env.createSession(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	stream, err := env.client.Interactive(ctx)
+	if err != nil {
+		t.Fatalf("interactive: %v", err)
+	}
+
+	// Navigate first
+	err = stream.Send(&pb.Command{
+		SessionId: sid,
+		RequestId: "1",
+		Action: &pb.Command_Navigate{
+			Navigate: &pb.NavigateAction{Url: env.baseURL + "/"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("send navigate: %v", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	// Type into input
+	err = stream.Send(&pb.Command{
+		SessionId: sid,
+		RequestId: "2",
+		Action: &pb.Command_Type{
+			Type: &pb.TypeAction{Selector: "#name", Text: "test input"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("send type: %v", err)
+	}
+
+	// Collect at least one event
+	ev, err := stream.Recv()
+	if err != nil {
+		t.Fatalf("recv: %v", err)
+	}
+	if ev.SessionId != sid {
+		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+	}
+
+	_ = stream.CloseSend()
+}
+
+func TestInteractive_PressKey(t *testing.T) {
+	env := setupTestServer(t)
+	sid := env.createSession(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	stream, err := env.client.Interactive(ctx)
+	if err != nil {
+		t.Fatalf("interactive: %v", err)
+	}
+
+	// Navigate first
+	err = stream.Send(&pb.Command{
+		SessionId: sid,
+		RequestId: "1",
+		Action: &pb.Command_Navigate{
+			Navigate: &pb.NavigateAction{Url: env.baseURL + "/"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("send navigate: %v", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	// Press Enter
+	err = stream.Send(&pb.Command{
+		SessionId: sid,
+		RequestId: "2",
+		Action: &pb.Command_PressKey{
+			PressKey: &pb.KeyAction{Key: "Enter"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("send press key: %v", err)
+	}
+
+	ev, err := stream.Recv()
+	if err != nil {
+		t.Fatalf("recv: %v", err)
+	}
+	if ev.SessionId != sid {
+		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+	}
+
+	_ = stream.CloseSend()
+}
+
+func TestInteractive_Eval(t *testing.T) {
+	env := setupTestServer(t)
+	sid := env.createSession(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	stream, err := env.client.Interactive(ctx)
+	if err != nil {
+		t.Fatalf("interactive: %v", err)
+	}
+
+	// Navigate first
+	err = stream.Send(&pb.Command{
+		SessionId: sid,
+		RequestId: "1",
+		Action: &pb.Command_Navigate{
+			Navigate: &pb.NavigateAction{Url: env.baseURL + "/"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("send navigate: %v", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	// Eval
+	err = stream.Send(&pb.Command{
+		SessionId: sid,
+		RequestId: "2",
+		Action: &pb.Command_Eval{
+			Eval: &pb.EvalAction{Script: "() => 1 + 1"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("send eval: %v", err)
+	}
+
+	ev, err := stream.Recv()
+	if err != nil {
+		t.Fatalf("recv: %v", err)
+	}
+	if ev.SessionId != sid {
+		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+	}
+
+	_ = stream.CloseSend()
+}
+
+func TestInteractive_Scroll(t *testing.T) {
+	env := setupTestServer(t)
+	sid := env.createSession(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	stream, err := env.client.Interactive(ctx)
+	if err != nil {
+		t.Fatalf("interactive: %v", err)
+	}
+
+	err = stream.Send(&pb.Command{
+		SessionId: sid,
+		RequestId: "1",
+		Action: &pb.Command_Navigate{
+			Navigate: &pb.NavigateAction{Url: env.baseURL + "/"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("send navigate: %v", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	err = stream.Send(&pb.Command{
+		SessionId: sid,
+		RequestId: "2",
+		Action: &pb.Command_Scroll{
+			Scroll: &pb.ScrollAction{X: 0, Y: 500},
+		},
+	})
+	if err != nil {
+		t.Fatalf("send scroll: %v", err)
+	}
+
+	ev, err := stream.Recv()
+	if err != nil {
+		t.Fatalf("recv: %v", err)
+	}
+	if ev.SessionId != sid {
+		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+	}
+
+	_ = stream.CloseSend()
+}
+
+func TestInteractive_Wait(t *testing.T) {
+	env := setupTestServer(t)
+	sid := env.createSession(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	stream, err := env.client.Interactive(ctx)
+	if err != nil {
+		t.Fatalf("interactive: %v", err)
+	}
+
+	err = stream.Send(&pb.Command{
+		SessionId: sid,
+		RequestId: "1",
+		Action: &pb.Command_Navigate{
+			Navigate: &pb.NavigateAction{Url: env.baseURL + "/"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("send navigate: %v", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	// Wait for an element that exists
+	err = stream.Send(&pb.Command{
+		SessionId: sid,
+		RequestId: "2",
+		Action: &pb.Command_Wait{
+			Wait: &pb.WaitAction{Selector: "#info"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("send wait: %v", err)
+	}
+
+	ev, err := stream.Recv()
+	if err != nil {
+		t.Fatalf("recv: %v", err)
+	}
+	if ev.SessionId != sid {
+		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+	}
+
+	_ = stream.CloseSend()
+}
+
+func TestCreateSession_WithOptions(t *testing.T) {
+	env := setupTestServer(t)
+	ctx := context.Background()
+
+	resp, err := env.client.CreateSession(ctx, &pb.CreateSessionRequest{
+		Headless:  true,
+		NoSandbox: true,
+		Stealth:   true,
+		UserAgent: "ScoutTestAgent/1.0",
+		Width:     1024,
+		Height:    768,
+	})
+	if err != nil {
+		t.Skipf("browser unavailable: %v", err)
+	}
+
+	if resp.SessionId == "" {
+		t.Fatal("empty session ID")
+	}
+
+	t.Cleanup(func() {
+		ctx2, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_, _ = env.client.DestroySession(ctx2, &pb.SessionRequest{SessionId: resp.SessionId})
+	})
+}
+
+func TestCreateSession_WithInitialURL(t *testing.T) {
+	env := setupTestServer(t)
+	ctx := context.Background()
+
+	resp, err := env.client.CreateSession(ctx, &pb.CreateSessionRequest{
+		Headless:   true,
+		NoSandbox:  true,
+		InitialUrl: env.baseURL + "/page2",
+	})
+	if err != nil {
+		t.Skipf("browser unavailable: %v", err)
+	}
+
+	if resp.SessionId == "" {
+		t.Fatal("empty session ID")
+	}
+
+	if resp.Title != "Page Two" {
+		t.Errorf("title = %q, want %q", resp.Title, "Page Two")
+	}
+
+	t.Cleanup(func() {
+		ctx2, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_, _ = env.client.DestroySession(ctx2, &pb.SessionRequest{SessionId: resp.SessionId})
+	})
+}
