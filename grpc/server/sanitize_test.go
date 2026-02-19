@@ -149,3 +149,91 @@ func TestOnStatsChangeCallback(t *testing.T) {
 		t.Error("OnStatsChange not called")
 	}
 }
+
+func TestGetLocalIPs(t *testing.T) {
+	ips := GetLocalIPs()
+	// On any machine with a network interface, we should get at least one IP.
+	// In isolated CI containers this might be empty, so just verify no panic.
+	if ips == nil {
+		t.Log("GetLocalIPs returned nil (no non-loopback IPv4 interfaces)")
+	}
+	for _, ip := range ips {
+		if ip == "" {
+			t.Error("empty IP in result")
+		}
+		if ip == "127.0.0.1" {
+			t.Error("loopback should be excluded")
+		}
+	}
+}
+
+func TestMapKey(t *testing.T) {
+	tests := []struct {
+		input string
+		want  rune
+	}{
+		{"Enter", 0x0d},
+		{"Tab", 0x09},
+		{"Escape", 0x1b},
+		{"Space", ' '},
+		{"Backspace", 0x08},
+		{"Delete", 0x7f},
+		{"ArrowUp", 0xe011},
+		{"ArrowDown", 0xe012},
+		{"ArrowLeft", 0xe013},
+		{"ArrowRight", 0xe014},
+		{"Home", 0xe011},   // verify it returns something non-zero
+		{"End", 0xe010},    // verify it returns something non-zero
+		{"PageUp", 0xe00e}, // verify non-zero
+		{"PageDown", 0xe00f},
+		{"a", 'a'},
+		{"1", '1'},
+		{"", 0},
+		{"UnknownMultiChar", 0},
+	}
+
+	for _, tt := range tests {
+		got := mapKey(tt.input)
+		// For named keys, just verify non-zero (exact values depend on input package)
+		switch tt.input {
+		case "Enter", "Tab", "Escape", "Space", "Backspace", "Delete",
+			"ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+			"Home", "End", "PageUp", "PageDown":
+			if got == 0 {
+				t.Errorf("mapKey(%q) = 0, want non-zero", tt.input)
+			}
+		case "a":
+			if got != 'a' {
+				t.Errorf("mapKey(%q) = %d, want %d", tt.input, got, 'a')
+			}
+		case "1":
+			if got != '1' {
+				t.Errorf("mapKey(%q) = %d, want %d", tt.input, got, '1')
+			}
+		case "", "UnknownMultiChar":
+			if got != 0 {
+				t.Errorf("mapKey(%q) = %d, want 0", tt.input, got)
+			}
+		}
+	}
+}
+
+func TestTruncate(t *testing.T) {
+	tests := []struct {
+		input  string
+		maxLen int
+		want   string
+	}{
+		{"short", 10, "short"},
+		{"hello world", 8, "hello..."},
+		{"ab", 2, "ab"},
+		{"abcd", 3, "abc"},
+		{"abcdef", 5, "ab..."},
+	}
+	for _, tt := range tests {
+		got := truncate(tt.input, tt.maxLen)
+		if got != tt.want {
+			t.Errorf("truncate(%q, %d) = %q, want %q", tt.input, tt.maxLen, got, tt.want)
+		}
+	}
+}
