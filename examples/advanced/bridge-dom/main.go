@@ -47,7 +47,7 @@ func main() {
 			p.Depth, status, p.URL, len(p.Links), len(p.Markdown))
 	}
 
-	// Also write full result as JSON for inspection.
+	// Also write a full result as JSON for inspection.
 	data, _ := json.MarshalIndent(result, "", "  ")
 	_ = os.WriteFile("output/full-result.json", data, 0o644)
 

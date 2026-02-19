@@ -277,10 +277,10 @@ credentials/session.
 - **Status:** Complete — BSD 3-Clause LICENSE file added
 - **Effort:** Small
 
-### gRPC Server Test Coverage
+### ~~gRPC Server Test Coverage~~ [DONE]
 
 - **Priority:** P2
-- **Description:** The `grpc/server/` package has 67.7% test coverage. More targeted tests needed for individual RPCs and error paths.
+- **Status:** Complete — Coverage raised from 67.7% to 80.6%. Added tests for Interactive commands (Type, PressKey, Eval, Scroll, Wait), CreateSession options, pairing (5 tests), TLS (2 tests), mapKey, truncate, GetLocalIPs.
 - **Effort:** Medium
 
 ### ~~Window Maximize Blank Space Bug~~ [DONE]
@@ -302,10 +302,10 @@ credentials/session.
 - **Status:** Complete — `scout browser list` shows detected + downloaded browsers, Brave auto-downloads from GitHub releases, Edge error includes download URL. Implemented in `browser_download.go` and `cmd/scout/browser.go`.
 - **Effort:** Small
 
-### GoDoc Examples
+### ~~GoDoc Examples~~ [DONE]
 
 - **Priority:** P2
-- **Description:** Add `Example*` test functions for key API entry points: New, Browser.NewPage, Page.Element, Page.Eval, Page.Hijack, Element.Click, Element.Input, NetworkRecorder, KeyPress.
+- **Status:** Complete — 20 `Example*` functions in `example_test.go` covering New, NewPage, Element, Click, Input, Extract, Eval, Markdown, Hijack, Crawl, Map, Search, Screenshot, WaitLoad, RateLimiter, NetworkRecorder, WithBlockPatterns, Page.Block, WithRemoteCDP, KeyPress
 - **Effort:** Medium
 
 ### ~~Remove Legacy Taskfile Tasks~~ [DONE]
@@ -314,6 +314,60 @@ credentials/session.
 - **Status:** Complete — removed `proto:generate`, `sqlc:generate`, `generate`, `build:dev`, `build:prod`, `run`, `release`, `release:snapshot`, `release:check`. Added `lint:fix`, `slack-assist` to
   `grpc:build`.
 - **Effort:** Small
+
+### Rod Fork Stability Patches (Phase 24)
+
+- **Priority:** P1
+- **Description:** Apply 3 confirmed upstream bug fixes to `pkg/rod/`: nil-guard on disconnected page (#1103), context propagation (#1179), page context caching (#1206). Plus 4 wrapper-level fixes in `pkg/scout/`: WaitStable panic recovery (#1157), WaitSafe method (#1224), zombie process cleanup (#865), hijack regexp validation (#982). See [ADR 007](adr/007-rod-ecosystem-analysis.md).
+- **Effort:** Medium
+- **Dependencies:** None (internal fork, no external deps)
+
+### Accessibility Snapshot (Phase 25)
+
+- **Priority:** P1
+- **Description:** Port the ARIA tree snapshot system from go-rod/rod-mcp. Produces YAML-like accessibility tree with `[ref=s{gen}e{id}]` markers for LLM-driven element addressing. ~1500 lines of embedded JS for role extraction, name computation, iframe traversal. Enables `Page.Snapshot()` and `Page.ElementByRef()` methods.
+- **Effort:** Large
+- **Dependencies:** None
+
+### MCP Transport (Phase 26)
+
+- **Priority:** P1
+- **Description:** Expose Scout as an MCP server via stdio transport using official `modelcontextprotocol/go-sdk`. Map 15+ Scout capabilities to MCP tools (navigate, click, type, screenshot, snapshot, extract, search, fetch, eval). Expose page state as MCP resources (markdown, snapshot, screenshot). `scout mcp` command.
+- **Effort:** Large
+- **Dependencies:** Accessibility Snapshot (Phase 25) for snapshot tool
+
+### Browser Recycling — AutoFree (Phase 27)
+
+- **Priority:** P2
+- **Description:** Periodic browser process restart to prevent memory leaks in long-running daemon sessions. From go-rod/bartender analysis. Save/restore session state across recycles. `WithAutoFree(interval)` option.
+- **Effort:** Medium
+- **Dependencies:** gRPC daemon session management
+
+### ~~Request Blocking Presets (Phase 27)~~ [DONE]
+
+- **Priority:** P2
+- **Status:** Complete — `WithBlockPatterns(patterns...)` option, `BlockAds`/`BlockTrackers`/`BlockFonts`/`BlockImages` presets, `Page.Block()` convenience method, 4 tests
+- **Effort:** Small
+
+### ~~Named Recipe Selectors~~ [DONE]
+
+- **Priority:** P2
+- **Status:** Complete — `selectors` map in recipe JSON, `$name` references resolved at parse time with `+` prefix and `@attr` suffix preservation, 5 tests (parse + e2e browser)
+- **Effort:** Small
+
+### Remote CDP Endpoint Support
+
+- **Priority:** P3
+- **Description:** `WithRemoteCDP(endpoint)` option for connecting to managed browser services (BrightData, Browserless, etc.) and remote Chrome instances. From rod issue #1092.
+- **Effort:** Small
+- **Dependencies:** None
+
+### Forgeron Fingerprint Integration
+
+- **Priority:** P3
+- **Description:** Integrate [forgeron](https://github.com/Ta0uf19/forgeron) library for diverse browser fingerprint generation. Complements stealth mode with realistic, varied fingerprints. From rod issue #905.
+- **Effort:** Medium
+- **Dependencies:** Stealth mode (done)
 
 ## Resolved Items
 
@@ -352,3 +406,10 @@ credentials/session.
 | Recipe Creator | `analyze.go` + `generate.go` with site analysis, container/field detection, recipe generation, 11 tests at 81.5% coverage | 2026-02 |
 | Stealth Mode Expansion | `stealth_extra.go` with 5 evasions, `disable-blink-features` launch flag, bot detection integration tests against 6 real sites | 2026-02 |
 | Window Maximize Bug | Fixed: `setWindowState()` clears DeviceMetricsOverride after maximize/fullscreen | 2026-02 |
+| WebSearch implementation | `websearch.go` with WebSearchResult/WebSearchItem types, 9 option functions, concurrent fetch, CLI `scout websearch`, 7 tests | 2026-02 |
+| gRPC Server Test Coverage | Coverage raised from 67.7% to 80.6% with Interactive, pairing, TLS, mapKey, truncate, GetLocalIPs tests | 2026-02 |
+| Rod Ecosystem Analysis | ADR 007 with analysis of wayang, bartender, rod-mcp, and 93 rod issues; patch plan for `pkg/rod/` | 2026-02 |
+| Request Blocking Presets | `WithBlockPatterns()`, `BlockAds`/`BlockTrackers`/`BlockFonts`/`BlockImages` presets, `Page.Block()`, 4 tests | 2026-02 |
+| Named Recipe Selectors | `selectors` map with `$name` references in recipe JSON, resolved at parse time, 5 tests | 2026-02 |
+| Remote CDP Endpoint | `WithRemoteCDP(endpoint)` option for connecting to managed browser services, 2 tests | 2026-02 |
+| GoDoc Examples | 20 `Example*` functions covering all major API entry points in `example_test.go` | 2026-02 |

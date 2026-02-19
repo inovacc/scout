@@ -2,9 +2,9 @@ package scout_test
 
 import (
 	"fmt"
-
 	"time"
 
+	"github.com/inovacc/scout/pkg/rod/lib/input"
 	"github.com/inovacc/scout/pkg/scout"
 )
 
@@ -452,6 +452,99 @@ func ExamplePage_WaitLoad() { //nolint:testableexamples // requires browser
 
 	title, _ := page.Title()
 	fmt.Println(title)
+}
+
+func ExampleWithBlockPatterns() { //nolint:testableexamples // requires browser
+	// Block ads and trackers for faster, cleaner scraping.
+	b, err := scout.New(
+		scout.WithHeadless(true),
+		scout.WithBlockPatterns(scout.BlockAds...),
+		scout.WithBlockPatterns(scout.BlockTrackers...),
+		scout.WithBlockPatterns(scout.BlockFonts...),
+	)
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+	title, _ := page.Title()
+	fmt.Println(title)
+}
+
+func ExamplePage_Block() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	// Block images on this specific page.
+	_ = page.Block(scout.BlockImages...)
+
+	_ = page.Navigate("https://example.com")
+	_ = page.WaitLoad()
+}
+
+func ExampleWithRemoteCDP() { //nolint:testableexamples // requires remote browser
+	// Connect to an existing Chrome instance or managed service.
+	b, err := scout.New(
+		scout.WithRemoteCDP("ws://127.0.0.1:9222"),
+	)
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+	title, _ := page.Title()
+	fmt.Println(title)
+}
+
+func ExamplePage_KeyPress() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	// Press Enter at the page level.
+	_ = page.KeyPress(input.Enter)
+
+	// Type text at the page level (sends key-by-key).
+	_ = page.KeyType('h', 'i')
 }
 
 func Example_convertHTMLToMarkdown() { //nolint:testableexamples // requires browser

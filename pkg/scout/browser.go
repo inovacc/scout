@@ -31,6 +31,50 @@ func New(opts ...Option) (*Browser, error) {
 		o.windowState = WindowStateMaximized
 	}
 
+	var u string
+
+	if o.remoteCDP != "" {
+		// Remote CDP endpoint — skip launcher entirely.
+		u = o.remoteCDP
+	} else {
+		var err error
+		u, err = launchLocal(o)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	b := rod.New().ControlURL(u)
+	if o.slowMotion > 0 {
+		b = b.SlowMotion(o.slowMotion)
+	}
+
+	if err := b.Connect(); err != nil {
+		return nil, fmt.Errorf("scout: connect browser: %w", err)
+	}
+
+	if o.ignoreCerts {
+		if err := b.IgnoreCertErrors(true); err != nil {
+			_ = b.Close()
+			return nil, fmt.Errorf("scout: ignore cert errors: %w", err)
+		}
+	}
+
+	if o.incognito {
+		ctx, err := b.Incognito()
+		if err != nil {
+			_ = b.Close()
+			return nil, fmt.Errorf("scout: incognito mode: %w", err)
+		}
+
+		return &Browser{browser: ctx, opts: o}, nil
+	}
+
+	return &Browser{browser: b, opts: o}, nil
+}
+
+// launchLocal starts a local browser process and returns the CDP WebSocket URL.
+func launchLocal(o *options) (string, error) {
 	l := launcher.New().Headless(o.headless)
 
 	if o.execPath != "" {
@@ -38,7 +82,7 @@ func New(opts ...Option) (*Browser, error) {
 	} else if o.browserType != "" && o.browserType != BrowserChrome {
 		binPath, err := resolveBrowser(context.Background(), o.browserType)
 		if err != nil {
-			return nil, fmt.Errorf("scout: resolve %s browser: %w", o.browserType, err)
+			return "", fmt.Errorf("scout: resolve %s browser: %w", o.browserType, err)
 		}
 
 		l = l.Bin(binPath)
@@ -85,7 +129,7 @@ func New(opts ...Option) (*Browser, error) {
 	for _, id := range o.extensionIDs {
 		dir, err := extensionPathByID(id)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		o.extensions = append(o.extensions, dir)
 	}
@@ -93,7 +137,7 @@ func New(opts ...Option) (*Browser, error) {
 	if o.bridge {
 		bridgeDir, err := writeBridgeExtension()
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
 		o.extensions = append(o.extensions, bridgeDir)
@@ -107,36 +151,10 @@ func New(opts ...Option) (*Browser, error) {
 
 	u, err := l.Launch()
 	if err != nil {
-		return nil, fmt.Errorf("scout: launch browser: %w", err)
+		return "", fmt.Errorf("scout: launch browser: %w", err)
 	}
 
-	b := rod.New().ControlURL(u)
-	if o.slowMotion > 0 {
-		b = b.SlowMotion(o.slowMotion)
-	}
-
-	if err := b.Connect(); err != nil {
-		return nil, fmt.Errorf("scout: connect browser: %w", err)
-	}
-
-	if o.ignoreCerts {
-		if err := b.IgnoreCertErrors(true); err != nil {
-			_ = b.Close()
-			return nil, fmt.Errorf("scout: ignore cert errors: %w", err)
-		}
-	}
-
-	if o.incognito {
-		ctx, err := b.Incognito()
-		if err != nil {
-			_ = b.Close()
-			return nil, fmt.Errorf("scout: incognito mode: %w", err)
-		}
-
-		return &Browser{browser: ctx, opts: o}, nil
-	}
-
-	return &Browser{browser: b, opts: o}, nil
+	return u, nil
 }
 
 // NewPage creates a new browser tab and navigates to the given URL.
@@ -182,6 +200,12 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 	}
 
 	p := &Page{page: rodPage, browser: b}
+
+	if len(b.opts.blockPatterns) > 0 {
+		if err := p.SetBlockedURLs(b.opts.blockPatterns...); err != nil {
+			return nil, fmt.Errorf("scout: set block patterns: %w", err)
+		}
+	}
 
 	if b.opts.windowW > 0 && b.opts.windowH > 0 {
 		if err := p.SetViewport(b.opts.windowW, b.opts.windowH); err != nil {

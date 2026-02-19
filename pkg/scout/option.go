@@ -21,29 +21,31 @@ const (
 type Option func(*options)
 
 type options struct {
-	browserType  BrowserType
-	headless     bool
-	stealth      bool
-	userAgent    string
-	proxy        string
-	windowW      int
-	windowH      int
-	timeout      time.Duration
-	slowMotion   time.Duration
-	ignoreCerts  bool
-	execPath     string
-	userDataDir  string
-	env          []string
-	incognito    bool
-	noSandbox    bool
-	windowState  WindowState
-	xvfb         bool
-	xvfbArgs     []string
-	launchFlags  map[string][]string
-	extensions   []string
-	extensionIDs []string
-	devtools     bool
-	bridge       bool
+	browserType   BrowserType
+	headless      bool
+	stealth       bool
+	userAgent     string
+	proxy         string
+	windowW       int
+	windowH       int
+	timeout       time.Duration
+	slowMotion    time.Duration
+	ignoreCerts   bool
+	execPath      string
+	userDataDir   string
+	env           []string
+	incognito     bool
+	noSandbox     bool
+	windowState   WindowState
+	xvfb          bool
+	xvfbArgs      []string
+	launchFlags   map[string][]string
+	extensions    []string
+	extensionIDs  []string
+	devtools      bool
+	bridge        bool
+	blockPatterns []string
+	remoteCDP     string
 }
 
 func defaults() *options {
@@ -182,6 +184,52 @@ func WithBridge() Option {
 // WithoutBridge disables the built-in Scout Bridge extension.
 func WithoutBridge() Option {
 	return func(o *options) { o.bridge = false }
+}
+
+// Common URL-blocking presets for use with WithBlockPatterns.
+var (
+	// BlockAds blocks common advertising domains.
+	BlockAds = []string{
+		"*doubleclick.net*", "*googlesyndication.com*", "*googleadservices.com*",
+		"*adnxs.com*", "*adsrvr.org*", "*amazon-adsystem.com*",
+		"*moatads.com*", "*serving-sys.com*", "*adform.net*",
+	}
+
+	// BlockTrackers blocks common analytics and tracking domains.
+	BlockTrackers = []string{
+		"*google-analytics.com*", "*googletagmanager.com*",
+		"*facebook.net/tr*", "*facebook.com/tr*",
+		"*hotjar.com*", "*fullstory.com*", "*segment.io*",
+		"*mixpanel.com*", "*amplitude.com*",
+	}
+
+	// BlockFonts blocks web font requests.
+	BlockFonts = []string{
+		"*.woff", "*.woff2", "*.ttf", "*.otf", "*.eot",
+		"*fonts.googleapis.com*", "*fonts.gstatic.com*",
+	}
+
+	// BlockImages blocks image requests.
+	BlockImages = []string{
+		"*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.svg", "*.ico", "*.bmp",
+	}
+)
+
+// WithBlockPatterns sets URL patterns to block on every new page.
+// Patterns use wildcards (*) — e.g. "*.css", "*analytics*".
+// Use preset slices (BlockAds, BlockTrackers, BlockFonts, BlockImages) or custom patterns.
+func WithBlockPatterns(patterns ...string) Option {
+	return func(o *options) { o.blockPatterns = append(o.blockPatterns, patterns...) }
+}
+
+// WithRemoteCDP connects to an existing Chrome DevTools Protocol endpoint instead of
+// launching a local browser. Use this for managed browser services (BrightData, Browserless,
+// etc.) or remote Chrome instances. Most launch-related options (execPath, proxy, noSandbox,
+// extensions, etc.) are ignored when a remote endpoint is set.
+//
+// The endpoint should be a WebSocket URL, e.g. "ws://127.0.0.1:9222".
+func WithRemoteCDP(endpoint string) Option {
+	return func(o *options) { o.remoteCDP = endpoint }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.

@@ -176,6 +176,7 @@ Automatically detect all Chromium-based browsers installed on the system (Chrome
 - [x] Recipe types and JSON parsing (`pkg/scout/recipe/recipe.go`)
 - [x] Extraction recipe executor with container/field selectors, pagination (`pkg/scout/recipe/extract.go`)
 - [x] Automation recipe executor with sequential action steps (`pkg/scout/recipe/automate.go`)
+- [x] Named selectors (`selectors` map) with `$name` references resolved at parse time — enables selector reuse across fields/steps
 - [x] CLI: `scout recipe run --file=recipe.json`, `scout recipe validate --file=recipe.json`
 - [x] Unit tests for recipe parsing (`pkg/scout/recipe/recipe_test.go`)
 
@@ -701,10 +702,10 @@ Extract browser download, patching, and management into a dedicated `inovacc/sco
 - [x] Publish to GitHub with git remote
 - [x] Create initial git tags (v0.1.3, v0.1.4, v0.1.5)
 - [x] Add LICENSE file
-- [ ] Add GoDoc examples for key functions
+- [x] Add GoDoc examples for key functions (20 `Example*` functions in `example_test.go`)
 - [ ] Write integration test examples
 
-### Phase 23: WebFetch & WebSearch — GitHub Data Extraction [PLANNED]
+### Phase 23: WebFetch & WebSearch — GitHub Data Extraction [IN PROGRESS]
 
 A high-level web intelligence toolkit inspired by Claude Code's `WebFetch()` and `WebSearch()` tools. Provides URL fetching with automatic content extraction (HTML→Markdown), web searching with result aggregation, and a dedicated GitHub data extraction pipeline. Built on top of Scout's existing crawl, search, markdown, and extract engines.
 
@@ -728,16 +729,17 @@ Fetch any URL and return clean, structured content (markdown, metadata, links). 
 
 Search the web and optionally fetch top results, returning structured search results with optional full content. Combines SERP parsing with WebFetch for a research-grade pipeline.
 
-- [ ] **`WebSearch` type** (`pkg/scout/websearch.go`) — `Browser.WebSearch(query string, ...WebSearchOption) (*WebSearchResult, error)`
-- [ ] **WebSearchResult** — `{Query, Engine, Results []WebSearchResultItem, TotalResults string, SearchedAt time.Time}`
-- [ ] **WebSearchResultItem** — `{Title, URL, Snippet string, Content *WebFetchResult}` where Content is populated when `WithSearchFetch()` is set
-- [ ] **Fetch top N results** — `WithSearchFetch(n int)` to auto-fetch and extract content from top N results
+- [x] **`WebSearch` type** (`pkg/scout/websearch.go`) — `Browser.WebSearch(query string, ...WebSearchOption) (*WebSearchResult, error)`
+- [x] **WebSearchResult** — `{Query, Engine, Results []WebSearchItem}` with `WebSearchItem{Title, URL, Snippet, Position, Content *WebFetchResult}`
+- [x] **Fetch top N results** — `WithWebSearchFetch("markdown")` + `WithWebSearchMaxFetch(n)` to auto-fetch and extract content from top N results
+- [x] **Concurrency control** — `WithWebSearchConcurrency(n)` for parallel fetch with semaphore pattern
+- [x] **Cache passthrough** — `WithWebSearchCache(ttl)` passes through to WebFetch cache layer
+- [x] **CLI** — `scout websearch "query" [--engine=google] [--fetch=markdown] [--max-fetch=5] [--max-pages=1] [--main-only]`
+- [x] **Tests** — 7 tests: NoFetch, WithFetch, MainContent, MaxFetch, Cache, FetchErrorIsolation, OptionDefaults
 - [ ] **Multi-engine aggregation** — `WithSearchEngines(Google, Bing, DuckDuckGo)` to run same query across engines, merge and deduplicate by URL
 - [ ] **Rank fusion** — Reciprocal Rank Fusion (RRF) scoring when merging multi-engine results
 - [ ] **Domain filtering** — `WithSearchDomain("github.com")`, `WithSearchExcludeDomain("pinterest.com")`
 - [ ] **Time filtering** — `WithSearchRecent(duration)` for time-bounded searches
-- [ ] **CLI** — `scout websearch "query" [--engine=google,bing] [--fetch=5] [--domain=github.com] [--format=json]`
-- [ ] **Tests** — single engine, multi-engine merge, rank fusion, domain filter, fetch integration
 
 #### Sub-phase 23c: GitHub Data Extraction
 
@@ -803,6 +805,84 @@ Orchestrate WebSearch + WebFetch + GitHub extraction into automated research wor
 - [ ] **Output formats** — markdown report, JSON structured data, combined summary
 - [ ] **CLI** — `scout research "query" [--github=owner/repo] [--depth=shallow|deep] [--format=markdown]`
 
+### Phase 24: Rod Fork Patches — Stability Fixes [PLANNED]
+
+Apply confirmed upstream bug fixes to Scout's internal rod fork (`pkg/rod/`). These are the first local modifications to the fork. See [ADR 007](adr/007-rod-ecosystem-analysis.md) for full analysis.
+
+#### Fork-Level Patches (modify `pkg/rod/`)
+
+- [ ] **Nil-guard on disconnected page** (rod #1103) — Guard `getJSCtxID()` in `page_eval.go` against nil page/connection, return `ErrDisconnected` instead of segfault
+- [ ] **Context propagation** (rod #1179) — Pass page's context through to internal operations in `page.go`
+- [ ] **Page context in Info/Activate/TriggerFavicon** (rod #1206) — Use `p.browser.Context(p.ctx)` instead of `p.browser.ctx` in 3 methods
+- [ ] **Update `.dep-track.json`** — Record all local modifications with issue references
+
+#### Wrapper-Level Fixes (modify `pkg/scout/`)
+
+- [ ] **WaitStable panic recovery** (rod #1157) — Wrap `WaitLoad`/`WaitStable` with panic recovery + retry on "Execution context was destroyed"
+- [ ] **WaitSafe method** (rod #1224) — Add `Page.WaitSafe(timeout)` combining `WaitLoad` + timeout guard without `WaitRequestIdle` conflict
+- [ ] **Zombie process cleanup** (rod #865) — On `Browser.Close()`, walk Chrome process tree and kill orphan child processes
+- [ ] **Hijack regexp validation** (rod #982) — Pre-validate pattern with `regexp.Compile()` before passing to rod's `Add()`
+
+#### Testing
+
+- [ ] Tests for nil-guard (simulate disconnected page, verify error not panic)
+- [ ] Tests for WaitSafe (timeout behavior, panic recovery)
+- [ ] Tests for zombie cleanup (verify no orphan processes after Close)
+- [ ] Tests for hijack pattern validation (invalid regexp → clear error)
+
+### Phase 25: Accessibility Snapshot — ARIA Tree for LLM Automation [PLANNED]
+
+Port the accessibility snapshot system from [go-rod/rod-mcp](https://github.com/go-rod/rod-mcp) for LLM-driven element addressing. The snapshot produces a YAML-like ARIA tree with `[ref=s{gen}e{id}]` markers that LLMs can reference to interact with page elements.
+
+- [ ] **Snapshot types** (`pkg/scout/snapshot.go`) — `SnapshotNode{Role, Name, Description, Value, Ref, Children}`, `SnapshotResult{YAML string, NodeMap map[string]*SnapshotNode}`
+- [ ] **JS engine** (`pkg/scout/snapshot_js.go`) — Embedded ~1500-line JS from rod-mcp `types/js/snapshotter.js` for ARIA tree building with role extraction, name computation, ref marker injection
+- [ ] **`Page.Snapshot(...SnapshotOption)` method** — Execute snapshot JS, parse result, return structured tree
+- [ ] **Iframe traversal** — Recursively snapshot cross-origin iframes (rod-mcp pattern: `page.Frames()` → inject JS per frame → merge trees)
+- [ ] **Ref-based element resolution** — `Page.ElementByRef(ref string) (*Element, error)` to find elements by snapshot ref marker
+- [ ] **LLM integration** — Feed snapshot YAML as context to `ExtractWithLLM()` for element-aware extraction
+- [ ] **CLI** — `scout snapshot [--format=yaml|json]` to dump current page accessibility tree
+- [ ] **Tests** — snapshot generation, ref resolution, iframe merging, LLM context construction
+
+### Phase 26: MCP Transport — Model Context Protocol Server [PLANNED]
+
+Expose Scout's browser automation capabilities as MCP tools via stdio transport, enabling LLMs (Claude, GPT, etc.) to drive browser sessions through the standard Model Context Protocol. Uses the official `modelcontextprotocol/go-sdk` (not the unofficial `mark3labs/mcp-go` used by rod-mcp).
+
+- [ ] **MCP server** (`cmd/scout/mcp.go`) — `scout mcp` command that starts MCP stdio transport
+- [ ] **Tool definitions** — Map Scout capabilities to MCP tools:
+  - `navigate`, `click`, `type`, `screenshot`, `snapshot` (accessibility)
+  - `extract`, `search`, `fetch`, `eval`, `pdf`
+  - `session_create`, `session_list`, `session_destroy`
+- [ ] **Resource definitions** — Expose page state as MCP resources:
+  - `scout://page/markdown` — current page as markdown
+  - `scout://page/snapshot` — accessibility tree
+  - `scout://page/screenshot` — base64 screenshot
+- [ ] **Session management** — MCP server manages a single browser session, tools operate on current page
+- [ ] **Accessibility snapshot integration** — `snapshot` tool returns YAML tree for LLM context (Phase 25 dependency)
+- [ ] **CLI** — `scout mcp [--headless] [--stealth]` starts MCP server on stdio
+- [ ] **Tests** — in-memory MCP transport tests using `mcp.NewInMemoryTransports()`, tool execution, resource reads
+
+### Phase 27: Browser Recycling & Request Blocking [IN PROGRESS]
+
+Production hardening features from [go-rod/bartender](https://github.com/go-rod/bartender) analysis. AutoFree prevents memory leaks in long-running daemon sessions. Request blocking provides efficient resource filtering.
+
+#### AutoFree — Periodic Browser Recycling
+
+- [ ] **`WithAutoFree(interval time.Duration)` option** — Periodically restart browser process to prevent memory leaks in daemon mode
+- [ ] **Session preservation** — Save session state (cookies, storage, URL) before recycle, restore after
+- [ ] **Graceful recycle** — Wait for in-flight operations to complete before restart
+- [ ] **Integration with gRPC daemon** — Daemon sessions auto-recycle after configurable interval (default: 1 hour)
+
+#### Request Blocking [COMPLETE]
+
+- [x] **`WithBlockPatterns(patterns ...string)` option** — Block matching URL patterns on every new page via `SetBlockedURLs()`
+- [x] **Built-in block lists** — `BlockAds`, `BlockTrackers`, `BlockFonts`, `BlockImages` preset pattern groups
+- [x] **Per-page blocking** — `Page.Block(patterns ...string)` convenience method for page-level request filtering
+- [x] **Tests** — `TestWithBlockPatterns`, `TestBlockPresetVariables`, `TestWithBlockPatternsMultiplePresets`, `TestPageBlock`
+
+#### Testing
+
+- [ ] AutoFree lifecycle tests (recycle interval, session preservation)
+
 ## Test Coverage
 
 **Current:** pkg/scout 75.7% | pkg/identity 81.1% | scraper 84.3% | **Total: 54.9%** | **Target:** 80%
@@ -813,7 +893,7 @@ Orchestrate WebSearch + WebFetch + GitHub extraction into automated research wor
 | pkg/scout/recipe | 81.5%    | ✅ Target met             |
 | pkg/identity     | 81.1%    | ✅ Target met             |
 | scraper          | 84.3%    | ✅ Complete               |
-| grpc/server      | 67.7%    | Integration tests added  |
+| grpc/server      | 80.6%    | ✅ Target met             |
 | pkg/stealth      | 50.0%    | Tests added              |
 | extensions       | 0.0%     | No tests (embed wrapper) |
 | pkg/discovery    | 0.0%     | No tests                 |
