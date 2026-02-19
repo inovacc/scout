@@ -20,6 +20,24 @@ func init() {
 <button id="mutate" onclick="document.getElementById('target').textContent='Changed'">Mutate</button>
 </body></html>`)
 		})
+
+		mux.HandleFunc("/bridge-dom", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>DOM Test</title></head>
+<body>
+<main>
+<h1>Hello World</h1>
+<p>This is a <strong>test</strong> paragraph with a <a href="https://example.com">link</a>.</p>
+<ul>
+<li>Item one</li>
+<li>Item two</li>
+</ul>
+<div id="scoped"><h2>Scoped Section</h2><p>Inner content.</p></div>
+</main>
+<script>var x = 1;</script>
+</body></html>`)
+		})
 	})
 }
 
@@ -75,6 +93,85 @@ func injectScoutAPI(p *Page) {
 					}
 				}
 			}
+		});
+		// Built-in handler: dom_json
+		window.__scout.on('dom_json', function(params) {
+			params = params || {};
+			var selector = params.selector || null;
+			var maxDepth = params.depth || 50;
+			var skipTags = {SCRIPT:1, STYLE:1, NOSCRIPT:1};
+			function walk(node, depth) {
+				if (depth > maxDepth) return null;
+				if (node.nodeType === Node.TEXT_NODE) {
+					var text = node.textContent.trim();
+					if (!text) return null;
+					return {tag:'#text', text: text};
+				}
+				if (node.nodeType !== Node.ELEMENT_NODE) return null;
+				var tag = node.tagName;
+				if (skipTags[tag]) return null;
+				var obj = {tag: tag.toLowerCase()};
+				if (node.attributes && node.attributes.length > 0) {
+					obj.attributes = {};
+					for (var i = 0; i < node.attributes.length; i++) {
+						obj.attributes[node.attributes[i].name] = node.attributes[i].value;
+					}
+				}
+				var children = [];
+				for (var c = node.firstChild; c; c = c.nextSibling) {
+					var child = walk(c, depth + 1);
+					if (child) children.push(child);
+				}
+				if (children.length > 0) obj.children = children;
+				return obj;
+			}
+			var root = selector ? document.querySelector(selector) : document.documentElement;
+			if (!root) return {error: 'selector not found: ' + selector};
+			return walk(root, 0);
+		});
+		// Built-in handler: dom_markdown
+		window.__scout.on('dom_markdown', function(params) {
+			params = params || {};
+			var selector = params.selector || null;
+			var mainOnly = params.mainOnly || false;
+			function findMain(doc) {
+				var c = [doc.querySelector('main'), doc.querySelector('article'), doc.querySelector('[role="main"]'), doc.querySelector('#content'), doc.querySelector('.content')];
+				for (var i = 0; i < c.length; i++) { if (c[i]) return c[i]; }
+				return doc.body || doc.documentElement;
+			}
+			var root;
+			if (selector) { root = document.querySelector(selector); if (!root) return '<!-- selector not found -->'; }
+			else if (mainOnly) { root = findMain(document); }
+			else { root = document.body || document.documentElement; }
+			var skipTags = {SCRIPT:1, STYLE:1, NOSCRIPT:1, SVG:1};
+			var blockTags = {P:1, DIV:1, SECTION:1, ARTICLE:1, ASIDE:1, HEADER:1, FOOTER:1, NAV:1, MAIN:1, BLOCKQUOTE:1};
+			function convert(node) {
+				if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+				if (node.nodeType !== Node.ELEMENT_NODE) return '';
+				var tag = node.tagName;
+				if (skipTags[tag]) return '';
+				var inner = '';
+				for (var c = node.firstChild; c; c = c.nextSibling) inner += convert(c);
+				inner = inner.replace(/\n{3,}/g, '\n\n');
+				switch(tag) {
+					case 'H1': return '\n\n# ' + inner.trim() + '\n\n';
+					case 'H2': return '\n\n## ' + inner.trim() + '\n\n';
+					case 'H3': return '\n\n### ' + inner.trim() + '\n\n';
+					case 'P': return '\n\n' + inner.trim() + '\n\n';
+					case 'STRONG': case 'B': return '**' + inner.trim() + '**';
+					case 'EM': case 'I': return '*' + inner.trim() + '*';
+					case 'A': return '[' + inner.trim() + '](' + (node.getAttribute('href')||'') + ')';
+					case 'UL': return '\n\n' + inner + '\n';
+					case 'LI': return '- ' + inner.trim() + '\n';
+					case 'CODE': var bt = String.fromCharCode(96); return bt + inner.trim() + bt;
+					case 'PRE': var bt3 = String.fromCharCode(96).repeat(3); return '\n\n' + bt3 + '\n' + inner.trim() + '\n' + bt3 + '\n\n';
+					default:
+						if (blockTags[tag]) return '\n\n' + inner.trim() + '\n\n';
+						return inner;
+				}
+			}
+			var result = convert(root);
+			return result.replace(/\n{3,}/g, '\n\n').trim();
 		});
 		window.__scout.send('__bridge_ready', {url: window.location.href});
 	}`)
@@ -519,6 +616,154 @@ func TestBridgeFullRoundtrip(t *testing.T) {
 		}
 
 		bridge.Off("mutation")
+	})
+}
+
+func TestBridgeDOMJSON(t *testing.T) {
+	browser := newBridgeBrowser(t)
+	ts := newTestServer()
+	defer ts.Close()
+
+	page, err := browser.NewPage(ts.URL + "/bridge-dom")
+	if err != nil {
+		t.Fatalf("new page: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("wait load: %v", err)
+	}
+
+	bridge, err := page.Bridge(WithQueryTimeout(5 * time.Second))
+	if err != nil {
+		t.Fatalf("bridge init: %v", err)
+	}
+
+	injectScoutAPI(page)
+	time.Sleep(300 * time.Millisecond)
+
+	node, err := bridge.DOM()
+	if err != nil {
+		t.Fatalf("DOM(): %v", err)
+	}
+
+	if node.Tag != "html" {
+		t.Errorf("expected root tag 'html', got %q", node.Tag)
+	}
+
+	if len(node.Children) == 0 {
+		t.Fatal("expected children on html node")
+	}
+
+	t.Logf("DOM root: tag=%s, children=%d", node.Tag, len(node.Children))
+}
+
+func TestBridgeDOMMarkdown(t *testing.T) {
+	browser := newBridgeBrowser(t)
+	ts := newTestServer()
+	defer ts.Close()
+
+	page, err := browser.NewPage(ts.URL + "/bridge-dom")
+	if err != nil {
+		t.Fatalf("new page: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("wait load: %v", err)
+	}
+
+	bridge, err := page.Bridge(WithQueryTimeout(5 * time.Second))
+	if err != nil {
+		t.Fatalf("bridge init: %v", err)
+	}
+
+	injectScoutAPI(page)
+	time.Sleep(300 * time.Millisecond)
+
+	md, err := bridge.DOMMarkdown()
+	if err != nil {
+		t.Fatalf("DOMMarkdown(): %v", err)
+	}
+
+	if md == "" {
+		t.Fatal("expected non-empty markdown")
+	}
+
+	// Check for expected content.
+	for _, want := range []string{"# Hello World", "**test**", "[link](https://example.com)", "- Item one"} {
+		if !containsStr(md, want) {
+			t.Errorf("expected markdown to contain %q, got:\n%s", want, md)
+		}
+	}
+
+	t.Logf("Markdown (%d chars):\n%s", len(md), md)
+}
+
+func TestBridgeDOMSelector(t *testing.T) {
+	browser := newBridgeBrowser(t)
+	ts := newTestServer()
+	defer ts.Close()
+
+	page, err := browser.NewPage(ts.URL + "/bridge-dom")
+	if err != nil {
+		t.Fatalf("new page: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("wait load: %v", err)
+	}
+
+	bridge, err := page.Bridge(WithQueryTimeout(5 * time.Second))
+	if err != nil {
+		t.Fatalf("bridge init: %v", err)
+	}
+
+	injectScoutAPI(page)
+	time.Sleep(300 * time.Millisecond)
+
+	t.Run("json_scoped", func(t *testing.T) {
+		node, err := bridge.DOM(WithDOMSelector("#scoped"))
+		if err != nil {
+			t.Fatalf("DOM(#scoped): %v", err)
+		}
+
+		if node.Tag != "div" {
+			t.Errorf("expected tag 'div', got %q", node.Tag)
+		}
+
+		t.Logf("scoped DOM: tag=%s, children=%d", node.Tag, len(node.Children))
+	})
+
+	t.Run("markdown_scoped", func(t *testing.T) {
+		md, err := bridge.DOMMarkdown(WithDOMSelector("#scoped"))
+		if err != nil {
+			t.Fatalf("DOMMarkdown(#scoped): %v", err)
+		}
+
+		if !containsStr(md, "## Scoped Section") {
+			t.Errorf("expected '## Scoped Section' in markdown, got:\n%s", md)
+		}
+
+		if !containsStr(md, "Inner content.") {
+			t.Errorf("expected 'Inner content.' in markdown, got:\n%s", md)
+		}
+
+		t.Logf("scoped markdown:\n%s", md)
+	})
+
+	t.Run("markdown_main_only", func(t *testing.T) {
+		md, err := bridge.DOMMarkdown(WithDOMMainOnly())
+		if err != nil {
+			t.Fatalf("DOMMarkdown(mainOnly): %v", err)
+		}
+
+		if !containsStr(md, "# Hello World") {
+			t.Errorf("expected '# Hello World' in main content markdown, got:\n%s", md)
+		}
+
+		t.Logf("main-only markdown:\n%s", md)
 	})
 }
 
