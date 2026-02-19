@@ -25,3 +25,8 @@ func firstExisting(paths []string, bt BrowserType) (string, error) {
 
 	return "", fmt.Errorf("%w: %s", ErrBrowserNotFound, bt)
 }
+
+// LookupBrowserPublic is the exported version of lookupBrowser for CLI use.
+func LookupBrowserPublic(bt BrowserType) (string, error) {
+	return lookupBrowser(bt)
+}

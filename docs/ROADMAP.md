@@ -132,12 +132,12 @@
 
 ### Browser Support
 
-| Browser         | Status      | Notes                                                                                     |
-|-----------------|-------------|-------------------------------------------------------------------------------------------|
-| Chrome/Chromium | ✅ Default   | rod auto-detect                                                                           |
-| Brave           | ✅ Supported | `WithBrowser(BrowserBrave)` or `--browser=brave`                                          |
-| Microsoft Edge  | ✅ Supported | `WithBrowser(BrowserEdge)` or `--browser=edge`                                            |
-| Firefox         | ❌ Blocked   | CDP removed in Firefox 141 (June 2025). Requires WebDriver BiDi maturity in Go ecosystem. |
+| Browser         | Status      | Auto-download | Notes                                                                                     |
+|-----------------|-------------|---------------|-------------------------------------------------------------------------------------------|
+| Chrome/Chromium | ✅ Default   | ✅ rod built-in | rod auto-detect + auto-download                                                          |
+| Brave           | ✅ Supported | ✅ GitHub releases | `WithBrowser(BrowserBrave)` — auto-downloads from `brave/brave-browser` releases if not installed |
+| Microsoft Edge  | ✅ Supported | ❌ Installer only | `WithBrowser(BrowserEdge)` — error message includes download URL                         |
+| Firefox         | ❌ Blocked   | N/A           | CDP removed in Firefox 141 (June 2025). Requires WebDriver BiDi maturity in Go ecosystem. |
 
 ### Phase 11: Batch Scraper [COMPLETE]
 
@@ -565,6 +565,91 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [x] **DevTools option** — `WithDevTools()` for browser DevTools panel
 - [x] **CLI device commands** (`cmd/scout/internal/cli/device.go`) — `scout device pair/list/trust`
 
+### Phase 21b: Docker Images — Container Deployment [PLANNED]
+
+Provide pre-built Docker images for running Scout CLI and gRPC server in containers. Supports headless browser automation in CI/CD pipelines, Kubernetes jobs, and serverless environments.
+
+#### Docker Images
+
+- [ ] **`Dockerfile`** — Multi-stage build: Go builder + Chromium runtime image
+- [ ] **Base image** — `debian:bookworm-slim` with Chromium, fonts (CJK, emoji), and `dumb-init`
+- [ ] **Minimal image** — `gcr.io/distroless/static-debian12:nonroot` variant for scout CLI (no browser, gRPC client only)
+- [ ] **Image variants**:
+  - `scout:latest` / `scout:<version>` — full image with Chromium + scout CLI
+  - `scout:server` — gRPC server with Chromium, exposes port 9551
+  - `scout:slim` — CLI-only (no browser), for gRPC client usage
+- [ ] **Docker Compose** — `docker-compose.yml` with scout-server service, healthcheck, volume mounts for output/profiles
+- [ ] **Environment variables** — `SCOUT_HEADLESS=true`, `SCOUT_NO_SANDBOX=true`, `SCOUT_BRIDGE=true`, `SCOUT_ADDR=:9551`
+- [ ] **Auto `--no-sandbox`** — detect container runtime (cgroup, `/.dockerenv`) and auto-apply `--no-sandbox` (existing `platform_linux.go` already does this for gRPC sessions)
+
+#### CI/CD Integration
+
+- [ ] **GitHub Actions workflow** — build and push images to GHCR on tag
+- [ ] **Multi-arch builds** — `linux/amd64` and `linux/arm64` via `docker buildx`
+- [ ] **Image scanning** — Trivy vulnerability scan in CI
+- [ ] **Size optimization** — target < 500MB for full image, < 50MB for slim
+
+#### Kubernetes Support
+
+- [ ] **Helm chart** (`deploy/helm/scout/`) — deploy scout gRPC server as a Kubernetes Deployment/Service
+- [ ] **Job template** — example Kubernetes Job for one-shot crawl/scrape tasks
+- [ ] **Resource limits** — recommended CPU/memory limits for browser containers (2 CPU, 2Gi RAM default)
+- [ ] **Shared memory** — `/dev/shm` volume mount for Chrome (required to avoid crashes in containers)
+
+#### Testing
+
+- [ ] Container build smoke test (build + run basic crawl)
+- [ ] gRPC server healthcheck in container
+- [ ] Bridge extension loads in container
+- [ ] Example: `examples/docker/` with docker-compose setup
+
+### Phase 21c: Scout-Browser — Portable Browser Repository [PLANNED]
+
+Extract browser download, patching, and management into a dedicated `inovacc/scout-browser` repository. This decouples browser lifecycle from the core library, enables independent versioning, and allows the community to contribute browser-specific fixes without touching the main codebase.
+
+#### Repository Structure (`inovacc/scout-browser`)
+
+- [ ] **`browser.go`** — core types: `BrowserType`, `BrowserInfo`, `BrowserRelease`, `Platform`
+- [ ] **`download.go`** — download engine: fetch releases from GitHub/CDN, verify checksums, extract archives
+- [ ] **`brave.go`** — Brave browser: GitHub releases API, asset name mapping, binary path resolution
+- [ ] **`chrome.go`** — Chromium: integrate/wrap rod's launcher download logic, or use Chrome for Testing JSON API
+- [ ] **`edge.go`** — Edge: parse `edgeupdates.microsoft.com` API, download installers (Windows MSI, macOS PKG, Linux DEB/RPM), auto-install where possible
+- [ ] **`patch.go`** — browser patching: apply fixes to downloaded browsers (disable update checks, telemetry, first-run dialogs, default browser prompts)
+- [ ] **`cache.go`** — cache management: `~/.scout/browsers/` directory, version tracking, cleanup of old versions, disk usage reporting
+- [ ] **`release.go`** — GitHub release publishing: CI pipeline to download, patch, repackage, and publish fixed browser zips to `inovacc/scout-browser` releases
+- [ ] **`verify.go`** — integrity verification: SHA-256 checksums, optional GPG signature validation
+
+#### Browser Patching Pipeline
+
+- [ ] **Disable auto-update** — remove/neuter update mechanisms (Brave: `BraveUpdate`, Chrome: `GoogleUpdate`, Edge: `MicrosoftEdgeUpdate`)
+- [ ] **Disable telemetry** — patch preferences/policies to disable usage stats, crash reports, safe browsing callouts
+- [ ] **Disable first-run** — skip first-run wizards, welcome tabs, default browser prompts
+- [ ] **Hardened defaults** — set privacy-friendly defaults (no search suggestions, no URL predictions, no Safe Browsing network requests)
+- [ ] **Extension pre-loading** — bundle Scout Bridge extension into patched browser distributions
+- [ ] **CI pipeline** — GitHub Actions workflow: download latest releases → apply patches → run smoke tests → publish to `inovacc/scout-browser` releases with checksums
+
+#### Integration with Scout
+
+- [ ] **`go get github.com/inovacc/scout-browser`** — import as a Go module dependency
+- [ ] **`scoutbrowser.Download(ctx, BrowserBrave)` API** — replaces inline `DownloadBrave()` in `pkg/scout/`
+- [ ] **`scoutbrowser.Resolve(ctx, BrowserType)` API** — local lookup → cached download → fresh download fallback chain
+- [ ] **`scoutbrowser.List()` API** — list all cached browsers with versions
+- [ ] **`scoutbrowser.Patch(browserDir)` API** — apply patches to a browser installation
+- [ ] **`scoutbrowser.Clean(keepLatest int)` API** — remove old cached versions, keep N latest
+- [ ] **Migrate `pkg/scout/browser_download.go`** — move download logic to scout-browser, keep thin wrapper in scout core
+- [ ] **CLI: `scout browser download [brave|chrome|edge]`** — download + patch a browser
+- [ ] **CLI: `scout browser list`** — show cached and system browsers (already implemented)
+- [ ] **CLI: `scout browser clean [--keep=2]`** — remove old cached versions
+- [ ] **CLI: `scout browser patch <path>`** — apply patches to an existing browser installation
+
+#### Testing
+
+- [ ] Download + extract tests with httptest mock servers
+- [ ] Patch application tests (verify preferences/policies modified correctly)
+- [ ] Cache management tests (download, list, clean)
+- [ ] Cross-platform binary resolution tests
+- [ ] CI smoke test: download → patch → launch → navigate → screenshot → close
+
 ### Phase 22: Documentation & Release [IN PROGRESS]
 
 - [x] Publish to GitHub with git remote
@@ -674,15 +759,15 @@ Orchestrate WebSearch + WebFetch + GitHub extraction into automated research wor
 
 ## Test Coverage
 
-**Current:** pkg/scout 75.3% | pkg/identity 81.1% | scraper 84.3% | **Target:** 80%
+**Current:** pkg/scout 75.7% | pkg/identity 81.1% | scraper 84.3% | **Total: 53.6%** | **Target:** 80%
 
 | Package          | Coverage | Status                   |
 |------------------|----------|--------------------------|
-| pkg/scout        | 75.3%    | Below target             |
+| pkg/scout        | 75.7%    | Below target             |
 | pkg/identity     | 81.1%    | ✅ Target met             |
 | scraper          | 84.3%    | ✅ Complete               |
 | pkg/scout/recipe | 11.6%    | Needs tests              |
-| grpc/server      | 67.7%    | Integration tests added  |
+| grpc/server      | 63.1%    | Integration tests added  |
 | extensions       | 0.0%     | No tests (embed wrapper) |
 | pkg/stealth      | 0.0%     | No tests (asset wrapper) |
 | pkg/discovery    | 0.0%     | No tests                 |

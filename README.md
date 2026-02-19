@@ -29,7 +29,7 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **Scraper Framework** - Pluggable scraper framework with generic auth (browser capture, OAuth2, Electron CDP), encrypted session persistence (AES-256-GCM + Argon2id)
 - **HTML-to-Markdown** - Convert page HTML to clean markdown with readability scoring for main content extraction (`page.Markdown()`, `page.MarkdownContent()`)
 - **URL Map / Link Discovery** - Lightweight URL-only discovery combining sitemap.xml + on-page link harvesting with path/subdomain/search filters
-- **Multi-Browser Support** - Chrome (default), Brave, and Microsoft Edge auto-detection via `WithBrowser()`
+- **Multi-Browser Support** - Chrome (default), Brave, and Microsoft Edge. Brave auto-downloads from GitHub releases if not installed; Edge provides download URL. Cached in `~/.scout/browsers/`
 - **Chrome Extension Loading** - Load unpacked extensions via `WithExtension(paths...)`, download from Chrome Web Store via `DownloadExtension(id)`, load by ID via `WithExtensionByID(ids...)`
 - **Device Identity & Pairing** - Syncthing-style device IDs with Ed25519 keys, mTLS authentication, mDNS peer discovery
 - **Platform-Aware Defaults** - Auto-applies `--no-sandbox` on Linux containers; platform-specific session defaults via build constraints
@@ -39,6 +39,7 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **Recipe System** - Declarative JSON recipes for extraction and automation playbooks (`scout recipe run/validate`)
 - **LLM-Powered Extraction** - AI-powered data extraction via pluggable `LLMProvider` interface with 6 built-in providers: Ollama (local), OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini. `ExtractWithLLM()` sends page markdown + prompt to LLM; `ExtractWithLLMJSON()` for typed extraction with schema validation
 - **LLM Review Pipeline** - Two-pass extraction: extract with LLM1, review with LLM2. `ExtractWithLLMReview()` with workspace persistence tracking sessions and jobs in filesystem directories
+- **Sitemap Extract** - Crawl an entire site and extract DOM JSON + Markdown for every page via the bridge extension. `SitemapExtract()` with output directory support for per-page files and index
 
 ## Installation
 
@@ -354,6 +355,8 @@ The `scout` CLI provides a unified interface to all library features. It communi
 | `scout ollama list\|pull\|status`           | Ollama model management                                                              |
 | `scout ai-job list\|show`                   | LLM workspace job management                                                         |
 | `scout ai-job session list\|create\|use`    | LLM workspace session management                                                     |
+| `scout sitemap extract <url>`               | Crawl + extract DOM JSON & Markdown per page (`--depth`, `--max-pages`, `--output`)  |
+| `scout browser list`                        | List detected (local) and downloaded (`~/.scout/browsers/`) browsers                 |
 | `scout server`                              | Run gRPC server directly                                                             |
 | `scout client`                              | Interactive REPL client                                                              |
 | `scout aicontext [--json]`                  | Generate AI context document for the CLI                                             |

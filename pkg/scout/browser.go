@@ -1,6 +1,7 @@
 package scout
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -35,9 +36,9 @@ func New(opts ...Option) (*Browser, error) {
 	if o.execPath != "" {
 		l = l.Bin(o.execPath)
 	} else if o.browserType != "" && o.browserType != BrowserChrome {
-		binPath, err := lookupBrowser(o.browserType)
+		binPath, err := resolveBrowser(context.Background(), o.browserType)
 		if err != nil {
-			return nil, fmt.Errorf("scout: lookup %s browser: %w", o.browserType, err)
+			return nil, fmt.Errorf("scout: resolve %s browser: %w", o.browserType, err)
 		}
 
 		l = l.Bin(binPath)

@@ -219,6 +219,22 @@ credentials/session.
 - **Effort:** Large
 - **Dependencies:** Scout Bridge extension (Phase 17), LLM providers (Phase 14), User Profile for cookie persistence (Phase 18), Stealth mode.
 
+### Scout-Browser — Portable Browser Repository (Phase 21c)
+
+- **Priority:** P1
+- **Description:** Extract browser download, patching, and management into a dedicated `inovacc/scout-browser` repository. Downloads Brave from GitHub releases, Chromium via Chrome for Testing API, and Edge from Microsoft's update API. Applies patches to disable auto-update, telemetry, first-run dialogs. Publishes pre-patched browser zips to `inovacc/scout-browser` GitHub releases via CI. Scout core imports as `go get github.com/inovacc/scout-browser`.
+- **Scope:** Standalone Go module with `Download()`, `Resolve()`, `Patch()`, `List()`, `Clean()` API. CI pipeline for automated browser patching and release publishing. Migrate `pkg/scout/browser_download.go` to the new repo, keep thin wrapper in scout core. CLI commands: `scout browser download/list/clean/patch`.
+- **Effort:** Large
+- **Dependencies:** Current browser auto-download (done), Chrome Extension infrastructure (done).
+
+### Docker Images — Container Deployment (Phase 21b)
+
+- **Priority:** P1
+- **Description:** Pre-built Docker images for running Scout in containers. Multi-stage Dockerfile with Chromium + fonts, gRPC server variant, slim CLI-only variant. Docker Compose for local dev, GitHub Actions for GHCR publishing, multi-arch `linux/amd64` + `linux/arm64` builds. Helm chart for Kubernetes deployment with proper `/dev/shm` volume and resource limits.
+- **Scope:** `Dockerfile` (multi-stage), `Dockerfile.slim` (no browser), `docker-compose.yml`, `.dockerignore`, `deploy/helm/scout/` Helm chart, GitHub Actions workflow for image build/push, `examples/docker/` example. Environment variables: `SCOUT_HEADLESS`, `SCOUT_NO_SANDBOX`, `SCOUT_BRIDGE`, `SCOUT_ADDR`.
+- **Effort:** Medium
+- **Dependencies:** Unified CLI (done), gRPC server (done), platform detection (done).
+
 ### Screen Recorder
 
 - **Priority:** P3
@@ -265,8 +281,27 @@ credentials/session.
 ### gRPC Server Test Coverage
 
 - **Priority:** P2
-- **Description:** The `grpc/server/` package has 67.7% test coverage. More targeted tests needed for individual RPCs and error paths.
+- **Description:** The `grpc/server/` package has 67.1% test coverage. More targeted tests needed for individual RPCs and error paths.
 - **Effort:** Medium
+
+### Window Maximize Blank Space Bug
+
+- **Priority:** P1
+- **Description:** Browser window maximize leaves blank/white space in the viewport. Likely a timing issue between Chrome's window state transition and viewport resize. Investigate whether `setWindowState()` needs a post-maximize viewport resize or delay.
+- **Effort:** Small
+
+### Robot/Bot Detection Framework (Phase 17b prerequisite)
+
+- **Priority:** P1
+- **Description:** Detection framework for reCAPTCHA, hCaptcha, Turnstile, Cloudflare challenges, DataDome, and other bot protection mechanisms. Auto-detect challenge type on page load, report challenge state, integrate with bridge extension for real-time monitoring. Consider using [golly](https://github.com/nandlabs/golly) utilities for HTTP/codec helpers.
+- **Effort:** Medium
+- **Dependencies:** Scout Bridge extension (Phase 17)
+
+### ~~Browser Type Selector in Roadmap UI~~ [DONE]
+
+- **Priority:** P2
+- **Status:** Complete — `scout browser list` shows detected + downloaded browsers, Brave auto-downloads from GitHub releases, Edge error includes download URL. Implemented in `browser_download.go` and `cmd/scout/browser.go`.
+- **Effort:** Small
 
 ### GoDoc Examples
 
@@ -311,3 +346,5 @@ credentials/session.
 | Chrome Extension Download        | `DownloadExtension(id)` with CRX2/CRX3 parsing, `~/.scout/extensions/` storage, `WithExtensionByID()`, CLI download/remove | 2026-02 |
 | Scout Bridge Extension (partial) | `WithBridge()` option, embedded Manifest V3 extension in `extensions/scout-bridge/` via `embed.FS`, auto-load at startup | 2026-02 |
 | LLM-Powered Extraction | `ExtractWithLLM()`, `ExtractWithLLMReview()`, workspace persistence, 6 providers (Ollama, OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini), CLI `extract-ai`/`ollama`/`ai-job` | 2026-02 |
+| Sitemap Extract | `SitemapExtract()` — BFS crawl + bridge DOM/Markdown extraction per page, output directory support, CLI `scout sitemap extract` | 2026-02 |
+| Browser Type Selector | `scout browser list`, Brave auto-download from GitHub releases, Edge download URL in error, `browser_download.go` + `cmd/scout/browser.go` | 2026-02 |
