@@ -47,11 +47,7 @@ var batchCmd = &cobra.Command{
 			return fmt.Errorf("scout: batch: no URLs provided; use --urls or --urls-file")
 		}
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: batch: launch browser: %w", err)
 		}

@@ -22,6 +22,7 @@ task lint:fix          # golangci-lint run --fix ./...
 task fmt               # go fmt + goimports
 task vet               # go vet ./...
 task proto             # Generate gRPC protobuf code
+task generate:stealth  # Regenerate stealth anti-detection JS assets (requires Node.js/npx)
 task grpc:server       # Run the gRPC server via scout CLI
 task grpc:client       # Run the interactive CLI client via scout CLI
 ```
@@ -67,15 +68,28 @@ CLI commands:
 - `scout extension download <id>` — download + unpack from Chrome Web Store to `~/.scout/extensions/`
 - `scout extension remove <id>` — delete a locally downloaded extension
 
+### Docker
+
+```bash
+docker build -t scout:latest .                    # Full image (Chromium + scout CLI)
+docker build -f Dockerfile.slim -t scout:slim .   # CLI-only (distroless, ~15MB)
+docker run --rm --shm-size=2g scout:latest version
+docker compose up -d                              # gRPC server with tmpfs /dev/shm
+```
+
+- Full image: `debian:bookworm-slim` + Chromium + fonts + `dumb-init`, non-root user `scout`, ports 9551/9552
+- Slim image: `gcr.io/distroless/static-debian12:nonroot`, CLI/gRPC client only
+- `scout browser download brave` — pre-populate Brave in containers
+
 ## Architecture
 
 ```
 scout/
 ├── pkg/scout/          # Core library (package scout)
-├── pkg/stealth/        # Internalized go-rod/stealth
+├── pkg/stealth/        # Anti-bot-detection stealth (extract-stealth-evasions + custom ExtraJS)
 ├── pkg/identity/       # Device identity, Luhn check digits, trust
 ├── pkg/discovery/      # mDNS service discovery
-├── pkg/scout/recipe/   # Recipe system (extract + automate)
+├── pkg/scout/recipe/   # Recipe system (extract + automate + analyze/generate)
 ├── extensions/         # Embedded Chrome extensions (scout-bridge)
 ├── cmd/scout/          # Unified Cobra CLI binary (package main)
 ├── grpc/               # gRPC service layer
@@ -127,6 +141,7 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `SwaggerSpec`, `SwaggerPath`, etc.    | OpenAPI/Swagger spec extraction     | `swagger.go`   |
 | `ExtensionInfo`                       | Chrome extension metadata + path    | `extension.go` |
 | `DownloadBrave`, `ListDownloadedBrowsers` | Browser auto-download + cache   | `browser_download.go` |
+| `WebFetchResult`, `WebFetchOption`        | URL content extraction + cache  | `webfetch.go`         |
 
 ### Sitemap Extract Types
 
@@ -194,7 +209,7 @@ cmd/scout/
 ├── daemon.go               # Auto-start gRPC daemon, getClient(), resolveSession()
 ├── daemon_unix.go          # Unix process detach (Setsid)
 ├── daemon_windows.go       # Windows process detach (CREATE_NEW_PROCESS_GROUP)
-├── helpers.go              # writeOutput(), readPassphrase(), truncate()
+├── helpers.go              # writeOutput(), readPassphrase(), truncate(), baseOpts(), stealthOpts()
 ├── version.go              # scout version
 ├── session.go              # scout session create/destroy/list/use
 ├── server.go               # scout server (gRPC server)
@@ -213,9 +228,10 @@ cmd/scout/
 ├── crawl.go                # scout crawl (standalone)
 ├── extract.go              # scout table/meta (standalone)
 ├── form.go                 # scout form detect/fill/submit (standalone)
+├── fetch.go                # scout fetch <url> [--mode=markdown] [--main-only]
 ├── markdown.go             # scout markdown --url=<url> [--main-only]
 ├── map.go                  # scout map <url> [--search=term] [--limit=N]
-├── recipe.go               # scout recipe run/validate
+├── recipe.go               # scout recipe run/validate/create
 ├── swagger.go              # scout swagger <url> (detect + extract OpenAPI/Swagger specs)
 ├── extension.go            # scout extension load/test/list/download/remove
 ├── sitemap.go              # scout sitemap extract
@@ -272,6 +288,9 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **Bridge extension default**: The Scout Bridge extension is enabled by default (`bridge: true` in `defaults()`). Extension files are embedded via `extensions/extensions.go` using `embed.FS` and written to a temp dir at startup. Disable with `WithoutBridge()` or `SCOUT_BRIDGE=false`.
 - **SitemapExtract**: `Browser.SitemapExtract()` combines BFS crawl with bridge DOM/Markdown extraction. Reuses a single page + bridge across navigations. Outputs per-page `dom.json`/`dom.md` files plus `index.json`/`index.md` when `WithSitemapOutputDir()` is set.
 - **gRPC default port**: The daemon and server default to port `9551` (not the standard gRPC `50051`) to avoid conflicts.
+- **CLI baseOpts pattern**: `baseOpts(cmd)` in `helpers.go` combines `WithHeadless`, `WithNoSandbox`, `browserOpt`, and `stealthOpts` into a reusable `[]scout.Option` slice. All CLI commands use `scout.New(baseOpts(cmd)...)` or `scout.New(append(baseOpts(cmd), extraOpt)...)`.
+- **Stealth mode**: `WithStealth()` or `SCOUT_STEALTH=true/1` enables anti-bot-detection. CLI: `--stealth` persistent flag. In `browser.go`, adds `disable-blink-features=AutomationControlled` launch flag. In `NewPage()`, creates pages via `stealth.Page()` which injects JS + ExtraJS.
+- **Stealth asset generation**: `task generate:stealth` (requires Node.js/npx) regenerates `pkg/stealth/assets.go` from `extract-stealth-evasions@latest`. Not part of `go generate`.
 
 ## Testing
 
@@ -287,6 +306,8 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Markdown routes: `/markdown`
 - Swagger routes: `/swagger/`, `/swagger/spec`, `/swagger/v2`, `/swagger/v2/spec`, `/redoc/`, `/not-swagger`
 - Recorder routes: `/recorder-page`, `/recorder-asset`, `/recorder-api`
+- WebFetch routes: `/webfetch`, `/webfetch-minimal`
+- Bot detection tests: external sites (bot.sannysoft.com, arh.antoinevastel.com, pixelscan.net, brotector, fingerprint.com) — skipped with `-short`
 - Window tests: no routes needed — window control operates on the browser window itself
 - Tests use `t.Skipf` when browser is unavailable — they will not fail in headless CI without Chrome, they skip.
 - No mocking framework; tests run against a real headless browser and local HTTP test server.
@@ -303,7 +324,10 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 
 ### Stealth (pkg/stealth/)
 
-- Internalized fork of `go-rod/stealth` — anti-bot-detection page creation (enabled via `WithStealth()`)
+- Internalized fork of `go-rod/stealth` plus custom `ExtraJS` evasions — anti-bot-detection page creation (enabled via `WithStealth()` or `SCOUT_STEALTH=true`)
+- Core JS from `extract-stealth-evasions` v2.7.3 (navigator.webdriver, chrome.runtime, Permissions, WebGL, plugins, etc.)
+- Extra JS (`stealth_extra.go`): canvas/audio fingerprint noise, WebGL vendor spoofing, navigator.connection, Notification.permission
+- Chrome launch flag: `disable-blink-features=AutomationControlled` set in `browser.go` when stealth enabled
 
 ### Identity & Discovery (pkg/identity/, pkg/discovery/)
 

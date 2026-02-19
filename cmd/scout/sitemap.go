@@ -46,13 +46,8 @@ var sitemapExtractCmd = &cobra.Command{
 		skipMD, _ := cmd.Flags().GetBool("skip-markdown")
 		outputDir, _ := cmd.Flags().GetString("output")
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			scout.WithBridge(),
-			scout.WithTimeout(30*time.Second),
-			browserOpt(cmd),
-		)
+		browserOpts := append(baseOpts(cmd), scout.WithBridge(), scout.WithTimeout(30*time.Second))
+		browser, err := scout.New(browserOpts...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}

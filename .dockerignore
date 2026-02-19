@@ -1,0 +1,9 @@
+.git
+bin/
+output/
+nul
+.scripts/
+.claude/
+examples/
+*.test
+coverage.out

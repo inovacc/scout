@@ -25,11 +25,7 @@ var swaggerCmd = &cobra.Command{
 		endpointsOnly, _ := cmd.Flags().GetBool("endpoints-only")
 		rawFlag, _ := cmd.Flags().GetBool("raw")
 
-		browser, err := scout.New(
-			scout.WithHeadless(isHeadless(cmd)),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
-		)
+		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}

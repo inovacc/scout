@@ -1,0 +1,21 @@
+# Scout — slim image (CLI-only, no browser)
+# Usage: docker build -f Dockerfile.slim -t scout:slim .
+# For gRPC client-only usage and remote control of other Scout instances.
+
+# Stage 1: Build the scout binary
+FROM golang:1.25 AS builder
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o /scout ./cmd/scout/
+
+# Stage 2: Distroless static
+FROM gcr.io/distroless/static-debian12:nonroot
+
+COPY --from=builder /scout /usr/local/bin/scout
+
+EXPOSE 9551
+
+ENTRYPOINT ["scout"]

@@ -7,36 +7,6 @@ run:
 
 linters:
   default: all
-  enable:
-    - govet
-    - errcheck
-    - bodyclose
-    - copyloopvar
-    - depguard
-    - dogsled
-    - dupl
-    - errorlint
-    - gocheckcompilerdirectives
-    - goconst
-    - gocritic
-    - gocyclo
-    - godox
-    - goprintffuncname
-    - gosec
-    - intrange
-    - ineffassign
-    - lll
-    - misspell
-    - nakedret
-    - noctx
-    - nolintlint
-    - staticcheck
-    - testifylint
-    - unconvert
-    - unparam
-    - unused
-    - whitespace
-    - wsl_v5
 
   exclusions:
     rules:
