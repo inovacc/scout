@@ -57,7 +57,7 @@ func (p *Page) Markdown(opts ...MarkdownOption) (string, error) {
 	pageURL := p.page.MustInfo().URL
 	allOpts := append([]MarkdownOption{WithBaseURL(pageURL)}, opts...)
 
-	return convertHTMLToMarkdown(rawHTML, allOpts...)
+	return ConvertHTMLToMarkdown(rawHTML, allOpts...)
 }
 
 // MarkdownContent converts only the main content of the page to Markdown.
@@ -65,8 +65,9 @@ func (p *Page) MarkdownContent(opts ...MarkdownOption) (string, error) {
 	return p.Markdown(append([]MarkdownOption{WithMainContentOnly()}, opts...)...)
 }
 
-// convertHTMLToMarkdown is the pure-function core: parses HTML and produces Markdown.
-func convertHTMLToMarkdown(rawHTML string, opts ...MarkdownOption) (string, error) {
+// ConvertHTMLToMarkdown is the pure-function core: parses HTML and produces Markdown.
+// It requires no browser instance and can be used for offline HTML-to-Markdown conversion.
+func ConvertHTMLToMarkdown(rawHTML string, opts ...MarkdownOption) (string, error) {
 	o := defaultMarkdownOptions()
 	for _, fn := range opts {
 		fn(o)

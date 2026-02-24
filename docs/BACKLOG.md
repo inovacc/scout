@@ -289,12 +289,11 @@ credentials/session.
 - **Status:** Fixed — `setWindowState()` clears `EmulationClearDeviceMetricsOverride` after maximize/fullscreen
 - **Effort:** Small
 
-### Robot/Bot Detection Framework (Phase 17b prerequisite)
+### ~~Robot/Bot Detection Framework (Phase 17b prerequisite)~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Detection framework for reCAPTCHA, hCaptcha, Turnstile, Cloudflare challenges, DataDome, and other bot protection mechanisms. Auto-detect challenge type on page load, report challenge state, integrate with bridge extension for real-time monitoring. Consider using [golly](https://github.com/nandlabs/golly) utilities for HTTP/codec helpers.
+- **Status:** Complete — `pkg/scout/challenge.go` with `ChallengeType` enum (9 types), `ChallengeInfo` struct, `Page.DetectChallenges()`, `Page.DetectChallenge()`, `Page.HasChallenge()`, JS-based detection for Cloudflare, Turnstile, reCAPTCHA v2/v3, hCaptcha, DataDome, PerimeterX, Akamai, AWS WAF. CLI `scout challenge detect <url>`. 5 tests.
 - **Effort:** Medium
-- **Dependencies:** Scout Bridge extension (Phase 17)
 
 ### ~~Browser Type Selector in Roadmap UI~~ [DONE]
 
@@ -355,6 +354,20 @@ credentials/session.
 - **Status:** Complete — `selectors` map in recipe JSON, `$name` references resolved at parse time with `+` prefix and `@attr` suffix preservation, 5 tests (parse + e2e browser)
 - **Effort:** Small
 
+### ~~Framework Detection~~ [DONE]
+
+- **Priority:** P2
+- **Status:** Complete — `Page.DetectFrameworks()` and `Page.DetectFramework()` in `detect.go`, 14 frameworks detected (React, Vue, Angular, Svelte, Next.js, Nuxt, SvelteKit, Remix, Gatsby, Astro, Ember, Backbone, AngularJS, jQuery), meta-framework precedence, SPA flag, 11 tests
+- **Effort:** Small
+
+### Page Intelligence — PWA, Render Mode & Tech Stack (Phase 28)
+
+- **Priority:** P2
+- **Description:** Extend framework detection into a comprehensive page intelligence system. PWA detection (service workers, manifest, installability). Rendering mode classification (CSR/SSR/SSG/ISR). Technology stack analysis (CSS frameworks, build tools, CMS, analytics, CDN). Smart framework-aware wait strategies (`WaitFrameworkReady`). CLI `scout detect`.
+- **Scope:** `pkg/scout/detect.go` (extend), `pkg/scout/detect_pwa.go`, `pkg/scout/detect_tech.go`, `pkg/scout/wait_smart.go`. CLI: `scout detect <url> [--framework] [--pwa] [--tech] [--json]`.
+- **Effort:** Large
+- **Dependencies:** Framework detection (done)
+
 ### Remote CDP Endpoint Support
 
 - **Priority:** P3
@@ -413,3 +426,9 @@ credentials/session.
 | Named Recipe Selectors | `selectors` map with `$name` references in recipe JSON, resolved at parse time, 5 tests | 2026-02 |
 | Remote CDP Endpoint | `WithRemoteCDP(endpoint)` option for connecting to managed browser services, 2 tests | 2026-02 |
 | GoDoc Examples | 20 `Example*` functions covering all major API entry points in `example_test.go` | 2026-02 |
+| Framework Detection | `DetectFrameworks()` / `DetectFramework()` detecting 14 frameworks with version + SPA flag, 11 tests | 2026-02 |
+| Rod Fork Patches (Phase 24) | Nil-guard on disconnected page, WaitSafe method, hijack regexp validation, 3 tests | 2026-02 |
+| Accessibility Snapshot (Phase 25) | `Page.Snapshot()`, `Page.ElementByRef()`, snapshot JS engine, 9 tests | 2026-02 |
+| MCP Transport (Phase 26) | MCP server with 10 tools + 3 resources via stdio, `scout mcp` command | 2026-02 |
+| Bot Detection Framework | `DetectChallenges()` for 9 challenge types (Cloudflare, Turnstile, reCAPTCHA, hCaptcha, DataDome, etc.), CLI `scout challenge detect` | 2026-02 |
+| Credential Capture (Phase 29) | `CaptureCredentials()`, `SaveCredentials()`, `LoadCredentials()`, CLI `scout credentials capture/replay/show` | 2026-02 |

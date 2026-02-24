@@ -386,6 +386,32 @@ func (p *Page) WaitDOMStable(d time.Duration, diff float64) error {
 	return nil
 }
 
+// WaitSafe waits for the page to be stable, recovering from panics that can
+// occur when the execution context is destroyed during SPA navigation.
+func (p *Page) WaitSafe(d time.Duration) error {
+	if p == nil || p.page == nil {
+		return fmt.Errorf("scout: wait safe: nil page")
+	}
+
+	var err error
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("scout: wait safe: recovered panic: %v", r)
+			}
+		}()
+
+		err = p.page.Timeout(d).WaitStable(d)
+	}()
+
+	if err != nil {
+		return fmt.Errorf("scout: wait safe: %w", err)
+	}
+
+	return nil
+}
+
 // WaitIdle waits for the page to reach an idle state.
 func (p *Page) WaitIdle(timeout time.Duration) error {
 	if err := p.page.WaitIdle(timeout); err != nil {

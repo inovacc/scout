@@ -45,7 +45,7 @@ func init() {
 func TestConvertHeadings(t *testing.T) {
 	html := `<h1>One</h1><h2>Two</h2><h3>Three</h3><h4>Four</h4><h5>Five</h5><h6>Six</h6>`
 
-	md, err := convertHTMLToMarkdown(html)
+	md, err := ConvertHTMLToMarkdown(html)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestConvertHeadings(t *testing.T) {
 }
 
 func TestConvertParagraph(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<p>Hello world.</p><p>Second.</p>`)
+	md, err := ConvertHTMLToMarkdown(`<p>Hello world.</p><p>Second.</p>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestConvertParagraph(t *testing.T) {
 }
 
 func TestConvertBoldItalic(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<p><strong>bold</strong> and <em>italic</em></p>`)
+	md, err := ConvertHTMLToMarkdown(`<p><strong>bold</strong> and <em>italic</em></p>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestConvertBoldItalic(t *testing.T) {
 }
 
 func TestConvertLinks(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<a href="https://go.dev">Go</a>`)
+	md, err := ConvertHTMLToMarkdown(`<a href="https://go.dev">Go</a>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestConvertLinks(t *testing.T) {
 	}
 
 	// Without links
-	md2, err := convertHTMLToMarkdown(`<a href="https://go.dev">Go</a>`, WithIncludeLinks(false))
+	md2, err := ConvertHTMLToMarkdown(`<a href="https://go.dev">Go</a>`, WithIncludeLinks(false))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestConvertLinks(t *testing.T) {
 }
 
 func TestConvertImages(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<img src="/logo.png" alt="Logo"/>`)
+	md, err := ConvertHTMLToMarkdown(`<img src="/logo.png" alt="Logo"/>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestConvertImages(t *testing.T) {
 	}
 
 	// Without images
-	md2, err := convertHTMLToMarkdown(`<img src="/logo.png" alt="Logo"/>`, WithIncludeImages(false))
+	md2, err := ConvertHTMLToMarkdown(`<img src="/logo.png" alt="Logo"/>`, WithIncludeImages(false))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func TestConvertImages(t *testing.T) {
 }
 
 func TestConvertInlineCode(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<p>Use <code>fmt.Println</code> here.</p>`)
+	md, err := ConvertHTMLToMarkdown(`<p>Use <code>fmt.Println</code> here.</p>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func TestConvertInlineCode(t *testing.T) {
 }
 
 func TestConvertCodeBlock(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<pre><code class="language-go">func main() {}</code></pre>`)
+	md, err := ConvertHTMLToMarkdown(`<pre><code class="language-go">func main() {}</code></pre>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestConvertCodeBlock(t *testing.T) {
 }
 
 func TestConvertBlockquote(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<blockquote><p>Quoted text.</p></blockquote>`)
+	md, err := ConvertHTMLToMarkdown(`<blockquote><p>Quoted text.</p></blockquote>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestConvertBlockquote(t *testing.T) {
 }
 
 func TestConvertUnorderedList(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<ul><li>Apple</li><li>Banana</li></ul>`)
+	md, err := ConvertHTMLToMarkdown(`<ul><li>Apple</li><li>Banana</li></ul>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func TestConvertUnorderedList(t *testing.T) {
 }
 
 func TestConvertOrderedList(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<ol><li>First</li><li>Second</li></ol>`)
+	md, err := ConvertHTMLToMarkdown(`<ol><li>First</li><li>Second</li></ol>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +189,7 @@ func TestConvertOrderedList(t *testing.T) {
 }
 
 func TestConvertNestedList(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<ul><li>Parent<ul><li>Child</li></ul></li></ul>`)
+	md, err := ConvertHTMLToMarkdown(`<ul><li>Parent<ul><li>Child</li></ul></li></ul>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func TestConvertNestedList(t *testing.T) {
 }
 
 func TestConvertTable(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<table>
+	md, err := ConvertHTMLToMarkdown(`<table>
 <tr><th>A</th><th>B</th></tr>
 <tr><td>1</td><td>2</td></tr>
 </table>`)
@@ -226,7 +226,7 @@ func TestConvertTable(t *testing.T) {
 }
 
 func TestConvertHR(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<p>Above</p><hr/><p>Below</p>`)
+	md, err := ConvertHTMLToMarkdown(`<p>Above</p><hr/><p>Below</p>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +237,7 @@ func TestConvertHR(t *testing.T) {
 }
 
 func TestConvertScriptStripped(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<p>Hello</p><script>alert("x")</script><style>.a{}</style><p>World</p>`)
+	md, err := ConvertHTMLToMarkdown(`<p>Hello</p><script>alert("x")</script><style>.a{}</style><p>World</p>`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func TestConvertScriptStripped(t *testing.T) {
 }
 
 func TestConvertBaseURL(t *testing.T) {
-	md, err := convertHTMLToMarkdown(`<a href="/about">About</a>`, WithBaseURL("https://example.com"))
+	md, err := ConvertHTMLToMarkdown(`<a href="/about">About</a>`, WithBaseURL("https://example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,7 +265,7 @@ func TestReadabilityScoring(t *testing.T) {
 <aside class="sidebar"><p>Ad</p></aside>
 </body></html>`
 
-	md, err := convertHTMLToMarkdown(htmlStr, WithMainContentOnly())
+	md, err := ConvertHTMLToMarkdown(htmlStr, WithMainContentOnly())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -282,8 +282,8 @@ func TestConvertMainOnly(t *testing.T) {
 <footer>Footer stuff</footer>
 </body></html>`
 
-	full, _ := convertHTMLToMarkdown(htmlStr)
-	main, _ := convertHTMLToMarkdown(htmlStr, WithMainContentOnly())
+	full, _ := ConvertHTMLToMarkdown(htmlStr)
+	main, _ := ConvertHTMLToMarkdown(htmlStr, WithMainContentOnly())
 
 	if len(main) >= len(full) {
 		t.Errorf("main-only should be shorter: main=%d full=%d", len(main), len(full))

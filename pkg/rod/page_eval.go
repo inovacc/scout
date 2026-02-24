@@ -322,6 +322,10 @@ func (p *Page) setHelper(jsCtxID proto.RuntimeRemoteObjectID, name string, fnID 
 
 // Returns the page's window object, the page can be an iframe.
 func (p *Page) getJSCtxID() (proto.RuntimeRemoteObjectID, error) {
+	if p == nil || p.jsCtxID == nil {
+		return "", &PageDisconnectedError{}
+	}
+
 	p.jsCtxLock.Lock()
 	defer p.jsCtxLock.Unlock()
 

@@ -90,6 +90,7 @@ scout/
 ├── pkg/identity/       # Device identity, Luhn check digits, trust
 ├── pkg/discovery/      # mDNS service discovery
 ├── pkg/scout/recipe/   # Recipe system (extract + automate + analyze/generate)
+├── pkg/scout/mcp/      # MCP server (Model Context Protocol via stdio)
 ├── extensions/         # Embedded Chrome extensions (scout-bridge)
 ├── cmd/scout/          # Unified Cobra CLI binary (package main)
 ├── grpc/               # gRPC service layer
@@ -142,7 +143,19 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `ExtensionInfo`                       | Chrome extension metadata + path    | `extension.go` |
 | `DownloadBrave`, `ListDownloadedBrowsers` | Browser auto-download + cache   | `browser_download.go` |
 | `WebFetchResult`, `WebFetchOption`        | URL content extraction + cache  | `webfetch.go`         |
+| `WebSearchResult`, `WebSearchOption`      | Search + fetch pipeline         | `websearch.go`        |
 | `BlockAds`, `BlockTrackers`, `BlockFonts`, `BlockImages` | URL blocking preset pattern slices | `option.go` |
+| `FrameworkInfo`                           | Detected frontend framework (name, version, SPA flag) | `detect.go` |
+| `ChallengeType`, `ChallengeInfo`          | Bot protection challenge detection (9 types) | `challenge.go` |
+| `SnapshotOption`                          | Accessibility tree snapshot options  | `snapshot.go`  |
+| `CapturedCredentials`, `BrowserInfo`      | Credential capture & replay          | `capture.go`   |
+
+### MCP Server Types
+
+| Type                                          | Purpose                                        | File                |
+|-----------------------------------------------|-------------------------------------------------|---------------------|
+| `ServerConfig`                                | MCP server configuration (headless, stealth)    | `mcp/server.go`     |
+| `mcpState`                                    | Lazy browser/page management with mutex         | `mcp/server.go`     |
 
 ### Sitemap Extract Types
 
@@ -234,6 +247,7 @@ cmd/scout/
 ├── map.go                  # scout map <url> [--search=term] [--limit=N]
 ├── recipe.go               # scout recipe run/validate/create
 ├── swagger.go              # scout swagger <url> (detect + extract OpenAPI/Swagger specs)
+├── websearch.go            # scout websearch "query" [--engine=google] [--fetch=markdown]
 ├── extension.go            # scout extension load/test/list/download/remove
 ├── sitemap.go              # scout sitemap extract
 ├── browser.go              # scout browser list
@@ -242,6 +256,9 @@ cmd/scout/
 ├── auth.go                 # scout auth login/capture/status/logout/providers
 ├── device.go               # scout device pair/list/trust
 ├── aicontext.go            # scout aicontext [--json]
+├── credentials.go          # scout credentials capture/replay/show
+├── challenge.go            # scout challenge detect
+├── mcp.go                  # scout mcp [--headless] [--stealth]
 └── cmdtree.go              # scout cmdtree [--json]
 ```
 
@@ -286,6 +303,7 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **LLM Provider interface**: `LLMProvider` has just `Name()` + `Complete(ctx, system, user)`. `OpenAIProvider` covers OpenAI, OpenRouter, DeepSeek, Gemini via configurable base URL. `AnthropicProvider` uses the Messages API. All use `net/http` directly (no SDK deps except Ollama).
 - **LLM Review pipeline**: `ExtractWithLLMReview()` extracts with LLM1, optionally reviews with LLM2. `WithLLMReview(provider)` enables the second pass. Results persisted to workspace via `WithLLMWorkspace(ws)`.
 - **LLM Workspace**: Filesystem-based job tracking at `<path>/sessions.json`, `<path>/jobs/jobs.json`, `<path>/jobs/<uuid>/job.json`. Extract and review output written to `extract.md` and `review.md` alongside job metadata.
+- **Framework detection**: `Page.DetectFrameworks()` returns all detected frontend frameworks via JS global/DOM inspection. `Page.DetectFramework()` returns the primary one (meta-frameworks like Next.js/Nuxt take precedence over React/Vue). Detects: React, Vue, Angular, AngularJS, Svelte, Next.js, Nuxt, SvelteKit, Remix, Gatsby, Astro, Ember, Backbone, jQuery. `FrameworkInfo` has `Name`, `Version`, `SPA` fields.
 - **Remote CDP**: `WithRemoteCDP(endpoint)` connects to an existing Chrome DevTools Protocol endpoint (e.g. `"ws://127.0.0.1:9222"`) instead of launching a local browser. Skips the entire launcher; most launch-related options are ignored. Use for managed browser services (BrightData, Browserless) or remote Chrome instances.
 - **Request blocking presets**: `WithBlockPatterns(BlockAds...)` sets URL patterns blocked on every `NewPage()` via `SetBlockedURLs()`. Presets: `BlockAds`, `BlockTrackers`, `BlockFonts`, `BlockImages`. `Page.Block(patterns...)` for ad-hoc per-page blocking.
 - **Named recipe selectors**: Recipe JSON supports a `selectors` map with `$name` references in fields and steps. References are resolved at parse time. The `+` sibling prefix and `@attr` suffix are preserved through resolution. Unknown `$refs` produce a clear error.
@@ -295,6 +313,10 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **CLI baseOpts pattern**: `baseOpts(cmd)` in `helpers.go` combines `WithHeadless`, `WithNoSandbox`, `browserOpt`, and `stealthOpts` into a reusable `[]scout.Option` slice. All CLI commands use `scout.New(baseOpts(cmd)...)` or `scout.New(append(baseOpts(cmd), extraOpt)...)`.
 - **Stealth mode**: `WithStealth()` or `SCOUT_STEALTH=true/1` enables anti-bot-detection. CLI: `--stealth` persistent flag. In `browser.go`, adds `disable-blink-features=AutomationControlled` launch flag. In `NewPage()`, creates pages via `stealth.Page()` which injects JS + ExtraJS.
 - **Stealth asset generation**: `task generate:stealth` (requires Node.js/npx) regenerates `pkg/stealth/assets.go` from `extract-stealth-evasions@latest`. Not part of `go generate`.
+- **Accessibility snapshot**: `Page.Snapshot()` and `Page.SnapshotWithOptions()` inject JS that walks the DOM, computes ARIA roles/names, and produces YAML-like indented output with `[ref=s{gen}e{id}]` markers. `Page.ElementByRef(ref)` finds elements by `data-scout-ref` attribute. JS lives in `snapshot_script.go` (not `snapshot_js.go` — `_js.go` suffix triggers GOOS=js build constraint).
+- **Challenge detection**: `Page.DetectChallenges()` evaluates JS to detect 9 bot protection types: Cloudflare, Turnstile, reCAPTCHA v2/v3, hCaptcha, DataDome, PerimeterX, Akamai, AWS WAF. Returns `[]ChallengeInfo` with `Type`, `Confidence`, `Details`. `Page.HasChallenge()` is a quick boolean check.
+- **MCP server**: `pkg/scout/mcp/` exposes Scout as MCP server via stdio. `mcpState` lazily initializes browser+page with mutex protection. 10 tools (navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait) and 3 resources (markdown, url, title). Logger writes to stderr (stdout = MCP JSON-RPC).
+- **Credential capture**: `CaptureCredentials(ctx, url, opts)` opens a headed browser, waits for Ctrl+C via `signal.NotifyContext`, then captures cookies, localStorage, sessionStorage, user agent, browser version. `SaveCredentials`/`LoadCredentials` serialize to JSON. `ToSessionState()` converts to `SessionState` for `Page.LoadSession()`. CLI: `scout credentials capture/replay/show`.
 
 ## Testing
 
@@ -311,6 +333,10 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Swagger routes: `/swagger/`, `/swagger/spec`, `/swagger/v2`, `/swagger/v2/spec`, `/redoc/`, `/not-swagger`
 - Recorder routes: `/recorder-page`, `/recorder-asset`, `/recorder-api`
 - WebFetch routes: `/webfetch`, `/webfetch-minimal`
+- Detect routes: `/detect-react`, `/detect-nextjs`, `/detect-vue`, `/detect-angular`, `/detect-svelte`, `/detect-jquery`, `/detect-none`, `/detect-gatsby`, `/detect-astro`
+- Snapshot routes: `/snapshot-basic`, `/snapshot-form`, `/snapshot-nested`, `/snapshot-hidden`
+- Challenge routes: `/challenge-cloudflare`, `/challenge-turnstile`, `/challenge-recaptcha-v2`, `/challenge-hcaptcha`, `/challenge-datadome`, `/challenge-none`, `/challenge-multi`
+- Stability tests: `TestWaitSafe_NilPage`, `TestWaitSafe_Normal`, `TestHijack_InvalidRegexp` in `stability_test.go`
 - Bot detection tests: external sites (bot.sannysoft.com, arh.antoinevastel.com, pixelscan.net, brotector, fingerprint.com) — skipped with `-short`
 - Window tests: no routes needed — window control operates on the browser window itself
 - Tests use `t.Skipf` when browser is unavailable — they will not fail in headless CI without Chrome, they skip.
@@ -325,6 +351,7 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - `golang.org/x/time/rate` — token bucket rate limiter for `RateLimiter`
 - `golang.org/x/net/html` — HTML tokenizer/parser for markdown converter (indirect dep)
 - `github.com/ollama/ollama` — Ollama Go client for local LLM inference
+- `github.com/modelcontextprotocol/go-sdk/mcp` — Official MCP Go SDK for stdio transport
 
 ### Stealth (pkg/stealth/)
 
