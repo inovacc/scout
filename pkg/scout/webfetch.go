@@ -8,14 +8,15 @@ import (
 
 // WebFetchResult holds the result of fetching and extracting content from a URL.
 type WebFetchResult struct {
-	URL        string    `json:"url"`
-	Title      string    `json:"title"`
-	Markdown   string    `json:"markdown"`
-	HTML       string    `json:"html,omitempty"`
-	Meta       *MetaData `json:"meta,omitempty"`
-	Links      []string  `json:"links,omitempty"`
-	StatusCode int       `json:"status_code,omitempty"`
-	FetchedAt  time.Time `json:"fetched_at"`
+	URL           string    `json:"url"`
+	Title         string    `json:"title"`
+	Markdown      string    `json:"markdown"`
+	HTML          string    `json:"html,omitempty"`
+	Meta          *MetaData `json:"meta,omitempty"`
+	Links         []string  `json:"links,omitempty"`
+	RedirectChain []string  `json:"redirect_chain,omitempty"`
+	StatusCode    int       `json:"status_code,omitempty"`
+	FetchedAt     time.Time `json:"fetched_at"`
 }
 
 // WebFetchOption configures WebFetch behavior.
@@ -26,6 +27,8 @@ type webFetchOptions struct {
 	mainOnly    bool
 	includeHTML bool
 	cacheTTL    time.Duration
+	retries     int
+	retryDelay  time.Duration
 }
 
 func webFetchDefaults() *webFetchOptions {
@@ -52,6 +55,17 @@ func WithFetchHTML() WebFetchOption {
 // WithFetchCache enables in-memory caching with the given TTL.
 func WithFetchCache(ttl time.Duration) WebFetchOption {
 	return func(o *webFetchOptions) { o.cacheTTL = ttl }
+}
+
+// WithFetchRetries sets the number of retry attempts when navigation fails.
+// Default is 0 (no retries).
+func WithFetchRetries(n int) WebFetchOption {
+	return func(o *webFetchOptions) { o.retries = n }
+}
+
+// WithFetchRetryDelay sets the delay between retry attempts.
+func WithFetchRetryDelay(d time.Duration) WebFetchOption {
+	return func(o *webFetchOptions) { o.retryDelay = d }
 }
 
 // fetchCache provides simple in-memory URL caching.
@@ -104,19 +118,48 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 		}
 	}
 
-	page, err := b.NewPage(url)
-	if err != nil {
-		return nil, fmt.Errorf("scout: webfetch: navigate: %w", err)
+	var page *Page
+	var lastErr error
+
+	for attempt := 0; attempt <= o.retries; attempt++ {
+		if attempt > 0 {
+			if o.retryDelay > 0 {
+				time.Sleep(o.retryDelay)
+			}
+		}
+
+		page, lastErr = b.NewPage(url)
+		if lastErr != nil {
+			continue
+		}
+
+		lastErr = page.WaitLoad()
+		if lastErr != nil {
+			_ = page.Close()
+			page = nil
+			continue
+		}
+
+		break
+	}
+
+	if lastErr != nil {
+		if page != nil {
+			_ = page.Close()
+		}
+		return nil, fmt.Errorf("scout: webfetch: navigate: %w", lastErr)
 	}
 	defer func() { _ = page.Close() }()
-
-	if err := page.WaitLoad(); err != nil {
-		return nil, fmt.Errorf("scout: webfetch: wait load: %w", err)
-	}
 
 	result := &WebFetchResult{
 		URL:       url,
 		FetchedAt: time.Now(),
+	}
+
+	// Redirect tracking: compare final URL to requested URL
+	if finalURL, urlErr := page.URL(); urlErr == nil && finalURL != url {
+		result.RedirectChain = []string{url, finalURL}
+		result.URL = finalURL
 	}
 
 	// Title
