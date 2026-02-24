@@ -24,6 +24,9 @@ type Browser struct {
 	mu       sync.Mutex
 	done     chan struct{}
 	recycles int
+
+	// webmcpRegistry accumulates discovered WebMCP tools when auto-discover is enabled.
+	webmcpRegistry *WebMCPRegistry
 }
 
 // New creates and connects a new headless browser with the given options.
@@ -82,6 +85,9 @@ func New(opts ...Option) (*Browser, error) {
 		}
 
 		br := &Browser{browser: ctx, opts: o, launcher: l, done: make(chan struct{})}
+		if o.webmcpAutoDiscover {
+			br.webmcpRegistry = NewWebMCPRegistry()
+		}
 		if o.autoFreeInterval > 0 {
 			br.startAutoFree(AutoFreeConfig{
 				Interval:  o.autoFreeInterval,
@@ -92,6 +98,9 @@ func New(opts ...Option) (*Browser, error) {
 	}
 
 	br := &Browser{browser: b, opts: o, launcher: l, done: make(chan struct{})}
+	if o.webmcpAutoDiscover {
+		br.webmcpRegistry = NewWebMCPRegistry()
+	}
 	if o.autoFreeInterval > 0 {
 		br.startAutoFree(AutoFreeConfig{
 			Interval:  o.autoFreeInterval,
@@ -360,4 +369,13 @@ func (b *Browser) Close() error {
 	}
 
 	return nil
+}
+
+// WebMCPRegistry returns the browser's WebMCP tool registry, or nil if
+// auto-discover is not enabled (see WithWebMCPAutoDiscover).
+func (b *Browser) WebMCPRegistry() *WebMCPRegistry {
+	if b == nil {
+		return nil
+	}
+	return b.webmcpRegistry
 }

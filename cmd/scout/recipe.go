@@ -14,7 +14,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(recipeCmd)
-	recipeCmd.AddCommand(recipeRunCmd, recipeValidateCmd, recipeCreateCmd, recipeTestCmd)
+	recipeCmd.AddCommand(recipeRunCmd, recipeValidateCmd, recipeCreateCmd, recipeTestCmd, recipeFixCmd, recipeSampleCmd)
 
 	recipeRunCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
 	recipeRunCmd.Flags().StringP("output", "o", "", "output file for results")
@@ -36,6 +36,14 @@ func init() {
 	recipeTestCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
 	recipeTestCmd.Flags().String("format", "text", "output format (text or json)")
 	_ = recipeTestCmd.MarkFlagRequired("file")
+
+	recipeFixCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
+	recipeFixCmd.Flags().StringP("output", "o", "", "output file for fixed recipe")
+	_ = recipeFixCmd.MarkFlagRequired("file")
+
+	recipeSampleCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
+	recipeSampleCmd.Flags().String("format", "json", "output format (json)")
+	_ = recipeSampleCmd.MarkFlagRequired("file")
 }
 
 var recipeCmd = &cobra.Command{
@@ -244,6 +252,89 @@ var recipeCreateCmd = &cobra.Command{
 			}
 			_, _ = fmt.Fprintf(os.Stderr, "recipe written to %s\n", output)
 			return nil
+		}
+
+		_, _ = fmt.Fprintln(os.Stdout, string(data))
+		return nil
+	},
+}
+
+var recipeFixCmd = &cobra.Command{
+	Use:   "fix",
+	Short: "Re-analyze a page and fix broken selectors in a recipe",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		file, _ := cmd.Flags().GetString("file")
+		output, _ := cmd.Flags().GetString("output")
+
+		r, err := recipe.LoadFile(file)
+		if err != nil {
+			return err
+		}
+
+		browser, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return fmt.Errorf("scout: browser launch: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		fixed, changes, err := recipe.FixRecipe(browser, r)
+		if err != nil {
+			return err
+		}
+
+		if len(changes) == 0 {
+			_, _ = fmt.Fprintln(os.Stderr, "all selectors are healthy, no fixes needed")
+		} else {
+			for _, c := range changes {
+				_, _ = fmt.Fprintf(os.Stderr, "fixed: %s\n", c)
+			}
+		}
+
+		data, err := json.MarshalIndent(fixed, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal recipe: %w", err)
+		}
+
+		if output != "" {
+			if err := os.WriteFile(output, data, 0o644); err != nil {
+				return err
+			}
+			_, _ = fmt.Fprintf(os.Stderr, "fixed recipe written to %s\n", output)
+			return nil
+		}
+
+		_, _ = fmt.Fprintln(os.Stdout, string(data))
+		return nil
+	},
+}
+
+var recipeSampleCmd = &cobra.Command{
+	Use:   "sample",
+	Short: "Run a recipe on the first page only and show sample extracted items",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		file, _ := cmd.Flags().GetString("file")
+
+		r, err := recipe.LoadFile(file)
+		if err != nil {
+			return err
+		}
+
+		browser, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return fmt.Errorf("scout: browser launch: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		items, err := recipe.SampleExtract(browser, r)
+		if err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(os.Stderr, "extracted %d sample items\n", len(items))
+
+		data, err := json.MarshalIndent(items, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal sample: %w", err)
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))

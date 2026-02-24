@@ -12,6 +12,7 @@ func init() {
 	rootCmd.AddCommand(webmcpCmd)
 	webmcpCmd.AddCommand(webmcpDiscoverCmd)
 	webmcpCmd.AddCommand(webmcpCallCmd)
+	webmcpCmd.AddCommand(webmcpInspectCmd)
 
 	webmcpCallCmd.Flags().String("params", "{}", "JSON parameters for the tool call")
 }
@@ -113,6 +114,67 @@ var webmcpCallCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), result.Content)
+		return nil
+	},
+}
+
+var webmcpInspectCmd = &cobra.Command{
+	Use:   "inspect <url>",
+	Short: "Discover MCP tools on a page and print detailed info",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		format, _ := cmd.Flags().GetString("format")
+
+		browser, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return fmt.Errorf("scout: webmcp: launch browser: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		page, err := browser.NewPage(args[0])
+		if err != nil {
+			return fmt.Errorf("scout: webmcp: navigate: %w", err)
+		}
+		defer func() { _ = page.Close() }()
+
+		if err := page.WaitLoad(); err != nil {
+			return fmt.Errorf("scout: webmcp: wait load: %w", err)
+		}
+
+		tools, err := page.DiscoverWebMCPTools()
+		if err != nil {
+			return err
+		}
+
+		if format == "json" {
+			enc := json.NewEncoder(cmd.OutOrStdout())
+			enc.SetIndent("", "  ")
+			return enc.Encode(tools)
+		}
+
+		if len(tools) == 0 {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No MCP tools found.")
+			return nil
+		}
+
+		w := cmd.OutOrStdout()
+		_, _ = fmt.Fprintf(w, "URL: %s\n", args[0])
+		_, _ = fmt.Fprintf(w, "Tools found: %d\n\n", len(tools))
+
+		for i, t := range tools {
+			_, _ = fmt.Fprintf(w, "--- Tool %d ---\n", i+1)
+			_, _ = fmt.Fprintf(w, "  Name:        %s\n", t.Name)
+			_, _ = fmt.Fprintf(w, "  Description: %s\n", t.Description)
+			_, _ = fmt.Fprintf(w, "  Source:       %s\n", t.Source)
+			if t.ServerURL != "" {
+				_, _ = fmt.Fprintf(w, "  Server URL:  %s\n", t.ServerURL)
+			}
+			if len(t.InputSchema) > 0 {
+				_, _ = fmt.Fprintf(w, "  Input Schema: %s\n", string(t.InputSchema))
+			}
+			_, _ = fmt.Fprintln(w)
+		}
+
 		return nil
 	},
 }
