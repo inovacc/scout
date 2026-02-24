@@ -1,0 +1,29 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/inovacc/scout
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 9551
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+  limits:
+    memory: "2Gi"
+    cpu: "1000m"
+
+shmSize: "2Gi"
+
+scout:
+  headless: true
+  noSandbox: true
+  stealth: false
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

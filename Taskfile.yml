@@ -127,6 +127,23 @@ tasks:
       - go mod tidy
       - go mod verify
 
+  # === DOCKER ===
+  docker:build:
+    desc: Build both Docker images locally
+    cmds:
+      - docker build -t ghcr.io/inovacc/scout:latest -f docker/Dockerfile .
+      - docker build -t ghcr.io/inovacc/scout:slim -f docker/Dockerfile.slim .
+
+  docker:push:
+    desc: Push Docker images to GHCR (requires GITHUB_TOKEN or gh auth)
+    vars:
+      GITHUB_TOKEN:
+        sh: echo "${GITHUB_TOKEN:-$(gh auth token)}"
+    cmds:
+      - echo "{{.GITHUB_TOKEN}}" | docker login ghcr.io -u USERNAME --password-stdin
+      - docker push ghcr.io/inovacc/scout:latest
+      - docker push ghcr.io/inovacc/scout:slim
+
   # === CLEANUP ===
   clean:
     desc: Clean build artifacts and generated files

@@ -22,6 +22,7 @@ type Recipe struct {
 	Pagination *Pagination       `json:"pagination,omitempty"`
 	Steps      []Step            `json:"steps,omitempty"`
 	Output     Output            `json:"output,omitempty"`
+	Warnings   []string          `json:"warnings,omitempty"`
 }
 
 // ItemSpec defines how to extract structured data from a page.
