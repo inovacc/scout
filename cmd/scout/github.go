@@ -18,14 +18,21 @@ func init() {
 	githubCmd.AddCommand(githubUserCmd)
 	githubCmd.AddCommand(githubReleasesCmd)
 	githubCmd.AddCommand(githubTreeCmd)
+	githubCmd.AddCommand(githubCodeCmd)
 
 	githubIssuesCmd.Flags().String("state", "open", "filter by state: open, closed, all")
 	githubIssuesCmd.Flags().Int("max", 30, "max items to return")
+	githubIssuesCmd.Flags().Int("pages", 1, "max pages to fetch")
 	githubIssuesCmd.Flags().Bool("body", false, "include issue body")
 
 	githubPRsCmd.Flags().String("state", "open", "filter by state: open, closed, all")
 	githubPRsCmd.Flags().Int("max", 30, "max items to return")
+	githubPRsCmd.Flags().Int("pages", 1, "max pages to fetch")
 	githubPRsCmd.Flags().Bool("body", false, "include PR body")
+
+	githubCodeCmd.Flags().String("repo", "", "scope search to a specific repo (owner/name)")
+	githubCodeCmd.Flags().Int("max", 30, "max results to return")
+	githubCodeCmd.Flags().Int("pages", 1, "max pages to fetch")
 
 	githubReleasesCmd.Flags().Int("max", 10, "max releases to return")
 
@@ -125,6 +132,9 @@ var githubIssuesCmd = &cobra.Command{
 		if body, _ := cmd.Flags().GetBool("body"); body {
 			opts = append(opts, scout.WithGitHubBody())
 		}
+		if pages, _ := cmd.Flags().GetInt("pages"); pages > 1 {
+			opts = append(opts, scout.WithGitHubMaxPages(pages))
+		}
 
 		issues, err := browser.GitHubIssues(owner, name, opts...)
 		if err != nil {
@@ -179,6 +189,9 @@ var githubPRsCmd = &cobra.Command{
 		}
 		if body, _ := cmd.Flags().GetBool("body"); body {
 			opts = append(opts, scout.WithGitHubBody())
+		}
+		if pages, _ := cmd.Flags().GetInt("pages"); pages > 1 {
+			opts = append(opts, scout.WithGitHubMaxPages(pages))
 		}
 
 		prs, err := browser.GitHubPRs(owner, name, opts...)
@@ -290,6 +303,58 @@ var githubReleasesCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(w, "%s  %s  (%d assets)  %s\n", rel.Tag, rel.Name, rel.Assets, rel.Date)
 			if rel.Body != "" {
 				_, _ = fmt.Fprintf(w, "  %s\n", truncate(rel.Body, 200))
+			}
+		}
+
+		return nil
+	},
+}
+
+var githubCodeCmd = &cobra.Command{
+	Use:   "code <query>",
+	Short: "Search GitHub code",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		query := args[0]
+
+		browser, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return fmt.Errorf("scout: launch browser: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		var opts []scout.GitHubOption
+		if repo, _ := cmd.Flags().GetString("repo"); repo != "" {
+			owner, name, parseErr := parseOwnerName(repo)
+			if parseErr != nil {
+				return fmt.Errorf("invalid --repo format: %w", parseErr)
+			}
+			opts = append(opts, scout.WithGitHubRepo(owner, name))
+		}
+		if max, _ := cmd.Flags().GetInt("max"); max > 0 {
+			opts = append(opts, scout.WithGitHubMaxItems(max))
+		}
+		if pages, _ := cmd.Flags().GetInt("pages"); pages > 1 {
+			opts = append(opts, scout.WithGitHubMaxPages(pages))
+		}
+
+		results, err := browser.GitHubSearchCode(query, opts...)
+		if err != nil {
+			return err
+		}
+
+		format, _ := cmd.Flags().GetString("format")
+		if format == "json" {
+			enc := json.NewEncoder(cmd.OutOrStdout())
+			enc.SetIndent("", "  ")
+			return enc.Encode(results)
+		}
+
+		w := cmd.OutOrStdout()
+		for _, r := range results {
+			_, _ = fmt.Fprintf(w, "%s  %s\n", r.Repo, r.FilePath)
+			if r.Snippet != "" {
+				_, _ = fmt.Fprintf(w, "  %s\n", truncate(r.Snippet, 200))
 			}
 		}
 

@@ -152,6 +152,10 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `ChallengeType`, `ChallengeInfo`          | Bot protection challenge detection (9 types) | `challenge.go` |
 | `SnapshotOption`                          | Accessibility tree snapshot options  | `snapshot.go`  |
 | `CapturedCredentials`, `BrowserInfo`      | Credential capture & replay          | `capture.go`   |
+| `UserProfile`, `ProfileDiff`              | Portable browser identity + diff     | `profile.go`   |
+| `AsyncJob`, `AsyncJobManager`             | Persistent async job lifecycle       | `jobs.go`       |
+| `WebMCPTool`, `WebMCPToolResult`          | Web-native MCP tool discovery + call | `webmcp.go`    |
+| `PWAInfo`, `WebAppManifest`               | Progressive Web App detection        | `detect.go`    |
 
 ### MCP Server Types
 
@@ -264,6 +268,10 @@ cmd/scout/
 ├── detect.go               # scout detect <url> [--framework] [--pwa] [--tech] [--render] [--json]
 ├── github.go               # scout github repo/issues/prs/user/releases/tree
 ├── mcp.go                  # scout mcp [--headless] [--stealth]
+├── inject.go               # scout inject <url> --code/--file/--dir
+├── jobs.go                 # scout jobs list/status/cancel
+├── webmcp.go               # scout webmcp discover/call
+├── profile.go              # scout profile capture/load/show/merge/diff
 └── cmdtree.go              # scout cmdtree [--json]
 ```
 
@@ -325,6 +333,11 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **Tech stack detection**: `Page.DetectTechStack()` detects CSS frameworks (Bootstrap, Tailwind, etc.), build tools (Webpack, Vite, etc.), CMS (WordPress, etc.), analytics (Google Analytics, etc.), and CDN (Cloudflare, etc.) via JS DOM inspection. Returns `TechStack` struct.
 - **Render mode detection**: `Page.DetectRenderMode()` classifies pages as CSR/SSR/SSG/ISR via framework-specific heuristics (Next.js data props, Nuxt payload, Gatsby static query, etc.). Returns `RenderInfo` with `Mode`, `Confidence`, `Details`.
 - **GitHub extraction**: `Browser.GitHubRepo()`, `Browser.GitHubIssues()`, `Browser.GitHubPRs()`, `Browser.GitHubUser()`, `Browser.GitHubReleases()`, `Browser.GitHubTree()` scrape GitHub pages via browser automation. Return typed structs (`GitHubRepo`, `GitHubIssue`, `GitHubPR`, `GitHubUser`, `GitHubRelease`). CLI: `scout github repo/issues/prs/user/releases/tree`.
+- **Custom JS injection**: `WithInjectJS(paths...)`, `WithInjectDir(dir)`, `WithInjectCode(code...)` read JS files and inject via `EvalOnNewDocument` before page scripts on every `NewPage()`. CLI: `scout inject <url> --code/--file/--dir`.
+- **User profile encryption**: `SaveProfileEncrypted(path, passphrase)` and `LoadProfileEncrypted(path, passphrase)` use AES-256-GCM + Argon2id (via `scraper/crypto.go`). `MergeProfiles(base, overlay)` merges two profiles (overlay wins). `DiffProfiles(a, b)` returns `ProfileDiff` with added/removed/changed fields. `Validate()` checks required fields and cookie/storage formats.
+- **WebMCP discovery**: `Page.DiscoverWebMCPTools()` scans for MCP tools via `<meta name="mcp-server">`, `<meta name="mcp-tools">`, `<link rel="mcp">`, `<script type="application/mcp+json">`, and `/.well-known/mcp`. `Page.CallWebMCPTool(name, params)` invokes via JSON-RPC 2.0 or `window.__mcp_tools[name]()`. CLI: `scout webmcp discover/call`.
+- **Async job system**: `AsyncJobManager` with persistent JSON state in `~/.scout/jobs/`. Job lifecycle: create → running → completed/failed/cancelled. `RegisterCancel(id, fn)` for cancellation callbacks. CLI: `scout jobs list/status/cancel`.
+- **Smart wait**: `WaitFrameworkReady()` detects the page framework and waits for framework-specific readiness (React hydration, Angular NgZone, Vue nextTick, etc.) with 5s timeout fallback.
 
 ## Testing
 
@@ -348,6 +361,10 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - GitHub routes: `/github-repo`, `/github-issues`, `/github-prs`, `/github-user`, `/github-releases`
 - Snapshot routes: `/snapshot-basic`, `/snapshot-form`, `/snapshot-nested`, `/snapshot-hidden`
 - Challenge routes: `/challenge-cloudflare`, `/challenge-turnstile`, `/challenge-recaptcha-v2`, `/challenge-hcaptcha`, `/challenge-datadome`, `/challenge-none`, `/challenge-multi`
+- WebMCP routes: `/webmcp-meta`, `/webmcp-script`, `/webmcp-js`, `/webmcp-none`, `/mcp-api`, `/mcp-tools.json`, `/.well-known/mcp`
+- Inject test routes: uses inline httptest servers for JS injection verification
+- Profile tests: uses `t.TempDir()` for encrypted save/load, merge, diff, validation
+- Async job tests: uses `t.TempDir()` for job manager persistence
 - Stability tests: `TestWaitSafe_NilPage`, `TestWaitSafe_Normal`, `TestHijack_InvalidRegexp` in `stability_test.go`
 - Bot detection tests: external sites (bot.sannysoft.com, arh.antoinevastel.com, pixelscan.net, brotector, fingerprint.com) — skipped with `-short`
 - Window tests: no routes needed — window control operates on the browser window itself

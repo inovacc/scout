@@ -91,6 +91,92 @@ func init() {
 </section>
 </body></html>`)
 		})
+		mux.HandleFunc("/github-issues-page2", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>Issues - Page 2</title></head>
+<body>
+<div class="js-issue-row">
+  <a data-hovercard-type="issue" href="/owner/repo/issues/100">Page 2 Issue A</a>
+  <span class="octicon-issue-opened"></span>
+  <a data-hovercard-type="user">dave</a>
+  <relative-time datetime="2025-05-01T10:00:00Z">May 1</relative-time>
+</div>
+<div class="js-issue-row">
+  <a data-hovercard-type="issue" href="/owner/repo/issues/101">Page 2 Issue B</a>
+  <span class="octicon-issue-opened"></span>
+  <a data-hovercard-type="user">eve</a>
+  <relative-time datetime="2025-05-02T10:00:00Z">May 2</relative-time>
+</div>
+</body></html>`)
+		})
+
+		// Issues page 1 with pagination-aware route
+		mux.HandleFunc("/ghpaged/owner/repo/issues", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			page := r.URL.Query().Get("page")
+			if page == "2" {
+				_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>Issues - Page 2</title></head>
+<body>
+<div class="js-issue-row">
+  <a data-hovercard-type="issue" href="/owner/repo/issues/100">Page 2 Issue A</a>
+  <span class="octicon-issue-opened"></span>
+  <a data-hovercard-type="user">dave</a>
+  <relative-time datetime="2025-05-01T10:00:00Z">May 1</relative-time>
+</div>
+</body></html>`)
+				return
+			}
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>Issues</title></head>
+<body>
+<div class="js-issue-row">
+  <a data-hovercard-type="issue" href="/owner/repo/issues/42">Fix the bug</a>
+  <span class="octicon-issue-opened"></span>
+  <a data-hovercard-type="user">alice</a>
+  <relative-time datetime="2025-01-15T10:00:00Z">Jan 15</relative-time>
+</div>
+<div class="js-issue-row">
+  <a data-hovercard-type="issue" href="/owner/repo/issues/43">Add feature X</a>
+  <span class="octicon-issue-opened"></span>
+  <a data-hovercard-type="user">bob</a>
+  <relative-time datetime="2025-02-01T12:00:00Z">Feb 1</relative-time>
+</div>
+</body></html>`)
+		})
+
+		mux.HandleFunc("/github-search-code", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>Code search results</title></head>
+<body>
+<div class="code-list-item">
+  <a class="text-bold">octocat/hello-world</a>
+  <a title="src/main.go">src/main.go</a>
+  <div class="code-list-item-code">func main() { fmt.Println("hello") }</div>
+</div>
+<div class="code-list-item">
+  <a class="text-bold">octocat/utils</a>
+  <a title="lib/helper.go">lib/helper.go</a>
+  <div class="code-list-item-code">func Helper() string { return "help" }</div>
+</div>
+</body></html>`)
+		})
+
+		// Code search with pagination-aware route
+		mux.HandleFunc("/search", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>Code search results</title></head>
+<body>
+<div class="code-list-item">
+  <a class="text-bold">octocat/hello-world</a>
+  <a title="src/main.go">src/main.go</a>
+  <div class="code-list-item-code">func main() { fmt.Println("hello") }</div>
+</div>
+</body></html>`)
+		})
 	})
 }
 
@@ -329,5 +415,98 @@ func TestGitHubOptionDefaults(t *testing.T) {
 	}
 	if cfg.includeBody {
 		t.Error("expected default includeBody false")
+	}
+	if cfg.maxPages != 1 {
+		t.Errorf("expected default maxPages 1, got %d", cfg.maxPages)
+	}
+}
+
+func TestGitHubSearchCode(t *testing.T) {
+	ts := newTestServer()
+	defer ts.Close()
+
+	b := newTestBrowser(t)
+
+	results, err := b.GitHubSearchCode("fmt.Println", withGitHubBaseURL(ts.URL))
+	if err != nil {
+		t.Fatalf("GitHubSearchCode: %v", err)
+	}
+
+	if len(results) != 1 {
+		t.Fatalf("expected 1 code result, got %d", len(results))
+	}
+
+	if results[0].Repo != "octocat/hello-world" {
+		t.Errorf("expected repo 'octocat/hello-world', got %q", results[0].Repo)
+	}
+	if results[0].FilePath != "src/main.go" {
+		t.Errorf("expected file_path 'src/main.go', got %q", results[0].FilePath)
+	}
+	if results[0].Snippet == "" {
+		t.Error("expected non-empty snippet")
+	}
+}
+
+func TestGitHubSearchCode_WithRepo(t *testing.T) {
+	cfg := githubDefaults()
+	WithGitHubRepo("myorg", "myrepo")(cfg)
+
+	if cfg.repoOwner != "myorg" {
+		t.Errorf("expected repoOwner 'myorg', got %q", cfg.repoOwner)
+	}
+	if cfg.repoName != "myrepo" {
+		t.Errorf("expected repoName 'myrepo', got %q", cfg.repoName)
+	}
+}
+
+func TestGitHubSearchCode_NilBrowser(t *testing.T) {
+	var b *Browser
+	_, err := b.GitHubSearchCode("test")
+	if err == nil {
+		t.Error("expected error for nil browser")
+	}
+}
+
+func TestGitHubIssues_Pagination(t *testing.T) {
+	ts := newTestServer()
+	defer ts.Close()
+
+	b := newTestBrowser(t)
+
+	issues, err := b.GitHubIssues("owner", "repo",
+		withGitHubBaseURL(ts.URL+"/ghpaged"),
+		WithGitHubMaxPages(2),
+		WithGitHubMaxItems(10),
+	)
+	if err != nil {
+		t.Fatalf("GitHubIssues pagination: %v", err)
+	}
+
+	if len(issues) != 3 {
+		t.Fatalf("expected 3 issues across 2 pages, got %d", len(issues))
+	}
+
+	// First page issues
+	if issues[0].Title != "Fix the bug" {
+		t.Errorf("expected first issue 'Fix the bug', got %q", issues[0].Title)
+	}
+	// Second page issue
+	if issues[2].Title != "Page 2 Issue A" {
+		t.Errorf("expected third issue 'Page 2 Issue A', got %q", issues[2].Title)
+	}
+}
+
+func TestGitHubMaxPages_Option(t *testing.T) {
+	cfg := githubDefaults()
+	WithGitHubMaxPages(5)(cfg)
+	if cfg.maxPages != 5 {
+		t.Errorf("expected maxPages 5, got %d", cfg.maxPages)
+	}
+
+	// Zero should not change default
+	cfg2 := githubDefaults()
+	WithGitHubMaxPages(0)(cfg2)
+	if cfg2.maxPages != 1 {
+		t.Errorf("expected maxPages to remain 1, got %d", cfg2.maxPages)
 	}
 }

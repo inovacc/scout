@@ -2,7 +2,9 @@ package scout
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
+	"time"
 )
 
 // GitHubRepo holds metadata about a GitHub repository.
@@ -60,18 +62,30 @@ type GitHubRelease struct {
 	Assets int    `json:"assets"`
 }
 
+// GitHubCodeResult holds a single code search result from GitHub.
+type GitHubCodeResult struct {
+	Repo     string `json:"repo"`
+	FilePath string `json:"file_path"`
+	Snippet  string `json:"snippet"`
+}
+
 // GitHubOption configures GitHub extraction behavior.
 type GitHubOption func(*githubConfig)
 
 type githubConfig struct {
 	includeBody bool
 	maxItems    int
+	maxPages    int
 	state       string // "open", "closed", "all"
+	repoOwner   string
+	repoName    string
+	baseURL     string // for testing against local server
 }
 
 func githubDefaults() *githubConfig {
 	return &githubConfig{
 		maxItems: 30,
+		maxPages: 1,
 		state:    "open",
 	}
 }
@@ -89,6 +103,28 @@ func WithGitHubMaxItems(n int) GitHubOption {
 // WithGitHubState filters issues/PRs by state: "open", "closed", or "all". Default: "open".
 func WithGitHubState(state string) GitHubOption {
 	return func(c *githubConfig) { c.state = state }
+}
+
+// WithGitHubMaxPages sets the maximum number of pages to fetch for paginated results. Default: 1.
+func WithGitHubMaxPages(n int) GitHubOption {
+	return func(c *githubConfig) {
+		if n > 0 {
+			c.maxPages = n
+		}
+	}
+}
+
+// WithGitHubRepo scopes code search to a specific repository by appending repo:owner/name to the query.
+func WithGitHubRepo(owner, repo string) GitHubOption {
+	return func(c *githubConfig) {
+		c.repoOwner = owner
+		c.repoName = repo
+	}
+}
+
+// withGitHubBaseURL overrides the base URL (for testing against a local server).
+func withGitHubBaseURL(baseURL string) GitHubOption {
+	return func(c *githubConfig) { c.baseURL = baseURL }
 }
 
 // GitHubRepo navigates to a GitHub repository page and extracts metadata.
@@ -238,108 +274,98 @@ func (b *Browser) GitHubIssues(owner, name string, opts ...GitHubOption) ([]GitH
 		stateQuery = ""
 	}
 
-	issuesURL := fmt.Sprintf("https://github.com/%s/%s/issues?q=%s", owner, name, stateQuery)
-
-	page, err := b.NewPage(issuesURL)
-	if err != nil {
-		return nil, fmt.Errorf("scout: github: navigate issues: %w", err)
-	}
-	defer func() { _ = page.Close() }()
-
-	if err := page.WaitLoad(); err != nil {
-		return nil, fmt.Errorf("scout: github: wait load: %w", err)
-	}
-
-	result, err := page.Eval(fmt.Sprintf(`() => {
-		const items = [];
-		const rows = document.querySelectorAll('[data-testid="issue-row"], .js-issue-row, [id^="issue_"]');
-		const max = %d;
-
-		for (let i = 0; i < rows.length && i < max; i++) {
-			const row = rows[i];
-			const issue = {};
-
-			// Title + number
-			const titleLink = row.querySelector('a[data-hovercard-type="issue"], a[id^="issue_"]');
-			if (titleLink) {
-				issue.title = titleLink.textContent.trim();
-				const href = titleLink.getAttribute('href') || '';
-				const match = href.match(/\/issues\/(\d+)/);
-				issue.number = match ? parseInt(match[1], 10) : 0;
-			} else {
-				issue.title = '';
-				issue.number = 0;
-			}
-
-			// State
-			const openIcon = row.querySelector('.octicon-issue-opened, [data-testid="issue-open-icon"]');
-			const closedIcon = row.querySelector('.octicon-issue-closed, [data-testid="issue-closed-icon"]');
-			issue.state = closedIcon ? 'closed' : 'open';
-
-			// Author
-			const authorEl = row.querySelector('.opened-by a, a[data-hovercard-type="user"]');
-			issue.author = authorEl ? authorEl.textContent.trim() : '';
-
-			// Labels
-			issue.labels = [];
-			row.querySelectorAll('a[data-name], .IssueLabel, a.label').forEach(lbl => {
-				const t = lbl.textContent.trim();
-				if (t) issue.labels.push(t);
-			});
-
-			// Created at
-			const timeEl = row.querySelector('relative-time, time');
-			issue.created_at = timeEl ? (timeEl.getAttribute('datetime') || timeEl.textContent.trim()) : '';
-
-			items.push(issue);
-		}
-		return items;
-	}`, cfg.maxItems))
-	if err != nil {
-		return nil, fmt.Errorf("scout: github: eval issues: %w", err)
+	baseHost := "https://github.com"
+	if cfg.baseURL != "" {
+		baseHost = cfg.baseURL
 	}
 
 	var issues []GitHubIssue
-	if arr, ok := result.Value.([]interface{}); ok {
-		for _, item := range arr {
-			m, ok := item.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			issue := GitHubIssue{}
-			if v, ok := m["number"].(float64); ok {
-				issue.Number = int(v)
-			}
-			if v, ok := m["title"].(string); ok {
-				issue.Title = v
-			}
-			if v, ok := m["state"].(string); ok {
-				issue.State = v
-			}
-			if v, ok := m["author"].(string); ok {
-				issue.Author = v
-			}
-			if v, ok := m["created_at"].(string); ok {
-				issue.CreatedAt = v
-			}
-			if labels, ok := m["labels"].([]interface{}); ok {
-				for _, l := range labels {
-					if s, ok := l.(string); ok {
-						issue.Labels = append(issue.Labels, s)
-					}
-				}
-			}
-			issues = append(issues, issue)
+
+	for pageNum := 1; pageNum <= cfg.maxPages; pageNum++ {
+		issuesURL := fmt.Sprintf("%s/%s/%s/issues?q=%s&page=%d", baseHost, owner, name, stateQuery, pageNum)
+
+		if pageNum > 1 {
+			time.Sleep(1 * time.Second)
 		}
+
+		page, err := b.NewPage(issuesURL)
+		if err != nil {
+			return nil, fmt.Errorf("scout: github: navigate issues: %w", err)
+		}
+
+		if err := page.WaitLoad(); err != nil {
+			_ = page.Close()
+			return nil, fmt.Errorf("scout: github: wait load: %w", err)
+		}
+
+		remaining := cfg.maxItems - len(issues)
+		if remaining <= 0 {
+			_ = page.Close()
+			break
+		}
+
+		result, err := page.Eval(fmt.Sprintf(`() => {
+			const items = [];
+			const rows = document.querySelectorAll('[data-testid="issue-row"], .js-issue-row, [id^="issue_"]');
+			const max = %d;
+
+			for (let i = 0; i < rows.length && i < max; i++) {
+				const row = rows[i];
+				const issue = {};
+
+				const titleLink = row.querySelector('a[data-hovercard-type="issue"], a[id^="issue_"]');
+				if (titleLink) {
+					issue.title = titleLink.textContent.trim();
+					const href = titleLink.getAttribute('href') || '';
+					const match = href.match(/\/issues\/(\d+)/);
+					issue.number = match ? parseInt(match[1], 10) : 0;
+				} else {
+					issue.title = '';
+					issue.number = 0;
+				}
+
+				const closedIcon = row.querySelector('.octicon-issue-closed, [data-testid="issue-closed-icon"]');
+				issue.state = closedIcon ? 'closed' : 'open';
+
+				const authorEl = row.querySelector('.opened-by a, a[data-hovercard-type="user"]');
+				issue.author = authorEl ? authorEl.textContent.trim() : '';
+
+				issue.labels = [];
+				row.querySelectorAll('a[data-name], .IssueLabel, a.label').forEach(lbl => {
+					const t = lbl.textContent.trim();
+					if (t) issue.labels.push(t);
+				});
+
+				const timeEl = row.querySelector('relative-time, time');
+				issue.created_at = timeEl ? (timeEl.getAttribute('datetime') || timeEl.textContent.trim()) : '';
+
+				items.push(issue);
+			}
+			return items;
+		}`, remaining))
+		_ = page.Close()
+		if err != nil {
+			return nil, fmt.Errorf("scout: github: eval issues: %w", err)
+		}
+
+		pageIssues := parseGitHubIssues(result)
+		if len(pageIssues) == 0 {
+			break
+		}
+		issues = append(issues, pageIssues...)
 	}
 
 	// Fetch bodies if requested
 	if cfg.includeBody {
+		baseHost := "https://github.com"
+		if cfg.baseURL != "" {
+			baseHost = cfg.baseURL
+		}
 		for i := range issues {
 			if issues[i].Number == 0 {
 				continue
 			}
-			issueURL := fmt.Sprintf("https://github.com/%s/%s/issues/%d", owner, name, issues[i].Number)
+			issueURL := fmt.Sprintf("%s/%s/%s/issues/%d", baseHost, owner, name, issues[i].Number)
 			body, bodyErr := b.fetchGitHubBody(issueURL)
 			if bodyErr == nil {
 				issues[i].Body = body
@@ -734,6 +760,159 @@ func (b *Browser) GitHubTree(owner, name, branch string) ([]string, error) {
 	}
 
 	return files, nil
+}
+
+// parseGitHubIssues converts an EvalResult into a slice of GitHubIssue.
+func parseGitHubIssues(result *EvalResult) []GitHubIssue {
+	var issues []GitHubIssue
+	arr, ok := result.Value.([]interface{})
+	if !ok {
+		return nil
+	}
+	for _, item := range arr {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		issue := GitHubIssue{}
+		if v, ok := m["number"].(float64); ok {
+			issue.Number = int(v)
+		}
+		if v, ok := m["title"].(string); ok {
+			issue.Title = v
+		}
+		if v, ok := m["state"].(string); ok {
+			issue.State = v
+		}
+		if v, ok := m["author"].(string); ok {
+			issue.Author = v
+		}
+		if v, ok := m["created_at"].(string); ok {
+			issue.CreatedAt = v
+		}
+		if labels, ok := m["labels"].([]interface{}); ok {
+			for _, l := range labels {
+				if s, ok := l.(string); ok {
+					issue.Labels = append(issue.Labels, s)
+				}
+			}
+		}
+		issues = append(issues, issue)
+	}
+	return issues
+}
+
+// GitHubSearchCode searches GitHub code search and extracts results.
+func (b *Browser) GitHubSearchCode(query string, opts ...GitHubOption) ([]GitHubCodeResult, error) {
+	if b == nil || b.browser == nil {
+		return nil, fmt.Errorf("scout: github: browser is nil")
+	}
+
+	cfg := githubDefaults()
+	for _, fn := range opts {
+		fn(cfg)
+	}
+
+	// Scope to repo if specified
+	if cfg.repoOwner != "" && cfg.repoName != "" {
+		query = fmt.Sprintf("%s repo:%s/%s", query, cfg.repoOwner, cfg.repoName)
+	}
+
+	baseHost := "https://github.com"
+	if cfg.baseURL != "" {
+		baseHost = cfg.baseURL
+	}
+
+	var results []GitHubCodeResult
+
+	for pageNum := 1; pageNum <= cfg.maxPages; pageNum++ {
+		searchURL := fmt.Sprintf("%s/search?q=%s&type=code&p=%d", baseHost, url.QueryEscape(query), pageNum)
+
+		if pageNum > 1 {
+			time.Sleep(1 * time.Second)
+		}
+
+		page, err := b.NewPage(searchURL)
+		if err != nil {
+			return nil, fmt.Errorf("scout: github: navigate code search: %w", err)
+		}
+
+		if err := page.WaitLoad(); err != nil {
+			_ = page.Close()
+			return nil, fmt.Errorf("scout: github: wait load: %w", err)
+		}
+
+		remaining := cfg.maxItems - len(results)
+		if remaining <= 0 {
+			_ = page.Close()
+			break
+		}
+
+		result, err := page.Eval(fmt.Sprintf(`() => {
+			const items = [];
+			const rows = document.querySelectorAll('.code-list-item, [data-testid="code-result"], .hx_hit-code');
+			const max = %d;
+
+			for (let i = 0; i < rows.length && i < max; i++) {
+				const row = rows[i];
+				const item = {};
+
+				// Repo name
+				const repoLink = row.querySelector('a[data-testid="code-result-repo"], .hx_hit-code-title a, a.text-bold');
+				item.repo = repoLink ? repoLink.textContent.trim() : '';
+
+				// File path
+				const fileLink = row.querySelector('a[data-testid="code-result-path"], .hx_hit-code-title a:last-child, a[title]');
+				item.file_path = fileLink ? (fileLink.getAttribute('title') || fileLink.textContent.trim()) : '';
+
+				// Snippet
+				const snippetEl = row.querySelector('.code-list-item-code, [data-testid="code-result-snippet"], .hx_hit-code .blob-code, .code-snippet');
+				item.snippet = snippetEl ? snippetEl.textContent.trim() : '';
+
+				items.push(item);
+			}
+			return items;
+		}`, remaining))
+		_ = page.Close()
+		if err != nil {
+			return nil, fmt.Errorf("scout: github: eval code search: %w", err)
+		}
+
+		pageResults := parseGitHubCodeResults(result)
+		if len(pageResults) == 0 {
+			break
+		}
+		results = append(results, pageResults...)
+	}
+
+	return results, nil
+}
+
+// parseGitHubCodeResults converts an EvalResult into a slice of GitHubCodeResult.
+func parseGitHubCodeResults(result *EvalResult) []GitHubCodeResult {
+	var results []GitHubCodeResult
+	arr, ok := result.Value.([]interface{})
+	if !ok {
+		return nil
+	}
+	for _, item := range arr {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		r := GitHubCodeResult{}
+		if v, ok := m["repo"].(string); ok {
+			r.Repo = v
+		}
+		if v, ok := m["file_path"].(string); ok {
+			r.FilePath = v
+		}
+		if v, ok := m["snippet"].(string); ok {
+			r.Snippet = v
+		}
+		results = append(results, r)
+	}
+	return results
 }
 
 // fetchGitHubBody navigates to an issue or PR page and extracts the body as markdown.
