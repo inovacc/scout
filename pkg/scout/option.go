@@ -51,6 +51,8 @@ type options struct {
 	userAgentMetadata  *proto.EmulationUserAgentMetadata
 	smartWait          bool
 	profile            *UserProfile
+	injectScripts      []string
+	injectErr          error
 }
 
 func defaults() *options {

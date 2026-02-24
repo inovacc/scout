@@ -2,11 +2,15 @@ package scout
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"runtime"
+	"strings"
 	"time"
+
+	"github.com/inovacc/scout/scraper"
 )
 
 // UserProfile represents a portable browser identity that can be saved,
@@ -285,6 +289,309 @@ func (p *Page) ApplyProfile(prof *UserProfile) error {
 				}
 			}
 		}
+	}
+
+	return nil
+}
+
+// SaveProfileEncrypted writes an encrypted profile using AES-256-GCM + Argon2id.
+func SaveProfileEncrypted(p *UserProfile, path, passphrase string) error {
+	if p == nil {
+		return fmt.Errorf("scout: profile: save encrypted: nil profile")
+	}
+
+	p.UpdatedAt = time.Now()
+
+	data, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		return fmt.Errorf("scout: profile: save encrypted: marshal: %w", err)
+	}
+
+	encrypted, err := scraper.EncryptData(data, passphrase)
+	if err != nil {
+		return fmt.Errorf("scout: profile: save encrypted: %w", err)
+	}
+
+	if err := os.WriteFile(path, encrypted, 0o600); err != nil {
+		return fmt.Errorf("scout: profile: save encrypted: write: %w", err)
+	}
+
+	return nil
+}
+
+// LoadProfileEncrypted reads and decrypts a profile.
+func LoadProfileEncrypted(path, passphrase string) (*UserProfile, error) {
+	data, err := os.ReadFile(path) //nolint:gosec
+	if err != nil {
+		return nil, fmt.Errorf("scout: profile: load encrypted: read: %w", err)
+	}
+
+	decrypted, err := scraper.DecryptData(data, passphrase)
+	if err != nil {
+		return nil, fmt.Errorf("scout: profile: load encrypted: %w", err)
+	}
+
+	var p UserProfile
+	if err := json.Unmarshal(decrypted, &p); err != nil {
+		return nil, fmt.Errorf("scout: profile: load encrypted: unmarshal: %w", err)
+	}
+
+	return &p, nil
+}
+
+// MergeProfiles merges two profiles. Overlay values win on conflict.
+// Cookies and storage are merged (overlay additions/updates win, base-only entries kept).
+func MergeProfiles(base, overlay *UserProfile) *UserProfile {
+	merged := &UserProfile{
+		Version:   base.Version,
+		CreatedAt: base.CreatedAt,
+		UpdatedAt: base.UpdatedAt,
+	}
+
+	// Use earliest CreatedAt.
+	if overlay.CreatedAt.Before(base.CreatedAt) {
+		merged.CreatedAt = overlay.CreatedAt
+	}
+
+	// Use latest UpdatedAt.
+	if overlay.UpdatedAt.After(base.UpdatedAt) {
+		merged.UpdatedAt = overlay.UpdatedAt
+	}
+
+	// Scalar fields: overlay wins if non-empty.
+	merged.Name = base.Name
+	if overlay.Name != "" {
+		merged.Name = overlay.Name
+	}
+
+	merged.Notes = base.Notes
+	if overlay.Notes != "" {
+		merged.Notes = overlay.Notes
+	}
+
+	merged.Proxy = base.Proxy
+	if overlay.Proxy != "" {
+		merged.Proxy = overlay.Proxy
+	}
+
+	// Identity: overlay wins if non-empty.
+	merged.Identity = base.Identity
+	if overlay.Identity.UserAgent != "" {
+		merged.Identity.UserAgent = overlay.Identity.UserAgent
+	}
+	if overlay.Identity.Language != "" {
+		merged.Identity.Language = overlay.Identity.Language
+	}
+	if overlay.Identity.Timezone != "" {
+		merged.Identity.Timezone = overlay.Identity.Timezone
+	}
+	if overlay.Identity.Locale != "" {
+		merged.Identity.Locale = overlay.Identity.Locale
+	}
+
+	// Browser: overlay wins if any field set.
+	merged.Browser = base.Browser
+	if overlay.Browser.Type != "" {
+		merged.Browser.Type = overlay.Browser.Type
+	}
+	if overlay.Browser.ExecPath != "" {
+		merged.Browser.ExecPath = overlay.Browser.ExecPath
+	}
+	if overlay.Browser.WindowW > 0 {
+		merged.Browser.WindowW = overlay.Browser.WindowW
+	}
+	if overlay.Browser.WindowH > 0 {
+		merged.Browser.WindowH = overlay.Browser.WindowH
+	}
+	if overlay.Browser.Platform != "" {
+		merged.Browser.Platform = overlay.Browser.Platform
+	}
+	if overlay.Browser.Arch != "" {
+		merged.Browser.Arch = overlay.Browser.Arch
+	}
+
+	// Cookies: merge by domain+name+path key (overlay wins on conflict).
+	type cookieKey struct {
+		Domain, Name, Path string
+	}
+	cookieMap := make(map[cookieKey]Cookie)
+	for _, c := range base.Cookies {
+		cookieMap[cookieKey{c.Domain, c.Name, c.Path}] = c
+	}
+	for _, c := range overlay.Cookies {
+		cookieMap[cookieKey{c.Domain, c.Name, c.Path}] = c
+	}
+	merged.Cookies = make([]Cookie, 0, len(cookieMap))
+	for _, c := range cookieMap {
+		merged.Cookies = append(merged.Cookies, c)
+	}
+
+	// Storage: merge per-origin (overlay origins win, base-only origins kept).
+	if len(base.Storage) > 0 || len(overlay.Storage) > 0 {
+		merged.Storage = make(map[string]ProfileOriginStorage)
+		for origin, s := range base.Storage {
+			merged.Storage[origin] = s
+		}
+		for origin, s := range overlay.Storage {
+			merged.Storage[origin] = s
+		}
+	}
+
+	// Headers: merge maps (overlay wins).
+	if len(base.Headers) > 0 || len(overlay.Headers) > 0 {
+		merged.Headers = make(map[string]string)
+		for k, v := range base.Headers {
+			merged.Headers[k] = v
+		}
+		for k, v := range overlay.Headers {
+			merged.Headers[k] = v
+		}
+	}
+
+	// Extensions: union (deduplicated).
+	extSet := make(map[string]struct{})
+	for _, e := range base.Extensions {
+		extSet[e] = struct{}{}
+	}
+	for _, e := range overlay.Extensions {
+		extSet[e] = struct{}{}
+	}
+	if len(extSet) > 0 {
+		merged.Extensions = make([]string, 0, len(extSet))
+		for e := range extSet {
+			merged.Extensions = append(merged.Extensions, e)
+		}
+	}
+
+	return merged
+}
+
+// ProfileDiff summarizes the differences between two profiles.
+type ProfileDiff struct {
+	NameChanged           bool `json:"name_changed,omitempty"`
+	IdentityChanged       bool `json:"identity_changed,omitempty"`
+	BrowserChanged        bool `json:"browser_changed,omitempty"`
+	CookiesAdded          int  `json:"cookies_added,omitempty"`
+	CookiesRemoved        int  `json:"cookies_removed,omitempty"`
+	CookiesModified       int  `json:"cookies_modified,omitempty"`
+	StorageOriginsAdded   int  `json:"storage_origins_added,omitempty"`
+	StorageOriginsRemoved int  `json:"storage_origins_removed,omitempty"`
+	HeadersChanged        int  `json:"headers_changed,omitempty"`
+	ExtensionsAdded       int  `json:"extensions_added,omitempty"`
+	ExtensionsRemoved     int  `json:"extensions_removed,omitempty"`
+}
+
+// DiffProfiles compares two profiles and returns a summary of differences.
+func DiffProfiles(a, b *UserProfile) ProfileDiff {
+	var d ProfileDiff
+
+	d.NameChanged = a.Name != b.Name
+	d.IdentityChanged = a.Identity != b.Identity
+	d.BrowserChanged = a.Browser != b.Browser
+
+	// Cookies diff by domain+name+path key.
+	type cookieKey struct {
+		Domain, Name, Path string
+	}
+	aCookies := make(map[cookieKey]Cookie)
+	for _, c := range a.Cookies {
+		aCookies[cookieKey{c.Domain, c.Name, c.Path}] = c
+	}
+	bCookies := make(map[cookieKey]Cookie)
+	for _, c := range b.Cookies {
+		bCookies[cookieKey{c.Domain, c.Name, c.Path}] = c
+	}
+	for k, bc := range bCookies {
+		if ac, ok := aCookies[k]; !ok {
+			d.CookiesAdded++
+		} else if ac.Value != bc.Value {
+			d.CookiesModified++
+		}
+	}
+	for k := range aCookies {
+		if _, ok := bCookies[k]; !ok {
+			d.CookiesRemoved++
+		}
+	}
+
+	// Storage origins.
+	for origin := range b.Storage {
+		if _, ok := a.Storage[origin]; !ok {
+			d.StorageOriginsAdded++
+		}
+	}
+	for origin := range a.Storage {
+		if _, ok := b.Storage[origin]; !ok {
+			d.StorageOriginsRemoved++
+		}
+	}
+
+	// Headers: count keys that differ or are added/removed.
+	allHeaders := make(map[string]struct{})
+	for k := range a.Headers {
+		allHeaders[k] = struct{}{}
+	}
+	for k := range b.Headers {
+		allHeaders[k] = struct{}{}
+	}
+	for k := range allHeaders {
+		va, oka := a.Headers[k]
+		vb, okb := b.Headers[k]
+		if oka != okb || va != vb {
+			d.HeadersChanged++
+		}
+	}
+
+	// Extensions.
+	aExts := make(map[string]struct{})
+	for _, e := range a.Extensions {
+		aExts[e] = struct{}{}
+	}
+	bExts := make(map[string]struct{})
+	for _, e := range b.Extensions {
+		bExts[e] = struct{}{}
+	}
+	for e := range bExts {
+		if _, ok := aExts[e]; !ok {
+			d.ExtensionsAdded++
+		}
+	}
+	for e := range aExts {
+		if _, ok := bExts[e]; !ok {
+			d.ExtensionsRemoved++
+		}
+	}
+
+	return d
+}
+
+// Validate checks a profile for required fields and consistency.
+func (p *UserProfile) Validate() error {
+	var errs []string
+
+	if p.Version <= 0 {
+		errs = append(errs, "version must be > 0")
+	}
+
+	if strings.TrimSpace(p.Name) == "" {
+		errs = append(errs, "name is required")
+	}
+
+	for i, c := range p.Cookies {
+		if c.Domain == "" {
+			errs = append(errs, fmt.Sprintf("cookie[%d] %q: domain is required", i, c.Name))
+		}
+	}
+
+	for origin := range p.Storage {
+		u, err := url.Parse(origin)
+		if err != nil || u.Scheme == "" || u.Host == "" {
+			errs = append(errs, fmt.Sprintf("storage origin %q: invalid URL", origin))
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("scout: profile: validate: %w", errors.New(strings.Join(errs, "; ")))
 	}
 
 	return nil
