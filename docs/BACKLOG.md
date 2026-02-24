@@ -442,3 +442,7 @@ credentials/session.
 | WebMCP Discovery (Phase 26b) | `DiscoverWebMCPTools()`, `CallWebMCPTool()`, meta/link/script/.well-known discovery, JSON-RPC + JS invocation, CLI, 10 tests | 2026-02 |
 | Async Job System (Phase 15) | `AsyncJobManager` with persistent JSON state, lifecycle management, CLI `scout jobs list/status/cancel`, 7 tests | 2026-02 |
 | Smart Wait Strategies | `WaitFrameworkReady()` with per-framework JS (React, Angular, Vue, Next.js, Nuxt, Svelte) | 2026-02 |
+| Multi-engine Search (Phase 23b) | `WithSearchEngines()` with RRF scoring, `WithSearchDomain()`, `WithSearchExcludeDomain()`, 7 tests | 2026-02 |
+| Recipe Validation (Phase 12c) | `ValidateRecipe()`, `SelectorHealthCheck()`, CLI `scout recipe test`, 5 tests | 2026-02 |
+| WebFetch Retry + Redirects (Phase 23a) | `WithFetchRetries()`, `WithFetchRetryDelay()`, `RedirectChain` tracking, 4 tests | 2026-02 |
+| Browser AutoFree (Phase 27) | `WithAutoFree(interval)` periodic recycling with session preservation, 4 tests | 2026-02 |

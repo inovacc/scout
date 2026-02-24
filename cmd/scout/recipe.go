@@ -26,6 +26,12 @@ func init() {
 	recipeCreateCmd.Flags().StringP("output", "o", "", "output file for generated recipe")
 	recipeCreateCmd.Flags().String("type", "", "force recipe type (extract or automate)")
 	recipeCreateCmd.Flags().Int("max-pages", 5, "max pages for pagination")
+	recipeCreateCmd.Flags().Bool("ai", false, "use AI-assisted recipe generation via LLM")
+	recipeCreateCmd.Flags().String("goal", "", "describe the goal for AI generation (used with --ai)")
+	recipeCreateCmd.Flags().String("provider", "ollama", "LLM provider: ollama, openai, anthropic, openrouter, deepseek, gemini")
+	recipeCreateCmd.Flags().String("model", "", "LLM model name (provider-specific default)")
+	recipeCreateCmd.Flags().String("api-key", "", "API key for remote LLM providers")
+	recipeCreateCmd.Flags().String("api-base", "", "custom API base URL for OpenAI-compatible endpoints")
 
 	recipeTestCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
 	recipeTestCmd.Flags().String("format", "text", "output format (text or json)")
@@ -166,6 +172,8 @@ var recipeCreateCmd = &cobra.Command{
 		output, _ := cmd.Flags().GetString("output")
 		forceType, _ := cmd.Flags().GetString("type")
 		maxPages, _ := cmd.Flags().GetInt("max-pages")
+		useAI, _ := cmd.Flags().GetBool("ai")
+		goal, _ := cmd.Flags().GetString("goal")
 
 		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
@@ -173,27 +181,56 @@ var recipeCreateCmd = &cobra.Command{
 		}
 		defer func() { _ = browser.Close() }()
 
-		_, _ = fmt.Fprintf(os.Stderr, "analyzing %s...\n", url)
+		var r *recipe.Recipe
 
-		analysis, err := recipe.AnalyzeSite(context.Background(), browser, url)
-		if err != nil {
-			return err
-		}
+		if useAI {
+			_, _ = fmt.Fprintf(os.Stderr, "generating AI recipe for %s...\n", url)
 
-		_, _ = fmt.Fprintf(os.Stderr, "detected page type: %s\n", analysis.PageType)
-		_, _ = fmt.Fprintf(os.Stderr, "containers: %d, forms: %d\n", len(analysis.Containers), len(analysis.Forms))
+			providerName, _ := cmd.Flags().GetString("provider")
+			model, _ := cmd.Flags().GetString("model")
+			apiKey, _ := cmd.Flags().GetString("api-key")
+			apiBase, _ := cmd.Flags().GetString("api-base")
 
-		var genOpts []recipe.GenerateOption
-		if forceType != "" {
-			genOpts = append(genOpts, recipe.WithGenerateType(forceType))
-		}
-		if maxPages > 0 {
-			genOpts = append(genOpts, recipe.WithGenerateMaxPages(maxPages))
-		}
+			provider, provErr := createProviderFull(providerName, model, apiKey, apiBase, "")
+			if provErr != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "warning: LLM provider setup failed (%v), falling back to rule-based\n", provErr)
+			}
 
-		r, err := recipe.GenerateRecipe(analysis, genOpts...)
-		if err != nil {
-			return err
+			var aiOpts []recipe.AIRecipeOption
+			if provider != nil {
+				aiOpts = append(aiOpts, recipe.WithAI(provider))
+			}
+			if goal != "" {
+				aiOpts = append(aiOpts, recipe.WithGoal(goal))
+			}
+
+			r, err = recipe.GenerateWithAI(browser, url, aiOpts...)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, _ = fmt.Fprintf(os.Stderr, "analyzing %s...\n", url)
+
+			analysis, analysisErr := recipe.AnalyzeSite(context.Background(), browser, url)
+			if analysisErr != nil {
+				return analysisErr
+			}
+
+			_, _ = fmt.Fprintf(os.Stderr, "detected page type: %s\n", analysis.PageType)
+			_, _ = fmt.Fprintf(os.Stderr, "containers: %d, forms: %d\n", len(analysis.Containers), len(analysis.Forms))
+
+			var genOpts []recipe.GenerateOption
+			if forceType != "" {
+				genOpts = append(genOpts, recipe.WithGenerateType(forceType))
+			}
+			if maxPages > 0 {
+				genOpts = append(genOpts, recipe.WithGenerateMaxPages(maxPages))
+			}
+
+			r, err = recipe.GenerateRecipe(analysis, genOpts...)
+			if err != nil {
+				return err
+			}
 		}
 
 		data, err := json.MarshalIndent(r, "", "  ")

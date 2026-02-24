@@ -37,6 +37,7 @@ type webSearchOptions struct {
 	region         string
 	domain         string
 	excludeDomains []string
+	recentDuration time.Duration
 	fetchMode      string // "" = no fetch, "markdown", "text", "full", etc.
 	mainOnly       bool
 	maxFetch       int
@@ -127,6 +128,14 @@ func WithSearchExcludeDomain(domains ...string) WebSearchOption {
 	return func(o *webSearchOptions) { o.excludeDomains = domains }
 }
 
+// WithSearchRecent restricts search results to a recent time window.
+// For Google: appends tbs=qdr: parameter (h/d/w/m/y based on duration).
+// For Bing: appends freshness filter (Day/Week/Month).
+// For DuckDuckGo: appends df= parameter (d/w/m/y).
+func WithSearchRecent(d time.Duration) WebSearchOption {
+	return func(o *webSearchOptions) { o.recentDuration = d }
+}
+
 // rrfMerge performs Reciprocal Rank Fusion across multiple ranked lists.
 // Each item is scored as sum(1/(k+rank)) across all lists containing it.
 // k=60 is the standard constant. Results are sorted by RRF score descending.
@@ -212,6 +221,9 @@ func (b *Browser) WebSearch(query string, opts ...WebSearchOption) (*WebSearchRe
 	}
 	if o.region != "" {
 		baseSearchOpts = append(baseSearchOpts, WithSearchRegion(o.region))
+	}
+	if o.recentDuration > 0 {
+		baseSearchOpts = append(baseSearchOpts, WithSearchRecentDuration(o.recentDuration))
 	}
 
 	// Search each engine sequentially and collect results
