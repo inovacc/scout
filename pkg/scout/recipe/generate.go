@@ -48,14 +48,33 @@ func GenerateRecipe(analysis *SiteAnalysis, opts ...GenerateOption) (*Recipe, er
 
 	name := inferName(analysis)
 
+	var r *Recipe
+	var err error
+
 	switch recipeType {
 	case "extract":
-		return generateExtract(analysis, o, name)
+		r, err = generateExtract(analysis, o, name)
 	case "automate":
-		return generateAutomate(analysis, o, name)
+		r, err = generateAutomate(analysis, o, name)
 	default:
 		return nil, fmt.Errorf("recipe: generate: cannot determine recipe type from analysis")
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Score all selectors and warn about fragile ones.
+	scores := ScoreRecipeSelectors(r)
+	for name, s := range scores {
+		if s.Tier == "fragile" {
+			r.Warnings = append(r.Warnings, fmt.Sprintf(
+				"fragile selector for %s: %s (score: %.2f, consider using data-* attributes)",
+				name, s.Selector, s.Score,
+			))
+		}
+	}
+
+	return r, nil
 }
 
 func detectRecipeType(a *SiteAnalysis) string {

@@ -149,6 +149,15 @@ var recipeTestCmd = &cobra.Command{
 			return err
 		}
 
+		// Print selector resilience warnings.
+		scores := recipe.ScoreRecipeSelectors(r)
+		for name, s := range scores {
+			if s.Tier == "fragile" {
+				_, _ = fmt.Fprintf(os.Stderr, "warning: fragile selector for %s: %s (score: %.2f, consider using data-* attributes)\n",
+					name, s.Selector, s.Score)
+			}
+		}
+
 		if format == "json" {
 			data, err := json.MarshalIndent(result, "", "  ")
 			if err != nil {
@@ -239,6 +248,11 @@ var recipeCreateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
+		}
+
+		// Print selector resilience warnings.
+		for _, w := range r.Warnings {
+			_, _ = fmt.Fprintf(os.Stderr, "warning: %s\n", w)
 		}
 
 		data, err := json.MarshalIndent(r, "", "  ")
