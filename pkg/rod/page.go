@@ -98,7 +98,7 @@ func (p *Page) Browser() *Browser {
 
 // Info of the page, such as the URL or title of the page.
 func (p *Page) Info() (*proto.TargetTargetInfo, error) {
-	return p.browser.pageInfo(p.TargetID)
+	return p.browser.Context(p.ctx).pageInfo(p.TargetID)
 }
 
 // HTML of the page.
@@ -239,7 +239,7 @@ func (p *Page) Reload() error {
 
 // Activate (focuses) the page.
 func (p *Page) Activate() (*Page, error) {
-	err := proto.TargetActivateTarget{TargetID: p.TargetID}.Call(p.browser)
+	err := proto.TargetActivateTarget{TargetID: p.TargetID}.Call(p.browser.Context(p.ctx))
 	return p, err
 }
 
@@ -370,7 +370,7 @@ func (p *Page) Close() error {
 func (p *Page) TriggerFavicon() error {
 	// check if browser whether in headless mode
 	// if not in headless mode then raise error
-	if !p.browser.isHeadless() {
+	if !p.browser.Context(p.ctx).isHeadless() {
 		return errors.New("browser is no-headless")
 	}
 

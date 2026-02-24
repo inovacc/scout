@@ -15,8 +15,9 @@ import (
 
 // Browser wraps a rod browser instance with a simplified API.
 type Browser struct {
-	browser *rod.Browser
-	opts    *options
+	browser  *rod.Browser
+	opts     *options
+	launcher *launcher.Launcher // nil for remote CDP connections
 }
 
 // New creates and connects a new headless browser with the given options.
@@ -31,14 +32,17 @@ func New(opts ...Option) (*Browser, error) {
 		o.windowState = WindowStateMaximized
 	}
 
-	var u string
+	var (
+		u string
+		l *launcher.Launcher
+	)
 
 	if o.remoteCDP != "" {
 		// Remote CDP endpoint — skip launcher entirely.
 		u = o.remoteCDP
 	} else {
 		var err error
-		u, err = launchLocal(o)
+		u, l, err = launchLocal(o)
 		if err != nil {
 			return nil, err
 		}
@@ -67,14 +71,14 @@ func New(opts ...Option) (*Browser, error) {
 			return nil, fmt.Errorf("scout: incognito mode: %w", err)
 		}
 
-		return &Browser{browser: ctx, opts: o}, nil
+		return &Browser{browser: ctx, opts: o, launcher: l}, nil
 	}
 
-	return &Browser{browser: b, opts: o}, nil
+	return &Browser{browser: b, opts: o, launcher: l}, nil
 }
 
-// launchLocal starts a local browser process and returns the CDP WebSocket URL.
-func launchLocal(o *options) (string, error) {
+// launchLocal starts a local browser process and returns the CDP WebSocket URL and launcher.
+func launchLocal(o *options) (string, *launcher.Launcher, error) {
 	l := launcher.New().Headless(o.headless)
 
 	if o.execPath != "" {
@@ -82,7 +86,7 @@ func launchLocal(o *options) (string, error) {
 	} else if o.browserType != "" && o.browserType != BrowserChrome {
 		binPath, err := resolveBrowser(context.Background(), o.browserType)
 		if err != nil {
-			return "", fmt.Errorf("scout: resolve %s browser: %w", o.browserType, err)
+			return "", nil, fmt.Errorf("scout: resolve %s browser: %w", o.browserType, err)
 		}
 
 		l = l.Bin(binPath)
@@ -129,7 +133,7 @@ func launchLocal(o *options) (string, error) {
 	for _, id := range o.extensionIDs {
 		dir, err := extensionPathByID(id)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 		o.extensions = append(o.extensions, dir)
 	}
@@ -137,7 +141,7 @@ func launchLocal(o *options) (string, error) {
 	if o.bridge {
 		bridgeDir, err := writeBridgeExtension()
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 
 		o.extensions = append(o.extensions, bridgeDir)
@@ -151,10 +155,10 @@ func launchLocal(o *options) (string, error) {
 
 	u, err := l.Launch()
 	if err != nil {
-		return "", fmt.Errorf("scout: launch browser: %w", err)
+		return "", nil, fmt.Errorf("scout: launch browser: %w", err)
 	}
 
-	return u, nil
+	return u, l, nil
 }
 
 // NewPage creates a new browser tab and navigates to the given URL.
@@ -259,17 +263,26 @@ func (b *Browser) Version() (string, error) {
 	return v.Product, nil
 }
 
-// Close shuts down the browser. It is nil-safe and idempotent.
+// Close shuts down the browser and kills any orphan child processes.
+// It is nil-safe and idempotent.
 func (b *Browser) Close() error {
 	if b == nil || b.browser == nil {
 		return nil
 	}
 
-	if err := b.browser.Close(); err != nil {
-		return fmt.Errorf("scout: close browser: %w", err)
+	err := b.browser.Close()
+
+	// Best-effort zombie cleanup: kill the process tree even if CDP close failed.
+	if b.launcher != nil {
+		b.launcher.Kill()
+		b.launcher = nil
 	}
 
 	b.browser = nil
+
+	if err != nil {
+		return fmt.Errorf("scout: close browser: %w", err)
+	}
 
 	return nil
 }
