@@ -805,61 +805,95 @@ Orchestrate WebSearch + WebFetch + GitHub extraction into automated research wor
 - [ ] **Output formats** — markdown report, JSON structured data, combined summary
 - [ ] **CLI** — `scout research "query" [--github=owner/repo] [--depth=shallow|deep] [--format=markdown]`
 
-### Phase 24: Rod Fork Patches — Stability Fixes [PLANNED]
+### Phase 24: Rod Fork Patches — Stability Fixes [COMPLETE]
 
-Apply confirmed upstream bug fixes to Scout's internal rod fork (`pkg/rod/`). These are the first local modifications to the fork. See [ADR 007](adr/007-rod-ecosystem-analysis.md) for full analysis.
+Applied confirmed upstream bug fixes to Scout's internal rod fork (`pkg/rod/`). See [ADR 007](adr/007-rod-ecosystem-analysis.md) for full analysis.
 
 #### Fork-Level Patches (modify `pkg/rod/`)
 
-- [ ] **Nil-guard on disconnected page** (rod #1103) — Guard `getJSCtxID()` in `page_eval.go` against nil page/connection, return `ErrDisconnected` instead of segfault
+- [x] **Nil-guard on disconnected page** (rod #1103) — Guard `getJSCtxID()` in `page_eval.go` against nil page/connection, return `PageDisconnectedError` instead of segfault
 - [ ] **Context propagation** (rod #1179) — Pass page's context through to internal operations in `page.go`
 - [ ] **Page context in Info/Activate/TriggerFavicon** (rod #1206) — Use `p.browser.Context(p.ctx)` instead of `p.browser.ctx` in 3 methods
 - [ ] **Update `.dep-track.json`** — Record all local modifications with issue references
 
 #### Wrapper-Level Fixes (modify `pkg/scout/`)
 
-- [ ] **WaitStable panic recovery** (rod #1157) — Wrap `WaitLoad`/`WaitStable` with panic recovery + retry on "Execution context was destroyed"
-- [ ] **WaitSafe method** (rod #1224) — Add `Page.WaitSafe(timeout)` combining `WaitLoad` + timeout guard without `WaitRequestIdle` conflict
+- [x] **WaitSafe method** (rod #1224) — `Page.WaitSafe(timeout)` combining `WaitStable` + timeout + panic recovery
+- [x] **Hijack regexp validation** (rod #982) — Pre-validate pattern with `regexp.Compile()` before passing to rod's `Add()`
 - [ ] **Zombie process cleanup** (rod #865) — On `Browser.Close()`, walk Chrome process tree and kill orphan child processes
-- [ ] **Hijack regexp validation** (rod #982) — Pre-validate pattern with `regexp.Compile()` before passing to rod's `Add()`
 
 #### Testing
 
-- [ ] Tests for nil-guard (simulate disconnected page, verify error not panic)
-- [ ] Tests for WaitSafe (timeout behavior, panic recovery)
+- [x] Tests for nil-guard (`TestWaitSafe_NilPage`)
+- [x] Tests for WaitSafe (`TestWaitSafe_Normal`)
+- [x] Tests for hijack pattern validation (`TestHijack_InvalidRegexp`)
 - [ ] Tests for zombie cleanup (verify no orphan processes after Close)
-- [ ] Tests for hijack pattern validation (invalid regexp → clear error)
 
-### Phase 25: Accessibility Snapshot — ARIA Tree for LLM Automation [PLANNED]
+### Phase 25: Accessibility Snapshot — ARIA Tree for LLM Automation [COMPLETE]
 
-Port the accessibility snapshot system from [go-rod/rod-mcp](https://github.com/go-rod/rod-mcp) for LLM-driven element addressing. The snapshot produces a YAML-like ARIA tree with `[ref=s{gen}e{id}]` markers that LLMs can reference to interact with page elements.
+Ported accessibility snapshot system for LLM-driven element addressing. Produces YAML-like ARIA tree with `[ref=s{gen}e{id}]` markers.
 
-- [ ] **Snapshot types** (`pkg/scout/snapshot.go`) — `SnapshotNode{Role, Name, Description, Value, Ref, Children}`, `SnapshotResult{YAML string, NodeMap map[string]*SnapshotNode}`
-- [ ] **JS engine** (`pkg/scout/snapshot_js.go`) — Embedded ~1500-line JS from rod-mcp `types/js/snapshotter.js` for ARIA tree building with role extraction, name computation, ref marker injection
-- [ ] **`Page.Snapshot(...SnapshotOption)` method** — Execute snapshot JS, parse result, return structured tree
-- [ ] **Iframe traversal** — Recursively snapshot cross-origin iframes (rod-mcp pattern: `page.Frames()` → inject JS per frame → merge trees)
-- [ ] **Ref-based element resolution** — `Page.ElementByRef(ref string) (*Element, error)` to find elements by snapshot ref marker
-- [ ] **LLM integration** — Feed snapshot YAML as context to `ExtractWithLLM()` for element-aware extraction
-- [ ] **CLI** — `scout snapshot [--format=yaml|json]` to dump current page accessibility tree
-- [ ] **Tests** — snapshot generation, ref resolution, iframe merging, LLM context construction
+- [x] **Snapshot types** (`pkg/scout/snapshot.go`) — `SnapshotOption`, `WithSnapshotMaxDepth`, `WithSnapshotFilter`, `WithSnapshotInteractableOnly`
+- [x] **JS engine** (`pkg/scout/snapshot_script.go`) — Embedded JS for ARIA tree building with role extraction, name computation, ref marker injection
+- [x] **`Page.Snapshot()` and `Page.SnapshotWithOptions(...SnapshotOption)` methods** — Execute snapshot JS, return YAML-like string
+- [x] **Ref-based element resolution** — `Page.ElementByRef(ref string) (*Element, error)` finds elements by `data-scout-ref` attribute
+- [ ] **Iframe traversal** — Recursively snapshot cross-origin iframes
+- [ ] **LLM integration** — Feed snapshot YAML as context to `ExtractWithLLM()`
+- [ ] **CLI** — `scout snapshot [--format=yaml|json]`
+- [x] **Tests** — 9 tests: basic, form, elementByRef, maxDepth, interactableOnly, hidden, nilPage, notFound, emptyRef
 
-### Phase 26: MCP Transport — Model Context Protocol Server [PLANNED]
+### Phase 26: MCP Transport — Model Context Protocol Server [COMPLETE]
 
-Expose Scout's browser automation capabilities as MCP tools via stdio transport, enabling LLMs (Claude, GPT, etc.) to drive browser sessions through the standard Model Context Protocol. Uses the official `modelcontextprotocol/go-sdk` (not the unofficial `mark3labs/mcp-go` used by rod-mcp).
+Exposed Scout as MCP server via stdio transport using official `modelcontextprotocol/go-sdk`. LLMs can drive browser sessions through MCP.
 
-- [ ] **MCP server** (`cmd/scout/mcp.go`) — `scout mcp` command that starts MCP stdio transport
-- [ ] **Tool definitions** — Map Scout capabilities to MCP tools:
-  - `navigate`, `click`, `type`, `screenshot`, `snapshot` (accessibility)
-  - `extract`, `search`, `fetch`, `eval`, `pdf`
-  - `session_create`, `session_list`, `session_destroy`
-- [ ] **Resource definitions** — Expose page state as MCP resources:
-  - `scout://page/markdown` — current page as markdown
-  - `scout://page/snapshot` — accessibility tree
-  - `scout://page/screenshot` — base64 screenshot
-- [ ] **Session management** — MCP server manages a single browser session, tools operate on current page
-- [ ] **Accessibility snapshot integration** — `snapshot` tool returns YAML tree for LLM context (Phase 25 dependency)
-- [ ] **CLI** — `scout mcp [--headless] [--stealth]` starts MCP server on stdio
-- [ ] **Tests** — in-memory MCP transport tests using `mcp.NewInMemoryTransports()`, tool execution, resource reads
+- [x] **MCP server** (`pkg/scout/mcp/server.go`) — `NewServer(cfg)` and `Serve(ctx, logger, headless, stealth)` with lazy browser init
+- [x] **Tool definitions** — 10 tools: `navigate`, `click`, `type`, `screenshot`, `snapshot`, `extract`, `eval`, `back`, `forward`, `wait`
+- [x] **Resource definitions** — 3 resources: `scout://page/markdown`, `scout://page/url`, `scout://page/title`
+- [x] **Session management** — `mcpState` manages single browser+page with lazy init and mutex protection
+- [x] **Accessibility snapshot integration** — `snapshot` tool with `interactableOnly` option returns YAML tree
+- [x] **CLI** — `scout mcp [--headless] [--stealth]` in `cmd/scout/mcp.go`
+- [ ] **Additional tools** — `search`, `fetch`, `pdf`, `session_create/list/destroy`
+- [ ] **Tests** — in-memory MCP transport tests
+
+### Phase 26b: WebMCP — Web-Native Tool Discovery & Invocation [PLANNED]
+
+Integrate [GoogleChromeLabs/webmcp-tools](https://github.com/GoogleChromeLabs/webmcp-tools) patterns into Scout. WebMCP enables AI agents to discover and invoke structured tools exposed by web applications through the Model Context Protocol, replacing brittle DOM scraping with first-class tool interfaces when available.
+
+#### WebMCP Tool Discovery
+
+- [ ] **`Page.DiscoverWebMCPTools() ([]WebMCPTool, error)`** (`pkg/scout/webmcp.go`) — detect and enumerate MCP tools exposed by the current page via WebMCP protocol
+- [ ] **`WebMCPTool` type** — `Name`, `Description`, `InputSchema`, `ServerURL` fields matching MCP tool spec
+- [ ] **Auto-detection on navigation** — `WithWebMCPAutoDiscover()` option to automatically scan for WebMCP tools after page load
+- [ ] **Meta tag detection** — Parse `<meta>` tags and well-known endpoints (`.well-known/mcp`) for WebMCP declarations
+
+#### WebMCP Tool Invocation
+
+- [ ] **`Page.CallWebMCPTool(name string, params map[string]any) (*mcp.CallToolResult, error)`** — invoke a discovered WebMCP tool with parameters
+- [ ] **Schema validation** — validate params against the tool's input JSON Schema before invocation
+- [ ] **Result parsing** — parse MCP tool results into structured Go types
+
+#### Bridge Extension Integration
+
+- [ ] **Content script discovery** — Scout Bridge extension detects WebMCP-enabled pages and reports tools to Go backend via bridge channel
+- [ ] **In-page tool invocation** — Bridge content script calls WebMCP tools directly in the page context, avoiding cross-origin issues
+
+#### MCP Server Passthrough (Phase 26 dependency)
+
+- [ ] **Expose discovered WebMCP tools as Scout MCP tools** — when `scout mcp` is running, dynamically register page-discovered WebMCP tools so upstream LLMs can call them through Scout
+- [ ] **Tool namespacing** — prefix page tools with origin (e.g., `webmcp://example.com/search`) to avoid collisions
+
+#### CLI Commands
+
+- [ ] `scout webmcp discover <url>` — list WebMCP tools exposed by a page
+- [ ] `scout webmcp call <url> <tool-name> [--params='{}']` — invoke a WebMCP tool
+- [ ] `scout webmcp inspect <url>` — detailed tool inspection with schemas (mirrors GoogleChromeLabs Model Context Tool Inspector)
+
+#### Testing
+
+- [ ] Mock WebMCP-enabled pages in httptest with tool declarations
+- [ ] Tool discovery tests (meta tags, well-known endpoints)
+- [ ] Tool invocation tests (valid params, schema validation errors, result parsing)
+- [ ] Bridge integration tests (content script discovery flow)
 
 ### Phase 27: Browser Recycling & Request Blocking [IN PROGRESS]
 
@@ -883,14 +917,100 @@ Production hardening features from [go-rod/bartender](https://github.com/go-rod/
 
 - [ ] AutoFree lifecycle tests (recycle interval, session preservation)
 
+### Phase 28: Page Intelligence — Framework, SPA & PWA Detection [IN PROGRESS]
+
+Automatically analyze target pages to detect frontend frameworks, SPA/SSR rendering modes, PWA capabilities, and technology stack. Enables smart wait strategies, framework-aware scraping, and page classification for the recipe creator.
+
+#### Framework Detection [COMPLETE]
+
+- [x] **`Page.DetectFrameworks() ([]FrameworkInfo, error)`** (`pkg/scout/detect.go`) — JS-based detection of 14 frameworks via globals and DOM markers
+- [x] **`Page.DetectFramework() (*FrameworkInfo, error)`** — Primary framework with meta-framework precedence (Next.js > React, Nuxt > Vue, etc.)
+- [x] **`FrameworkInfo` type** — `Name`, `Version`, `SPA` fields
+- [x] **Detected frameworks**: React, Vue (2/3), Angular, AngularJS, Svelte, SvelteKit, Next.js, Nuxt, Remix, Gatsby, Astro, Ember, Backbone, jQuery
+- [x] **Tests** — 9 fixture routes, 11 test cases covering detection, version extraction, SPA flag, meta-framework precedence
+
+#### PWA Detection
+
+- [ ] **Service Worker detection** — `Page.DetectPWA() (*PWAInfo, error)` checks `navigator.serviceWorker.getRegistrations()` for active service workers
+- [ ] **Web App Manifest** — Parse `<link rel="manifest">`, fetch and decode `manifest.json` for `name`, `display`, `start_url`, `icons`, `theme_color`
+- [ ] **Installability check** — Detect if page meets PWA installability criteria (manifest + service worker + HTTPS)
+- [ ] **Offline capability** — Test if service worker has a fetch handler (indicates offline support)
+- [ ] **Push notification support** — Detect `PushManager` subscription capability
+- [ ] **`PWAInfo` type** — `HasServiceWorker`, `HasManifest`, `Installable`, `Offline`, `ManifestData *WebAppManifest`
+
+#### Rendering Mode Detection
+
+- [ ] **CSR vs SSR vs SSG detection** — `Page.DetectRenderMode() (RenderMode, error)` — compare initial HTML response (pre-JS) with post-hydration DOM to classify rendering strategy
+- [ ] **Hydration detection** — Detect React hydration markers (`data-reactroot` + server-rendered content), Vue hydration (`data-server-rendered`), Angular Universal markers
+- [ ] **Static site detection** — Identify pre-rendered static content (no JS framework globals after load = SSG)
+- [ ] **ISR detection** — Detect Next.js ISR via `__NEXT_DATA__.isFallback` or stale-while-revalidate headers
+- [ ] **`RenderMode` enum** — `RenderCSR`, `RenderSSR`, `RenderSSG`, `RenderISR`, `RenderUnknown`
+
+#### Technology Stack Detection
+
+- [ ] **CSS frameworks** — Detect Tailwind (`class` patterns), Bootstrap (`.container`, `.row`), Material UI, Chakra UI via class/attribute patterns
+- [ ] **Build tools** — Detect Webpack (chunk naming), Vite (`/@vite/`), Parcel, esbuild via script URL patterns
+- [ ] **CMS detection** — WordPress (`wp-content`), Drupal (`drupal.js`), Shopify (`Shopify.`), Webflow (`data-wf-`), Squarespace
+- [ ] **Analytics/tracking** — Detect Google Analytics, GTM, Segment, Mixpanel, Hotjar via script URLs and globals
+- [ ] **CDN detection** — Identify Cloudflare, Vercel, Netlify, AWS CloudFront via response headers and DNS
+- [ ] **`TechStack` type** — `Frameworks []FrameworkInfo`, `CSSFramework string`, `BuildTool string`, `CMS string`, `Analytics []string`, `CDN string`
+- [ ] **`Page.DetectTechStack() (*TechStack, error)`** — Comprehensive page technology analysis
+
+#### Smart Wait Strategies
+
+- [ ] **Framework-aware waits** — `Page.WaitFrameworkReady()` that chooses the optimal wait strategy based on detected framework:
+  - React: wait for hydration complete (`__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers`)
+  - Angular: wait for `NgZone` stability (`window.getAllAngularTestabilities()[0].isStable()`)
+  - Vue: wait for `nextTick` resolution
+  - Next.js: wait for `__NEXT_DATA__` + router ready
+  - Generic SPA: wait for network idle + DOM stable
+- [ ] **`WithSmartWait()` option** — Enable framework-aware waits globally on `NewPage()`
+- [ ] **Fallback chain** — Detect framework → use specific wait → fallback to `WaitLoad` + `WaitDOMStable`
+
+#### CLI Commands
+
+- [ ] `scout detect <url>` — Full page intelligence report (framework, PWA, render mode, tech stack)
+- [ ] `scout detect --framework <url>` — Framework detection only
+- [ ] `scout detect --pwa <url>` — PWA capability check
+- [ ] `scout detect --tech <url>` — Full technology stack analysis
+- [ ] `scout detect --json <url>` — Machine-readable output
+
+#### Integration
+
+- [ ] **Recipe creator** — Use `DetectFramework()` in `AnalyzeSite()` for better page classification and wait strategy selection
+- [ ] **Stealth mode** — Adapt stealth evasions based on detected stack (e.g., Cloudflare sites need stronger fingerprint consistency)
+- [ ] **LLM extraction** — Include framework/tech context in LLM prompts for more accurate extraction instructions
+
+#### Testing
+
+- [x] Framework detection tests (React, Vue, Angular, Svelte, Next.js, Gatsby, Astro, jQuery, none)
+- [ ] PWA detection tests (mock service worker registration, manifest parsing)
+- [ ] Render mode tests (CSR vs SSR HTML comparison)
+- [ ] Tech stack tests (CSS framework class patterns, CMS markers)
+- [ ] Smart wait strategy tests (framework-specific wait completion)
+
+### Phase 29: Credential Capture & Replay [COMPLETE]
+
+Launch a headed browser for manual login, capture all authentication state on Ctrl+C, and replay sessions from saved credential files. Simpler alternative to `auth capture` (which uses encrypted storage).
+
+- [x] **`CapturedCredentials` type** (`pkg/scout/capture.go`) — URL, FinalURL, CapturedAt, BrowserInfo, Cookies, LocalStorage, SessionStorage, UserAgent
+- [x] **`CaptureCredentials(ctx, url, opts)`** — Opens headed browser, waits for Ctrl+C via `signal.NotifyContext`, captures all auth state
+- [x] **`SaveCredentials(creds, path)`** — JSON file output with `0o600` permissions
+- [x] **`LoadCredentials(path)`** — Read credentials from JSON file
+- [x] **`ToSessionState()`** — Convert captured credentials to `SessionState` for use with `Page.LoadSession()`
+- [x] **CLI `scout credentials capture <url>`** — Launches browser, captures on Ctrl+C, prints summary
+- [x] **CLI `scout credentials replay <file> [url]`** — Loads credentials, restores session, navigates to URL
+- [x] **CLI `scout credentials show <file>`** — Display credential file contents (cookies, storage keys)
+- [ ] **Tests** — Unit tests for save/load/toSessionState, integration test for capture flow
+
 ## Test Coverage
 
-**Current:** pkg/scout 75.7% | pkg/identity 81.1% | scraper 84.3% | **Total: 54.9%** | **Target:** 80%
+**Current:** pkg/scout 74.1% | pkg/identity 81.1% | scraper 84.3% | **Target:** 80%
 
 | Package          | Coverage | Status                   |
 |------------------|----------|--------------------------|
-| pkg/scout        | 75.7%    | Below target             |
-| pkg/scout/recipe | 81.5%    | ✅ Target met             |
+| pkg/scout        | 74.1%    | Below target             |
+| pkg/scout/recipe | 82.5%    | ✅ Target met             |
 | pkg/identity     | 81.1%    | ✅ Target met             |
 | scraper          | 84.3%    | ✅ Complete               |
 | grpc/server      | 80.6%    | ✅ Target met             |

@@ -3,6 +3,8 @@ package scout
 import (
 	"os"
 	"time"
+
+	"github.com/inovacc/scout/pkg/rod/lib/proto"
 )
 
 // BrowserType identifies a Chromium-based browser for auto-detection.
@@ -44,8 +46,9 @@ type options struct {
 	extensionIDs  []string
 	devtools      bool
 	bridge        bool
-	blockPatterns []string
-	remoteCDP     string
+	blockPatterns      []string
+	remoteCDP          string
+	userAgentMetadata  *proto.EmulationUserAgentMetadata
 }
 
 func defaults() *options {
@@ -93,6 +96,12 @@ func WithStealth() Option {
 // WithUserAgent sets a custom User-Agent string.
 func WithUserAgent(ua string) Option {
 	return func(o *options) { o.userAgent = ua }
+}
+
+// WithUserAgentMetadata sets User Agent Client Hints metadata (Sec-CH-UA-*).
+// This controls what navigator.userAgentData returns in JavaScript.
+func WithUserAgentMetadata(meta *proto.EmulationUserAgentMetadata) Option {
+	return func(o *options) { o.userAgentMetadata = meta }
 }
 
 // WithProxy sets the proxy server URL (e.g. "socks5://127.0.0.1:1080").

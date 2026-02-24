@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/inovacc/scout/pkg/rod"
@@ -222,6 +223,11 @@ func (b *Browser) HandleAuth(username, password string) func() error {
 // The pattern uses glob-style matching (e.g. "*api*", "*.js").
 // Call Run() on the returned router in a goroutine, and Stop() when done.
 func (p *Page) Hijack(pattern string, handler HijackHandler) (*HijackRouter, error) {
+	// Validate pattern as regexp to prevent panics inside rod.
+	if _, err := regexp.Compile(pattern); err != nil {
+		return nil, fmt.Errorf("scout: hijack: invalid pattern %q: %w", pattern, err)
+	}
+
 	router := p.page.HijackRequests()
 
 	err := router.Add(pattern, "", func(h *rod.Hijack) {

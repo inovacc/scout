@@ -188,9 +188,13 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 	}
 
 	if b.opts.userAgent != "" {
-		if err := rodPage.SetUserAgent(&proto.NetworkSetUserAgentOverride{
+		override := &proto.NetworkSetUserAgentOverride{
 			UserAgent: b.opts.userAgent,
-		}); err != nil {
+		}
+		if b.opts.userAgentMetadata != nil {
+			override.UserAgentMetadata = b.opts.userAgentMetadata
+		}
+		if err := rodPage.SetUserAgent(override); err != nil {
 			return nil, fmt.Errorf("scout: set user agent: %w", err)
 		}
 	}

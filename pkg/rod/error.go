@@ -179,6 +179,16 @@ func (e *PageNotFoundError) Error() string {
 	return "cannot find page"
 }
 
+// PageDisconnectedError is returned when an operation is attempted on a disconnected page.
+type PageDisconnectedError struct{}
+
+func (e *PageDisconnectedError) Error() string {
+	return "page is disconnected"
+}
+
+// Is interface.
+func (e *PageDisconnectedError) Is(err error) bool { _, ok := err.(*PageDisconnectedError); return ok }
+
 // NoShadowRootError error.
 type NoShadowRootError struct {
 	*Element
