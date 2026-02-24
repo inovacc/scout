@@ -16,24 +16,24 @@
 - **Severity:** High
 - **Status:** Fixed — `PageDisconnectedError` nil-guard added in `pkg/rod/page_eval.go` (Phase 24).
 
-### Rod fork: context not propagated in page operations (upstream #1179)
+~~### Rod fork: context not propagated in page operations (upstream #1179)~~ [RESOLVED]
 
 - **Severity:** Medium
-- **Status:** Open — patch planned for Phase 24
+- **Status:** Fixed — `Info()`, `Activate()`, `TriggerFavicon()` now use `p.browser.Context(p.ctx)` instead of `p.browser.ctx` (commit 61fb628).
 - **Description:** Page's context is not passed through to internal operations in `pkg/rod/page.go` (line ~851). Causes operations to ignore cancellation.
 - **Workaround:** Use timeouts at the Scout wrapper level.
 
-### WaitStable panic on "Execution context was destroyed" (upstream #1157)
+~~### WaitStable panic on "Execution context was destroyed" (upstream #1157)~~ [RESOLVED]
 
 - **Severity:** Medium
-- **Status:** Open — fix planned for Phase 24
+- **Status:** Fixed — `WaitSafe()` method provides panic recovery wrapping `WaitStable` (commit bd53ea6).
 - **Description:** `WaitStable` can panic when page navigation destroys the execution context during stability check. Affects SPA navigation scenarios.
 - **Workaround:** Avoid `WaitStable` during navigation; use `WaitLoad` + manual delay.
 
-### Zombie Chrome processes after Browser.Close (upstream #865)
+~~### Zombie Chrome processes after Browser.Close (upstream #865)~~ [RESOLVED]
 
 - **Severity:** Medium
-- **Status:** Open — fix planned for Phase 24
+- **Status:** Fixed — launcher reference retained in Browser struct; `launcher.Kill()` on Close() walks process tree (commit 61fb628).
 - **Description:** `Browser.Close()` may leave orphan Chrome child processes (GPU, renderer, utility). Over time, zombie processes accumulate in daemon mode.
 - **Workaround:** Manual `pkill -f chrome` after extended sessions.
 
@@ -53,3 +53,6 @@
 | Server sessions die after 30s (context deadline)    | Fixed: server passes `WithTimeout(0)` to disable rod's one-shot page timeout for long-lived sessions                                                   | 2026-02 |
 | gRPC server test coverage below target              | Fixed: coverage raised from 67.7% to 80.6% with Interactive, pairing, TLS, mapKey, truncate, GetLocalIPs tests                                        | 2026-02 |
 | Rod fork: segfault on disconnected page (#1103)     | Fixed: `PageDisconnectedError` nil-guard in `pkg/rod/page_eval.go` (Phase 24)                                                                         | 2026-02 |
+| Rod fork: context not propagated in page operations (#1179) | Fixed: `Info()`, `Activate()`, `TriggerFavicon()` now use `p.browser.Context(p.ctx)` instead of `p.browser.ctx` (commit 61fb628)              | 2026-02 |
+| Zombie Chrome processes after Browser.Close (#865) | Fixed: launcher reference retained in Browser struct; `launcher.Kill()` on Close() walks process tree (commit 61fb628)                              | 2026-02 |
+| WaitStable panic on "Execution context was destroyed" (#1157) | Fixed: `WaitSafe()` method provides panic recovery wrapping `WaitStable` (commit bd53ea6)                                                | 2026-02 |

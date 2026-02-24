@@ -104,6 +104,105 @@ window.React = {version: '18.2.0'};
 </body></html>`)
 		})
 
+		// Tech stack detection routes
+		mux.HandleFunc("/detect-tech-wordpress", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>WordPress Site</title>
+<link rel="stylesheet" href="/wp-content/themes/theme/style.css">
+</head>
+<body>
+<div class="container"><div class="row"><div class="col-md-6">Content</div></div></div>
+<script src="/wp-content/plugins/plugin/script.js"></script>
+</body></html>`)
+		})
+
+		mux.HandleFunc("/detect-tech-react-vite", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>React Vite App</title></head>
+<body>
+<div id="root" data-reactroot>
+  <div class="flex p-4 bg-blue-500 text-center mt-2 rounded">Tailwind</div>
+</div>
+<script>
+window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {renderers: new Map([[1, {}]])};
+window.React = {version: '18.2.0'};
+document.getElementById('root')._reactRootContainer = {};
+window.gtag = function(){};
+</script>
+<script type="module" src="/@vite/client"></script>
+</body></html>`)
+		})
+
+		mux.HandleFunc("/detect-tech-plain", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>Plain Page</title></head>
+<body><p>No tech markers here</p></body></html>`)
+		})
+
+		// Render mode detection routes
+		mux.HandleFunc("/detect-render-csr", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>CSR App</title></head>
+<body>
+<div id="root"></div>
+<script>
+window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = {renderers: new Map([[1, {}]])};
+</script>
+</body></html>`)
+		})
+
+		mux.HandleFunc("/detect-render-ssr", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>SSR App</title></head>
+<body>
+<div id="app" data-server-rendered="true">
+<h1>Server Rendered Content</h1>
+<p>This content was rendered on the server with Vue SSR.</p>
+</div>
+<script>window.__VUE__ = {version: '3.4.0'};</script>
+</body></html>`)
+		})
+
+		mux.HandleFunc("/detect-render-ssg", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>Gatsby SSG</title></head>
+<body>
+<div id="___gatsby">
+<h1>Gatsby Static Site</h1>
+<p>This page was statically generated at build time.</p>
+</div>
+</body></html>`)
+		})
+
+		mux.HandleFunc("/detect-render-nextjs-ssp", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>Next SSP</title></head>
+<body>
+<div id="__next"><h1>Server Props Page</h1></div>
+<script>
+window.__NEXT_DATA__ = {buildId: 'abc', props: {pageProps: {__N_SSP: true, data: 'server'}}};
+window.next = {version: '14.1.0'};
+</script>
+</body></html>`)
+		})
+
+		mux.HandleFunc("/detect-render-plain", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>Plain Page</title></head>
+<body>
+<h1>Welcome to My Website</h1>
+<p>This is a plain HTML page with no JavaScript framework. It has enough content to be considered substantial static HTML for render mode detection purposes.</p>
+</body></html>`)
+		})
+
 		// PWA detection routes
 		mux.HandleFunc("/pwa-manifest.json", func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -441,6 +540,279 @@ func TestDetectPWA_NilPage(t *testing.T) {
 	_, err := p.DetectPWA()
 	if err == nil {
 		t.Error("expected error for nil page")
+	}
+}
+
+func TestDetectTechStack_WordPress(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/detect-tech-wordpress")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	stack, err := page.DetectTechStack()
+	if err != nil {
+		t.Fatalf("DetectTechStack() error: %v", err)
+	}
+
+	if stack.CMS != "WordPress" {
+		t.Errorf("CMS = %q, want WordPress", stack.CMS)
+	}
+	if stack.CSSFramework != "Bootstrap" {
+		t.Errorf("CSSFramework = %q, want Bootstrap", stack.CSSFramework)
+	}
+}
+
+func TestDetectTechStack_ReactVite(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/detect-tech-react-vite")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	stack, err := page.DetectTechStack()
+	if err != nil {
+		t.Fatalf("DetectTechStack() error: %v", err)
+	}
+
+	if stack.BuildTool != "Vite" {
+		t.Errorf("BuildTool = %q, want Vite", stack.BuildTool)
+	}
+	if stack.CSSFramework != "Tailwind" {
+		t.Errorf("CSSFramework = %q, want Tailwind", stack.CSSFramework)
+	}
+
+	// Check frameworks include React
+	foundReact := false
+	for _, f := range stack.Frameworks {
+		if f.Name == "React" {
+			foundReact = true
+			break
+		}
+	}
+	if !foundReact {
+		t.Errorf("expected React in frameworks, got %v", stack.Frameworks)
+	}
+
+	// Check analytics includes Google Analytics
+	foundGA := false
+	for _, a := range stack.Analytics {
+		if a == "Google Analytics" {
+			foundGA = true
+			break
+		}
+	}
+	if !foundGA {
+		t.Errorf("expected Google Analytics in analytics, got %v", stack.Analytics)
+	}
+}
+
+func TestDetectTechStack_Plain(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/detect-tech-plain")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	stack, err := page.DetectTechStack()
+	if err != nil {
+		t.Fatalf("DetectTechStack() error: %v", err)
+	}
+
+	if stack.CSSFramework != "" {
+		t.Errorf("CSSFramework = %q, want empty", stack.CSSFramework)
+	}
+	if stack.BuildTool != "" {
+		t.Errorf("BuildTool = %q, want empty", stack.BuildTool)
+	}
+	if stack.CMS != "" {
+		t.Errorf("CMS = %q, want empty", stack.CMS)
+	}
+	if stack.CDN != "" {
+		t.Errorf("CDN = %q, want empty", stack.CDN)
+	}
+	if stack.Analytics != nil {
+		t.Errorf("Analytics = %v, want nil", stack.Analytics)
+	}
+	if len(stack.Frameworks) != 0 {
+		t.Errorf("Frameworks = %v, want empty", stack.Frameworks)
+	}
+}
+
+func TestDetectTechStack_NilPage(t *testing.T) {
+	var p *Page
+	_, err := p.DetectTechStack()
+	if err == nil {
+		t.Error("expected error for nil page")
+	}
+}
+
+func TestDetectRenderMode_CSR(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/detect-render-csr")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	info, err := page.DetectRenderMode()
+	if err != nil {
+		t.Fatalf("DetectRenderMode() error: %v", err)
+	}
+
+	if info.Mode != RenderCSR {
+		t.Errorf("mode = %q, want %q", info.Mode, RenderCSR)
+	}
+	if info.Details == "" {
+		t.Error("expected non-empty details")
+	}
+}
+
+func TestDetectRenderMode_SSR(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/detect-render-ssr")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	info, err := page.DetectRenderMode()
+	if err != nil {
+		t.Fatalf("DetectRenderMode() error: %v", err)
+	}
+
+	if info.Mode != RenderSSR {
+		t.Errorf("mode = %q, want %q", info.Mode, RenderSSR)
+	}
+	if info.Details == "" {
+		t.Error("expected non-empty details")
+	}
+}
+
+func TestDetectRenderMode_SSG(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/detect-render-ssg")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	info, err := page.DetectRenderMode()
+	if err != nil {
+		t.Fatalf("DetectRenderMode() error: %v", err)
+	}
+
+	if info.Mode != RenderSSG {
+		t.Errorf("mode = %q, want %q", info.Mode, RenderSSG)
+	}
+	if info.Details == "" {
+		t.Error("expected non-empty details")
+	}
+}
+
+func TestDetectRenderMode_NextSSP(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/detect-render-nextjs-ssp")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	info, err := page.DetectRenderMode()
+	if err != nil {
+		t.Fatalf("DetectRenderMode() error: %v", err)
+	}
+
+	if info.Mode != RenderSSR {
+		t.Errorf("mode = %q, want %q", info.Mode, RenderSSR)
+	}
+	if !info.Hydrated {
+		t.Error("expected hydrated=true for Next.js SSP")
+	}
+}
+
+func TestDetectRenderMode_NilPage(t *testing.T) {
+	var p *Page
+	_, err := p.DetectRenderMode()
+	if err == nil {
+		t.Error("expected error for nil page")
+	}
+}
+
+func TestDetectRenderMode_Plain(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(srv.URL + "/detect-render-plain")
+	if err != nil {
+		t.Fatalf("NewPage() error: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad() error: %v", err)
+	}
+
+	info, err := page.DetectRenderMode()
+	if err != nil {
+		t.Fatalf("DetectRenderMode() error: %v", err)
+	}
+
+	if info.Mode != RenderSSG {
+		t.Errorf("mode = %q, want %q (plain HTML = static)", info.Mode, RenderSSG)
 	}
 }
 
