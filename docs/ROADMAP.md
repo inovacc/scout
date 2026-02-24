@@ -476,15 +476,15 @@ Use LLM vision and the Scout Bridge extension to detect and solve Cloudflare cha
 - [ ] Cookie persistence tests (solve → capture cookies → new session → verify bypass)
 - [ ] LLM vision mock tests (screenshot → mock LLM response → verify click coordinates)
 
-### Phase 18: User Profile — Portable Browser Identity [PLANNED]
+### Phase 18: User Profile — Portable Browser Identity [IN PROGRESS]
 
 A self-contained profile file (`.scoutprofile`) that captures everything needed to launch a browser that looks and behaves like a returning user. Profiles are portable, versionable, and can be shared across machines. On `New()` or `scout session create --profile=<file>`, Scout reads the profile, configures the browser, and hydrates all stored state — no manual setup required.
 
 #### Profile File Format
 
-- [ ] **`.scoutprofile` format** (`pkg/scout/profile.go`) — single JSON (or encrypted JSON) file containing all browser identity data
-- [ ] **Schema versioning** — `{"version": 1, ...}` header for forward-compatible migration
-- [ ] **Profile sections**:
+- [x] **`.scoutprofile` format** (`pkg/scout/profile.go`) — single JSON (or encrypted JSON) file containing all browser identity data
+- [x] **Schema versioning** — `{"version": 1, ...}` header for forward-compatible migration
+- [x] **Profile sections**:
   ```go
   type UserProfile struct {
       Version     int                `json:"version"`
@@ -505,28 +505,28 @@ A self-contained profile file (`.scoutprofile`) that captures everything needed 
 
 #### Profile Capture (Browser → File)
 
-- [ ] **`CaptureProfile(page *Page, ...ProfileOption) (*UserProfile, error)`** — snapshot the current browser state into a profile
-- [ ] **Cookie capture** — dump all cookies across domains via CDP `Network.getAllCookies`
-- [ ] **Storage capture** — enumerate origins, read localStorage + sessionStorage via JS eval per origin
-- [ ] **Identity capture** — read current user-agent, language, timezone, viewport, geolocation from browser
-- [ ] **Extension capture** — list loaded extension IDs that exist in `~/.scout/extensions/`
-- [ ] **Save to file** — `profile.Save(path string) error` writes `.scoutprofile` JSON
+- [x] **`CaptureProfile(page *Page, ...ProfileOption) (*UserProfile, error)`** — snapshot the current browser state into a profile
+- [x] **Cookie capture** — dump all cookies across domains via CDP `Network.getAllCookies`
+- [x] **Storage capture** — enumerate origins, read localStorage + sessionStorage via JS eval per origin
+- [x] **Identity capture** — read current user-agent, language, timezone, viewport, geolocation from browser
+- [x] **Extension capture** — list loaded extension IDs that exist in `~/.scout/extensions/`
+- [x] **Save to file** — `profile.Save(path string) error` writes `.scoutprofile` JSON
 - [ ] **Encrypted save** — `profile.SaveEncrypted(path, passphrase string) error` using existing `scraper/crypto.go` AES-256-GCM + Argon2id
 
 #### Profile Load (File → Browser)
 
-- [ ] **`WithProfile(path string)` option** — load profile at browser creation, configure all settings before launch
-- [ ] **`WithProfileData(p *UserProfile)` option** — load from in-memory struct
-- [ ] **Browser config** — apply browser type, window size, proxy, launch flags, extensions from profile
-- [ ] **Identity injection** — set user-agent, accept-language, timezone override, geolocation override via CDP
-- [ ] **Cookie hydration** — set all cookies via CDP `Network.setCookies` after page creation
-- [ ] **Storage hydration** — navigate to each origin, inject localStorage + sessionStorage via JS eval
-- [ ] **Header injection** — apply custom headers via `SetHeaders()`
+- [x] **`WithProfile(path string)` option** — load profile at browser creation, configure all settings before launch
+- [x] **`WithProfileData(p *UserProfile)` option** — load from in-memory struct
+- [x] **Browser config** — apply browser type, window size, proxy, launch flags, extensions from profile
+- [x] **Identity injection** — set user-agent, accept-language, timezone override, geolocation override via CDP
+- [x] **Cookie hydration** — set all cookies via CDP `Network.setCookies` after page creation
+- [x] **Storage hydration** — navigate to each origin, inject localStorage + sessionStorage via JS eval
+- [x] **Header injection** — apply custom headers via `SetHeaders()`
 - [ ] **Extension resolution** — resolve extension IDs to local paths via `extensionPathByID()`, warn if missing
 
 #### Profile Management
 
-- [ ] **`LoadProfile(path string) (*UserProfile, error)`** — read and parse `.scoutprofile` file
+- [x] **`LoadProfile(path string) (*UserProfile, error)`** — read and parse `.scoutprofile` file
 - [ ] **`LoadProfileEncrypted(path, passphrase string) (*UserProfile, error)`** — decrypt and parse
 - [ ] **`MergeProfiles(base, overlay *UserProfile) *UserProfile`** — merge two profiles (overlay wins on conflict)
 - [ ] **`DiffProfiles(a, b *UserProfile) ProfileDiff`** — compare two profiles, list changes
@@ -534,9 +534,9 @@ A self-contained profile file (`.scoutprofile`) that captures everything needed 
 
 #### CLI Commands
 
-- [ ] `scout profile capture [--output=my.scoutprofile] [--encrypt]` — capture current session state to file
-- [ ] `scout profile load <file.scoutprofile>` — create session from profile
-- [ ] `scout profile show <file.scoutprofile>` — display profile summary (name, cookies count, origins, extensions)
+- [x] `scout profile capture [--output=my.scoutprofile] [--encrypt]` — capture current session state to file
+- [x] `scout profile load <file.scoutprofile>` — create session from profile
+- [x] `scout profile show <file.scoutprofile>` — display profile summary (name, cookies count, origins, extensions)
 - [ ] `scout profile merge <base> <overlay> [--output=merged.scoutprofile]` — merge two profiles
 - [ ] `scout profile diff <a> <b>` — show differences between profiles
 - [ ] `scout session create --profile=<file>` — create new session with profile applied
@@ -549,7 +549,7 @@ A self-contained profile file (`.scoutprofile`) that captures everything needed 
 
 #### Testing
 
-- [ ] Profile round-trip tests (capture → save → load → verify all fields match)
+- [x] Profile round-trip tests (capture → save → load → verify all fields match)
 - [ ] Encrypted profile tests (save encrypted → load with correct/wrong passphrase)
 - [ ] Cookie hydration tests (set cookies → capture → new browser → load → verify cookies present)
 - [ ] Storage hydration tests (set localStorage → capture → new browser → load → verify storage present)
@@ -917,7 +917,7 @@ Production hardening features from [go-rod/bartender](https://github.com/go-rod/
 
 - [ ] AutoFree lifecycle tests (recycle interval, session preservation)
 
-### Phase 28: Page Intelligence — Framework, SPA & PWA Detection [IN PROGRESS]
+### Phase 28: Page Intelligence — Framework, SPA & PWA Detection [COMPLETE]
 
 Automatically analyze target pages to detect frontend frameworks, SPA/SSR rendering modes, PWA capabilities, and technology stack. Enables smart wait strategies, framework-aware scraping, and page classification for the recipe creator.
 
@@ -961,14 +961,14 @@ Automatically analyze target pages to detect frontend frameworks, SPA/SSR render
 
 #### Smart Wait Strategies
 
-- [ ] **Framework-aware waits** — `Page.WaitFrameworkReady()` that chooses the optimal wait strategy based on detected framework:
+- [x] **Framework-aware waits** — `Page.WaitFrameworkReady()` that chooses the optimal wait strategy based on detected framework:
   - React: wait for hydration complete (`__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers`)
   - Angular: wait for `NgZone` stability (`window.getAllAngularTestabilities()[0].isStable()`)
   - Vue: wait for `nextTick` resolution
   - Next.js: wait for `__NEXT_DATA__` + router ready
   - Generic SPA: wait for network idle + DOM stable
-- [ ] **`WithSmartWait()` option** — Enable framework-aware waits globally on `NewPage()`
-- [ ] **Fallback chain** — Detect framework → use specific wait → fallback to `WaitLoad` + `WaitDOMStable`
+- [x] **`WithSmartWait()` option** — Enable framework-aware waits globally on `NewPage()`
+- [x] **Fallback chain** — Detect framework → use specific wait → fallback to `WaitLoad` + `WaitDOMStable`
 
 #### CLI Commands
 
@@ -981,9 +981,9 @@ Automatically analyze target pages to detect frontend frameworks, SPA/SSR render
 
 #### Integration
 
-- [ ] **Recipe creator** — Use `DetectFramework()` in `AnalyzeSite()` for better page classification and wait strategy selection
-- [ ] **Stealth mode** — Adapt stealth evasions based on detected stack (e.g., Cloudflare sites need stronger fingerprint consistency)
-- [ ] **LLM extraction** — Include framework/tech context in LLM prompts for more accurate extraction instructions
+- [x] **Recipe creator** — Use `DetectFramework()` in `AnalyzeSite()` for better page classification and wait strategy selection
+- [ ] **Stealth mode** — Skipped — timing conflict: evasions inject before load, detection requires loaded DOM
+- [x] **LLM extraction** — Include framework/tech context in LLM prompts for more accurate extraction instructions
 
 #### Testing
 
@@ -991,7 +991,7 @@ Automatically analyze target pages to detect frontend frameworks, SPA/SSR render
 - [x] PWA detection tests (manifest parsing, no-manifest, manifest-only, nil-page, push capability)
 - [x] Render mode tests (CSR, SSR, SSG, Next.js SSP, plain HTML, nil page)
 - [x] Tech stack tests (WordPress+Bootstrap, React+Vite+Tailwind+GA, plain, nil page)
-- [ ] Smart wait strategy tests (framework-specific wait completion)
+- [x] Smart wait strategy tests (6 tests: React, Angular, fallback, nil page, option, NewPage integration)
 
 ### Phase 29: Credential Capture & Replay [COMPLETE]
 
