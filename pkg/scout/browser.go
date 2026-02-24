@@ -227,6 +227,10 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 		}
 	}
 
+	if b.opts.smartWait && url != "" {
+		_ = p.WaitFrameworkReady()
+	}
+
 	return p, nil
 }
 

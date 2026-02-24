@@ -87,6 +87,50 @@ func WithLLMMainContent() LLMOption {
 	return func(o *llmOptions) { o.mainOnly = true }
 }
 
+// pageIntelligenceContext detects the page's framework and render mode and returns
+// a short context string suitable for prepending to an LLM system prompt.
+// Returns an empty string if detection fails or yields no useful info.
+func (p *Page) pageIntelligenceContext() string {
+	var parts []string
+
+	if fw, err := p.DetectFramework(); err == nil && fw != nil {
+		desc := fw.Name
+		if fw.Version != "" {
+			desc += " " + fw.Version
+		}
+		if fw.SPA {
+			desc += " (SPA)"
+		}
+		parts = append(parts, "Framework: "+desc)
+	}
+
+	if ri, err := p.DetectRenderMode(); err == nil && ri.Mode != RenderUnknown {
+		desc := string(ri.Mode)
+		if ri.Hydrated {
+			desc += ", hydrated"
+		}
+		parts = append(parts, "Render mode: "+desc)
+	}
+
+	if len(parts) == 0 {
+		return ""
+	}
+
+	return "Page intelligence: " + fmt.Sprintf("%s.", joinStrings(parts, "; "))
+}
+
+// joinStrings joins a slice with a separator. Avoids importing strings for one call.
+func joinStrings(parts []string, sep string) string {
+	if len(parts) == 0 {
+		return ""
+	}
+	result := parts[0]
+	for _, p := range parts[1:] {
+		result += sep + p
+	}
+	return result
+}
+
 // ExtractWithLLM sends the page content to an LLM with the given prompt and returns the response.
 func (p *Page) ExtractWithLLM(prompt string, opts ...LLMOption) (string, error) {
 	o := defaultLLMOptions()
@@ -109,12 +153,18 @@ func (p *Page) ExtractWithLLM(prompt string, opts ...LLMOption) (string, error) 
 		return "", fmt.Errorf("scout: extract-llm: get markdown: %w", err)
 	}
 
+	// Enrich system prompt with page intelligence
+	systemPrompt := o.systemPrompt
+	if intel := p.pageIntelligenceContext(); intel != "" {
+		systemPrompt = intel + "\n\n" + systemPrompt
+	}
+
 	userPrompt := prompt + "\n\n---\n\n" + md
 
 	ctx, cancel := context.WithTimeout(context.Background(), o.timeout)
 	defer cancel()
 
-	result, err := o.provider.Complete(ctx, o.systemPrompt, userPrompt)
+	result, err := o.provider.Complete(ctx, systemPrompt, userPrompt)
 	if err != nil {
 		return "", fmt.Errorf("scout: extract-llm: %s: %w", o.provider.Name(), err)
 	}

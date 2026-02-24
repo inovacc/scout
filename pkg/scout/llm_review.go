@@ -120,12 +120,18 @@ func (p *Page) ExtractWithLLMReview(prompt string, opts ...LLMOption) (*LLMJobRe
 		_ = o.workspace.UpdateJob(job)
 	}
 
+	// Enrich system prompt with page intelligence
+	systemPrompt := o.systemPrompt
+	if intel := p.pageIntelligenceContext(); intel != "" {
+		systemPrompt = intel + "\n\n" + systemPrompt
+	}
+
 	userPrompt := prompt + "\n\n---\n\n" + md
 
 	ctx, cancel := context.WithTimeout(context.Background(), o.timeout)
 	defer cancel()
 
-	extractResult, err := o.provider.Complete(ctx, o.systemPrompt, userPrompt)
+	extractResult, err := o.provider.Complete(ctx, systemPrompt, userPrompt)
 	if err != nil {
 		if job != nil {
 			job.Status = JobStatusFailed

@@ -49,6 +49,8 @@ type options struct {
 	blockPatterns      []string
 	remoteCDP          string
 	userAgentMetadata  *proto.EmulationUserAgentMetadata
+	smartWait          bool
+	profile            *UserProfile
 }
 
 func defaults() *options {
@@ -239,6 +241,13 @@ func WithBlockPatterns(patterns ...string) Option {
 // The endpoint should be a WebSocket URL, e.g. "ws://127.0.0.1:9222".
 func WithRemoteCDP(endpoint string) Option {
 	return func(o *options) { o.remoteCDP = endpoint }
+}
+
+// WithSmartWait enables framework-aware waiting on NewPage. When enabled,
+// NewPage will call WaitFrameworkReady after page creation, which detects
+// the frontend framework and waits for it to finish hydrating/rendering.
+func WithSmartWait() Option {
+	return func(o *options) { o.smartWait = true }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.
