@@ -235,12 +235,90 @@ var profileShowCmd = &cobra.Command{
 	},
 }
 
+var profileMergeCmd = &cobra.Command{
+	Use:   "merge <base> <overlay>",
+	Short: "Merge two profiles (overlay wins on conflict)",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		base, err := scout.LoadProfile(args[0])
+		if err != nil {
+			return err
+		}
+
+		overlay, err := scout.LoadProfile(args[1])
+		if err != nil {
+			return err
+		}
+
+		merged := scout.MergeProfiles(base, overlay)
+
+		outFile, _ := cmd.Flags().GetString("output")
+		if outFile == "" {
+			outFile = "merged.scoutprofile"
+		}
+
+		if err := scout.SaveProfile(merged, outFile); err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Merged profile saved to: %s\n", outFile)
+		return nil
+	},
+}
+
+var profileDiffCmd = &cobra.Command{
+	Use:   "diff <a> <b>",
+	Short: "Show differences between two profiles",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		a, err := scout.LoadProfile(args[0])
+		if err != nil {
+			return err
+		}
+
+		b, err := scout.LoadProfile(args[1])
+		if err != nil {
+			return err
+		}
+
+		diff := scout.DiffProfiles(a, b)
+		format, _ := cmd.Flags().GetString("format")
+
+		if format == "json" {
+			data, err := json.MarshalIndent(diff, "", "  ")
+			if err != nil {
+				return fmt.Errorf("scout: profile: diff: marshal: %w", err)
+			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
+			return nil
+		}
+
+		w := cmd.OutOrStdout()
+		_, _ = fmt.Fprintf(w, "Name changed:           %v\n", diff.NameChanged)
+		_, _ = fmt.Fprintf(w, "Identity changed:       %v\n", diff.IdentityChanged)
+		_, _ = fmt.Fprintf(w, "Browser changed:        %v\n", diff.BrowserChanged)
+		_, _ = fmt.Fprintf(w, "Cookies added:          %d\n", diff.CookiesAdded)
+		_, _ = fmt.Fprintf(w, "Cookies removed:        %d\n", diff.CookiesRemoved)
+		_, _ = fmt.Fprintf(w, "Cookies modified:        %d\n", diff.CookiesModified)
+		_, _ = fmt.Fprintf(w, "Storage origins added:  %d\n", diff.StorageOriginsAdded)
+		_, _ = fmt.Fprintf(w, "Storage origins removed:%d\n", diff.StorageOriginsRemoved)
+		_, _ = fmt.Fprintf(w, "Headers changed:        %d\n", diff.HeadersChanged)
+		_, _ = fmt.Fprintf(w, "Extensions added:       %d\n", diff.ExtensionsAdded)
+		_, _ = fmt.Fprintf(w, "Extensions removed:     %d\n", diff.ExtensionsRemoved)
+		return nil
+	},
+}
+
 func init() {
 	profileCaptureCmd.Flags().String("name", "", "profile name")
 	profileCaptureCmd.Flags().StringP("output", "o", "", "output file (default: profile.scoutprofile)")
 
 	profileShowCmd.Flags().String("format", "text", "output format: text or json")
 
-	profileCmd.AddCommand(profileCaptureCmd, profileLoadCmd, profileShowCmd)
+	profileMergeCmd.Flags().StringP("output", "o", "", "output file (default: merged.scoutprofile)")
+
+	profileDiffCmd.Flags().String("format", "text", "output format: text or json")
+
+	profileCmd.AddCommand(profileCaptureCmd, profileLoadCmd, profileShowCmd, profileMergeCmd, profileDiffCmd)
 	rootCmd.AddCommand(profileCmd)
 }

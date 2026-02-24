@@ -3,6 +3,7 @@ package scout
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -257,5 +258,288 @@ func TestApplyProfile_NilProfile(t *testing.T) {
 	err := page.ApplyProfile(&UserProfile{})
 	if err == nil {
 		t.Fatal("expected error for nil inner page")
+	}
+}
+
+func TestSaveLoadProfileEncrypted(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	p := &UserProfile{
+		Version:   1,
+		Name:      "encrypted-test",
+		CreatedAt: now,
+		UpdatedAt: now,
+		Identity:  ProfileIdentity{UserAgent: "TestAgent/2.0"},
+		Cookies:   []Cookie{{Name: "tok", Value: "xyz", Domain: ".example.com"}},
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "enc.scoutprofile")
+
+	if err := SaveProfileEncrypted(p, path, "s3cret"); err != nil {
+		t.Fatalf("SaveProfileEncrypted: %v", err)
+	}
+
+	loaded, err := LoadProfileEncrypted(path, "s3cret")
+	if err != nil {
+		t.Fatalf("LoadProfileEncrypted: %v", err)
+	}
+
+	if loaded.Name != "encrypted-test" {
+		t.Errorf("Name = %q, want %q", loaded.Name, "encrypted-test")
+	}
+
+	if loaded.Identity.UserAgent != "TestAgent/2.0" {
+		t.Errorf("UserAgent = %q, want %q", loaded.Identity.UserAgent, "TestAgent/2.0")
+	}
+
+	if len(loaded.Cookies) != 1 || loaded.Cookies[0].Name != "tok" {
+		t.Errorf("Cookies mismatch")
+	}
+}
+
+func TestLoadProfileEncrypted_WrongPassphrase(t *testing.T) {
+	p := &UserProfile{Version: 1, Name: "test", CreatedAt: time.Now(), UpdatedAt: time.Now()}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "enc.scoutprofile")
+
+	if err := SaveProfileEncrypted(p, path, "correct"); err != nil {
+		t.Fatalf("SaveProfileEncrypted: %v", err)
+	}
+
+	_, err := LoadProfileEncrypted(path, "wrong")
+	if err == nil {
+		t.Fatal("expected error for wrong passphrase")
+	}
+}
+
+func TestMergeProfiles(t *testing.T) {
+	base := &UserProfile{
+		Version:   1,
+		Name:      "base",
+		CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		UpdatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		Identity:  ProfileIdentity{UserAgent: "BaseAgent", Language: "en-US"},
+		Browser:   ProfileBrowser{Type: "chrome", WindowW: 1920, WindowH: 1080},
+		Headers:   map[string]string{"X-Base": "1", "X-Shared": "base"},
+		Extensions: []string{"/ext/a", "/ext/b"},
+		Proxy:     "socks5://base:1080",
+		Notes:     "base notes",
+	}
+
+	overlay := &UserProfile{
+		Version:   1,
+		Name:      "overlay",
+		CreatedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+		UpdatedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+		Identity:  ProfileIdentity{UserAgent: "OverlayAgent"},
+		Browser:   ProfileBrowser{Type: "brave"},
+		Headers:   map[string]string{"X-Overlay": "2", "X-Shared": "overlay"},
+		Extensions: []string{"/ext/b", "/ext/c"},
+	}
+
+	merged := MergeProfiles(base, overlay)
+
+	// Overlay wins on scalar fields.
+	if merged.Name != "overlay" {
+		t.Errorf("Name = %q, want %q", merged.Name, "overlay")
+	}
+	if merged.Identity.UserAgent != "OverlayAgent" {
+		t.Errorf("UserAgent = %q, want %q", merged.Identity.UserAgent, "OverlayAgent")
+	}
+	// Base kept when overlay empty.
+	if merged.Identity.Language != "en-US" {
+		t.Errorf("Language = %q, want %q", merged.Identity.Language, "en-US")
+	}
+	if merged.Browser.Type != "brave" {
+		t.Errorf("Browser.Type = %q, want %q", merged.Browser.Type, "brave")
+	}
+	if merged.Proxy != "socks5://base:1080" {
+		t.Errorf("Proxy = %q, want base proxy", merged.Proxy)
+	}
+	if merged.Notes != "base notes" {
+		t.Errorf("Notes = %q, want base notes", merged.Notes)
+	}
+
+	// Headers merged, overlay wins on conflict.
+	if merged.Headers["X-Base"] != "1" {
+		t.Error("X-Base header lost")
+	}
+	if merged.Headers["X-Shared"] != "overlay" {
+		t.Errorf("X-Shared = %q, want overlay", merged.Headers["X-Shared"])
+	}
+	if merged.Headers["X-Overlay"] != "2" {
+		t.Error("X-Overlay header lost")
+	}
+
+	// Extensions union.
+	if len(merged.Extensions) != 3 {
+		t.Errorf("Extensions len = %d, want 3", len(merged.Extensions))
+	}
+
+	// Timestamps.
+	if !merged.CreatedAt.Equal(base.CreatedAt) {
+		t.Errorf("CreatedAt = %v, want earliest (base)", merged.CreatedAt)
+	}
+	if !merged.UpdatedAt.Equal(overlay.UpdatedAt) {
+		t.Errorf("UpdatedAt = %v, want latest (overlay)", merged.UpdatedAt)
+	}
+}
+
+func TestMergeProfiles_Cookies(t *testing.T) {
+	base := &UserProfile{
+		Version: 1,
+		Cookies: []Cookie{
+			{Name: "shared", Value: "base-val", Domain: ".example.com", Path: "/"},
+			{Name: "base-only", Value: "b", Domain: ".example.com", Path: "/"},
+		},
+	}
+
+	overlay := &UserProfile{
+		Version: 1,
+		Cookies: []Cookie{
+			{Name: "shared", Value: "overlay-val", Domain: ".example.com", Path: "/"},
+			{Name: "new", Value: "n", Domain: ".other.com", Path: "/"},
+		},
+	}
+
+	merged := MergeProfiles(base, overlay)
+
+	if len(merged.Cookies) != 3 {
+		t.Fatalf("Cookies len = %d, want 3", len(merged.Cookies))
+	}
+
+	cookieByName := make(map[string]Cookie)
+	for _, c := range merged.Cookies {
+		cookieByName[c.Name] = c
+	}
+
+	if cookieByName["shared"].Value != "overlay-val" {
+		t.Errorf("shared cookie = %q, want overlay-val", cookieByName["shared"].Value)
+	}
+	if cookieByName["base-only"].Value != "b" {
+		t.Error("base-only cookie lost")
+	}
+	if cookieByName["new"].Value != "n" {
+		t.Error("new cookie lost")
+	}
+}
+
+func TestDiffProfiles(t *testing.T) {
+	a := &UserProfile{
+		Version:  1,
+		Name:     "alpha",
+		Identity: ProfileIdentity{UserAgent: "A"},
+		Browser:  ProfileBrowser{Type: "chrome"},
+		Cookies: []Cookie{
+			{Name: "kept", Value: "v1", Domain: ".example.com", Path: "/"},
+			{Name: "removed", Value: "r", Domain: ".example.com", Path: "/"},
+			{Name: "modified", Value: "old", Domain: ".example.com", Path: "/"},
+		},
+		Storage:    map[string]ProfileOriginStorage{"https://a.com": {}},
+		Headers:    map[string]string{"X-A": "1"},
+		Extensions: []string{"/ext/a", "/ext/shared"},
+	}
+
+	b := &UserProfile{
+		Version:  1,
+		Name:     "beta",
+		Identity: ProfileIdentity{UserAgent: "B"},
+		Browser:  ProfileBrowser{Type: "brave"},
+		Cookies: []Cookie{
+			{Name: "kept", Value: "v1", Domain: ".example.com", Path: "/"},
+			{Name: "added", Value: "a", Domain: ".other.com", Path: "/"},
+			{Name: "modified", Value: "new", Domain: ".example.com", Path: "/"},
+		},
+		Storage:    map[string]ProfileOriginStorage{"https://b.com": {}},
+		Headers:    map[string]string{"X-B": "2"},
+		Extensions: []string{"/ext/b", "/ext/shared"},
+	}
+
+	d := DiffProfiles(a, b)
+
+	if !d.NameChanged {
+		t.Error("NameChanged should be true")
+	}
+	if !d.IdentityChanged {
+		t.Error("IdentityChanged should be true")
+	}
+	if !d.BrowserChanged {
+		t.Error("BrowserChanged should be true")
+	}
+	if d.CookiesAdded != 1 {
+		t.Errorf("CookiesAdded = %d, want 1", d.CookiesAdded)
+	}
+	if d.CookiesRemoved != 1 {
+		t.Errorf("CookiesRemoved = %d, want 1", d.CookiesRemoved)
+	}
+	if d.CookiesModified != 1 {
+		t.Errorf("CookiesModified = %d, want 1", d.CookiesModified)
+	}
+	if d.StorageOriginsAdded != 1 {
+		t.Errorf("StorageOriginsAdded = %d, want 1", d.StorageOriginsAdded)
+	}
+	if d.StorageOriginsRemoved != 1 {
+		t.Errorf("StorageOriginsRemoved = %d, want 1", d.StorageOriginsRemoved)
+	}
+	if d.HeadersChanged != 2 {
+		t.Errorf("HeadersChanged = %d, want 2", d.HeadersChanged)
+	}
+	if d.ExtensionsAdded != 1 {
+		t.Errorf("ExtensionsAdded = %d, want 1", d.ExtensionsAdded)
+	}
+	if d.ExtensionsRemoved != 1 {
+		t.Errorf("ExtensionsRemoved = %d, want 1", d.ExtensionsRemoved)
+	}
+}
+
+func TestProfileValidate(t *testing.T) {
+	p := &UserProfile{
+		Version: 1,
+		Name:    "valid",
+		Cookies: []Cookie{{Name: "c", Domain: ".example.com"}},
+		Storage: map[string]ProfileOriginStorage{
+			"https://example.com": {},
+		},
+	}
+
+	if err := p.Validate(); err != nil {
+		t.Errorf("valid profile should pass: %v", err)
+	}
+}
+
+func TestProfileValidate_Empty(t *testing.T) {
+	p := &UserProfile{}
+	err := p.Validate()
+	if err == nil {
+		t.Fatal("expected error for empty profile")
+	}
+
+	// Should fail on version and name.
+	if !strings.Contains(err.Error(), "version") {
+		t.Errorf("error should mention version: %v", err)
+	}
+	if !strings.Contains(err.Error(), "name") {
+		t.Errorf("error should mention name: %v", err)
+	}
+}
+
+func TestProfileValidate_BadCookieDomain(t *testing.T) {
+	p := &UserProfile{Version: 1, Name: "test", Cookies: []Cookie{{Name: "c", Domain: ""}}}
+	err := p.Validate()
+	if err == nil {
+		t.Fatal("expected error for cookie without domain")
+	}
+}
+
+func TestProfileValidate_BadStorageOrigin(t *testing.T) {
+	p := &UserProfile{
+		Version: 1,
+		Name:    "test",
+		Storage: map[string]ProfileOriginStorage{"not-a-url": {}},
+	}
+	err := p.Validate()
+	if err == nil {
+		t.Fatal("expected error for invalid storage origin")
 	}
 }

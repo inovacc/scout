@@ -27,6 +27,10 @@ func New(opts ...Option) (*Browser, error) {
 		fn(o)
 	}
 
+	if o.injectErr != nil {
+		return nil, o.injectErr
+	}
+
 	// Default to maximized window in headed mode unless explicitly set.
 	if !o.headless && o.windowState == "" {
 		o.windowState = WindowStateMaximized
@@ -173,10 +177,36 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 		err     error
 	)
 
+	hasInject := len(b.opts.injectScripts) > 0
+
 	if b.opts.stealth {
 		rodPage, err = stealth.Page(b.browser)
 		if err != nil {
 			return nil, fmt.Errorf("scout: create stealth page: %w", err)
+		}
+
+		for _, script := range b.opts.injectScripts {
+			if _, err := rodPage.EvalOnNewDocument(script); err != nil {
+				return nil, fmt.Errorf("scout: inject script: %w", err)
+			}
+		}
+
+		if url != "" {
+			if err := rodPage.Navigate(url); err != nil {
+				return nil, fmt.Errorf("scout: navigate: %w", err)
+			}
+		}
+	} else if hasInject {
+		// Create page blank, inject scripts, then navigate so scripts run before page JS.
+		rodPage, err = b.browser.Page(proto.TargetCreateTarget{})
+		if err != nil {
+			return nil, fmt.Errorf("scout: create page: %w", err)
+		}
+
+		for _, script := range b.opts.injectScripts {
+			if _, err := rodPage.EvalOnNewDocument(script); err != nil {
+				return nil, fmt.Errorf("scout: inject script: %w", err)
+			}
 		}
 
 		if url != "" {
