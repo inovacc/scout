@@ -394,6 +394,128 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		}, nil
 	})
 
+	server.AddTool(&mcp.Tool{
+		Name:        "search",
+		Description: "Search the web using a search engine",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","description":"search query"},"engine":{"type":"string","description":"search engine: google, bing, duckduckgo","default":"google"}},"required":["query"]}`),
+	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		var args struct {
+			Query  string `json:"query"`
+			Engine string `json:"engine"`
+		}
+		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
+			return errResult(err.Error())
+		}
+
+		browser, err := state.ensureBrowser(ctx)
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		var opts []scout.SearchOption
+		switch args.Engine {
+		case "bing":
+			opts = append(opts, scout.WithSearchEngine(scout.Bing))
+		case "duckduckgo", "ddg":
+			opts = append(opts, scout.WithSearchEngine(scout.DuckDuckGo))
+		default:
+			// google is the default
+		}
+
+		results, err := browser.Search(args.Query, opts...)
+		if err != nil {
+			return errResult(fmt.Sprintf("scout-mcp: search: %s", err))
+		}
+
+		data, err := json.Marshal(results)
+		if err != nil {
+			return errResult(fmt.Sprintf("scout-mcp: marshal results: %s", err))
+		}
+
+		return textResult(string(data))
+	})
+
+	server.AddTool(&mcp.Tool{
+		Name:        "fetch",
+		Description: "Fetch a URL and extract its content as markdown, html, text, or metadata",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{"url":{"type":"string","description":"URL to fetch"},"mode":{"type":"string","description":"extraction mode: markdown, html, text, links, meta, full","default":"full"},"mainOnly":{"type":"boolean","description":"extract main content only using readability scoring"}},"required":["url"]}`),
+	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		var args struct {
+			URL      string `json:"url"`
+			Mode     string `json:"mode"`
+			MainOnly bool   `json:"mainOnly"`
+		}
+		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
+			return errResult(err.Error())
+		}
+
+		browser, err := state.ensureBrowser(ctx)
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		var opts []scout.WebFetchOption
+		if args.Mode != "" {
+			opts = append(opts, scout.WithFetchMode(args.Mode))
+		}
+		if args.MainOnly {
+			opts = append(opts, scout.WithFetchMainContent())
+		}
+
+		result, err := browser.WebFetch(args.URL, opts...)
+		if err != nil {
+			return errResult(fmt.Sprintf("scout-mcp: fetch: %s", err))
+		}
+
+		data, err := json.Marshal(result)
+		if err != nil {
+			return errResult(fmt.Sprintf("scout-mcp: marshal result: %s", err))
+		}
+
+		return textResult(string(data))
+	})
+
+	server.AddTool(&mcp.Tool{
+		Name:        "pdf",
+		Description: "Generate a PDF of the current page",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{"landscape":{"type":"boolean","description":"landscape orientation"},"printBackground":{"type":"boolean","description":"print background graphics"},"scale":{"type":"number","description":"scale factor (0.1 to 2.0)"}}}`),
+	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		var args struct {
+			Landscape       bool    `json:"landscape"`
+			PrintBackground bool    `json:"printBackground"`
+			Scale           float64 `json:"scale"`
+		}
+		_ = json.Unmarshal(req.Params.Arguments, &args)
+
+		page, err := state.ensurePage(ctx)
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		var data []byte
+		if args.Landscape || args.PrintBackground || args.Scale > 0 {
+			data, err = page.PDFWithOptions(scout.PDFOptions{
+				Landscape:       args.Landscape,
+				PrintBackground: args.PrintBackground,
+				Scale:           args.Scale,
+			})
+		} else {
+			data, err = page.PDF()
+		}
+		if err != nil {
+			return errResult(fmt.Sprintf("scout-mcp: pdf: %s", err))
+		}
+
+		return &mcp.CallToolResult{
+			Content: []mcp.Content{&mcp.ImageContent{
+				MIMEType: "application/pdf",
+				Data:     data,
+			}},
+		}, nil
+	})
+
+	// --- Resources ---
+
 	server.AddResource(&mcp.Resource{
 		URI:  "scout://page/title",
 		Name: "Page Title",

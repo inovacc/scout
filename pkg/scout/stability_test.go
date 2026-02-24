@@ -32,6 +32,25 @@ func TestWaitSafe_Normal(t *testing.T) {
 	}
 }
 
+func TestBrowserClose_NoZombies(t *testing.T) {
+	b := newTestBrowser(t)
+
+	// Verify Close returns no error and is idempotent.
+	if err := b.Close(); err != nil {
+		t.Fatalf("first Close failed: %v", err)
+	}
+	if err := b.Close(); err != nil {
+		t.Fatalf("second Close (idempotent) failed: %v", err)
+	}
+}
+
+func TestBrowserClose_Nil(t *testing.T) {
+	var b *Browser
+	if err := b.Close(); err != nil {
+		t.Fatalf("nil browser Close should not error: %v", err)
+	}
+}
+
 func TestHijack_InvalidRegexp(t *testing.T) {
 	b := newTestBrowser(t)
 	srv := newTestServer()

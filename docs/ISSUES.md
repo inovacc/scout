@@ -11,12 +11,10 @@
 - **Severity:** Low
 - **Status:** Fixed — Coverage raised from 67.7% to 80.6% with Interactive commands, pairing, TLS, mapKey, truncate, GetLocalIPs tests.
 
-### Rod fork: segfault on disconnected page (upstream #1103)
+~~### Rod fork: segfault on disconnected page (upstream #1103)~~ [RESOLVED]
 
 - **Severity:** High
-- **Status:** Open — patch planned for Phase 24
-- **Description:** `getJSCtxID()` in `pkg/rod/page_eval.go` can segfault when page/connection is nil (e.g., browser disconnected mid-operation). Upstream rod has no fix. Patch: nil-guard returning `ErrDisconnected`.
-- **Workaround:** Wrap rod calls with `recover()` at the Scout wrapper level.
+- **Status:** Fixed — `PageDisconnectedError` nil-guard added in `pkg/rod/page_eval.go` (Phase 24).
 
 ### Rod fork: context not propagated in page operations (upstream #1179)
 
@@ -54,3 +52,4 @@
 | CLI commands fail against mTLS server               | Fixed: all CLI commands now use `resolveClient(cmd)` instead of `getClient(addr)` for proper mTLS                                                      | 2026-02 |
 | Server sessions die after 30s (context deadline)    | Fixed: server passes `WithTimeout(0)` to disable rod's one-shot page timeout for long-lived sessions                                                   | 2026-02 |
 | gRPC server test coverage below target              | Fixed: coverage raised from 67.7% to 80.6% with Interactive, pairing, TLS, mapKey, truncate, GetLocalIPs tests                                        | 2026-02 |
+| Rod fork: segfault on disconnected page (#1103)     | Fixed: `PageDisconnectedError` nil-guard in `pkg/rod/page_eval.go` (Phase 24)                                                                         | 2026-02 |

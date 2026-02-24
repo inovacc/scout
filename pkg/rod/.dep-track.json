@@ -534,5 +534,16 @@
     "lib/utils/simple-check/",
     "*_test.go"
   ],
-  "local_modifications": []
+  "local_modifications": [
+    {
+      "file": "page.go",
+      "issue": "go-rod/rod#1179, go-rod/rod#1206",
+      "description": "Info(), Activate(), TriggerFavicon() use p.browser.Context(p.ctx) instead of p.browser for proper page context propagation and cancellation"
+    },
+    {
+      "file": "lib/launcher/revision.go",
+      "issue": "local",
+      "description": "Chromium revision pinned for reproducible builds"
+    }
+  ]
 }
