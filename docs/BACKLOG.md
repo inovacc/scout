@@ -432,3 +432,7 @@ credentials/session.
 | MCP Transport (Phase 26) | MCP server with 10 tools + 3 resources via stdio, `scout mcp` command | 2026-02 |
 | Bot Detection Framework | `DetectChallenges()` for 9 challenge types (Cloudflare, Turnstile, reCAPTCHA, hCaptcha, DataDome, etc.), CLI `scout challenge detect` | 2026-02 |
 | Credential Capture (Phase 29) | `CaptureCredentials()`, `SaveCredentials()`, `LoadCredentials()`, CLI `scout credentials capture/replay/show` | 2026-02 |
+| PWA Detection | `Page.DetectPWA()` with service worker, manifest, installability, HTTPS, push detection, 5 tests | 2026-02 |
+| Tech Stack Detection | `Page.DetectTechStack()` with CSS/build/CMS/analytics/CDN detection, 4 tests | 2026-02 |
+| Render Mode Detection | `Page.DetectRenderMode()` CSR/SSR/SSG/ISR classification, 6 tests | 2026-02 |
+| CLI scout detect | Unified `scout detect <url>` with --framework/--pwa/--tech/--render/--json flags | 2026-02 |

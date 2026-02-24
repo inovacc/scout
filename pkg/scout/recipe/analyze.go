@@ -12,6 +12,8 @@ import (
 type SiteAnalysis struct {
 	URL           string
 	PageType      string // "listing", "detail", "form", "article", "table", "unknown"
+	Framework     *scout.FrameworkInfo `json:"framework,omitempty"`
+	RenderMode    *scout.RenderInfo    `json:"render_mode,omitempty"`
 	Containers    []ContainerCandidate
 	Forms         []FormCandidate
 	Pagination    *PaginationCandidate
@@ -104,6 +106,20 @@ func AnalyzeSite(ctx context.Context, browser *scout.Browser, url string, opts .
 	analysis := &SiteAnalysis{
 		URL:      url,
 		Metadata: make(map[string]string),
+	}
+
+	// Detect framework and render mode
+	if fw, err := page.DetectFramework(); err == nil && fw != nil {
+		analysis.Framework = fw
+		if fw.SPA {
+			analysis.Metadata["wait_strategy"] = "spa: use WaitStable or WaitSelector before extraction"
+		}
+	}
+	if ri, err := page.DetectRenderMode(); err == nil {
+		analysis.RenderMode = ri
+		if ri.Mode == scout.RenderCSR {
+			analysis.Metadata["wait_strategy"] = "csr: content is client-rendered, use WaitStable or WaitSelector"
+		}
 	}
 
 	// Extract metadata

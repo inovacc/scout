@@ -146,6 +146,9 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `WebSearchResult`, `WebSearchOption`      | Search + fetch pipeline         | `websearch.go`        |
 | `BlockAds`, `BlockTrackers`, `BlockFonts`, `BlockImages` | URL blocking preset pattern slices | `option.go` |
 | `FrameworkInfo`                           | Detected frontend framework (name, version, SPA flag) | `detect.go` |
+| `TechStack`                               | Technology stack detection (CSS, build tool, CMS, analytics, CDN) | `detect.go` |
+| `RenderMode`, `RenderInfo`                | Rendering mode classification (CSR/SSR/SSG/ISR) | `detect.go` |
+| `GitHubRepo`, `GitHubIssue`, `GitHubPR`, `GitHubUser`, `GitHubRelease` | GitHub data extraction | `github.go` |
 | `ChallengeType`, `ChallengeInfo`          | Bot protection challenge detection (9 types) | `challenge.go` |
 | `SnapshotOption`                          | Accessibility tree snapshot options  | `snapshot.go`  |
 | `CapturedCredentials`, `BrowserInfo`      | Credential capture & replay          | `capture.go`   |
@@ -258,6 +261,8 @@ cmd/scout/
 ├── aicontext.go            # scout aicontext [--json]
 ├── credentials.go          # scout credentials capture/replay/show
 ├── challenge.go            # scout challenge detect
+├── detect.go               # scout detect <url> [--framework] [--pwa] [--tech] [--render] [--json]
+├── github.go               # scout github repo/issues/prs/user/releases/tree
 ├── mcp.go                  # scout mcp [--headless] [--stealth]
 └── cmdtree.go              # scout cmdtree [--json]
 ```
@@ -317,6 +322,9 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **Challenge detection**: `Page.DetectChallenges()` evaluates JS to detect 9 bot protection types: Cloudflare, Turnstile, reCAPTCHA v2/v3, hCaptcha, DataDome, PerimeterX, Akamai, AWS WAF. Returns `[]ChallengeInfo` with `Type`, `Confidence`, `Details`. `Page.HasChallenge()` is a quick boolean check.
 - **MCP server**: `pkg/scout/mcp/` exposes Scout as MCP server via stdio. `mcpState` lazily initializes browser+page with mutex protection. 10 tools (navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait) and 3 resources (markdown, url, title). Logger writes to stderr (stdout = MCP JSON-RPC).
 - **Credential capture**: `CaptureCredentials(ctx, url, opts)` opens a headed browser, waits for Ctrl+C via `signal.NotifyContext`, then captures cookies, localStorage, sessionStorage, user agent, browser version. `SaveCredentials`/`LoadCredentials` serialize to JSON. `ToSessionState()` converts to `SessionState` for `Page.LoadSession()`. CLI: `scout credentials capture/replay/show`.
+- **Tech stack detection**: `Page.DetectTechStack()` detects CSS frameworks (Bootstrap, Tailwind, etc.), build tools (Webpack, Vite, etc.), CMS (WordPress, etc.), analytics (Google Analytics, etc.), and CDN (Cloudflare, etc.) via JS DOM inspection. Returns `TechStack` struct.
+- **Render mode detection**: `Page.DetectRenderMode()` classifies pages as CSR/SSR/SSG/ISR via framework-specific heuristics (Next.js data props, Nuxt payload, Gatsby static query, etc.). Returns `RenderInfo` with `Mode`, `Confidence`, `Details`.
+- **GitHub extraction**: `Browser.GitHubRepo()`, `Browser.GitHubIssues()`, `Browser.GitHubPRs()`, `Browser.GitHubUser()`, `Browser.GitHubReleases()`, `Browser.GitHubTree()` scrape GitHub pages via browser automation. Return typed structs (`GitHubRepo`, `GitHubIssue`, `GitHubPR`, `GitHubUser`, `GitHubRelease`). CLI: `scout github repo/issues/prs/user/releases/tree`.
 
 ## Testing
 
@@ -334,6 +342,10 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Recorder routes: `/recorder-page`, `/recorder-asset`, `/recorder-api`
 - WebFetch routes: `/webfetch`, `/webfetch-minimal`
 - Detect routes: `/detect-react`, `/detect-nextjs`, `/detect-vue`, `/detect-angular`, `/detect-svelte`, `/detect-jquery`, `/detect-none`, `/detect-gatsby`, `/detect-astro`
+- Tech stack routes: `/detect-tech-wordpress`, `/detect-tech-react-vite`, `/detect-tech-plain`
+- Render mode routes: `/detect-render-csr`, `/detect-render-ssr`, `/detect-render-ssg`, `/detect-render-nextjs-ssp`, `/detect-render-plain`
+- PWA routes: `/detect-pwa-full`, `/detect-pwa-none`, `/detect-pwa-manifest-only`, `/pwa-manifest.json`
+- GitHub routes: `/github-repo`, `/github-issues`, `/github-prs`, `/github-user`, `/github-releases`
 - Snapshot routes: `/snapshot-basic`, `/snapshot-form`, `/snapshot-nested`, `/snapshot-hidden`
 - Challenge routes: `/challenge-cloudflare`, `/challenge-turnstile`, `/challenge-recaptcha-v2`, `/challenge-hcaptcha`, `/challenge-datadome`, `/challenge-none`, `/challenge-multi`
 - Stability tests: `TestWaitSafe_NilPage`, `TestWaitSafe_Normal`, `TestHijack_InvalidRegexp` in `stability_test.go`
