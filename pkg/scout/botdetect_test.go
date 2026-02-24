@@ -161,6 +161,42 @@ var botCheckSites = []botCheckSite{
 		},
 	},
 	{
+		Name: "creepjs",
+		URL:  "https://abrahamjuliot.github.io/creepjs/",
+		Check: func(p *Page) (bool, string) {
+			// CreepJS computes a "trust score" and flags lies/fingerprint anomalies.
+			result, err := p.Eval(`() => {
+				const text = document.body.innerText.toLowerCase();
+				const flags = [];
+				// Look for lie or bot indicators
+				if (text.includes('lie detected') || text.includes('lies detected')) flags.push('lies detected');
+				if (text.includes('bot') && !text.includes('about')) flags.push('bot indicator found');
+				// Check trust score — lower is worse
+				const m = text.match(/trust\s*score[:\s]*([0-9.]+%?)/i);
+				if (m) {
+					flags.push('trust score: ' + m[1]);
+					const score = parseFloat(m[1]);
+					if (!isNaN(score) && score < 50) flags.push('low trust score');
+				}
+				// Check for headless markers
+				const headless = document.querySelectorAll('[class*="headless"], [class*="bot"], [class*="lie"]');
+				headless.forEach(el => {
+					const t = el.textContent.trim().substring(0, 80);
+					if (t && t.length > 2) flags.push(t);
+				});
+				return JSON.stringify(flags);
+			}`)
+			if err != nil {
+				return false, fmt.Sprintf("eval error: %v", err)
+			}
+			s := result.String()
+			if s == "[]" || s == "null" || s == "" {
+				return false, "no issues detected"
+			}
+			return true, s
+		},
+	},
+	{
 		Name: "fingerprint.com/playground",
 		URL:  "https://demo.fingerprint.com/playground",
 		Check: func(p *Page) (bool, string) {

@@ -156,6 +156,8 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `AsyncJob`, `AsyncJobManager`             | Persistent async job lifecycle       | `jobs.go`       |
 | `WebMCPTool`, `WebMCPToolResult`          | Web-native MCP tool discovery + call | `webmcp.go`    |
 | `PWAInfo`, `WebAppManifest`               | Progressive Web App detection        | `detect.go`    |
+| `AutoFreeConfig`                          | Browser recycling configuration      | `autofree.go`  |
+| `ValidationResult`, `ValidationError`     | Recipe dry-run validation results    | `recipe/validate.go` |
 
 ### MCP Server Types
 
@@ -338,6 +340,10 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **WebMCP discovery**: `Page.DiscoverWebMCPTools()` scans for MCP tools via `<meta name="mcp-server">`, `<meta name="mcp-tools">`, `<link rel="mcp">`, `<script type="application/mcp+json">`, and `/.well-known/mcp`. `Page.CallWebMCPTool(name, params)` invokes via JSON-RPC 2.0 or `window.__mcp_tools[name]()`. CLI: `scout webmcp discover/call`.
 - **Async job system**: `AsyncJobManager` with persistent JSON state in `~/.scout/jobs/`. Job lifecycle: create → running → completed/failed/cancelled. `RegisterCancel(id, fn)` for cancellation callbacks. CLI: `scout jobs list/status/cancel`.
 - **Smart wait**: `WaitFrameworkReady()` detects the page framework and waits for framework-specific readiness (React hydration, Angular NgZone, Vue nextTick, etc.) with 5s timeout fallback.
+- **Browser AutoFree**: `WithAutoFree(interval)` starts a background goroutine that periodically recycles the browser process to prevent memory leaks. `recycleBrowser()` saves page URLs and cookies, closes browser, re-launches with same options, restores state. `WithAutoFreeCallback(fn)` for recycle notifications. Goroutine stops when `Browser.Close()` is called.
+- **WebSearch multi-engine**: `WithSearchEngines("google", "bing", "duckduckgo")` runs the same query across multiple engines. Results merged via Reciprocal Rank Fusion (k=60). `WithSearchDomain()` appends `site:` filter, `WithSearchExcludeDomain()` appends `-site:` filters.
+- **WebFetch retry**: `WithFetchRetries(n)` and `WithFetchRetryDelay(d)` add retry logic around page navigation. `RedirectChain []string` in `WebFetchResult` tracks redirect hops.
+- **Recipe validation**: `recipe.ValidateRecipe(browser, recipe)` navigates to URL, checks all selectors resolve, returns `ValidationResult` with errors and sample item count. `SelectorHealthCheck(page, selectors)` returns per-selector match counts. CLI: `scout recipe test --file=recipe.json`.
 
 ## Testing
 

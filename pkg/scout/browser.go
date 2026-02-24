@@ -107,6 +107,11 @@ func launchLocal(o *options) (string, *launcher.Launcher, error) {
 
 	if o.execPath != "" {
 		l = l.Bin(o.execPath)
+	} else if o.autoDetect && o.browserType == "" {
+		if path, _, err := bestDetectedBrowser(); err == nil && path != "" {
+			l = l.Bin(path)
+		}
+		// If detection fails, fall through to rod auto-detect.
 	} else if o.browserType != "" && o.browserType != BrowserChrome {
 		binPath, err := resolveBrowser(context.Background(), o.browserType)
 		if err != nil {
@@ -138,6 +143,14 @@ func launchLocal(o *options) (string, *launcher.Launcher, error) {
 
 	if o.stealth {
 		l = l.Set(flags.Flag("disable-blink-features"), "AutomationControlled")
+	}
+
+	// Apply TLS profile flags.
+	switch o.tlsProfile {
+	case "randomized":
+		l = l.Set(flags.Flag("disable-http2"))
+	case "chrome", "":
+		// Default Chrome TLS — no extra flags.
 	}
 
 	for name, values := range o.launchFlags {

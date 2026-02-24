@@ -435,6 +435,84 @@ func TestWebSearch_MultiEngine_SingleResult(t *testing.T) {
 	}
 }
 
+func TestWebSearch_RecentOption(t *testing.T) {
+	o := webSearchDefaults()
+
+	if o.recentDuration != 0 {
+		t.Errorf("default recentDuration = %v, want 0", o.recentDuration)
+	}
+
+	WithSearchRecent(24 * time.Hour)(o)
+	if o.recentDuration != 24*time.Hour {
+		t.Errorf("recentDuration = %v, want 24h", o.recentDuration)
+	}
+
+	WithSearchRecent(7 * 24 * time.Hour)(o)
+	if o.recentDuration != 7*24*time.Hour {
+		t.Errorf("recentDuration = %v, want 7d", o.recentDuration)
+	}
+}
+
+func TestWebSearch_RecentQueryModifier(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration time.Duration
+		wantTBS  string
+	}{
+		{"hour", time.Hour, "qdr:h"},
+		{"day", 24 * time.Hour, "qdr:d"},
+		{"week", 7 * 24 * time.Hour, "qdr:w"},
+		{"month", 30 * 24 * time.Hour, "qdr:m"},
+		{"year", 365 * 24 * time.Hour, "qdr:y"},
+		{"45min", 45 * time.Minute, "qdr:h"},
+		{"3days", 3 * 24 * time.Hour, "qdr:w"},
+		{"10days", 10 * 24 * time.Hour, "qdr:m"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := googleTBS(tt.duration)
+			if got != tt.wantTBS {
+				t.Errorf("googleTBS(%v) = %q, want %q", tt.duration, got, tt.wantTBS)
+			}
+		})
+	}
+
+	// Verify Bing freshness mapping
+	bingTests := []struct {
+		duration time.Duration
+		want     string
+	}{
+		{24 * time.Hour, "Day"},
+		{7 * 24 * time.Hour, "Week"},
+		{30 * 24 * time.Hour, "Month"},
+		{365 * 24 * time.Hour, ""},
+	}
+	for _, tt := range bingTests {
+		got := bingFreshness(tt.duration)
+		if got != tt.want {
+			t.Errorf("bingFreshness(%v) = %q, want %q", tt.duration, got, tt.want)
+		}
+	}
+
+	// Verify DDG date filter mapping
+	ddgTests := []struct {
+		duration time.Duration
+		want     string
+	}{
+		{24 * time.Hour, "d"},
+		{7 * 24 * time.Hour, "w"},
+		{30 * 24 * time.Hour, "m"},
+		{365 * 24 * time.Hour, "y"},
+	}
+	for _, tt := range ddgTests {
+		got := ddgDateFilter(tt.duration)
+		if got != tt.want {
+			t.Errorf("ddgDateFilter(%v) = %q, want %q", tt.duration, got, tt.want)
+		}
+	}
+}
+
 func TestWebSearch_EnginesParsing(t *testing.T) {
 	o := webSearchDefaults()
 	WithSearchEngines("Google", "BING", "DDG", "invalid")(o)

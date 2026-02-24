@@ -14,6 +14,8 @@ func init() {
 	rootCmd.AddCommand(browserCmd)
 	browserCmd.AddCommand(browserListCmd)
 	browserCmd.AddCommand(browserDownloadCmd)
+
+	browserListCmd.Flags().Bool("detect", false, "Run full browser detection with version probing")
 }
 
 var browserCmd = &cobra.Command{
@@ -25,20 +27,38 @@ var browserListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List detected and downloaded browsers",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Detected browsers (local install):")
+		detect, _ := cmd.Flags().GetBool("detect")
 
-		for _, bt := range []scout.BrowserType{scout.BrowserChrome, scout.BrowserBrave, scout.BrowserEdge} {
-			path, err := scout.LookupBrowserPublic(bt)
-			if err != nil {
-				fmt.Printf("  %-8s  not found\n", bt)
-			} else if path == "" {
-				fmt.Printf("  %-8s  auto-detect (rod)\n", bt)
+		if detect {
+			fmt.Println("Detected browsers (full scan):")
+			detected := scout.DetectBrowsers()
+			if len(detected) == 0 {
+				fmt.Println("  (none found)")
 			} else {
-				fmt.Printf("  %-8s  %s\n", bt, path)
+				for _, d := range detected {
+					ver := d.Version
+					if ver == "" {
+						ver = "unknown"
+					}
+					fmt.Printf("  %-20s  %-8s  %s  (%s)\n", d.Name, d.Type, d.Path, ver)
+				}
 			}
+			fmt.Println()
+		} else {
+			fmt.Println("Detected browsers (local install):")
+			for _, bt := range []scout.BrowserType{scout.BrowserChrome, scout.BrowserBrave, scout.BrowserEdge} {
+				path, err := scout.LookupBrowserPublic(bt)
+				if err != nil {
+					fmt.Printf("  %-8s  not found\n", bt)
+				} else if path == "" {
+					fmt.Printf("  %-8s  auto-detect (rod)\n", bt)
+				} else {
+					fmt.Printf("  %-8s  %s\n", bt, path)
+				}
+			}
+			fmt.Println()
 		}
 
-		fmt.Println()
 		fmt.Println("Downloaded browsers (~/.scout/browsers/):")
 
 		browsers, err := scout.ListDownloadedBrowsers()

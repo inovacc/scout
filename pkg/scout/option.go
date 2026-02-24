@@ -53,8 +53,10 @@ type options struct {
 	profile            *UserProfile
 	injectScripts      []string
 	injectErr          error
+	autoDetect         bool
 	autoFreeInterval   time.Duration
 	autoFreeCallback   func()
+	tlsProfile         string
 }
 
 func defaults() *options {
@@ -264,6 +266,19 @@ func WithAutoFree(interval time.Duration) Option {
 // WithAutoFreeCallback sets a function called before each browser recycle.
 func WithAutoFreeCallback(fn func()) Option {
 	return func(o *options) { o.autoFreeCallback = fn }
+}
+
+// WithTLSProfile sets the TLS/HTTP fingerprint profile for the browser.
+// Supported profiles:
+//   - "chrome": default Chrome TLS stack (no extra flags)
+//   - "randomized": disables HTTP/2 to vary the HTTP fingerprint
+//
+// For fine-grained TLS/JA3 fingerprint control, use a TLS proxy such as
+// utls-based MITM proxies (e.g. cycletls, got-scraping) in combination
+// with WithProxy, since Chrome does not expose cipher-suite ordering via
+// command-line flags.
+func WithTLSProfile(profile string) Option {
+	return func(o *options) { o.tlsProfile = profile }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.

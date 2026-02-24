@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Overall Progress:** 93% Complete
+**Overall Progress:** 95% Complete
 
 ## Phases
 
@@ -222,8 +222,8 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 
 #### Recipe Validation & Testing
 
-- [ ] **Dry-run mode** — `ValidateRecipe(browser, recipe) (*ValidationResult, error)` navigates to URL, checks all selectors resolve, reports missing fields
-- [ ] **Selector health check** — for each selector in recipe, verify it matches expected count of elements
+- [x] **Dry-run mode** — `ValidateRecipe(browser, recipe) (*ValidationResult, error)` navigates to URL, checks all selectors resolve, reports missing fields
+- [x] **Selector health check** — for each selector in recipe, verify it matches expected count of elements
 - [ ] **Sample extraction** — run recipe on first page only, return sample items for user review before full run
 - [ ] **Auto-fix suggestions** — when selectors fail, re-analyze page and suggest updated selectors
 
@@ -232,7 +232,7 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 - [x] `scout recipe create <url> [--type=extract|automate] [--output=recipe.json]` — analyze site + generate recipe
 - [ ] `scout recipe create <url> --ai [--goal="scrape all products"] [--provider=ollama]` — AI-assisted generation
 - [ ] `scout recipe create <url> --interactive` — step-by-step guided creation: show candidates, let user pick containers/fields
-- [ ] `scout recipe test --file=recipe.json` — dry-run validation with sample output
+- [x] `scout recipe test --file=recipe.json` — dry-run validation with sample output
 - [ ] `scout recipe fix --file=recipe.json` — re-analyze site, update broken selectors in existing recipe
 
 #### Testing
@@ -716,8 +716,8 @@ Fetch any URL and return clean, structured content (markdown, metadata, links). 
 - [x] **Main content extraction** — Reuse `MarkdownContent()` readability scoring to strip nav/ads/footer, return only article body
 - [ ] **Prompt-based extraction** — `WithFetchPrompt(prompt string)` that pipes markdown through an LLM provider (Phase 14 dependency) for targeted extraction
 - [x] **Caching** — `WithFetchCache(ttl time.Duration)` for in-memory content cache keyed by URL; avoid re-fetching within TTL
-- [ ] **Follow redirects** — Track and report redirect chain in result
-- [ ] **Error resilience** — Retry on network errors with exponential backoff (reuse `RateLimiter`), graceful timeout
+- [x] **Follow redirects** — Track and report redirect chain in result
+- [x] **Error resilience** — Retry on network errors with exponential backoff (reuse `RateLimiter`), graceful timeout
 - [x] **Batch fetch** — `Browser.WebFetchBatch(urls []string, ...WebFetchOption) []*WebFetchResult` with concurrent fetching
 - [ ] **CLI** — `scout fetch <url> [--mode=markdown] [--main-only] [--cache=5m] [--output=file]`
 - [x] **Tests** — 13 tests: all modes, caching, cache expiry, batch, error isolation, link dedup (88%+ coverage)
@@ -733,24 +733,24 @@ Search the web and optionally fetch top results, returning structured search res
 - [x] **Cache passthrough** — `WithWebSearchCache(ttl)` passes through to WebFetch cache layer
 - [x] **CLI** — `scout websearch "query" [--engine=google] [--fetch=markdown] [--max-fetch=5] [--max-pages=1] [--main-only]`
 - [x] **Tests** — 7 tests: NoFetch, WithFetch, MainContent, MaxFetch, Cache, FetchErrorIsolation, OptionDefaults
-- [ ] **Multi-engine aggregation** — `WithSearchEngines(Google, Bing, DuckDuckGo)` to run same query across engines, merge and deduplicate by URL
-- [ ] **Rank fusion** — Reciprocal Rank Fusion (RRF) scoring when merging multi-engine results
-- [ ] **Domain filtering** — `WithSearchDomain("github.com")`, `WithSearchExcludeDomain("pinterest.com")`
-- [ ] **Time filtering** — `WithSearchRecent(duration)` for time-bounded searches
+- [x] **Multi-engine aggregation** — `WithSearchEngines(Google, Bing, DuckDuckGo)` to run same query across engines, merge and deduplicate by URL
+- [x] **Rank fusion** — Reciprocal Rank Fusion (RRF) scoring when merging multi-engine results
+- [x] **Domain filtering** — `WithSearchDomain("github.com")`, `WithSearchExcludeDomain("pinterest.com")`
+- [x] **Time filtering** — `WithSearchRecent(duration)` for time-bounded searches (Google tbs=qdr:, Bing freshness, DDG df=)
 
 #### Sub-phase 23c: GitHub Data Extraction
 
 Dedicated GitHub extraction toolkit using WebFetch + WebSearch + Scout's existing crawl/extract infrastructure. Provides structured access to GitHub repos, issues, PRs, code, discussions, and user profiles without API rate limits.
 
-- [ ] **`GitHubExtractor` type** (`pkg/scout/github.go`) — high-level GitHub data extraction API
-- [ ] **Repository info** — `ExtractRepo(owner, repo string) (*GitHubRepo, error)` — name, description, stars, forks, language, topics, license, README (as markdown)
-- [ ] **Issue extraction** — `ExtractIssues(owner, repo string, ...GitHubOption) ([]GitHubIssue, error)` — title, body, labels, assignees, comments, state, timeline
-- [ ] **PR extraction** — `ExtractPRs(owner, repo string, ...GitHubOption) ([]GitHubPR, error)` — title, body, diff stats, review comments, CI status, merge state
+- [x] **`GitHubExtractor` type** (`pkg/scout/github.go`) — high-level GitHub data extraction API (`Browser.GitHub*` methods)
+- [x] **Repository info** — `Browser.GitHubRepo(owner, name string, ...GitHubOption) (*GitHubRepo, error)` — name, description, stars, forks, language, topics, license, README (as markdown)
+- [x] **Issue extraction** — `Browser.GitHubIssues(owner, name string, ...GitHubOption) ([]GitHubIssue, error)` — title, body, labels, assignees, comments, state, timeline
+- [x] **PR extraction** — `Browser.GitHubPRs(owner, name string, ...GitHubOption) ([]GitHubPR, error)` — title, body, diff stats, review comments, CI status, merge state
 - [x] **Code search** — `SearchCode(query string, ...GitHubOption) ([]GitHubCodeResult, error)` — file path, repo, matched lines, context
 - [ ] **Discussion extraction** — `ExtractDiscussions(owner, repo string) ([]GitHubDiscussion, error)` — title, body, category, answers, comments
-- [ ] **File/tree browsing** — `ExtractTree(owner, repo, path string) (*GitHubTree, error)` — directory listing, file content as markdown
-- [ ] **User/org profiles** — `ExtractUser(username string) (*GitHubUser, error)` — bio, repos, contributions, pinned items
-- [ ] **Release notes** — `ExtractReleases(owner, repo string) ([]GitHubRelease, error)` — tag, body, assets, date
+- [x] **File/tree browsing** — `Browser.GitHubTree(owner, name, branch string) ([]string, error)` — directory listing, file content as markdown
+- [x] **User/org profiles** — `Browser.GitHubUser(username string) (*GitHubUser, error)` — bio, repos, contributions, pinned items
+- [x] **Release notes** — `Browser.GitHubReleases(owner, name string, ...GitHubOption) ([]GitHubRelease, error)` — tag, body, assets, date
 - [ ] **GitHub search** — `SearchRepos(query string) ([]GitHubRepo, error)`, `SearchIssues(query string) ([]GitHubIssue, error)`
 - [x] **Pagination** — All list methods support `WithGitHubMaxPages(n)`, automatic next-page navigation
 - [x] **Rate limiting** — Built-in rate limiter for polite scraping (reuse `RateLimiter`)
@@ -898,9 +898,9 @@ Production hardening features from [go-rod/bartender](https://github.com/go-rod/
 
 #### AutoFree — Periodic Browser Recycling
 
-- [ ] **`WithAutoFree(interval time.Duration)` option** — Periodically restart browser process to prevent memory leaks in daemon mode
-- [ ] **Session preservation** — Save session state (cookies, storage, URL) before recycle, restore after
-- [ ] **Graceful recycle** — Wait for in-flight operations to complete before restart
+- [x] **`WithAutoFree(interval time.Duration)` option** — Periodically restart browser process to prevent memory leaks in daemon mode
+- [x] **Session preservation** — Save session state (cookies, storage, URL) before recycle, restore after
+- [x] **Graceful recycle** — Wait for in-flight operations to complete before restart
 - [ ] **Integration with gRPC daemon** — Daemon sessions auto-recycle after configurable interval (default: 1 hour)
 
 #### Request Blocking [COMPLETE]
@@ -912,7 +912,7 @@ Production hardening features from [go-rod/bartender](https://github.com/go-rod/
 
 #### Testing
 
-- [ ] AutoFree lifecycle tests (recycle interval, session preservation)
+- [x] AutoFree lifecycle tests (recycle interval, session preservation)
 
 ### Phase 28: Page Intelligence — Framework, SPA & PWA Detection [COMPLETE]
 

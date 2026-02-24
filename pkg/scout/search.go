@@ -46,7 +46,8 @@ type searchOptions struct {
 	language string
 	region   string
 	delay    time.Duration
-	ddgType  string // DuckDuckGo search type: "web", "news", "images"
+	ddgType        string // DuckDuckGo search type: "web", "news", "images"
+	recentDuration time.Duration
 }
 
 func searchDefaults() *searchOptions {
@@ -80,6 +81,57 @@ func WithSearchRegion(region string) SearchOption {
 // WithDDGSearchType sets the DuckDuckGo search type (web, news, images).
 func WithDDGSearchType(t string) SearchOption {
 	return func(o *searchOptions) { o.ddgType = t }
+}
+
+// WithSearchRecentDuration sets a time filter on search results.
+// For Google this appends tbs=qdr: parameters; for Bing it appends &filters=ex1:"ez5_N"
+// style filters; for DuckDuckGo it appends &df= parameters.
+func WithSearchRecentDuration(d time.Duration) SearchOption {
+	return func(o *searchOptions) { o.recentDuration = d }
+}
+
+// googleTBS converts a duration to a Google tbs=qdr: parameter value.
+func googleTBS(d time.Duration) string {
+	switch {
+	case d <= time.Hour:
+		return "qdr:h"
+	case d <= 24*time.Hour:
+		return "qdr:d"
+	case d <= 7*24*time.Hour:
+		return "qdr:w"
+	case d <= 31*24*time.Hour:
+		return "qdr:m"
+	default:
+		return "qdr:y"
+	}
+}
+
+// bingFreshness converts a duration to a Bing freshness filter value.
+func bingFreshness(d time.Duration) string {
+	switch {
+	case d <= 24*time.Hour:
+		return "Day"
+	case d <= 7*24*time.Hour:
+		return "Week"
+	case d <= 31*24*time.Hour:
+		return "Month"
+	default:
+		return ""
+	}
+}
+
+// ddgDateFilter converts a duration to a DuckDuckGo df= parameter value.
+func ddgDateFilter(d time.Duration) string {
+	switch {
+	case d <= 24*time.Hour:
+		return "d"
+	case d <= 7*24*time.Hour:
+		return "w"
+	case d <= 31*24*time.Hour:
+		return "m"
+	default:
+		return "y"
+	}
 }
 
 // Search performs a search query and returns the results from the first page.
@@ -201,6 +253,9 @@ var googleParser = serpParser{
 		if opts.region != "" {
 			u += "&gl=" + url.QueryEscape(opts.region)
 		}
+		if opts.recentDuration > 0 {
+			u += "&tbs=" + url.QueryEscape(googleTBS(opts.recentDuration))
+		}
 		return u
 	},
 }
@@ -216,6 +271,11 @@ var bingParser = serpParser{
 		if opts.language != "" {
 			u += "&setlang=" + url.QueryEscape(opts.language)
 		}
+		if opts.recentDuration > 0 {
+			if f := bingFreshness(opts.recentDuration); f != "" {
+				u += "&filters=ex1%3a%22ez5_" + url.QueryEscape(f) + "%22"
+			}
+		}
 		return u
 	},
 }
@@ -227,26 +287,22 @@ var ddgParser = serpParser{
 	snippetSelector: "a.result__snippet, .result__body, .result__snippet",
 	nextSelector:    ".result--more__btn, button#more-results",
 	buildURL: func(query string, opts *searchOptions) string {
+		var u string
 		switch opts.ddgType {
 		case "news":
-			u := "https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query) + "&iar=news&ia=news"
-			if opts.region != "" {
-				u += "&kl=" + url.QueryEscape(opts.region)
-			}
-			return u
+			u = "https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query) + "&iar=news&ia=news"
 		case "images":
-			u := "https://duckduckgo.com/?q=" + url.QueryEscape(query) + "&iar=images&iax=images&ia=images"
-			if opts.region != "" {
-				u += "&kl=" + url.QueryEscape(opts.region)
-			}
-			return u
+			u = "https://duckduckgo.com/?q=" + url.QueryEscape(query) + "&iar=images&iax=images&ia=images"
 		default:
-			u := "https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query)
-			if opts.region != "" {
-				u += "&kl=" + url.QueryEscape(opts.region)
-			}
-			return u
+			u = "https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query)
 		}
+		if opts.region != "" {
+			u += "&kl=" + url.QueryEscape(opts.region)
+		}
+		if opts.recentDuration > 0 {
+			u += "&df=" + url.QueryEscape(ddgDateFilter(opts.recentDuration))
+		}
+		return u
 	},
 }
 
