@@ -8,8 +8,60 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
+
+// WebMCPRegistry holds discovered tools across pages, keyed by "origin/toolname".
+type WebMCPRegistry struct {
+	mu    sync.RWMutex
+	tools map[string]WebMCPTool // key: "origin/toolname"
+}
+
+// NewWebMCPRegistry creates an empty WebMCPRegistry.
+func NewWebMCPRegistry() *WebMCPRegistry {
+	return &WebMCPRegistry{tools: make(map[string]WebMCPTool)}
+}
+
+// Register adds tools from a given origin to the registry.
+// Existing tools with the same origin/name key are overwritten.
+func (r *WebMCPRegistry) Register(origin string, tools []WebMCPTool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, t := range tools {
+		key := origin + "/" + t.Name
+		r.tools[key] = t
+	}
+}
+
+// All returns a snapshot of all registered tools.
+func (r *WebMCPRegistry) All() []WebMCPTool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	result := make([]WebMCPTool, 0, len(r.tools))
+	for _, t := range r.tools {
+		result = append(result, t)
+	}
+	return result
+}
+
+// Get returns the tool for the given key ("origin/toolname") and whether it exists.
+func (r *WebMCPRegistry) Get(key string) (*WebMCPTool, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	t, ok := r.tools[key]
+	if !ok {
+		return nil, false
+	}
+	return &t, true
+}
+
+// Clear removes all tools from the registry.
+func (r *WebMCPRegistry) Clear() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.tools = make(map[string]WebMCPTool)
+}
 
 // WebMCPTool represents an MCP tool discovered on a web page.
 type WebMCPTool struct {

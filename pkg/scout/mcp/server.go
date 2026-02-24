@@ -538,6 +538,69 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 	return server
 }
 
+// RegisterWebMCPTools adds discovered WebMCP tools to the MCP server.
+// Each tool is registered with a namespaced name like "webmcp_<origin>_<name>".
+// The callFn is invoked when the tool is called, wrapping page.CallWebMCPTool.
+func RegisterWebMCPTools(server *mcp.Server, tools []scout.WebMCPTool, callFn func(name string, params map[string]any) (*scout.WebMCPToolResult, error)) {
+	for _, t := range tools {
+		tool := t // capture
+		origin := sanitizeMCPName(tool.ServerURL)
+		if origin == "" {
+			origin = sanitizeMCPName(tool.Source)
+		}
+		mcpName := "webmcp_" + origin + "_" + sanitizeMCPName(tool.Name)
+
+		schema := tool.InputSchema
+		if len(schema) == 0 {
+			schema = json.RawMessage(`{"type":"object","properties":{}}`)
+		}
+
+		server.AddTool(&mcp.Tool{
+			Name:        mcpName,
+			Description: fmt.Sprintf("[WebMCP] %s", tool.Description),
+			InputSchema: schema,
+		}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			var args map[string]any
+			if len(req.Params.Arguments) > 0 {
+				if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
+					return errResult(err.Error())
+				}
+			}
+
+			result, err := callFn(tool.Name, args)
+			if err != nil {
+				return errResult(err.Error())
+			}
+
+			if result.IsError {
+				return errResult(result.Content)
+			}
+
+			return textResult(result.Content)
+		})
+	}
+}
+
+// sanitizeMCPName replaces non-alphanumeric characters with underscores for tool naming.
+func sanitizeMCPName(s string) string {
+	var b []byte
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') {
+			b = append(b, c)
+		} else {
+			if len(b) > 0 && b[len(b)-1] != '_' {
+				b = append(b, '_')
+			}
+		}
+	}
+	// Trim trailing underscore.
+	if len(b) > 0 && b[len(b)-1] == '_' {
+		b = b[:len(b)-1]
+	}
+	return string(b)
+}
+
 // Serve starts the MCP server on stdio. Blocks until context is cancelled.
 func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool) error {
 	cfg := ServerConfig{

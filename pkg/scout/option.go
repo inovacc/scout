@@ -57,6 +57,7 @@ type options struct {
 	autoFreeInterval   time.Duration
 	autoFreeCallback   func()
 	tlsProfile         string
+	webmcpAutoDiscover bool
 }
 
 func defaults() *options {
@@ -279,6 +280,13 @@ func WithAutoFreeCallback(fn func()) Option {
 // command-line flags.
 func WithTLSProfile(profile string) Option {
 	return func(o *options) { o.tlsProfile = profile }
+}
+
+// WithWebMCPAutoDiscover enables automatic scanning for WebMCP tools after each page load.
+// When enabled, the Browser initializes a WebMCPRegistry that accumulates discovered tools
+// across all pages. Use Browser.WebMCPRegistry() to access the collected tools.
+func WithWebMCPAutoDiscover() Option {
+	return func(o *options) { o.webmcpAutoDiscover = true }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.

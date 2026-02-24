@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Overall Progress:** 95% Complete
+**Overall Progress:** 97% Complete
 
 ## Phases
 
@@ -139,17 +139,17 @@
 | Microsoft Edge  | ✅ Supported | ❌ Installer only | `WithBrowser(BrowserEdge)` — error message includes download URL                         |
 | Firefox         | ❌ Blocked   | N/A           | CDP removed in Firefox 141 (June 2025). Requires WebDriver BiDi maturity in Go ecosystem. |
 
-#### Pre-Existing Browser Detection [PLANNED]
+#### Pre-Existing Browser Detection [COMPLETE]
 
 Automatically detect all Chromium-based browsers installed on the system (Chrome, Brave, Edge, Vivaldi, Opera, Arc, Chromium) and add them to the available browser list. Currently Scout only checks known paths per `BrowserType`; this feature does a full system scan.
 
-- [ ] **System scanner** (`pkg/scout/browser_detect.go`) — scan common install paths per OS (Program Files, /Applications, /usr/bin, snap, flatpak)
-- [ ] **Registry scan (Windows)** — read `HKLM\SOFTWARE\Clients\StartMenuInternet` and `App Paths` for browser executables
-- [ ] **Version extraction** — run `browser --version` or parse manifest/plist to get version string
-- [ ] **`DetectBrowsers() []BrowserInfo`** — return all found browsers with name, path, version, type
-- [ ] **`scout browser list --detect`** — enhanced list showing all system browsers, not just Scout-managed ones
-- [ ] **`WithAutoDetect()` option** — pick best available browser automatically (prefer Chrome > Brave > Edge > Chromium)
-- [ ] **Tests** — mock filesystem paths, registry stubs, version parsing
+- [x] **System scanner** (`pkg/scout/browser_detect.go`) — scan common install paths per OS (Program Files, /Applications, /usr/bin, snap, flatpak)
+- [x] **Registry scan (Windows)** — read `HKLM\SOFTWARE\Clients\StartMenuInternet` and `App Paths` for browser executables
+- [x] **Version extraction** — run `browser --version` or parse manifest/plist to get version string
+- [x] **`DetectBrowsers() []BrowserInfo`** — return all found browsers with name, path, version, type
+- [x] **`scout browser list --detect`** — enhanced list showing all system browsers, not just Scout-managed ones
+- [x] **`WithAutoDetect()` option** — pick best available browser automatically (prefer Chrome > Brave > Edge > Chromium)
+- [x] **Tests** — mock filesystem paths, registry stubs, version parsing
 
 ### Phase 11: Batch Scraper [COMPLETE]
 
@@ -211,14 +211,14 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 
 #### AI-Assisted Generation (Optional LLM Enhancement)
 
-- [ ] **`WithAI(provider LLMProvider)` option** — enable LLM-assisted recipe generation (reuses Phase 14 LLM provider interface)
-- [ ] **Semantic field naming** — send container HTML sample to LLM, ask for meaningful field names ("price", "title", "rating") instead of generic ("text_1", "link_2")
-- [ ] **Selector refinement** — LLM suggests more stable selectors when rule-based ones are fragile (class-hash dependent)
-- [ ] **Automation planning** — given a goal description (`WithGoal("login and export CSV")`), LLM plans the step sequence: which fields to fill, buttons to click, waits to add
+- [x] **`WithAI(provider LLMProvider)` option** — enable LLM-assisted recipe generation (reuses Phase 14 LLM provider interface)
+- [x] **Semantic field naming** — send container HTML sample to LLM, ask for meaningful field names ("price", "title", "rating") instead of generic ("text_1", "link_2")
+- [x] **Selector refinement** — LLM suggests more stable selectors when rule-based ones are fragile (class-hash dependent)
+- [x] **Automation planning** — given a goal description (`WithGoal("login and export CSV")`), LLM plans the step sequence: which fields to fill, buttons to click, waits to add
 - [ ] **Multi-page flow detection** — LLM analyzes page transitions (login → dashboard → settings) and generates multi-step automate recipe
 - [ ] **Validation prompts** — after generation, LLM reviews the recipe for completeness and suggests missing steps or error handling
-- [ ] **Prompt templates** — structured prompts with page HTML context, selector candidates, and recipe schema as system prompt; user goal as user prompt
-- [ ] **Fallback** — if LLM unavailable or errors, fall back to rule-based generation silently
+- [x] **Prompt templates** — structured prompts with page HTML context, selector candidates, and recipe schema as system prompt; user goal as user prompt
+- [x] **Fallback** — if LLM unavailable or errors, fall back to rule-based generation silently
 
 #### Recipe Validation & Testing
 
@@ -230,7 +230,7 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 #### CLI Commands
 
 - [x] `scout recipe create <url> [--type=extract|automate] [--output=recipe.json]` — analyze site + generate recipe
-- [ ] `scout recipe create <url> --ai [--goal="scrape all products"] [--provider=ollama]` — AI-assisted generation
+- [x] `scout recipe create <url> --ai [--goal="scrape all products"] [--provider=ollama]` — AI-assisted generation
 - [ ] `scout recipe create <url> --interactive` — step-by-step guided creation: show candidates, let user pick containers/fields
 - [x] `scout recipe test --file=recipe.json` — dry-run validation with sample output
 - [ ] `scout recipe fix --file=recipe.json` — re-analyze site, update broken selectors in existing recipe
@@ -381,7 +381,7 @@ A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a pers
 - [ ] Fallback behavior tests (bridge unavailable → CDP degradation)
 - [ ] Example: `examples/advanced/bridge-extension/`
 
-### Phase 17a: Stealth Mode — Anti-Bot-Detection [IN PROGRESS]
+### Phase 17a: Stealth Mode — Anti-Bot-Detection [COMPLETE]
 
 Comprehensive stealth system that prevents headless browser detection across multiple vectors. Combines Chrome launch flags, JS injection (via `extract-stealth-evasions` + custom evasions), and fingerprint spoofing.
 
@@ -415,12 +415,12 @@ Comprehensive stealth system that prevents headless browser detection across mul
 
 #### Planned
 
-- [ ] **TLS/JA3 fingerprint rotation** — vary TLS fingerprint signatures via Chrome flags
+- [x] **TLS/JA3 fingerprint rotation** — vary TLS fingerprint signatures via Chrome flags
 - [x] **Font fingerprint spoofing** — spoof `document.fonts` enumeration
 - [x] **Screen resolution consistency** — ensure `screen.width/height` match viewport settings
 - [x] **WebRTC leak prevention** — disable or spoof WebRTC local IP leak
 - [x] **Battery API spoofing** — consistent battery status across pages
-- [ ] **More test sites** — creepjs.com, overpoweredjs.com, nobotspls.com, datadome.co/browserscan
+- [x] **More test sites** — creepjs.com, overpoweredjs.com, nobotspls.com, datadome.co/browserscan
 
 ### Phase 17b: AI-Powered Bot Protection Bypass [PLANNED]
 

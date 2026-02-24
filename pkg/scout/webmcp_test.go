@@ -393,3 +393,63 @@ func TestCallWebMCPTool_NilPage(t *testing.T) {
 		t.Fatal("expected error for nil page")
 	}
 }
+
+func TestWebMCPRegistry(t *testing.T) {
+	r := NewWebMCPRegistry()
+
+	// Empty registry.
+	if got := r.All(); len(got) != 0 {
+		t.Errorf("expected 0 tools, got %d", len(got))
+	}
+
+	if _, ok := r.Get("example.com/greet"); ok {
+		t.Error("expected Get to return false for empty registry")
+	}
+
+	// Register tools.
+	r.Register("example.com", []WebMCPTool{
+		{Name: "greet", Description: "Say hello"},
+		{Name: "add", Description: "Add numbers"},
+	})
+
+	all := r.All()
+	if len(all) != 2 {
+		t.Fatalf("expected 2 tools, got %d", len(all))
+	}
+
+	tool, ok := r.Get("example.com/greet")
+	if !ok {
+		t.Fatal("expected to find 'example.com/greet'")
+	}
+	if tool.Name != "greet" {
+		t.Errorf("tool.Name = %q, want 'greet'", tool.Name)
+	}
+
+	// Register from different origin.
+	r.Register("other.com", []WebMCPTool{
+		{Name: "greet", Description: "Other greet"},
+	})
+
+	all = r.All()
+	if len(all) != 3 {
+		t.Fatalf("expected 3 tools, got %d", len(all))
+	}
+
+	// Clear.
+	r.Clear()
+	if got := r.All(); len(got) != 0 {
+		t.Errorf("expected 0 tools after Clear, got %d", len(got))
+	}
+}
+
+func TestWithWebMCPAutoDiscover(t *testing.T) {
+	o := defaults()
+	if o.webmcpAutoDiscover {
+		t.Error("expected webmcpAutoDiscover to default to false")
+	}
+
+	WithWebMCPAutoDiscover()(o)
+	if !o.webmcpAutoDiscover {
+		t.Error("expected webmcpAutoDiscover to be true after WithWebMCPAutoDiscover")
+	}
+}
