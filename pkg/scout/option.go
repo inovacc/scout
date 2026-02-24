@@ -53,6 +53,8 @@ type options struct {
 	profile            *UserProfile
 	injectScripts      []string
 	injectErr          error
+	autoFreeInterval   time.Duration
+	autoFreeCallback   func()
 }
 
 func defaults() *options {
@@ -250,6 +252,18 @@ func WithRemoteCDP(endpoint string) Option {
 // the frontend framework and waits for it to finish hydrating/rendering.
 func WithSmartWait() Option {
 	return func(o *options) { o.smartWait = true }
+}
+
+// WithAutoFree enables periodic browser recycling at the given interval.
+// On each tick the browser saves open page URLs and cookies, restarts,
+// and restores them. This helps avoid memory leaks in long-running sessions.
+func WithAutoFree(interval time.Duration) Option {
+	return func(o *options) { o.autoFreeInterval = interval }
+}
+
+// WithAutoFreeCallback sets a function called before each browser recycle.
+func WithAutoFreeCallback(fn func()) Option {
+	return func(o *options) { o.autoFreeCallback = fn }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.

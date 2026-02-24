@@ -289,7 +289,7 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 - [x] Job ID generation (UUID), status polling, cancellation with registered cancel functions
 - [x] Persistent job state in `~/.scout/jobs/` (JSON files, 0600 permissions)
 - [x] CLI: `scout jobs list`, `scout jobs status <id>`, `scout jobs cancel <id>`
-- [ ] Integration with batch scraper and crawl commands
+- [x] Integration with batch scraper and crawl commands
 
 ### Phase 16: Custom JS & Extension Injection [IN PROGRESS]
 
@@ -416,10 +416,10 @@ Comprehensive stealth system that prevents headless browser detection across mul
 #### Planned
 
 - [ ] **TLS/JA3 fingerprint rotation** — vary TLS fingerprint signatures via Chrome flags
-- [ ] **Font fingerprint spoofing** — spoof `document.fonts` enumeration
-- [ ] **Screen resolution consistency** — ensure `screen.width/height` match viewport settings
-- [ ] **WebRTC leak prevention** — disable or spoof WebRTC local IP leak
-- [ ] **Battery API spoofing** — consistent battery status across pages
+- [x] **Font fingerprint spoofing** — spoof `document.fonts` enumeration
+- [x] **Screen resolution consistency** — ensure `screen.width/height` match viewport settings
+- [x] **WebRTC leak prevention** — disable or spoof WebRTC local IP leak
+- [x] **Battery API spoofing** — consistent battery status across pages
 - [ ] **More test sites** — creepjs.com, overpoweredjs.com, nobotspls.com, datadome.co/browserscan
 
 ### Phase 17b: AI-Powered Bot Protection Bypass [PLANNED]
@@ -746,14 +746,14 @@ Dedicated GitHub extraction toolkit using WebFetch + WebSearch + Scout's existin
 - [ ] **Repository info** — `ExtractRepo(owner, repo string) (*GitHubRepo, error)` — name, description, stars, forks, language, topics, license, README (as markdown)
 - [ ] **Issue extraction** — `ExtractIssues(owner, repo string, ...GitHubOption) ([]GitHubIssue, error)` — title, body, labels, assignees, comments, state, timeline
 - [ ] **PR extraction** — `ExtractPRs(owner, repo string, ...GitHubOption) ([]GitHubPR, error)` — title, body, diff stats, review comments, CI status, merge state
-- [ ] **Code search** — `SearchCode(query string, ...GitHubOption) ([]GitHubCodeResult, error)` — file path, repo, matched lines, context
+- [x] **Code search** — `SearchCode(query string, ...GitHubOption) ([]GitHubCodeResult, error)` — file path, repo, matched lines, context
 - [ ] **Discussion extraction** — `ExtractDiscussions(owner, repo string) ([]GitHubDiscussion, error)` — title, body, category, answers, comments
 - [ ] **File/tree browsing** — `ExtractTree(owner, repo, path string) (*GitHubTree, error)` — directory listing, file content as markdown
 - [ ] **User/org profiles** — `ExtractUser(username string) (*GitHubUser, error)` — bio, repos, contributions, pinned items
 - [ ] **Release notes** — `ExtractReleases(owner, repo string) ([]GitHubRelease, error)` — tag, body, assets, date
 - [ ] **GitHub search** — `SearchRepos(query string) ([]GitHubRepo, error)`, `SearchIssues(query string) ([]GitHubIssue, error)`
-- [ ] **Pagination** — All list methods support `WithGitHubMaxPages(n)`, automatic next-page navigation
-- [ ] **Rate limiting** — Built-in rate limiter for polite scraping (reuse `RateLimiter`)
+- [x] **Pagination** — All list methods support `WithGitHubMaxPages(n)`, automatic next-page navigation
+- [x] **Rate limiting** — Built-in rate limiter for polite scraping (reuse `RateLimiter`)
 - [ ] **Struct tags for extraction** — Use `scout:"selector"` tags for GitHub page element mapping
 - [ ] **Data types**:
   ```go

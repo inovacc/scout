@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/inovacc/scout/pkg/rod"
 	"github.com/inovacc/scout/pkg/rod/lib/launcher"
@@ -18,6 +19,11 @@ type Browser struct {
 	browser  *rod.Browser
 	opts     *options
 	launcher *launcher.Launcher // nil for remote CDP connections
+
+	// AutoFree fields for periodic browser recycling.
+	mu       sync.Mutex
+	done     chan struct{}
+	recycles int
 }
 
 // New creates and connects a new headless browser with the given options.
@@ -75,10 +81,24 @@ func New(opts ...Option) (*Browser, error) {
 			return nil, fmt.Errorf("scout: incognito mode: %w", err)
 		}
 
-		return &Browser{browser: ctx, opts: o, launcher: l}, nil
+		br := &Browser{browser: ctx, opts: o, launcher: l, done: make(chan struct{})}
+		if o.autoFreeInterval > 0 {
+			br.startAutoFree(AutoFreeConfig{
+				Interval:  o.autoFreeInterval,
+				OnRecycle: o.autoFreeCallback,
+			})
+		}
+		return br, nil
 	}
 
-	return &Browser{browser: b, opts: o, launcher: l}, nil
+	br := &Browser{browser: b, opts: o, launcher: l, done: make(chan struct{})}
+	if o.autoFreeInterval > 0 {
+		br.startAutoFree(AutoFreeConfig{
+			Interval:  o.autoFreeInterval,
+			OnRecycle: o.autoFreeCallback,
+		})
+	}
+	return br, nil
 }
 
 // launchLocal starts a local browser process and returns the CDP WebSocket URL and launcher.
@@ -302,6 +322,14 @@ func (b *Browser) Version() (string, error) {
 func (b *Browser) Close() error {
 	if b == nil || b.browser == nil {
 		return nil
+	}
+
+	// Signal the autofree goroutine to stop.
+	select {
+	case <-b.done:
+		// Already closed.
+	default:
+		close(b.done)
 	}
 
 	err := b.browser.Close()

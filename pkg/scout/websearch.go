@@ -2,6 +2,9 @@ package scout
 
 import (
 	"fmt"
+	"math"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,6 +22,7 @@ type WebSearchItem struct {
 	URL      string          `json:"url"`
 	Snippet  string          `json:"snippet"`
 	Position int             `json:"position"`
+	RRFScore float64         `json:"rrf_score,omitempty"`
 	Content  *WebFetchResult `json:"content,omitempty"`
 }
 
@@ -26,15 +30,18 @@ type WebSearchItem struct {
 type WebSearchOption func(*webSearchOptions)
 
 type webSearchOptions struct {
-	engine      SearchEngine
-	maxPages    int
-	language    string
-	region      string
-	fetchMode   string // "" = no fetch, "markdown", "text", "full", etc.
-	mainOnly    bool
-	maxFetch    int
-	concurrency int
-	cacheTTL    time.Duration
+	engine         SearchEngine
+	engines        []SearchEngine
+	maxPages       int
+	language       string
+	region         string
+	domain         string
+	excludeDomains []string
+	fetchMode      string // "" = no fetch, "markdown", "text", "full", etc.
+	mainOnly       bool
+	maxFetch       int
+	concurrency    int
+	cacheTTL       time.Duration
 }
 
 func webSearchDefaults() *webSearchOptions {
@@ -92,6 +99,95 @@ func WithWebSearchCache(ttl time.Duration) WebSearchOption {
 	return func(o *webSearchOptions) { o.cacheTTL = ttl }
 }
 
+// WithSearchEngines sets multiple engines for multi-engine aggregation with RRF merging.
+// Accepted values: "google", "bing", "duckduckgo"/"ddg".
+func WithSearchEngines(engines ...string) WebSearchOption {
+	return func(o *webSearchOptions) {
+		o.engines = nil
+		for _, name := range engines {
+			switch strings.ToLower(strings.TrimSpace(name)) {
+			case "google":
+				o.engines = append(o.engines, Google)
+			case "bing":
+				o.engines = append(o.engines, Bing)
+			case "duckduckgo", "ddg":
+				o.engines = append(o.engines, DuckDuckGo)
+			}
+		}
+	}
+}
+
+// WithSearchDomain appends "site:domain" to the query to restrict results.
+func WithSearchDomain(domain string) WebSearchOption {
+	return func(o *webSearchOptions) { o.domain = domain }
+}
+
+// WithSearchExcludeDomain appends "-site:domain" for each domain to exclude.
+func WithSearchExcludeDomain(domains ...string) WebSearchOption {
+	return func(o *webSearchOptions) { o.excludeDomains = domains }
+}
+
+// rrfMerge performs Reciprocal Rank Fusion across multiple ranked lists.
+// Each item is scored as sum(1/(k+rank)) across all lists containing it.
+// k=60 is the standard constant. Results are sorted by RRF score descending.
+func rrfMerge(engineResults [][]WebSearchItem) []WebSearchItem {
+	const k = 60.0
+	type scored struct {
+		item  WebSearchItem
+		score float64
+	}
+	scores := make(map[string]*scored)
+	order := make([]string, 0)
+
+	for _, results := range engineResults {
+		for _, item := range results {
+			rank := float64(item.Position)
+			if rank <= 0 {
+				rank = 1
+			}
+			s, ok := scores[item.URL]
+			if !ok {
+				cp := item
+				cp.RRFScore = 0
+				s = &scored{item: cp}
+				scores[item.URL] = s
+				order = append(order, item.URL)
+			}
+			s.score += 1.0 / (k + rank)
+		}
+	}
+
+	merged := make([]WebSearchItem, 0, len(scores))
+	for _, url := range order {
+		s := scores[url]
+		s.item.RRFScore = math.Round(s.score*10000) / 10000
+		merged = append(merged, s.item)
+	}
+
+	sort.SliceStable(merged, func(i, j int) bool {
+		return merged[i].RRFScore > merged[j].RRFScore
+	})
+
+	// Reassign positions after sort
+	for i := range merged {
+		merged[i].Position = i + 1
+	}
+
+	return merged
+}
+
+// buildSearchQuery applies domain filters to the base query.
+func buildSearchQuery(query string, o *webSearchOptions) string {
+	q := query
+	if o.domain != "" {
+		q += " site:" + o.domain
+	}
+	for _, d := range o.excludeDomains {
+		q += " -site:" + d
+	}
+	return q
+}
+
 // WebSearch performs a search query and optionally fetches result pages.
 func (b *Browser) WebSearch(query string, opts ...WebSearchOption) (*WebSearchResult, error) {
 	o := webSearchDefaults()
@@ -99,31 +195,55 @@ func (b *Browser) WebSearch(query string, opts ...WebSearchOption) (*WebSearchRe
 		fn(o)
 	}
 
-	// Build search options
-	var searchOpts []SearchOption
-	searchOpts = append(searchOpts, WithSearchEngine(o.engine))
-	searchOpts = append(searchOpts, WithSearchMaxPages(o.maxPages))
+	// Apply domain filters to the query
+	finalQuery := buildSearchQuery(query, o)
+
+	// Determine which engines to search
+	engines := o.engines
+	if len(engines) == 0 {
+		engines = []SearchEngine{o.engine}
+	}
+
+	// Build base search options (shared across engines)
+	var baseSearchOpts []SearchOption
+	baseSearchOpts = append(baseSearchOpts, WithSearchMaxPages(o.maxPages))
 	if o.language != "" {
-		searchOpts = append(searchOpts, WithSearchLanguage(o.language))
+		baseSearchOpts = append(baseSearchOpts, WithSearchLanguage(o.language))
 	}
 	if o.region != "" {
-		searchOpts = append(searchOpts, WithSearchRegion(o.region))
+		baseSearchOpts = append(baseSearchOpts, WithSearchRegion(o.region))
 	}
 
-	results, err := b.SearchAll(query, searchOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("scout: websearch: %w", err)
-	}
+	// Search each engine sequentially and collect results
+	var engineResults [][]WebSearchItem
+	for _, eng := range engines {
+		opts := make([]SearchOption, len(baseSearchOpts))
+		copy(opts, baseSearchOpts)
+		opts = append(opts, WithSearchEngine(eng))
 
-	// Convert to WebSearchItems
-	items := make([]WebSearchItem, len(results))
-	for i, r := range results {
-		items[i] = WebSearchItem{
-			Title:    r.Title,
-			URL:      r.URL,
-			Snippet:  r.Snippet,
-			Position: r.Position,
+		results, err := b.SearchAll(finalQuery, opts...)
+		if err != nil {
+			return nil, fmt.Errorf("scout: websearch: %w", err)
 		}
+
+		items := make([]WebSearchItem, len(results))
+		for i, r := range results {
+			items[i] = WebSearchItem{
+				Title:    r.Title,
+				URL:      r.URL,
+				Snippet:  r.Snippet,
+				Position: r.Position,
+			}
+		}
+		engineResults = append(engineResults, items)
+	}
+
+	// Merge results: RRF for multi-engine, plain for single
+	var items []WebSearchItem
+	if len(engineResults) == 1 {
+		items = engineResults[0]
+	} else {
+		items = rrfMerge(engineResults)
 	}
 
 	// Fetch result pages if requested
@@ -168,7 +288,7 @@ func (b *Browser) WebSearch(query string, opts ...WebSearchOption) (*WebSearchRe
 	}
 
 	return &WebSearchResult{
-		Query:   query,
+		Query:   finalQuery,
 		Engine:  o.engine,
 		Results: items,
 	}, nil

@@ -313,4 +313,141 @@ func TestWebSearchOption_Defaults(t *testing.T) {
 	if o.cacheTTL != 2*time.Minute {
 		t.Error("WithWebSearchCache failed")
 	}
+
+	WithSearchDomain("example.com")(o)
+	if o.domain != "example.com" {
+		t.Error("WithSearchDomain failed")
+	}
+
+	WithSearchExcludeDomain("spam.com", "ads.com")(o)
+	if len(o.excludeDomains) != 2 {
+		t.Error("WithSearchExcludeDomain failed")
+	}
+
+	WithSearchEngines("google", "bing", "duckduckgo")(o)
+	if len(o.engines) != 3 {
+		t.Errorf("WithSearchEngines: got %d engines, want 3", len(o.engines))
+	}
+}
+
+func TestWebSearch_DomainFilter(t *testing.T) {
+	o := webSearchDefaults()
+	WithSearchDomain("golang.org")(o)
+
+	q := buildSearchQuery("concurrency patterns", o)
+	if q != "concurrency patterns site:golang.org" {
+		t.Errorf("got %q, want %q", q, "concurrency patterns site:golang.org")
+	}
+}
+
+func TestWebSearch_ExcludeDomain(t *testing.T) {
+	o := webSearchDefaults()
+	WithSearchExcludeDomain("pinterest.com", "quora.com")(o)
+
+	q := buildSearchQuery("go tutorials", o)
+	want := "go tutorials -site:pinterest.com -site:quora.com"
+	if q != want {
+		t.Errorf("got %q, want %q", q, want)
+	}
+}
+
+func TestWebSearch_DomainAndExcludeCombined(t *testing.T) {
+	o := webSearchDefaults()
+	WithSearchDomain("github.com")(o)
+	WithSearchExcludeDomain("gist.github.com")(o)
+
+	q := buildSearchQuery("scout", o)
+	want := "scout site:github.com -site:gist.github.com"
+	if q != want {
+		t.Errorf("got %q, want %q", q, want)
+	}
+}
+
+func TestWebSearch_MultiEngine_RRF(t *testing.T) {
+	// Test RRF merge logic directly (no browser needed)
+	engine1 := []WebSearchItem{
+		{Title: "A", URL: "http://a.com", Position: 1},
+		{Title: "B", URL: "http://b.com", Position: 2},
+		{Title: "C", URL: "http://c.com", Position: 3},
+	}
+	engine2 := []WebSearchItem{
+		{Title: "B", URL: "http://b.com", Position: 1},
+		{Title: "D", URL: "http://d.com", Position: 2},
+		{Title: "A", URL: "http://a.com", Position: 3},
+	}
+
+	merged := rrfMerge([][]WebSearchItem{engine1, engine2})
+
+	if len(merged) != 4 {
+		t.Fatalf("got %d results, want 4 (A, B, C, D)", len(merged))
+	}
+
+	// B appears at rank 2 and rank 1 -> highest RRF score
+	// score(B) = 1/(60+2) + 1/(60+1) = 1/62 + 1/61
+	// A appears at rank 1 and rank 3
+	// score(A) = 1/(60+1) + 1/(60+3) = 1/61 + 1/63
+	// B should be first (higher score), then A
+	if merged[0].URL != "http://b.com" {
+		t.Errorf("first result = %q, want http://b.com", merged[0].URL)
+	}
+	if merged[1].URL != "http://a.com" {
+		t.Errorf("second result = %q, want http://a.com", merged[1].URL)
+	}
+
+	// Verify positions are reassigned
+	for i, item := range merged {
+		if item.Position != i+1 {
+			t.Errorf("merged[%d].Position = %d, want %d", i, item.Position, i+1)
+		}
+	}
+
+	// Verify RRF scores are set and decreasing
+	for i := 1; i < len(merged); i++ {
+		if merged[i].RRFScore > merged[i-1].RRFScore {
+			t.Errorf("RRF scores not decreasing: [%d]=%f > [%d]=%f",
+				i, merged[i].RRFScore, i-1, merged[i-1].RRFScore)
+		}
+	}
+
+	// Verify dedup: no duplicate URLs
+	seen := make(map[string]bool)
+	for _, item := range merged {
+		if seen[item.URL] {
+			t.Errorf("duplicate URL in merged results: %s", item.URL)
+		}
+		seen[item.URL] = true
+	}
+}
+
+func TestWebSearch_MultiEngine_SingleResult(t *testing.T) {
+	// Single engine should not use RRF
+	engine1 := [][]WebSearchItem{{
+		{Title: "A", URL: "http://a.com", Position: 1},
+	}}
+
+	// rrfMerge with single engine still works
+	merged := rrfMerge(engine1)
+	if len(merged) != 1 {
+		t.Fatalf("got %d, want 1", len(merged))
+	}
+	if merged[0].RRFScore == 0 {
+		t.Error("RRF score should be set even for single engine")
+	}
+}
+
+func TestWebSearch_EnginesParsing(t *testing.T) {
+	o := webSearchDefaults()
+	WithSearchEngines("Google", "BING", "DDG", "invalid")(o)
+	if len(o.engines) != 3 {
+		t.Errorf("got %d engines, want 3 (invalid should be skipped)", len(o.engines))
+	}
+	if o.engines[0] != Google {
+		t.Error("first engine should be Google")
+	}
+	if o.engines[1] != Bing {
+		t.Error("second engine should be Bing")
+	}
+	if o.engines[2] != DuckDuckGo {
+		t.Error("third engine should be DuckDuckGo")
+	}
 }

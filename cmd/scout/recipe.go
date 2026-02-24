@@ -14,7 +14,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(recipeCmd)
-	recipeCmd.AddCommand(recipeRunCmd, recipeValidateCmd, recipeCreateCmd)
+	recipeCmd.AddCommand(recipeRunCmd, recipeValidateCmd, recipeCreateCmd, recipeTestCmd)
 
 	recipeRunCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
 	recipeRunCmd.Flags().StringP("output", "o", "", "output file for results")
@@ -26,6 +26,10 @@ func init() {
 	recipeCreateCmd.Flags().StringP("output", "o", "", "output file for generated recipe")
 	recipeCreateCmd.Flags().String("type", "", "force recipe type (extract or automate)")
 	recipeCreateCmd.Flags().Int("max-pages", 5, "max pages for pagination")
+
+	recipeTestCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
+	recipeTestCmd.Flags().String("format", "text", "output format (text or json)")
+	_ = recipeTestCmd.MarkFlagRequired("file")
 }
 
 var recipeCmd = &cobra.Command{
@@ -104,6 +108,51 @@ var recipeValidateCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(os.Stdout, "valid %s recipe: %s (type=%s)\n", r.Version, r.Name, r.Type)
+		return nil
+	},
+}
+
+var recipeTestCmd = &cobra.Command{
+	Use:   "test",
+	Short: "Dry-run a recipe: navigate to the URL and validate all selectors",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		file, _ := cmd.Flags().GetString("file")
+		format, _ := cmd.Flags().GetString("format")
+
+		r, err := recipe.LoadFile(file)
+		if err != nil {
+			return err
+		}
+
+		browser, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return fmt.Errorf("scout: browser launch: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		result, err := recipe.ValidateRecipe(browser, r)
+		if err != nil {
+			return err
+		}
+
+		if format == "json" {
+			data, err := json.MarshalIndent(result, "", "  ")
+			if err != nil {
+				return fmt.Errorf("marshal result: %w", err)
+			}
+			_, _ = fmt.Fprintln(os.Stdout, string(data))
+			return nil
+		}
+
+		// Text output.
+		if result.Valid {
+			_, _ = fmt.Fprintf(os.Stdout, "PASS: all selectors matched (%d sample items)\n", result.SampleItems)
+		} else {
+			_, _ = fmt.Fprintf(os.Stdout, "FAIL: %d selector(s) did not match\n", len(result.Errors))
+			for _, e := range result.Errors {
+				_, _ = fmt.Fprintf(os.Stdout, "  %s (%s): %s\n", e.Field, e.Selector, e.Error)
+			}
+		}
 		return nil
 	},
 }

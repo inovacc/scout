@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -32,6 +33,31 @@ func init() {
 <a href="/page3">Page 3</a>
 </nav>
 </body></html>`)
+		})
+
+		mux.HandleFunc("/webfetch-redirect", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/webfetch", http.StatusFound)
+		})
+
+		var webfetchFailCount atomic.Int32
+		mux.HandleFunc("/webfetch-flaky", func(w http.ResponseWriter, _ *http.Request) {
+			n := webfetchFailCount.Add(1)
+			if n <= 2 {
+				// Return a connection reset-like error by hijacking and closing
+				hj, ok := w.(http.Hijacker)
+				if ok {
+					conn, _, err := hj.Hijack()
+					if err == nil {
+						_ = conn.Close()
+						return
+					}
+				}
+				// Fallback: 500
+				http.Error(w, "server error", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html><html><head><title>Flaky OK</title></head><body><p>Success</p></body></html>`)
 		})
 
 		mux.HandleFunc("/webfetch-minimal", func(w http.ResponseWriter, _ *http.Request) {
@@ -327,6 +353,79 @@ func TestWebFetchBatch_ErrorIsolation(t *testing.T) {
 	// Good URL should succeed
 	if results[1].Title != "Minimal Page" {
 		t.Errorf("result 1 title = %q, want %q", results[1].Title, "Minimal Page")
+	}
+}
+
+func TestWebFetch_RedirectChain(t *testing.T) {
+	ts := newTestServer()
+	defer ts.Close()
+	b := newTestBrowser(t)
+
+	result, err := b.WebFetch(ts.URL + "/webfetch-redirect")
+	if err != nil {
+		t.Fatalf("WebFetch failed: %v", err)
+	}
+
+	if len(result.RedirectChain) < 2 {
+		t.Fatalf("RedirectChain length = %d, want >= 2", len(result.RedirectChain))
+	}
+	if result.RedirectChain[0] != ts.URL+"/webfetch-redirect" {
+		t.Errorf("RedirectChain[0] = %q, want %q", result.RedirectChain[0], ts.URL+"/webfetch-redirect")
+	}
+	if !strings.HasSuffix(result.RedirectChain[1], "/webfetch") {
+		t.Errorf("RedirectChain[1] = %q, want suffix /webfetch", result.RedirectChain[1])
+	}
+	if result.Title != "WebFetch Test Page" {
+		t.Errorf("title = %q, want %q", result.Title, "WebFetch Test Page")
+	}
+}
+
+func TestWebFetch_NoRedirectChain(t *testing.T) {
+	ts := newTestServer()
+	defer ts.Close()
+	b := newTestBrowser(t)
+
+	result, err := b.WebFetch(ts.URL + "/webfetch")
+	if err != nil {
+		t.Fatalf("WebFetch failed: %v", err)
+	}
+
+	if len(result.RedirectChain) != 0 {
+		t.Errorf("RedirectChain should be empty for non-redirect, got %v", result.RedirectChain)
+	}
+}
+
+func TestWebFetch_RetryOption(t *testing.T) {
+	o := webFetchDefaults()
+
+	WithFetchRetries(3)(o)
+	if o.retries != 3 {
+		t.Errorf("retries = %d, want 3", o.retries)
+	}
+
+	WithFetchRetryDelay(500 * time.Millisecond)(o)
+	if o.retryDelay != 500*time.Millisecond {
+		t.Errorf("retryDelay = %v, want 500ms", o.retryDelay)
+	}
+}
+
+func TestWebFetch_RetryOnError(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping retry test in short mode")
+	}
+
+	b := newTestBrowser(t)
+
+	// This should fail even with retries since the port is invalid
+	_, err := b.WebFetch("http://127.0.0.1:1/nonexistent",
+		WithFetchRetries(2),
+		WithFetchRetryDelay(50*time.Millisecond),
+	)
+	if err == nil {
+		t.Fatal("expected error for unreachable URL")
+	}
+	if !strings.Contains(err.Error(), "scout: webfetch:") {
+		t.Errorf("error = %q, want scout: webfetch: prefix", err.Error())
 	}
 }
 
