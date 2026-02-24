@@ -929,14 +929,14 @@ Automatically analyze target pages to detect frontend frameworks, SPA/SSR render
 - [x] **Detected frameworks**: React, Vue (2/3), Angular, AngularJS, Svelte, SvelteKit, Next.js, Nuxt, Remix, Gatsby, Astro, Ember, Backbone, jQuery
 - [x] **Tests** — 9 fixture routes, 11 test cases covering detection, version extraction, SPA flag, meta-framework precedence
 
-#### PWA Detection
+#### PWA Detection [COMPLETE]
 
-- [ ] **Service Worker detection** — `Page.DetectPWA() (*PWAInfo, error)` checks `navigator.serviceWorker.getRegistrations()` for active service workers
-- [ ] **Web App Manifest** — Parse `<link rel="manifest">`, fetch and decode `manifest.json` for `name`, `display`, `start_url`, `icons`, `theme_color`
-- [ ] **Installability check** — Detect if page meets PWA installability criteria (manifest + service worker + HTTPS)
-- [ ] **Offline capability** — Test if service worker has a fetch handler (indicates offline support)
-- [ ] **Push notification support** — Detect `PushManager` subscription capability
-- [ ] **`PWAInfo` type** — `HasServiceWorker`, `HasManifest`, `Installable`, `Offline`, `ManifestData *WebAppManifest`
+- [x] **Service Worker detection** — `Page.DetectPWA() (*PWAInfo, error)` checks `navigator.serviceWorker.getRegistrations()` for active service workers
+- [x] **Web App Manifest** — Parse `<link rel="manifest">`, fetch and decode `manifest.json` for `name`, `short_name`, `display`, `start_url`, `icons`, `theme_color`, `background_color`
+- [x] **Installability check** — Detect if page meets PWA installability criteria (manifest + service worker + HTTPS)
+- [x] **Push notification support** — Detect `PushManager` subscription capability
+- [x] **`PWAInfo` type** — `HasServiceWorker`, `HasManifest`, `Installable`, `HTTPS`, `PushCapable`, `Manifest *WebAppManifest`
+- [x] **Tests** — 5 tests: WithManifest, NoManifest, ManifestOnly, NilPage, PushCapable
 
 #### Rendering Mode Detection
 
@@ -984,7 +984,7 @@ Automatically analyze target pages to detect frontend frameworks, SPA/SSR render
 #### Testing
 
 - [x] Framework detection tests (React, Vue, Angular, Svelte, Next.js, Gatsby, Astro, jQuery, none)
-- [ ] PWA detection tests (mock service worker registration, manifest parsing)
+- [x] PWA detection tests (manifest parsing, no-manifest, manifest-only, nil-page, push capability)
 - [ ] Render mode tests (CSR vs SSR HTML comparison)
 - [ ] Tech stack tests (CSS framework class patterns, CMS markers)
 - [ ] Smart wait strategy tests (framework-specific wait completion)

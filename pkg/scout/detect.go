@@ -191,3 +191,98 @@ func (p *Page) DetectFramework() (*FrameworkInfo, error) {
 
 	return &frameworks[0], nil
 }
+
+// PWAInfo describes Progressive Web App capabilities detected on the current page.
+type PWAInfo struct {
+	HasServiceWorker bool            `json:"has_service_worker"`
+	HasManifest      bool            `json:"has_manifest"`
+	Installable      bool            `json:"installable"`
+	HTTPS            bool            `json:"https"`
+	PushCapable      bool            `json:"push_capable"`
+	Manifest         *WebAppManifest `json:"manifest,omitempty"`
+}
+
+// WebAppManifest holds parsed data from the page's web app manifest.
+type WebAppManifest struct {
+	Name            string `json:"name"`
+	ShortName       string `json:"short_name,omitempty"`
+	Display         string `json:"display,omitempty"`
+	StartURL        string `json:"start_url,omitempty"`
+	ThemeColor      string `json:"theme_color,omitempty"`
+	BackgroundColor string `json:"background_color,omitempty"`
+	Icons           int    `json:"icons"`
+}
+
+// detectPWAJS evaluates in the page to detect PWA capabilities.
+// It checks service workers, manifest link, protocol, and push support.
+// Manifest content is fetched inline if the link tag exists.
+const detectPWAJS = `async () => {
+	const result = {
+		has_service_worker: false,
+		has_manifest: false,
+		installable: false,
+		https: location.protocol === 'https:',
+		push_capable: false,
+		manifest: null,
+	};
+
+	// Service Worker
+	if ('serviceWorker' in navigator) {
+		try {
+			const regs = await navigator.serviceWorker.getRegistrations();
+			result.has_service_worker = regs.length > 0;
+		} catch(e) {}
+	}
+
+	// Push capability
+	if ('PushManager' in window) {
+		result.push_capable = true;
+	}
+
+	// Manifest link
+	const manifestLink = document.querySelector('link[rel="manifest"]');
+	if (manifestLink && manifestLink.href) {
+		result.has_manifest = true;
+		try {
+			const resp = await fetch(manifestLink.href);
+			if (resp.ok) {
+				const m = await resp.json();
+				result.manifest = {
+					name: m.name || '',
+					short_name: m.short_name || '',
+					display: m.display || '',
+					start_url: m.start_url || '',
+					theme_color: m.theme_color || '',
+					background_color: m.background_color || '',
+					icons: Array.isArray(m.icons) ? m.icons.length : 0,
+				};
+			}
+		} catch(e) {}
+	}
+
+	// Installability heuristic: manifest + SW + HTTPS
+	result.installable = result.has_manifest && result.has_service_worker && result.https;
+
+	return JSON.stringify(result);
+}`
+
+// DetectPWA checks whether the current page is a Progressive Web App.
+// Detects service workers, web app manifest, installability, HTTPS, and push capability.
+// The page should be loaded (call WaitLoad first).
+func (p *Page) DetectPWA() (*PWAInfo, error) {
+	if p == nil || p.page == nil {
+		return nil, fmt.Errorf("scout: detect pwa: nil page")
+	}
+
+	result, err := p.Eval(detectPWAJS)
+	if err != nil {
+		return nil, fmt.Errorf("scout: detect pwa: %w", err)
+	}
+
+	var info PWAInfo
+	if err := json.Unmarshal([]byte(result.String()), &info); err != nil {
+		return nil, fmt.Errorf("scout: detect pwa: parse: %w", err)
+	}
+
+	return &info, nil
+}
