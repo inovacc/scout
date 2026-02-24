@@ -938,23 +938,26 @@ Automatically analyze target pages to detect frontend frameworks, SPA/SSR render
 - [x] **`PWAInfo` type** — `HasServiceWorker`, `HasManifest`, `Installable`, `HTTPS`, `PushCapable`, `Manifest *WebAppManifest`
 - [x] **Tests** — 5 tests: WithManifest, NoManifest, ManifestOnly, NilPage, PushCapable
 
-#### Rendering Mode Detection
+#### Rendering Mode Detection [COMPLETE]
 
-- [ ] **CSR vs SSR vs SSG detection** — `Page.DetectRenderMode() (RenderMode, error)` — compare initial HTML response (pre-JS) with post-hydration DOM to classify rendering strategy
-- [ ] **Hydration detection** — Detect React hydration markers (`data-reactroot` + server-rendered content), Vue hydration (`data-server-rendered`), Angular Universal markers
-- [ ] **Static site detection** — Identify pre-rendered static content (no JS framework globals after load = SSG)
-- [ ] **ISR detection** — Detect Next.js ISR via `__NEXT_DATA__.isFallback` or stale-while-revalidate headers
-- [ ] **`RenderMode` enum** — `RenderCSR`, `RenderSSR`, `RenderSSG`, `RenderISR`, `RenderUnknown`
+- [x] **CSR vs SSR vs SSG detection** — `Page.DetectRenderMode() (*RenderInfo, error)` — heuristic classification via framework-specific DOM/global markers
+- [x] **Hydration detection** — React devtools hook + reactroot, Vue `data-server-rendered`, Angular Universal `ng-server-context`
+- [x] **Static site detection** — Gatsby `#___gatsby`, Astro `astro-island`, Hugo/Jekyll/Eleventy generator meta tags
+- [x] **ISR detection** — Next.js `__NEXT_DATA__.isFallback`
+- [x] **`RenderMode` enum** — `RenderCSR`, `RenderSSR`, `RenderSSG`, `RenderISR`, `RenderUnknown`
+- [x] **`RenderInfo` type** — `Mode`, `Hydrated`, `Details`
+- [x] **Tests** — 6 tests: CSR, SSR, SSG, NextSSP, NilPage, Plain
 
-#### Technology Stack Detection
+#### Technology Stack Detection [COMPLETE]
 
-- [ ] **CSS frameworks** — Detect Tailwind (`class` patterns), Bootstrap (`.container`, `.row`), Material UI, Chakra UI via class/attribute patterns
-- [ ] **Build tools** — Detect Webpack (chunk naming), Vite (`/@vite/`), Parcel, esbuild via script URL patterns
-- [ ] **CMS detection** — WordPress (`wp-content`), Drupal (`drupal.js`), Shopify (`Shopify.`), Webflow (`data-wf-`), Squarespace
-- [ ] **Analytics/tracking** — Detect Google Analytics, GTM, Segment, Mixpanel, Hotjar via script URLs and globals
-- [ ] **CDN detection** — Identify Cloudflare, Vercel, Netlify, AWS CloudFront via response headers and DNS
-- [ ] **`TechStack` type** — `Frameworks []FrameworkInfo`, `CSSFramework string`, `BuildTool string`, `CMS string`, `Analytics []string`, `CDN string`
-- [ ] **`Page.DetectTechStack() (*TechStack, error)`** — Comprehensive page technology analysis
+- [x] **CSS frameworks** — Tailwind (utility class counting), Bootstrap, Material UI, Chakra UI, Bulma
+- [x] **Build tools** — Vite, Webpack, Parcel, esbuild via script URL patterns
+- [x] **CMS detection** — WordPress, Drupal, Shopify, Webflow, Squarespace
+- [x] **Analytics/tracking** — Google Analytics, GTM, Segment, Mixpanel, Hotjar
+- [x] **CDN detection** — Cloudflare, Vercel, Netlify, AWS CloudFront
+- [x] **`TechStack` type** — `Frameworks`, `CSSFramework`, `BuildTool`, `CMS`, `Analytics`, `CDN`
+- [x] **`Page.DetectTechStack() (*TechStack, error)`** — combines framework detection + tech stack JS eval
+- [x] **Tests** — 4 tests: WordPress+Bootstrap, ReactVite+Tailwind+GA, Plain, NilPage
 
 #### Smart Wait Strategies
 
@@ -969,11 +972,12 @@ Automatically analyze target pages to detect frontend frameworks, SPA/SSR render
 
 #### CLI Commands
 
-- [ ] `scout detect <url>` — Full page intelligence report (framework, PWA, render mode, tech stack)
-- [ ] `scout detect --framework <url>` — Framework detection only
-- [ ] `scout detect --pwa <url>` — PWA capability check
-- [ ] `scout detect --tech <url>` — Full technology stack analysis
-- [ ] `scout detect --json <url>` — Machine-readable output
+- [x] `scout detect <url>` — Full page intelligence report (framework, PWA, render mode, tech stack)
+- [x] `scout detect --framework <url>` — Framework detection only
+- [x] `scout detect --pwa <url>` — PWA capability check
+- [x] `scout detect --tech <url>` — Full technology stack analysis
+- [x] `scout detect --render <url>` — Rendering mode detection only
+- [x] `scout detect --format=json <url>` — Machine-readable output
 
 #### Integration
 
@@ -985,8 +989,8 @@ Automatically analyze target pages to detect frontend frameworks, SPA/SSR render
 
 - [x] Framework detection tests (React, Vue, Angular, Svelte, Next.js, Gatsby, Astro, jQuery, none)
 - [x] PWA detection tests (manifest parsing, no-manifest, manifest-only, nil-page, push capability)
-- [ ] Render mode tests (CSR vs SSR HTML comparison)
-- [ ] Tech stack tests (CSS framework class patterns, CMS markers)
+- [x] Render mode tests (CSR, SSR, SSG, Next.js SSP, plain HTML, nil page)
+- [x] Tech stack tests (WordPress+Bootstrap, React+Vite+Tailwind+GA, plain, nil page)
 - [ ] Smart wait strategy tests (framework-specific wait completion)
 
 ### Phase 29: Credential Capture & Replay [COMPLETE]
