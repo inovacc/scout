@@ -33,6 +33,7 @@ type crawlOptions struct {
 	allowedDomains []string
 	delay          time.Duration
 	concurrent     int
+	jobManager     *AsyncJobManager
 }
 
 func crawlDefaults() *crawlOptions {
@@ -75,8 +76,27 @@ func WithCrawlConcurrent(n int) CrawlOption {
 	}
 }
 
+// WithCrawlJobManager attaches an async job manager to track crawl progress.
+func WithCrawlJobManager(m *AsyncJobManager) CrawlOption {
+	return func(o *crawlOptions) { o.jobManager = m }
+}
+
+// CrawlOutput holds the overall results of a crawl, including a job ID
+// when an AsyncJobManager is attached.
+type CrawlOutput struct {
+	JobID   string // non-empty when WithCrawlJobManager is used
+	Results []CrawlResult
+}
+
 // Crawl performs a BFS crawl starting from startURL, calling handler for each page.
 func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOption) ([]CrawlResult, error) {
+	out, err := b.CrawlWithJob(startURL, handler, opts...)
+	return out.Results, err
+}
+
+// CrawlWithJob is like Crawl but returns a CrawlOutput that includes the
+// async job ID when WithCrawlJobManager is used.
+func (b *Browser) CrawlWithJob(startURL string, handler CrawlHandler, opts ...CrawlOption) (CrawlOutput, error) {
 	o := crawlDefaults()
 	for _, fn := range opts {
 		fn(o)
@@ -85,7 +105,7 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 	// Parse start URL to determine default allowed domain
 	startParsed, err := url.Parse(startURL)
 	if err != nil {
-		return nil, fmt.Errorf("scout: crawl: invalid start URL: %w", err)
+		return CrawlOutput{}, fmt.Errorf("scout: crawl: invalid start URL: %w", err)
 	}
 
 	if len(o.allowedDomains) == 0 {
@@ -94,9 +114,27 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 
 	visited := &visitedSet{urls: make(map[string]bool)}
 
+	var jobID string
+	jm := o.jobManager
+
+	if jm != nil {
+		var err error
+		jobID, err = jm.Create("crawl", map[string]any{
+			"start_url": startURL,
+			"max_depth": o.maxDepth,
+			"max_pages": o.maxPages,
+		})
+		if err == nil {
+			_ = jm.Start(jobID)
+		} else {
+			jm = nil
+		}
+	}
+
 	var (
-		results []CrawlResult
-		mu      sync.Mutex
+		results    []CrawlResult
+		mu         sync.Mutex
+		errCount   int
 	)
 
 	type crawlItem struct {
@@ -139,6 +177,10 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 			mu.Lock()
 
 			results = append(results, result)
+			errCount++
+			if jm != nil {
+				_ = jm.UpdateProgress(jobID, len(results), errCount)
+			}
 
 			mu.Unlock()
 
@@ -155,6 +197,10 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 			mu.Lock()
 
 			results = append(results, result)
+			errCount++
+			if jm != nil {
+				_ = jm.UpdateProgress(jobID, len(results), errCount)
+			}
 
 			mu.Unlock()
 
@@ -187,10 +233,15 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 				mu.Lock()
 
 				results = append(results, result)
+				errCount++
+				if jm != nil {
+					_ = jm.UpdateProgress(jobID, len(results), errCount)
+					_ = jm.Fail(jobID, err.Error())
+				}
 
 				mu.Unlock()
 
-				return results, err
+				return CrawlOutput{JobID: jobID, Results: results}, err
 			}
 		}
 
@@ -201,6 +252,9 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 		mu.Lock()
 
 		results = append(results, result)
+		if jm != nil {
+			_ = jm.UpdateProgress(jobID, len(results), errCount)
+		}
 
 		mu.Unlock()
 
@@ -218,7 +272,11 @@ func (b *Browser) Crawl(startURL string, handler CrawlHandler, opts ...CrawlOpti
 		time.Sleep(o.delay)
 	}
 
-	return results, nil
+	if jm != nil {
+		_ = jm.Complete(jobID, results)
+	}
+
+	return CrawlOutput{JobID: jobID, Results: results}, nil
 }
 
 // SitemapURL represents a URL entry in a sitemap.

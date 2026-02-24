@@ -17,6 +17,7 @@ func init() {
 	batchCmd.Flags().StringSlice("urls", nil, "comma-separated list of URLs")
 	batchCmd.Flags().String("urls-file", "", "file with one URL per line")
 	batchCmd.Flags().Int("concurrency", 3, "number of parallel pages")
+	batchCmd.Flags().Bool("async", false, "run in background, print job ID and return immediately")
 }
 
 type batchOutput struct {
@@ -33,6 +34,7 @@ var batchCmd = &cobra.Command{
 		urls, _ := cmd.Flags().GetStringSlice("urls")
 		urlsFile, _ := cmd.Flags().GetString("urls-file")
 		concurrency, _ := cmd.Flags().GetInt("concurrency")
+		async, _ := cmd.Flags().GetBool("async")
 
 		if urlsFile != "" {
 			fileURLs, err := readURLsFile(urlsFile)
@@ -47,11 +49,14 @@ var batchCmd = &cobra.Command{
 			return fmt.Errorf("scout: batch: no URLs provided; use --urls or --urls-file")
 		}
 
-		browser, err := scout.New(baseOpts(cmd)...)
-		if err != nil {
-			return fmt.Errorf("scout: batch: launch browser: %w", err)
+		var jm *scout.AsyncJobManager
+		if async {
+			var err error
+			jm, err = scout.NewAsyncJobManager(defaultJobsDir())
+			if err != nil {
+				return fmt.Errorf("scout: batch: init job manager: %w", err)
+			}
 		}
-		defer func() { _ = browser.Close() }()
 
 		handler := func(page *scout.Page, url string) (any, error) {
 			title, _ := page.Title()
@@ -63,6 +68,54 @@ var batchCmd = &cobra.Command{
 				Text:  text,
 			}, nil
 		}
+
+		if async {
+			// Pre-create the job so we can print its ID immediately.
+			jobID, err := jm.Create("batch", map[string]any{
+				"urls":        urls,
+				"concurrency": concurrency,
+			})
+			if err != nil {
+				return fmt.Errorf("scout: batch: create job: %w", err)
+			}
+
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Job %s submitted. Check status with: scout jobs status %s\n", jobID, jobID)
+
+			// Run the batch in a background goroutine.
+			go func() {
+				browser, bErr := scout.New(baseOpts(cmd)...)
+				if bErr != nil {
+					_ = jm.Fail(jobID, bErr.Error())
+					return
+				}
+				defer func() { _ = browser.Close() }()
+
+				_ = jm.Start(jobID)
+
+				results := browser.BatchScrape(urls, handler,
+					scout.WithBatchConcurrency(concurrency),
+				)
+
+				completed, failed := 0, 0
+				for _, r := range results {
+					completed++
+					if r.Error != nil {
+						failed++
+					}
+				}
+
+				_ = jm.UpdateProgress(jobID, completed, failed)
+				_ = jm.Complete(jobID, results)
+			}()
+
+			return nil
+		}
+
+		browser, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return fmt.Errorf("scout: batch: launch browser: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
 
 		results := browser.BatchScrape(urls, handler,
 			scout.WithBatchConcurrency(concurrency),

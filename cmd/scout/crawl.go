@@ -16,6 +16,7 @@ func init() {
 	crawlCmd.Flags().Int("max-pages", 100, "maximum pages to crawl")
 	crawlCmd.Flags().Duration("delay", 500*time.Millisecond, "delay between page visits")
 	crawlCmd.Flags().StringSlice("domains", nil, "restrict crawling to these domains")
+	crawlCmd.Flags().Bool("async", false, "run in background, print job ID and return immediately")
 }
 
 var crawlCmd = &cobra.Command{
@@ -27,12 +28,7 @@ var crawlCmd = &cobra.Command{
 		maxPages, _ := cmd.Flags().GetInt("max-pages")
 		delay, _ := cmd.Flags().GetDuration("delay")
 		domains, _ := cmd.Flags().GetStringSlice("domains")
-
-		browser, err := scout.New(baseOpts(cmd)...)
-		if err != nil {
-			return fmt.Errorf("scout: launch browser: %w", err)
-		}
-		defer func() { _ = browser.Close() }()
+		async, _ := cmd.Flags().GetBool("async")
 
 		var opts []scout.CrawlOption
 		opts = append(opts, scout.WithCrawlMaxDepth(maxDepth))
@@ -43,6 +39,61 @@ var crawlCmd = &cobra.Command{
 		}
 
 		format, _ := cmd.Flags().GetString("format")
+
+		if async {
+			jm, err := scout.NewAsyncJobManager(defaultJobsDir())
+			if err != nil {
+				return fmt.Errorf("scout: crawl: init job manager: %w", err)
+			}
+
+			jobID, err := jm.Create("crawl", map[string]any{
+				"start_url": args[0],
+				"max_depth": maxDepth,
+				"max_pages": maxPages,
+			})
+			if err != nil {
+				return fmt.Errorf("scout: crawl: create job: %w", err)
+			}
+
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Job %s submitted. Check status with: scout jobs status %s\n", jobID, jobID)
+
+			go func() {
+				browser, bErr := scout.New(baseOpts(cmd)...)
+				if bErr != nil {
+					_ = jm.Fail(jobID, bErr.Error())
+					return
+				}
+				defer func() { _ = browser.Close() }()
+
+				_ = jm.Start(jobID)
+
+				results, cErr := browser.Crawl(args[0], nil, opts...)
+
+				errCount := 0
+				for _, r := range results {
+					if r.Error != nil {
+						errCount++
+					}
+				}
+
+				_ = jm.UpdateProgress(jobID, len(results), errCount)
+
+				if cErr != nil {
+					_ = jm.Fail(jobID, cErr.Error())
+					return
+				}
+
+				_ = jm.Complete(jobID, results)
+			}()
+
+			return nil
+		}
+
+		browser, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return fmt.Errorf("scout: launch browser: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
 
 		handler := func(_ *scout.Page, result *scout.CrawlResult) error {
 			if format == "json" {

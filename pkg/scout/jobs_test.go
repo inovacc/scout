@@ -2,6 +2,7 @@ package scout
 
 import (
 	"context"
+	"fmt"
 	"testing"
 )
 
@@ -276,4 +277,66 @@ func TestAsyncJobManager_NilCases(t *testing.T) {
 	if len(all) != 1 {
 		t.Errorf("List() len = %d, want 1", len(all))
 	}
+}
+
+func TestBatchWithJobManager(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping batch job manager test in short mode")
+	}
+
+	dir := t.TempDir()
+	jm, err := NewAsyncJobManager(dir)
+	if err != nil {
+		t.Fatalf("NewAsyncJobManager: %v", err)
+	}
+
+	// Use a nil browser to force errors — this tests the job tracking path
+	// without requiring a real browser.
+	b := &Browser{} // nil-ish browser; NewPage will fail
+
+	handler := func(_ *Page, u string) (any, error) {
+		return u, nil
+	}
+
+	urls := []string{"http://localhost:1/a", "http://localhost:1/b", "http://localhost:1/c"}
+
+	out := b.BatchScrapeWithJob(urls, handler,
+		WithBatchJobManager(jm),
+		WithBatchConcurrency(1),
+	)
+
+	if out.JobID == "" {
+		t.Fatal("expected non-empty job ID")
+	}
+
+	j, err := jm.Get(out.JobID)
+	if err != nil {
+		t.Fatalf("Get job: %v", err)
+	}
+
+	if j.Type != "batch" {
+		t.Errorf("job type = %q, want %q", j.Type, "batch")
+	}
+
+	if j.Status != AsyncJobCompleted {
+		t.Errorf("job status = %q, want %q", j.Status, AsyncJobCompleted)
+	}
+
+	// All URLs should have failed (nil browser), so progress.failed == 3.
+	if j.Progress.Completed != 3 {
+		t.Errorf("progress.completed = %d, want 3", j.Progress.Completed)
+	}
+
+	if j.Progress.Failed != 3 {
+		t.Errorf("progress.failed = %d, want 3", j.Progress.Failed)
+	}
+
+	// Verify all results have errors.
+	for i, r := range out.Results {
+		if r.Error == nil {
+			t.Errorf("result[%d] expected error, got nil", i)
+		}
+	}
+
+	fmt.Printf("Job %s completed with %d/%d failed\n", out.JobID, j.Progress.Failed, j.Progress.Completed)
 }

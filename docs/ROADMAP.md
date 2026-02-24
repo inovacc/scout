@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Overall Progress:** 91% Complete
+**Overall Progress:** 93% Complete
 
 ## Phases
 
@@ -291,25 +291,22 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 - [x] CLI: `scout jobs list`, `scout jobs status <id>`, `scout jobs cancel <id>`
 - [ ] Integration with batch scraper and crawl commands
 
-### Phase 16: Custom JS & Extension Injection [PLANNED]
+### Phase 16: Custom JS & Extension Injection [IN PROGRESS]
 
 Pre-inject custom JavaScript files and Chrome extensions into browser sessions to enhance communication, data extraction, and page instrumentation before any page scripts run.
 
-- [ ] **JS injection API** (`pkg/scout/inject.go`) — `WithInjectJS(paths ...string)` option to load JS files at browser launch
-- [ ] **Per-page injection** — use `EvalOnNewDocument()` to inject scripts before page load on every navigation
-- [ ] **Script bundle loading** — load multiple JS files from a directory (`WithInjectDir(dir)`)
+- [x] **JS injection API** (`pkg/scout/inject.go`) — `WithInjectJS(paths ...string)` option to load JS files at browser launch
+- [x] **Per-page injection** — use `EvalOnNewDocument()` to inject scripts before page load on every navigation
+- [x] **Script bundle loading** — load multiple JS files from a directory (`WithInjectDir(dir)`)
+- [x] **Inline code injection** — `WithInjectCode(code ...string)` for injecting raw JS strings
+- [x] **CLI commands**: `scout inject <url> --code="..." --file=helper.js --dir=scripts/`
+- [x] Tests: 5 tests (code injection, file injection, directory injection, not-found error, empty no-op)
 - [ ] **Built-in extraction helpers** — bundled JS utilities for common extraction patterns (table scraping, infinite scroll detection, shadow DOM traversal, MutationObserver wrappers)
 - [ ] **Communication bridge** — JS↔Go message passing via `window.__scout.send(msg)` / `window.__scout.on(event, fn)` using CDP `Runtime.bindingCalled`
 - [ ] **Extension auto-loading** — extend `WithExtension()` to support pre-configured extension bundles (ad blockers, consent auto-clickers, custom data extractors)
 - [ ] **Extension marketplace** — `~/.scout/extensions/` directory for persistent extension storage, `scout extension install <url|name>`
 - [ ] **Session-scoped injection** — gRPC `InjectJS` RPC to inject scripts into running sessions dynamically
 - [ ] **Script templates** — parameterized JS templates with Go `text/template` syntax for reusable injection patterns
-- [ ] **CLI commands**:
-  - `scout inject --file=helper.js` — inject JS into current session
-  - `scout inject --dir=scripts/` — inject all JS from directory
-  - `scout session create --inject=helper.js,bridge.js` — inject at session creation
-  - `scout session create --extension=~/.scout/extensions/adblocker` — load extension bundle
-- [ ] Tests: injection ordering, multi-file loading, communication bridge, extension bundle loading
 
 ### Phase 17: Scout Bridge Extension — Bidirectional Browser Control [IN PROGRESS]
 
@@ -511,7 +508,7 @@ A self-contained profile file (`.scoutprofile`) that captures everything needed 
 - [x] **Identity capture** — read current user-agent, language, timezone, viewport, geolocation from browser
 - [x] **Extension capture** — list loaded extension IDs that exist in `~/.scout/extensions/`
 - [x] **Save to file** — `profile.Save(path string) error` writes `.scoutprofile` JSON
-- [ ] **Encrypted save** — `profile.SaveEncrypted(path, passphrase string) error` using existing `scraper/crypto.go` AES-256-GCM + Argon2id
+- [x] **Encrypted save** — `SaveProfileEncrypted(path, passphrase)` using AES-256-GCM + Argon2id via `scraper/crypto.go`
 
 #### Profile Load (File → Browser)
 
@@ -527,18 +524,18 @@ A self-contained profile file (`.scoutprofile`) that captures everything needed 
 #### Profile Management
 
 - [x] **`LoadProfile(path string) (*UserProfile, error)`** — read and parse `.scoutprofile` file
-- [ ] **`LoadProfileEncrypted(path, passphrase string) (*UserProfile, error)`** — decrypt and parse
-- [ ] **`MergeProfiles(base, overlay *UserProfile) *UserProfile`** — merge two profiles (overlay wins on conflict)
-- [ ] **`DiffProfiles(a, b *UserProfile) ProfileDiff`** — compare two profiles, list changes
-- [ ] **Profile validation** — `profile.Validate() error` checks required fields, cookie format, extension availability
+- [x] **`LoadProfileEncrypted(path, passphrase string) (*UserProfile, error)`** — decrypt and parse
+- [x] **`MergeProfiles(base, overlay *UserProfile) *UserProfile`** — merge two profiles (overlay wins on conflict)
+- [x] **`DiffProfiles(a, b *UserProfile) ProfileDiff`** — compare two profiles, list changes
+- [x] **Profile validation** — `profile.Validate() error` checks required fields, cookie format, extension availability
 
 #### CLI Commands
 
 - [x] `scout profile capture [--output=my.scoutprofile] [--encrypt]` — capture current session state to file
 - [x] `scout profile load <file.scoutprofile>` — create session from profile
 - [x] `scout profile show <file.scoutprofile>` — display profile summary (name, cookies count, origins, extensions)
-- [ ] `scout profile merge <base> <overlay> [--output=merged.scoutprofile]` — merge two profiles
-- [ ] `scout profile diff <a> <b>` — show differences between profiles
+- [x] `scout profile merge <base> <overlay> [--output=merged.scoutprofile]` — merge two profiles
+- [x] `scout profile diff <a> <b>` — show differences between profiles
 - [ ] `scout session create --profile=<file>` — create new session with profile applied
 
 #### gRPC Integration
@@ -550,11 +547,11 @@ A self-contained profile file (`.scoutprofile`) that captures everything needed 
 #### Testing
 
 - [x] Profile round-trip tests (capture → save → load → verify all fields match)
-- [ ] Encrypted profile tests (save encrypted → load with correct/wrong passphrase)
+- [x] Encrypted profile tests (save encrypted → load with correct/wrong passphrase)
 - [ ] Cookie hydration tests (set cookies → capture → new browser → load → verify cookies present)
 - [ ] Storage hydration tests (set localStorage → capture → new browser → load → verify storage present)
 - [ ] Identity injection tests (user-agent, timezone, language preserved across capture/load)
-- [ ] Merge and diff tests
+- [x] Merge and diff tests
 - [ ] CLI integration tests
 
 ### Phase 19: Screen Recorder [PLANNED]
