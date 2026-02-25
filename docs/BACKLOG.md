@@ -211,21 +211,17 @@ credentials/session.
 - **Effort:** Extra Large
 - **Dependencies:** Existing `WithExtension()` infrastructure, gRPC daemon WebSocket embedding, Chrome Extension Manifest V3 APIs.
 
-### AI-Powered Bot Protection Bypass (Phase 17b)
+### ~~AI-Powered Bot Protection Bypass (Phase 17b)~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Detect and bypass Cloudflare challenges, CAPTCHAs (hCaptcha, reCAPTCHA, Turnstile), and other bot protection using LLM vision analysis and the Scout Bridge extension. Auto-detect challenges after navigation, wait for JS challenges to resolve, use LLM vision for image CAPTCHAs, persist bypass cookies across sessions. The bridge extension (now default) provides in-browser challenge detection via DOM mutation observers.
-- **Scope:** `pkg/scout/challenge.go` with `BypassChallenge()`, `WithAutoBypass()`, `NavigateWithBypass()`. Challenge detection by DOM markers/title patterns. Cloudflare wait-based bypass, Turnstile click, cookie persistence. LLM vision CAPTCHA solving. Third-party solver interface (2Captcha, CapSolver). CLI: `scout challenge detect/solve`, `scout navigate --bypass`, `scout batch --bypass`.
+- **Status:** Complete — `ChallengeSolver`, `SolveFunc`, `SolverOption`, `CaptchaSolverService` interface, `TwoCaptchaService`, `CapSolverService`, `NavigateWithBypass()`, `WithAutoBypass()`, Cloudflare wait, Turnstile click, CAPTCHA LLM vision, cookie persistence. CLI `scout challenge detect/solve`.
 - **Effort:** Large
-- **Dependencies:** Scout Bridge extension (Phase 17), LLM providers (Phase 14), User Profile for cookie persistence (Phase 18), Stealth mode.
 
-### Scout-Browser — Portable Browser Repository (Phase 21c)
+### ~~Scout-Browser — Standalone Browser Module (Phase 21c)~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Extract browser download, patching, and management into a dedicated `inovacc/scout-browser` repository. Downloads Brave from GitHub releases, Chromium via Chrome for Testing API, and Edge from Microsoft's update API. Applies patches to disable auto-update, telemetry, first-run dialogs. Publishes pre-patched browser zips to `inovacc/scout-browser` GitHub releases via CI. Scout core imports as `go get github.com/inovacc/scout-browser`.
-- **Scope:** Standalone Go module with `Download()`, `Resolve()`, `Patch()`, `List()`, `Clean()` API. CI pipeline for automated browser patching and release publishing. Migrate `pkg/scout/browser_download.go` to the new repo, keep thin wrapper in scout core. CLI commands: `scout browser download/list/clean/patch`.
+- **Status:** Complete — `pkg/browser/` standalone module with `Manager`, `Detect()`, `Download()`, `BrowserInfo`, platform-specific version detection (Windows registry, macOS plist, Linux desktop files), cache management. CLI `scout browser list/download`.
 - **Effort:** Large
-- **Dependencies:** Current browser auto-download (done), Chrome Extension infrastructure (done).
 
 ### ~~Docker Images — Container Deployment (Phase 21b)~~ [MOSTLY DONE]
 
@@ -234,15 +230,11 @@ credentials/session.
 - **Effort:** Medium
 - **Dependencies:** Unified CLI (done), gRPC server (done), platform detection (done).
 
-### Screen Recorder
+### ~~Screen Recorder (Phase 30)~~ [DONE]
 
 - **Priority:** P3
-- **Description:** Capture browser sessions as video using Chrome DevTools Protocol `Page.startScreencast`. Record page interactions as WebM, GIF, or PNG frame sequences. Complement the existing
-  `NetworkRecorder` (HAR) with synchronized video evidence. Pure-Go WebM encoding with optional ffmpeg fallback for MP4.
-- **Scope:** `ScreenRecorder` type in `pkg/scout/screenrecord.go` with functional options (`WithFrameRate`, `WithQuality`, `WithMaxDuration`, `WithFormat`). Start/Stop/Pause/Resume lifecycle. Export
-  as WebM (primary), GIF (short clips), or PNG sequence. gRPC RPCs for remote control. CLI `scout record start/stop/export` commands. Combined HAR+video forensic bundles.
+- **Status:** Complete — `ScreenRecorder` type with CDP screencast, `ScreenRecordOption` functional options, `ExportGIF()`, `ExportFrames()`, Start/Stop lifecycle, CLI `scout record start/stop/export`.
 - **Effort:** Large
-- **Dependencies:** CDP `Page.screencastFrame` events, go-rod's underlying protocol access. Pure-Go WebM/VP8 encoder or vendored library. Optional ffmpeg detection for MP4.
 
 ---
 
@@ -465,3 +457,6 @@ credentials/session.
 | Recipe Flow Detection (Phase 12c) | `DetectFlow()`, `GenerateFlowRecipe()` with `FlowStep`/`FormInfo` types, `scout recipe flow` CLI | 2026-02 |
 | Profile Extension Resolution (Phase 18) | `ResolveExtensions()`, `ResolveExtensionsWithBase()` for extension ID→path resolution | 2026-02 |
 | Profile CLI Integration (Phase 18) | `scout session create --profile`, CLI integration tests, Phase 18 marked COMPLETE | 2026-02 |
+| AI-Powered Bot Protection Bypass (Phase 17b) | `ChallengeSolver`, `NavigateWithBypass()`, `WithAutoBypass()`, TwoCaptcha/CapSolver services, Cloudflare/Turnstile/CAPTCHA solving | 2026-02 |
+| Scout-Browser Module (Phase 21c) | `pkg/browser/` with Manager, Detect, Download, BrowserInfo, platform-specific detection | 2026-02 |
+| Screen Recorder (Phase 30) | `ScreenRecorder` with CDP screencast, `ExportGIF()`, `ExportFrames()`, CLI `scout record` | 2026-02 |

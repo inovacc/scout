@@ -89,6 +89,7 @@ scout/
 ├── pkg/stealth/        # Anti-bot-detection stealth (extract-stealth-evasions + custom ExtraJS)
 ├── pkg/identity/       # Device identity, Luhn check digits, trust
 ├── pkg/discovery/      # mDNS service discovery
+├── pkg/browser/        # Standalone browser detection, download, and management
 ├── pkg/scout/recipe/   # Recipe system (extract + automate + analyze/generate)
 ├── pkg/scout/mcp/      # MCP server (Model Context Protocol via stdio)
 ├── extensions/         # Embedded Chrome extensions (scout-bridge)
@@ -103,7 +104,7 @@ scout/
 ```
 
 Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/inovacc/scout/pkg/scout`. The gRPC layer is in `grpc/`. The unified CLI is at `cmd/scout/`. Additional packages:
-`pkg/stealth/` (internalized go-rod/stealth), `pkg/identity/` (Syncthing-style device identity with Luhn check digits), `pkg/discovery/` (mDNS service discovery).
+`pkg/stealth/` (internalized go-rod/stealth), `pkg/identity/` (Syncthing-style device identity with Luhn check digits), `pkg/discovery/` (mDNS service discovery), `pkg/browser/` (standalone browser detection, download, and cache management).
 
 ### Core Types (rod wrappers)
 
@@ -159,6 +160,9 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `AutoFreeConfig`                          | Browser recycling configuration      | `autofree.go`  |
 | `ValidationResult`, `ValidationError`     | Recipe dry-run validation results    | `recipe/validate.go` |
 | `LLMValidation`, `ValidateWithLLM`       | LLM-based recipe validation prompts  | `recipe/validate.go` |
+| `ChallengeSolver`, `SolveFunc`, `SolverOption` | Bot protection bypass orchestration | `challenge_solver.go` |
+| `CaptchaSolverService`, `TwoCaptchaService`, `CapSolverService` | Third-party CAPTCHA solver services | `challenge_solver.go` |
+| `ScreenRecorder`, `screenFrame`, `ScreenRecordOption` | CDP screencast recording + export | `screenrecord.go` |
 | `FlowStep`, `FormInfo`, `DetectFlow`, `GenerateFlowRecipe` | Multi-page flow detection and recipe generation | `recipe/flow.go` |
 | `InjectHelper`, `InjectAllHelpers`        | Built-in JS extraction helper injection | `helpers.go`      |
 | `HelperTableExtract`, `HelperInfiniteScroll`, `HelperShadowQuery`, `HelperWaitForSelector`, `HelperClickAll` | Bundled JS helper constants | `helpers.go` |
@@ -278,7 +282,7 @@ cmd/scout/
 ├── device.go               # scout device pair/list/trust
 ├── aicontext.go            # scout aicontext [--json]
 ├── credentials.go          # scout credentials capture/replay/show
-├── challenge.go            # scout challenge detect
+├── challenge.go            # scout challenge detect/solve
 ├── detect.go               # scout detect <url> [--framework] [--pwa] [--tech] [--render] [--json]
 ├── github.go               # scout github repo/issues/prs/user/releases/tree
 ├── mcp.go                  # scout mcp [--headless] [--stealth]
@@ -287,6 +291,7 @@ cmd/scout/
 ├── webmcp.go               # scout webmcp discover/call
 ├── profile.go              # scout profile capture/load/show/merge/diff/session-capture/session-load
 ├── snapshot.go             # scout snapshot [--format=yaml|json] [--iframes] [--llm]
+├── record.go               # scout record start/stop/export [--format=gif|frames]
 └── cmdtree.go              # scout cmdtree [--json]
 ```
 
@@ -370,6 +375,9 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **Recipe flow detection**: `DetectFlow(ctx, browser, url)` analyzes multi-page transitions (login → dashboard → settings) via `FlowStep` and `FormInfo` types. `GenerateFlowRecipe(steps)` produces multi-step automate recipes. `ValidateWithLLM(provider, recipe)` reviews recipes for completeness via `LLMValidation`. CLI: `scout recipe flow <url>`.
 - **Profile extension resolution**: `ResolveExtensions(profile)` and `ResolveExtensionsWithBase(profile, basePath)` resolve extension IDs in a profile to local filesystem paths via `extensionPathByID()`, warning on missing extensions. `scout session create --profile=<file>` applies full profile at session creation.
 - **gRPC InjectJS RPC**: `InjectJS` RPC injects JavaScript into running sessions dynamically. Session-scoped, persists across navigations via `EvalOnNewDocument`.
+- **Bot protection bypass**: `ChallengeSolver` orchestrates detection → strategy selection → solving. `SolveFunc` is the pluggable solve function signature. `NavigateWithBypass(url)` combines navigation + auto-bypass. `WithAutoBypass()` enables automatic bypass on every navigation. `CaptchaSolverService` interface abstracts third-party solvers (`TwoCaptchaService`, `CapSolverService`). CLI: `scout challenge detect/solve`.
+- **Browser manager module**: `pkg/browser/` is a standalone module for browser detection, download, and cache management. `Manager` coordinates operations, `Detect()` finds installed browsers (platform-specific: Windows registry, macOS plist, Linux desktop files), `Download()` fetches from vendor APIs. `BrowserInfo` holds metadata (type, version, path, platform).
+- **Screen recorder**: `ScreenRecorder` captures page frames via CDP `Page.startScreencast` with ACK-based flow control. `ScreenRecordOption` functional options: `WithFrameRate`, `WithQuality`, `WithMaxDuration`. `ExportGIF(path)` produces animated GIF, `ExportFrames(dir)` writes PNG sequence. Start/Stop lifecycle is nil-safe and idempotent. CLI: `scout record start/stop/export`.
 
 ## Testing
 
