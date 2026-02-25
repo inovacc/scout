@@ -59,6 +59,7 @@ type options struct {
 	tlsProfile         string
 	webmcpAutoDiscover bool
 	bridgePort         int
+	autoBypass         *ChallengeSolver
 }
 
 func defaults() *options {
