@@ -318,6 +318,10 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 		_ = p.WaitFrameworkReady()
 	}
 
+	if b.opts.autoBypass != nil && url != "" {
+		_ = b.opts.autoBypass.SolveAll(p)
+	}
+
 	return p, nil
 }
 
