@@ -43,6 +43,8 @@ const (
 	ScoutService_StartRecording_FullMethodName = "/scout.v1.ScoutService/StartRecording"
 	ScoutService_StopRecording_FullMethodName  = "/scout.v1.ScoutService/StopRecording"
 	ScoutService_ExportHAR_FullMethodName      = "/scout.v1.ScoutService/ExportHAR"
+	ScoutService_CaptureProfile_FullMethodName = "/scout.v1.ScoutService/CaptureProfile"
+	ScoutService_LoadProfile_FullMethodName    = "/scout.v1.ScoutService/LoadProfile"
 	ScoutService_StreamEvents_FullMethodName   = "/scout.v1.ScoutService/StreamEvents"
 	ScoutService_Interactive_FullMethodName    = "/scout.v1.ScoutService/Interactive"
 )
@@ -83,6 +85,9 @@ type ScoutServiceClient interface {
 	StartRecording(ctx context.Context, in *RecordingRequest, opts ...grpc.CallOption) (*Empty, error)
 	StopRecording(ctx context.Context, in *SessionRequest, opts ...grpc.CallOption) (*Empty, error)
 	ExportHAR(ctx context.Context, in *SessionRequest, opts ...grpc.CallOption) (*HARResponse, error)
+	// Profile
+	CaptureProfile(ctx context.Context, in *CaptureProfileRequest, opts ...grpc.CallOption) (*CaptureProfileResponse, error)
+	LoadProfile(ctx context.Context, in *LoadProfileRequest, opts ...grpc.CallOption) (*LoadProfileResponse, error)
 	// Real-time event stream (server -> client)
 	StreamEvents(ctx context.Context, in *SessionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[BrowserEvent], error)
 	// Bidirectional: client sends commands, server streams events
@@ -337,6 +342,26 @@ func (c *scoutServiceClient) ExportHAR(ctx context.Context, in *SessionRequest, 
 	return out, nil
 }
 
+func (c *scoutServiceClient) CaptureProfile(ctx context.Context, in *CaptureProfileRequest, opts ...grpc.CallOption) (*CaptureProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CaptureProfileResponse)
+	err := c.cc.Invoke(ctx, ScoutService_CaptureProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *scoutServiceClient) LoadProfile(ctx context.Context, in *LoadProfileRequest, opts ...grpc.CallOption) (*LoadProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoadProfileResponse)
+	err := c.cc.Invoke(ctx, ScoutService_LoadProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *scoutServiceClient) StreamEvents(ctx context.Context, in *SessionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[BrowserEvent], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ScoutService_ServiceDesc.Streams[0], ScoutService_StreamEvents_FullMethodName, cOpts...)
@@ -405,6 +430,9 @@ type ScoutServiceServer interface {
 	StartRecording(context.Context, *RecordingRequest) (*Empty, error)
 	StopRecording(context.Context, *SessionRequest) (*Empty, error)
 	ExportHAR(context.Context, *SessionRequest) (*HARResponse, error)
+	// Profile
+	CaptureProfile(context.Context, *CaptureProfileRequest) (*CaptureProfileResponse, error)
+	LoadProfile(context.Context, *LoadProfileRequest) (*LoadProfileResponse, error)
 	// Real-time event stream (server -> client)
 	StreamEvents(*SessionRequest, grpc.ServerStreamingServer[BrowserEvent]) error
 	// Bidirectional: client sends commands, server streams events
@@ -490,6 +518,12 @@ func (UnimplementedScoutServiceServer) StopRecording(context.Context, *SessionRe
 }
 func (UnimplementedScoutServiceServer) ExportHAR(context.Context, *SessionRequest) (*HARResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExportHAR not implemented")
+}
+func (UnimplementedScoutServiceServer) CaptureProfile(context.Context, *CaptureProfileRequest) (*CaptureProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CaptureProfile not implemented")
+}
+func (UnimplementedScoutServiceServer) LoadProfile(context.Context, *LoadProfileRequest) (*LoadProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LoadProfile not implemented")
 }
 func (UnimplementedScoutServiceServer) StreamEvents(*SessionRequest, grpc.ServerStreamingServer[BrowserEvent]) error {
 	return status.Error(codes.Unimplemented, "method StreamEvents not implemented")
@@ -950,6 +984,42 @@ func _ScoutService_ExportHAR_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ScoutService_CaptureProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CaptureProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScoutServiceServer).CaptureProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ScoutService_CaptureProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScoutServiceServer).CaptureProfile(ctx, req.(*CaptureProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ScoutService_LoadProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoadProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScoutServiceServer).LoadProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ScoutService_LoadProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScoutServiceServer).LoadProfile(ctx, req.(*LoadProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ScoutService_StreamEvents_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SessionRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -1070,6 +1140,14 @@ var ScoutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExportHAR",
 			Handler:    _ScoutService_ExportHAR_Handler,
+		},
+		{
+			MethodName: "CaptureProfile",
+			Handler:    _ScoutService_CaptureProfile_Handler,
+		},
+		{
+			MethodName: "LoadProfile",
+			Handler:    _ScoutService_LoadProfile_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

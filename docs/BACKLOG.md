@@ -227,10 +227,10 @@ credentials/session.
 - **Effort:** Large
 - **Dependencies:** Current browser auto-download (done), Chrome Extension infrastructure (done).
 
-### ~~Docker Images — Container Deployment (Phase 21b)~~ [PARTIALLY DONE]
+### ~~Docker Images — Container Deployment (Phase 21b)~~ [MOSTLY DONE]
 
 - **Priority:** P1
-- **Status:** Core done — `Dockerfile`, `Dockerfile.slim`, `.dockerignore`, `docker-compose.yml`, `scout browser download` command. Remaining: CI/CD image publishing (GHCR), multi-arch builds, Helm chart, Kubernetes job template, `examples/docker/`.
+- **Status:** Core + CI/CD done — `Dockerfile`, `Dockerfile.slim`, `.dockerignore`, `docker-compose.yml`, `scout browser download` command, GitHub Actions GHCR publishing (`.github/workflows/docker.yml`), multi-arch builds, Trivy scanning, Helm chart (`deploy/helm/scout/`). Remaining: Kubernetes job template, `examples/docker/`.
 - **Effort:** Medium
 - **Dependencies:** Unified CLI (done), gRPC server (done), platform detection (done).
 
@@ -446,3 +446,10 @@ credentials/session.
 | Recipe Validation (Phase 12c) | `ValidateRecipe()`, `SelectorHealthCheck()`, CLI `scout recipe test`, 5 tests | 2026-02 |
 | WebFetch Retry + Redirects (Phase 23a) | `WithFetchRetries()`, `WithFetchRetryDelay()`, `RedirectChain` tracking, 4 tests | 2026-02 |
 | Browser AutoFree (Phase 27) | `WithAutoFree(interval)` periodic recycling with session preservation, 4 tests | 2026-02 |
+| Selector Resilience Scoring (Phase 12c) | `SelectorScore` type, `ScoreSelector()`, `ScoreRecipeSelectors()` for stability heuristics | 2026-02 |
+| Bridge WebSocket Transport (Phase 17) | `BridgeServer`, `BridgeMessage`, `BridgeEvent` types, WS server, DOM mutation/interaction/navigation events | 2026-02 |
+| Profile Hydration Tests (Phase 18) | Cookie hydration, storage hydration, identity injection tests passing end-to-end | 2026-02 |
+| Profile gRPC RPCs (Phase 18) | `CaptureProfile`, `LoadProfile` RPCs for remote session profile management | 2026-02 |
+| Docker CI/CD Publishing (Phase 21b) | GitHub Actions workflow, GHCR publishing, multi-arch builds, Trivy scanning, Helm chart | 2026-02 |
+| GitHub Data Extraction CLI + Tests (Phase 23c) | `scout github repo/issues/prs/user/releases/tree` CLI commands, mock httptest pages | 2026-02 |
+| Recipe Interactive Mode (Phase 12c) | `InteractiveCreate` wizard, `scout recipe create --interactive`, AI integration tests | 2026-02 |

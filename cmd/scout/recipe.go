@@ -24,6 +24,7 @@ func init() {
 	_ = recipeValidateCmd.MarkFlagRequired("file")
 
 	recipeCreateCmd.Flags().StringP("output", "o", "", "output file for generated recipe")
+	recipeCreateCmd.Flags().BoolP("interactive", "i", false, "interactive step-by-step recipe creation")
 	recipeCreateCmd.Flags().String("type", "", "force recipe type (extract or automate)")
 	recipeCreateCmd.Flags().Int("max-pages", 5, "max pages for pagination")
 	recipeCreateCmd.Flags().Bool("ai", false, "use AI-assisted recipe generation via LLM")
@@ -198,9 +199,21 @@ var recipeCreateCmd = &cobra.Command{
 		}
 		defer func() { _ = browser.Close() }()
 
+		interactive, _ := cmd.Flags().GetBool("interactive")
+
 		var r *recipe.Recipe
 
-		if useAI {
+		if interactive {
+			r, err = recipe.InteractiveCreate(recipe.InteractiveConfig{
+				Browser: browser,
+				URL:     url,
+				Writer:  os.Stderr,
+				Reader:  os.Stdin,
+			})
+			if err != nil {
+				return err
+			}
+		} else if useAI {
 			_, _ = fmt.Fprintf(os.Stderr, "generating AI recipe for %s...\n", url)
 
 			providerName, _ := cmd.Flags().GetString("provider")

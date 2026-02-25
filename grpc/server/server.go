@@ -771,6 +771,49 @@ func (s *ScoutServer) ExportHAR(_ context.Context, req *pb.SessionRequest) (*pb.
 	}, nil
 }
 
+// ════════════════════════ Profile ════════════════════════
+
+func (s *ScoutServer) CaptureProfile(_ context.Context, req *pb.CaptureProfileRequest) (*pb.CaptureProfileResponse, error) {
+	sess, err := s.getSession(req.GetSessionId())
+	if err != nil {
+		return nil, err
+	}
+
+	prof, err := scout.CaptureProfile(sess.page)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "capture profile failed: %v", sanitizeError(err))
+	}
+
+	data, err := json.Marshal(prof)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "marshal profile failed: %v", err)
+	}
+
+	s.recordEvent("capture_profile", req.GetSessionId(), s.peerShortID(req.GetSessionId()), "profile captured")
+
+	return &pb.CaptureProfileResponse{ProfileJson: string(data)}, nil
+}
+
+func (s *ScoutServer) LoadProfile(_ context.Context, req *pb.LoadProfileRequest) (*pb.LoadProfileResponse, error) {
+	sess, err := s.getSession(req.GetSessionId())
+	if err != nil {
+		return nil, err
+	}
+
+	var prof scout.UserProfile
+	if err := json.Unmarshal([]byte(req.GetProfileJson()), &prof); err != nil {
+		return &pb.LoadProfileResponse{Success: false, Error: fmt.Sprintf("unmarshal profile: %v", err)}, nil
+	}
+
+	if err := sess.page.ApplyProfile(&prof); err != nil {
+		return &pb.LoadProfileResponse{Success: false, Error: fmt.Sprintf("apply profile: %v", sanitizeError(err))}, nil
+	}
+
+	s.recordEvent("load_profile", req.GetSessionId(), s.peerShortID(req.GetSessionId()), "profile loaded")
+
+	return &pb.LoadProfileResponse{Success: true}, nil
+}
+
 // ════════════════════════ Event Streaming ════════════════════════
 
 func (s *ScoutServer) StreamEvents(req *pb.SessionRequest, stream pb.ScoutService_StreamEventsServer) error {

@@ -1,5 +1,14 @@
 // Scout Bridge — background service worker
-// Relays messages between content scripts and popup.
+// Relays messages between content scripts, popup, and WebSocket server.
+
+var _ws = null;
+var _wsPort = null;
+var _reconnectDelay = 1000;
+var _maxReconnectDelay = 30000;
+var _pendingRequests = {};
+var _requestCounter = 0;
+
+// Relay messages from content scripts.
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   if (message.target === "background") {
     // Forward to all content scripts if needed.
@@ -12,5 +21,188 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     }
     sendResponse({ ok: true });
   }
+
+  // Forward content script events to WebSocket server.
+  if (message.type === "bridge_event" && _ws && _ws.readyState === WebSocket.OPEN) {
+    var evt = {
+      type: "event",
+      method: message.method || message.eventType,
+      params: message.data || {},
+    };
+    if (sender && sender.tab) {
+      evt.params._tabId = sender.tab.id;
+      evt.params._tabUrl = sender.tab.url || "";
+    }
+    _ws.send(JSON.stringify(evt));
+    sendResponse({ ok: true });
+    return false;
+  }
+
   return false;
+});
+
+// WebSocket connection to the Go bridge server.
+function connectWS(port) {
+  if (!port) return;
+  _wsPort = port;
+  _reconnectDelay = 1000;
+  _doConnect();
+}
+
+function _doConnect() {
+  if (!_wsPort) return;
+
+  try {
+    _ws = new WebSocket("ws://127.0.0.1:" + _wsPort + "/bridge");
+  } catch (e) {
+    _scheduleReconnect();
+    return;
+  }
+
+  _ws.onopen = function () {
+    _reconnectDelay = 1000;
+    // Register with page ID.
+    _ws.send(JSON.stringify({
+      type: "register",
+      method: "extension-" + chrome.runtime.id,
+    }));
+  };
+
+  _ws.onmessage = function (event) {
+    var msg;
+    try {
+      msg = JSON.parse(event.data);
+    } catch (e) {
+      return;
+    }
+
+    if (msg.type === "request") {
+      _handleServerRequest(msg);
+    } else if (msg.type === "response") {
+      var cb = _pendingRequests[msg.id];
+      if (cb) {
+        delete _pendingRequests[msg.id];
+        cb(msg);
+      }
+    }
+  };
+
+  _ws.onclose = function () {
+    _ws = null;
+    _scheduleReconnect();
+  };
+
+  _ws.onerror = function () {
+    if (_ws) {
+      _ws.close();
+    }
+  };
+}
+
+function _scheduleReconnect() {
+  setTimeout(function () {
+    _reconnectDelay = Math.min(_reconnectDelay * 2, _maxReconnectDelay);
+    _doConnect();
+  }, _reconnectDelay);
+}
+
+// Handle requests from the Go server routed to content scripts.
+function _handleServerRequest(msg) {
+  var method = msg.method;
+
+  // Tab management commands handled in background.
+  if (method === "tab.list") {
+    chrome.tabs.query({}, function (tabs) {
+      var result = tabs.map(function (t) {
+        return { id: t.id, url: t.url, title: t.title, active: t.active };
+      });
+      _sendResponse(msg.id, { tabs: result });
+    });
+    return;
+  }
+
+  if (method === "tab.close") {
+    var params = msg.params ? JSON.parse(msg.params) : {};
+    var tabId = params.tabId;
+    if (tabId) {
+      chrome.tabs.remove(tabId, function () {
+        _sendResponse(msg.id, { closed: true });
+      });
+    } else {
+      _sendResponse(msg.id, null, "tabId required");
+    }
+    return;
+  }
+
+  if (method === "clipboard.read" || method === "clipboard.write") {
+    // Clipboard operations not available in service worker context.
+    _sendResponse(msg.id, null, "clipboard not available in service worker");
+    return;
+  }
+
+  // Route DOM commands to the appropriate content script.
+  var params = {};
+  try {
+    if (msg.params) params = JSON.parse(msg.params);
+  } catch (e) {
+    // params might already be an object if parsed by websocket lib.
+    params = msg.params || {};
+  }
+
+  var tabId = params._tabId;
+  if (tabId) {
+    _forwardToTab(tabId, msg);
+  } else {
+    // Send to active tab.
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (tabs.length > 0) {
+        _forwardToTab(tabs[0].id, msg);
+      } else {
+        _sendResponse(msg.id, null, "no active tab");
+      }
+    });
+  }
+}
+
+function _forwardToTab(tabId, msg) {
+  chrome.tabs.sendMessage(tabId, {
+    target: "content",
+    bridgeRequest: true,
+    id: msg.id,
+    method: msg.method,
+    params: msg.params,
+  }, function (response) {
+    if (chrome.runtime.lastError) {
+      _sendResponse(msg.id, null, chrome.runtime.lastError.message);
+      return;
+    }
+    _sendResponse(msg.id, response);
+  });
+}
+
+function _sendResponse(id, result, error) {
+  if (!_ws || _ws.readyState !== WebSocket.OPEN) return;
+  var resp = {
+    id: id,
+    type: "response",
+  };
+  if (error) {
+    resp.error = error;
+  } else {
+    resp.result = result;
+  }
+  _ws.send(JSON.stringify(resp));
+}
+
+// Listen for bridge port configuration via storage.
+chrome.storage.local.get(["scoutBridgePort"], function (data) {
+  if (data.scoutBridgePort) {
+    connectWS(data.scoutBridgePort);
+  }
+});
+
+chrome.storage.onChanged.addListener(function (changes) {
+  if (changes.scoutBridgePort && changes.scoutBridgePort.newValue) {
+    connectWS(changes.scoutBridgePort.newValue);
+  }
 });

@@ -158,6 +158,11 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `PWAInfo`, `WebAppManifest`               | Progressive Web App detection        | `detect.go`    |
 | `AutoFreeConfig`                          | Browser recycling configuration      | `autofree.go`  |
 | `ValidationResult`, `ValidationError`     | Recipe dry-run validation results    | `recipe/validate.go` |
+| `SelectorScore`                           | Selector resilience scoring result   | `recipe/score.go`    |
+| `InteractiveCreate`                       | Interactive recipe creation wizard   | `recipe/interactive.go` |
+| `BridgeServer`                            | WebSocket server for bridge comms    | `bridge_ws.go`       |
+| `BridgeMessage`                           | Bridge WebSocket message type        | `bridge_ws.go`       |
+| `BridgeEvent`                             | Bridge event from browser→Go        | `bridge_events.go`   |
 
 ### MCP Server Types
 
@@ -260,7 +265,7 @@ cmd/scout/
 ├── extension.go            # scout extension load/test/list/download/remove
 ├── sitemap.go              # scout sitemap extract
 ├── browser.go              # scout browser list
-├── bridge.go               # scout bridge status/send/listen
+├── bridge.go               # scout bridge status/send/listen/events/ws-send
 ├── llm.go                  # scout extract-ai, scout ollama, scout ai-job
 ├── auth.go                 # scout auth login/capture/status/logout/providers
 ├── device.go               # scout device pair/list/trust
@@ -273,7 +278,7 @@ cmd/scout/
 ├── inject.go               # scout inject <url> --code/--file/--dir
 ├── jobs.go                 # scout jobs list/status/cancel
 ├── webmcp.go               # scout webmcp discover/call
-├── profile.go              # scout profile capture/load/show/merge/diff
+├── profile.go              # scout profile capture/load/show/merge/diff/session-capture/session-load
 └── cmdtree.go              # scout cmdtree [--json]
 ```
 
@@ -344,6 +349,11 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **WebSearch multi-engine**: `WithSearchEngines("google", "bing", "duckduckgo")` runs the same query across multiple engines. Results merged via Reciprocal Rank Fusion (k=60). `WithSearchDomain()` appends `site:` filter, `WithSearchExcludeDomain()` appends `-site:` filters.
 - **WebFetch retry**: `WithFetchRetries(n)` and `WithFetchRetryDelay(d)` add retry logic around page navigation. `RedirectChain []string` in `WebFetchResult` tracks redirect hops.
 - **Recipe validation**: `recipe.ValidateRecipe(browser, recipe)` navigates to URL, checks all selectors resolve, returns `ValidationResult` with errors and sample item count. `SelectorHealthCheck(page, selectors)` returns per-selector match counts. CLI: `scout recipe test --file=recipe.json`.
+- **Selector resilience scoring**: `ScoreSelector(selector)` returns `SelectorScore` with stability rating (attribute-based > class-based > nth-child). `ScoreRecipeSelectors(recipe)` scores all selectors in a recipe. Higher scores = more stable selectors.
+- **Interactive recipe creation**: `InteractiveCreate(ctx, browser, url)` provides a step-by-step guided wizard for building recipes. Shows container candidates, lets user pick fields. CLI: `scout recipe create <url> --interactive` or `scout recipe create -i`.
+- **Bridge WebSocket**: `BridgeServer` manages WebSocket connections between Go and the bridge extension. `WithBridgePort(port)` configures the WS port. `BridgeMessage` for request/response, `BridgeEvent` for browser-to-Go event streaming (mutations, interactions, navigation). CLI: `scout bridge events`, `scout bridge ws-send`.
+- **Profile gRPC RPCs**: `CaptureProfile` RPC captures running session state as a portable profile. `LoadProfile` RPC applies a profile to an existing session. CLI: `scout profile session-capture`, `scout profile session-load`.
+- **Docker CI/CD**: `.github/workflows/docker.yml` builds and pushes images to GHCR on tag. Multi-arch (`linux/amd64`, `linux/arm64`) via `docker buildx`. Trivy vulnerability scanning. Helm chart at `deploy/helm/scout/`.
 
 ## Testing
 
@@ -368,6 +378,7 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Snapshot routes: `/snapshot-basic`, `/snapshot-form`, `/snapshot-nested`, `/snapshot-hidden`
 - Challenge routes: `/challenge-cloudflare`, `/challenge-turnstile`, `/challenge-recaptcha-v2`, `/challenge-hcaptcha`, `/challenge-datadome`, `/challenge-none`, `/challenge-multi`
 - WebMCP routes: `/webmcp-meta`, `/webmcp-script`, `/webmcp-js`, `/webmcp-none`, `/mcp-api`, `/mcp-tools.json`, `/.well-known/mcp`
+- Bridge test routes: WebSocket server unit tests, message routing, event streaming
 - Inject test routes: uses inline httptest servers for JS injection verification
 - Profile tests: uses `t.TempDir()` for encrypted save/load, merge, diff, validation
 - Async job tests: uses `t.TempDir()` for job manager persistence

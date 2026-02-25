@@ -27,6 +27,9 @@ type Browser struct {
 
 	// webmcpRegistry accumulates discovered WebMCP tools when auto-discover is enabled.
 	webmcpRegistry *WebMCPRegistry
+
+	// bridgeServer is the WebSocket server for bridge communication, if enabled.
+	bridgeServer *BridgeServer
 }
 
 // New creates and connects a new headless browser with the given options.
@@ -88,6 +91,12 @@ func New(opts ...Option) (*Browser, error) {
 		if o.webmcpAutoDiscover {
 			br.webmcpRegistry = NewWebMCPRegistry()
 		}
+		if o.bridge && o.bridgePort != 0 {
+			if err := br.startBridgeServer(); err != nil {
+				_ = ctx.Close()
+				return nil, err
+			}
+		}
 		if o.autoFreeInterval > 0 {
 			br.startAutoFree(AutoFreeConfig{
 				Interval:  o.autoFreeInterval,
@@ -100,6 +109,12 @@ func New(opts ...Option) (*Browser, error) {
 	br := &Browser{browser: b, opts: o, launcher: l, done: make(chan struct{})}
 	if o.webmcpAutoDiscover {
 		br.webmcpRegistry = NewWebMCPRegistry()
+	}
+	if o.bridge && o.bridgePort != 0 {
+		if err := br.startBridgeServer(); err != nil {
+			_ = b.Close()
+			return nil, err
+		}
 	}
 	if o.autoFreeInterval > 0 {
 		br.startAutoFree(AutoFreeConfig{
@@ -354,6 +369,12 @@ func (b *Browser) Close() error {
 		close(b.done)
 	}
 
+	// Stop the bridge WebSocket server if running.
+	if b.bridgeServer != nil {
+		_ = b.bridgeServer.Stop()
+		b.bridgeServer = nil
+	}
+
 	err := b.browser.Close()
 
 	// Best-effort zombie cleanup: kill the process tree even if CDP close failed.
@@ -378,4 +399,24 @@ func (b *Browser) WebMCPRegistry() *WebMCPRegistry {
 		return nil
 	}
 	return b.webmcpRegistry
+}
+
+// BridgeServer returns the WebSocket bridge server, or nil if bridge port
+// was not configured (see WithBridgePort).
+func (b *Browser) BridgeServer() *BridgeServer {
+	if b == nil {
+		return nil
+	}
+	return b.bridgeServer
+}
+
+// startBridgeServer initializes and starts the bridge WebSocket server.
+func (b *Browser) startBridgeServer() error {
+	addr := fmt.Sprintf("127.0.0.1:%d", b.opts.bridgePort)
+	s := NewBridgeServer(addr)
+	if err := s.Start(); err != nil {
+		return fmt.Errorf("scout: bridge server: %w", err)
+	}
+	b.bridgeServer = s
+	return nil
 }

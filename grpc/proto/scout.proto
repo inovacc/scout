@@ -42,6 +42,10 @@ service ScoutService {
   rpc StopRecording(SessionRequest)         returns (Empty);
   rpc ExportHAR(SessionRequest)             returns (HARResponse);
 
+  // Profile
+  rpc CaptureProfile(CaptureProfileRequest) returns (CaptureProfileResponse);
+  rpc LoadProfile(LoadProfileRequest)       returns (LoadProfileResponse);
+
   // Real-time event stream (server -> client)
   rpc StreamEvents(SessionRequest)          returns (stream BrowserEvent);
 
@@ -162,6 +166,26 @@ message RecordingRequest {
 message HARResponse {
   bytes  data = 1;  // HAR JSON
   int32  entry_count = 2;
+}
+
+// ---------------------- Profile ----------------------
+
+message CaptureProfileRequest {
+  string session_id = 1;
+}
+
+message CaptureProfileResponse {
+  string profile_json = 1;
+}
+
+message LoadProfileRequest {
+  string session_id = 1;
+  string profile_json = 2;
+}
+
+message LoadProfileResponse {
+  bool   success = 1;
+  string error = 2;
 }
 
 // ---------------------- Events ----------------------

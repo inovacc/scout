@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	pb "github.com/inovacc/scout/grpc/scoutpb"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/spf13/cobra"
 )
@@ -309,6 +310,144 @@ var profileDiffCmd = &cobra.Command{
 	},
 }
 
+var profileSessionCaptureCmd = &cobra.Command{
+	Use:   "session-capture",
+	Short: "Capture profile from a running gRPC session",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		client, conn, err := resolveClient(cmd)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = conn.Close() }()
+
+		sessionFlag, _ := cmd.Flags().GetString("session")
+		sessionID, err := resolveSession(sessionFlag)
+		if err != nil {
+			return err
+		}
+
+		resp, err := client.CaptureProfile(context.Background(), &pb.CaptureProfileRequest{
+			SessionId: sessionID,
+		})
+		if err != nil {
+			return fmt.Errorf("scout: profile: session-capture: %w", err)
+		}
+
+		var prof scout.UserProfile
+		if err := json.Unmarshal([]byte(resp.GetProfileJson()), &prof); err != nil {
+			return fmt.Errorf("scout: profile: session-capture: unmarshal: %w", err)
+		}
+
+		name, _ := cmd.Flags().GetString("name")
+		if name != "" {
+			prof.Name = name
+		}
+
+		outFile, _ := cmd.Flags().GetString("output")
+		encrypt, _ := cmd.Flags().GetBool("encrypt")
+
+		if encrypt {
+			passphrase, _ := cmd.Flags().GetString("passphrase")
+			if passphrase == "" {
+				passphrase, err = readPassphraseConfirm(cmd.ErrOrStderr())
+				if err != nil {
+					return err
+				}
+			}
+
+			if outFile == "" {
+				outFile = "profile.scoutprofile.enc"
+			}
+
+			if err := scout.SaveProfileEncrypted(&prof, outFile, passphrase); err != nil {
+				return fmt.Errorf("scout: profile: session-capture: %w", err)
+			}
+
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Profile saved (encrypted): %s\n", outFile)
+			return nil
+		}
+
+		if outFile == "" {
+			data, err := json.MarshalIndent(prof, "", "  ")
+			if err != nil {
+				return fmt.Errorf("scout: profile: session-capture: marshal: %w", err)
+			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
+			return nil
+		}
+
+		if err := scout.SaveProfile(&prof, outFile); err != nil {
+			return fmt.Errorf("scout: profile: session-capture: %w", err)
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Profile saved: %s\n", outFile)
+		return nil
+	},
+}
+
+var profileSessionLoadCmd = &cobra.Command{
+	Use:   "session-load",
+	Short: "Load a profile into a running gRPC session",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		client, conn, err := resolveClient(cmd)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = conn.Close() }()
+
+		sessionFlag, _ := cmd.Flags().GetString("session")
+		sessionID, err := resolveSession(sessionFlag)
+		if err != nil {
+			return err
+		}
+
+		filePath, _ := cmd.Flags().GetString("file")
+		decrypt, _ := cmd.Flags().GetBool("decrypt")
+
+		var prof *scout.UserProfile
+		if decrypt {
+			passphrase, _ := cmd.Flags().GetString("passphrase")
+			if passphrase == "" {
+				passphrase, err = readPassphrase(cmd.ErrOrStderr(), "Enter passphrase: ")
+				if err != nil {
+					return err
+				}
+			}
+			prof, err = scout.LoadProfileEncrypted(filePath, passphrase)
+		} else {
+			prof, err = scout.LoadProfile(filePath)
+		}
+
+		if err != nil {
+			return fmt.Errorf("scout: profile: session-load: %w", err)
+		}
+
+		data, err := json.Marshal(prof)
+		if err != nil {
+			return fmt.Errorf("scout: profile: session-load: marshal: %w", err)
+		}
+
+		resp, err := client.LoadProfile(context.Background(), &pb.LoadProfileRequest{
+			SessionId:   sessionID,
+			ProfileJson: string(data),
+		})
+		if err != nil {
+			return fmt.Errorf("scout: profile: session-load: %w", err)
+		}
+
+		if !resp.GetSuccess() {
+			return fmt.Errorf("scout: profile: session-load: %s", resp.GetError())
+		}
+
+		w := cmd.OutOrStdout()
+		_, _ = fmt.Fprintf(w, "Profile loaded into session %s\n", sessionID)
+		_, _ = fmt.Fprintf(w, "  Name:    %s\n", prof.Name)
+		_, _ = fmt.Fprintf(w, "  Cookies: %d\n", len(prof.Cookies))
+		_, _ = fmt.Fprintf(w, "  Storage: %d origin(s)\n", len(prof.Storage))
+		return nil
+	},
+}
+
 func init() {
 	profileCaptureCmd.Flags().String("name", "", "profile name")
 	profileCaptureCmd.Flags().StringP("output", "o", "", "output file (default: profile.scoutprofile)")
@@ -319,6 +458,17 @@ func init() {
 
 	profileDiffCmd.Flags().String("format", "text", "output format: text or json")
 
-	profileCmd.AddCommand(profileCaptureCmd, profileLoadCmd, profileShowCmd, profileMergeCmd, profileDiffCmd)
+	profileSessionCaptureCmd.Flags().StringP("output", "o", "", "output file (default: stdout)")
+	profileSessionCaptureCmd.Flags().String("name", "", "profile name")
+	profileSessionCaptureCmd.Flags().Bool("encrypt", false, "encrypt the profile")
+	profileSessionCaptureCmd.Flags().String("passphrase", "", "passphrase for encryption")
+
+	profileSessionLoadCmd.Flags().String("file", "", "profile file to load")
+	profileSessionLoadCmd.Flags().Bool("decrypt", false, "decrypt the profile")
+	profileSessionLoadCmd.Flags().String("passphrase", "", "passphrase for decryption")
+	_ = profileSessionLoadCmd.MarkFlagRequired("file")
+
+	profileCmd.AddCommand(profileCaptureCmd, profileLoadCmd, profileShowCmd, profileMergeCmd, profileDiffCmd,
+		profileSessionCaptureCmd, profileSessionLoadCmd)
 	rootCmd.AddCommand(profileCmd)
 }
