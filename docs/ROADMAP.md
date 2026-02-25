@@ -1017,6 +1017,30 @@ pkg/scout/scraper/<platform>/
 
 CLI: `scout scrape <platform> [subcommand] [flags]`
 
+### Phase 33: VPN Extension Integration — Surfshark & Proxy Rotation [NOT STARTED]
+
+Programmatic VPN control via Chrome extension CDP manipulation and direct HTTPS proxy support. Enables IP rotation per-page/session for geo-unblocking and bot detection evasion.
+
+See: `docs/adr/ADR-surfshark-vpn-integration.md` for full analysis.
+
+#### 33a: Core VPN API
+- [ ] **VPN Provider interface** — Pluggable backend: `Connect(country)`, `Disconnect()`, `Status()`, `Servers()`
+- [ ] **Direct proxy mode** — `WithProxy(host:port)` + `WithProxyAuth(user, pass)` for any HTTPS/SOCKS5 proxy
+- [ ] **Surfshark provider** — Fetch server list via `/v5/server/clusters/all`, proxy creds via `/v1/server/user`
+- [ ] **Proxy authentication** — `chrome.webRequest.onAuthRequired` handler via CDP for extension-based proxies
+
+#### 33b: Extension Control
+- [ ] **Extension storage injection** — Set `auth-token`, `auth-status` via CDP `chrome.storage.local.set()`
+- [ ] **chrome.proxy.settings** — `fixed_servers` mode with `singleProxy: {host, port: 443, scheme: "https"}`
+- [ ] **WebRTC leak prevention** — `chrome.privacy.network.webRTCIPHandlingPolicy` via CDP
+- [ ] **Connection state tracking** — Monitor `connection-was-connected`, `vpn-sessions` storage keys
+
+#### 33c: Server Rotation & CLI
+- [ ] **WithVPNRotation(interval, countries)** — Auto-rotate server per time interval or per-page
+- [ ] **Country-based selection** — `VPNConnect("us")`, `VPNConnect("de")` with automatic server selection
+- [ ] **CLI commands** — `scout vpn connect/disconnect/status/servers/rotate`
+- [ ] **Bypass list** — Per-domain split tunneling via `bypass-list` storage key
+
 ## Test Coverage
 
 **Current:** pkg/scout 74.1% | pkg/identity 81.1% | scraper 84.3% | **Target:** 80%
