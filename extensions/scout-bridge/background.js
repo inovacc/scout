@@ -22,6 +22,22 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
     sendResponse({ ok: true });
   }
 
+  // Forward content script console events to WebSocket server.
+  if (message.type === "bridge_event" && message.method === "console.log" && _ws && _ws.readyState === WebSocket.OPEN) {
+    var consoleEvt = {
+      type: "event",
+      method: "console.log",
+      params: message.data || {},
+    };
+    if (sender && sender.tab) {
+      consoleEvt.params._tabId = sender.tab.id;
+      consoleEvt.params._tabUrl = sender.tab.url || "";
+    }
+    _ws.send(JSON.stringify(consoleEvt));
+    sendResponse({ ok: true });
+    return false;
+  }
+
   // Forward content script events to WebSocket server.
   if (message.type === "bridge_event" && _ws && _ws.readyState === WebSocket.OPEN) {
     var evt = {

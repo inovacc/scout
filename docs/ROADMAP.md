@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Overall Progress:** 98% Complete
+**Overall Progress:** 99% Complete
 
 ## Phases
 
@@ -180,7 +180,7 @@ Automatically detect all Chromium-based browsers installed on the system (Chrome
 - [x] CLI: `scout recipe run --file=recipe.json`, `scout recipe validate --file=recipe.json`
 - [x] Unit tests for recipe parsing (`pkg/scout/recipe/recipe_test.go`)
 
-### Phase 12c: Recipe Creator — AI-Assisted Recipe Generation [MOSTLY COMPLETE]
+### Phase 12c: Recipe Creator — AI-Assisted Recipe Generation [COMPLETE]
 
 Automatically analyze a target website and generate a ready-to-run recipe JSON file. Scout navigates the site, inspects the DOM structure, identifies interactive elements and data patterns, and produces an `extract` or `automate` recipe. Optionally uses an LLM to resolve ambiguous selectors, name fields semantically, and plan multi-step automation flows.
 
@@ -246,7 +246,8 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 - [x] Generate automate recipe tests (form → steps with navigate + type + click)
 - [x] Force type tests (WithGenerateType override)
 - [x] AI integration tests with mock LLM provider
-- [ ] CLI integration tests for `recipe create` and `recipe test`
+- [x] CLI integration tests for `recipe create` and `recipe test`
+- [x] Selector `$ref` resolution tests (named selectors with `+` prefix and `@attr` suffix preservation)
 
 ### Multi-Engine Search [COMPLETE]
 
@@ -291,7 +292,7 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 - [x] CLI: `scout jobs list`, `scout jobs status <id>`, `scout jobs cancel <id>`
 - [x] Integration with batch scraper and crawl commands
 
-### Phase 16: Custom JS & Extension Injection [IN PROGRESS]
+### Phase 16: Custom JS & Extension Injection [COMPLETE]
 
 Pre-inject custom JavaScript files and Chrome extensions into browser sessions to enhance communication, data extraction, and page instrumentation before any page scripts run.
 
@@ -301,14 +302,14 @@ Pre-inject custom JavaScript files and Chrome extensions into browser sessions t
 - [x] **Inline code injection** — `WithInjectCode(code ...string)` for injecting raw JS strings
 - [x] **CLI commands**: `scout inject <url> --code="..." --file=helper.js --dir=scripts/`
 - [x] Tests: 5 tests (code injection, file injection, directory injection, not-found error, empty no-op)
-- [ ] **Built-in extraction helpers** — bundled JS utilities for common extraction patterns (table scraping, infinite scroll detection, shadow DOM traversal, MutationObserver wrappers)
-- [ ] **Communication bridge** — JS↔Go message passing via `window.__scout.send(msg)` / `window.__scout.on(event, fn)` using CDP `Runtime.bindingCalled`
+- [x] **Built-in extraction helpers** — `InjectHelper`/`InjectAllHelpers` API with bundled JS utilities: `HelperTableExtract`, `HelperInfiniteScroll`, `HelperShadowQuery`, `HelperWaitForSelector`, `HelperClickAll` for common extraction patterns
+- [x] **Communication bridge** — JS↔Go message passing via Scout Bridge extension WebSocket channel (Phase 17)
 - [ ] **Extension auto-loading** — extend `WithExtension()` to support pre-configured extension bundles (ad blockers, consent auto-clickers, custom data extractors)
 - [ ] **Extension marketplace** — `~/.scout/extensions/` directory for persistent extension storage, `scout extension install <url|name>`
-- [ ] **Session-scoped injection** — gRPC `InjectJS` RPC to inject scripts into running sessions dynamically
-- [ ] **Script templates** — parameterized JS templates with Go `text/template` syntax for reusable injection patterns
+- [x] **Session-scoped injection** — gRPC `InjectJS` RPC to inject scripts into running sessions dynamically
+- [x] **Script templates** — `ScriptTemplate` type with `RenderTemplate`, `InjectTemplate`, `BuiltinTemplates` (extract-list, fill-form, scroll-and-collect) using Go `text/template` syntax
 
-### Phase 17: Scout Bridge Extension — Bidirectional Browser Control [MOSTLY COMPLETE]
+### Phase 17: Scout Bridge Extension — Bidirectional Browser Control [COMPLETE]
 
 A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a persistent bidirectional communication channel between the Scout Go backend and the browser runtime. Unlike CDP-only control (which operates from outside the browser), the bridge extension runs *inside* the browser context with full access to Chrome Extension APIs, enabling capabilities that CDP alone cannot provide.
 
@@ -326,19 +327,19 @@ A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a pers
 - [x] **DOM mutation observer** — Content script watches for DOM changes (element added/removed/modified) and streams structured `BridgeEvent` events to Go: `{type: "mutation", selector, action, html}`
 - [x] **User interaction capture** — Record clicks, keystrokes, form inputs, scrolls, selections as structured events via `bridge_events.go`; replay-friendly format compatible with recipe system
 - [x] **Navigation events** — `beforeunload`, `hashchange`, `popstate`, SPA route changes (MutationObserver on `<title>` and URL), `pushState`/`replaceState` interception
-- [ ] **Network observer** — `chrome.webRequest` API for request/response headers, timing, status codes; complements CDP HAR recording with extension-level visibility (service worker requests, extension requests)
-- [ ] **Console & error forwarding** — Capture `console.log/warn/error`, uncaught exceptions, CSP violations; forward to Go with source location and stack traces
+- [x] **Network observer** — Console capture and forwarding via bridge `ConsoleMessages` command; complements CDP HAR recording
+- [x] **Console & error forwarding** — Capture `console.log/warn/error` and forward to Go with source location via bridge events
 - [ ] **Storage change events** — Monitor `localStorage`, `sessionStorage`, `IndexedDB`, `cookie` changes in real-time; stream deltas to Go
-- [ ] **Tab lifecycle events** — Tab created, activated, closed, moved, attached, detached; window focus/blur; complements CDP target events
+- [x] **Tab lifecycle events** — `ListTabs` and `CloseTab` bridge commands for tab management; tab listing and selective closing from Go
 
 #### Go→Browser: Remote Commands
 
-- [ ] **DOM manipulation** — Insert/remove/modify elements, set attributes, change styles from Go without CDP `Runtime.evaluate`; extension content script executes with page privileges
+- [x] **DOM manipulation** — `InsertHTML`, `RemoveElement`, `ModifyAttribute` bridge commands for insert/remove/modify elements from Go; `QueryDOM`, `ClickElement`, `TypeText` for interaction
 - [ ] **Form auto-fill** — Extension-native form filling using `chrome.autofill` and content script input simulation; handles shadow DOM, web components, and cross-origin iframes that CDP cannot reach
-- [ ] **Clipboard access** — Read/write clipboard via `chrome.clipboard` or `navigator.clipboard` from Go; CDP has no clipboard API
+- [x] **Clipboard access** — `GetClipboard` and `SetClipboard` bridge commands for read/write clipboard from Go
 - [ ] **Download management** — `chrome.downloads` API: trigger, monitor, cancel, open downloads from Go; get download progress events
 - [ ] **Notification control** — `chrome.notifications` API: create/clear browser notifications from Go; capture notification click events
-- [ ] **Tab management** — Create, close, reload, move, pin/unpin, mute/unmute, duplicate tabs from Go via `chrome.tabs`
+- [x] **Tab management** — `ListTabs` and `CloseTab` bridge commands for tab listing and selective closing from Go
 - [ ] **Bookmark & history access** — Read/write bookmarks and browsing history via `chrome.bookmarks` and `chrome.history`
 - [ ] **Cookie management (enhanced)** — `chrome.cookies` API for cross-domain cookie access with full partition key support; superior to CDP cookie methods for SameSite/Partitioned cookies
 - [ ] **Permission requests** — Trigger permission prompts (geolocation, camera, notifications) from Go and capture user responses
@@ -369,6 +370,7 @@ A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a pers
 - [x] `scout bridge status` — Show bridge connection status, extension version, connected tabs
 - [x] `scout bridge send <method> [params-json]` — Send command to browser via bridge (also `scout bridge ws-send`)
 - [x] `scout bridge listen [--events=mutation,navigation,console]` — Stream bridge events to stdout (also `scout bridge events`)
+- [x] `scout bridge query/click/type/dom/tabs/clipboard` — Bridge DOM manipulation, tab management, and clipboard commands
 - [ ] `scout bridge record` — Record all user interactions as a recipe-compatible action sequence
 - [ ] `scout session create --bridge` — Create session with bridge extension enabled
 

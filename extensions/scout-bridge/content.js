@@ -334,6 +334,119 @@
     return { tag: el.tagName.toLowerCase(), attributes: attrs };
   });
 
+  // Built-in handler: dom.insert — insertAdjacentHTML on element.
+  scout.on("dom.insert", function (params) {
+    params = params || {};
+    var el = document.querySelector(params.selector);
+    if (!el) return { error: "element not found: " + params.selector };
+    var position = params.position || "beforeend";
+    try {
+      el.insertAdjacentHTML(position, params.html || "");
+    } catch (e) {
+      return { error: "insertAdjacentHTML failed: " + e.message };
+    }
+    return { inserted: true };
+  });
+
+  // Built-in handler: dom.remove — remove element from DOM.
+  scout.on("dom.remove", function (params) {
+    params = params || {};
+    var el = document.querySelector(params.selector);
+    if (!el) return { error: "element not found: " + params.selector };
+    el.remove();
+    return { removed: true };
+  });
+
+  // Built-in handler: dom.modifyAttr — setAttribute on element.
+  scout.on("dom.modifyAttr", function (params) {
+    params = params || {};
+    var el = document.querySelector(params.selector);
+    if (!el) return { error: "element not found: " + params.selector };
+    el.setAttribute(params.attribute, params.value || "");
+    return { modified: true };
+  });
+
+  // Built-in handler: clipboard.read — read clipboard text.
+  scout.on("clipboard.read", function (params) {
+    // Clipboard API is async; return a promise-like pattern via callback.
+    // Since our handler model is synchronous, we attempt sync read first.
+    try {
+      // This only works with user gesture / permissions policy.
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        // We cannot do async in this sync handler model, but we try.
+        var result = { text: "", pending: true };
+        navigator.clipboard.readText().then(function (text) {
+          // For async, we send via event.
+          scout.send("clipboard.result", { text: text });
+        }).catch(function (err) {
+          scout.send("clipboard.result", { error: err.message });
+        });
+        return result;
+      }
+      return { error: "clipboard API not available" };
+    } catch (e) {
+      return { error: e.message };
+    }
+  });
+
+  // Built-in handler: clipboard.write — write text to clipboard.
+  scout.on("clipboard.write", function (params) {
+    params = params || {};
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(params.text || "").then(function () {
+          scout.send("clipboard.result", { written: true });
+        }).catch(function (err) {
+          scout.send("clipboard.result", { error: err.message });
+        });
+        return { writing: true };
+      }
+      return { error: "clipboard API not available" };
+    } catch (e) {
+      return { error: e.message };
+    }
+  });
+
+  // Console capture buffer and interceptors.
+  var _consoleBuffer = [];
+  var _consoleCapturing = false;
+
+  // Built-in handler: console.capture — install console interceptors.
+  scout.on("console.capture", function () {
+    if (_consoleCapturing) return { already: true };
+    _consoleCapturing = true;
+    _consoleBuffer = [];
+
+    var levels = ["log", "warn", "error", "info", "debug"];
+    for (var i = 0; i < levels.length; i++) {
+      (function (level) {
+        var original = console[level];
+        console[level] = function () {
+          var args = [];
+          for (var j = 0; j < arguments.length; j++) {
+            try {
+              args.push(typeof arguments[j] === "object" ? JSON.stringify(arguments[j]) : String(arguments[j]));
+            } catch (e) {
+              args.push("[unserializable]");
+            }
+          }
+          _consoleBuffer.push({ level: level, text: args.join(" "), ts: Date.now() });
+          // Also forward as event.
+          scout.send("console.log", { level: level, text: args.join(" ") });
+          // Call original.
+          if (original) original.apply(console, arguments);
+        };
+      })(levels[i]);
+    }
+    return { capturing: true };
+  });
+
+  // Built-in handler: console.get — return buffered console messages.
+  scout.on("console.get", function () {
+    var msgs = _consoleBuffer.slice();
+    return { messages: msgs, count: msgs.length };
+  });
+
   // Built-in handler: dom.observe — start MutationObserver, forward mutations.
   scout.on("dom.observe", function (params) {
     params = params || {};

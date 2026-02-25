@@ -652,6 +652,48 @@ func (s *ScoutServer) Eval(_ context.Context, req *pb.EvalRequest) (*pb.EvalResp
 	return &pb.EvalResponse{Result: string(data)}, nil
 }
 
+func (s *ScoutServer) InjectJS(_ context.Context, req *pb.InjectJSRequest) (*pb.InjectJSResponse, error) {
+	sess, err := s.getSession(req.GetSessionId())
+	if err != nil {
+		return nil, err
+	}
+
+	var script string
+	if code := req.GetCode(); code != "" {
+		script = code
+	} else if tmplName := req.GetTemplateName(); tmplName != "" {
+		tmpl, ok := scout.BuiltinTemplates[tmplName]
+		if !ok {
+			return &pb.InjectJSResponse{Error: fmt.Sprintf("unknown template %q", tmplName)}, nil
+		}
+		var data map[string]any
+		if td := req.GetTemplateData(); td != "" {
+			if err := json.Unmarshal([]byte(td), &data); err != nil {
+				return &pb.InjectJSResponse{Error: fmt.Sprintf("invalid template_data JSON: %v", err)}, nil
+			}
+		}
+		rendered, err := scout.RenderTemplate(tmpl, data)
+		if err != nil {
+			return &pb.InjectJSResponse{Error: err.Error()}, nil
+		}
+		script = rendered
+	} else {
+		return &pb.InjectJSResponse{Error: "code or template_name required"}, nil
+	}
+
+	result, err := sess.page.Eval(script)
+	if err != nil {
+		return &pb.InjectJSResponse{Error: fmt.Sprintf("eval failed: %v", sanitizeError(err))}, nil
+	}
+
+	resultData, err2 := json.Marshal(result) //nolint:musttag // result is dynamic eval output
+	if err2 != nil {
+		return &pb.InjectJSResponse{Error: fmt.Sprintf("marshal result failed: %v", err2)}, nil
+	}
+
+	return &pb.InjectJSResponse{Result: string(resultData)}, nil
+}
+
 func (s *ScoutServer) ElementExists(_ context.Context, req *pb.ElementRequest) (*pb.BoolResponse, error) {
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {

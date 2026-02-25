@@ -158,6 +158,9 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `PWAInfo`, `WebAppManifest`               | Progressive Web App detection        | `detect.go`    |
 | `AutoFreeConfig`                          | Browser recycling configuration      | `autofree.go`  |
 | `ValidationResult`, `ValidationError`     | Recipe dry-run validation results    | `recipe/validate.go` |
+| `InjectHelper`, `InjectAllHelpers`        | Built-in JS extraction helper injection | `helpers.go`      |
+| `HelperTableExtract`, `HelperInfiniteScroll`, `HelperShadowQuery`, `HelperWaitForSelector`, `HelperClickAll` | Bundled JS helper constants | `helpers.go` |
+| `ScriptTemplate`, `RenderTemplate`, `InjectTemplate`, `BuiltinTemplates` | Parameterized JS script templates | `templates.go` |
 | `SelectorScore`                           | Selector resilience scoring result   | `recipe/score.go`    |
 | `InteractiveCreate`                       | Interactive recipe creation wizard   | `recipe/interactive.go` |
 | `BridgeServer`                            | WebSocket server for bridge comms    | `bridge_ws.go`       |
@@ -265,7 +268,7 @@ cmd/scout/
 ├── extension.go            # scout extension load/test/list/download/remove
 ├── sitemap.go              # scout sitemap extract
 ├── browser.go              # scout browser list
-├── bridge.go               # scout bridge status/send/listen/events/ws-send
+├── bridge.go               # scout bridge status/send/listen/events/ws-send/query/click/type/dom/tabs/clipboard
 ├── llm.go                  # scout extract-ai, scout ollama, scout ai-job
 ├── auth.go                 # scout auth login/capture/status/logout/providers
 ├── device.go               # scout device pair/list/trust
@@ -354,6 +357,11 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **Bridge WebSocket**: `BridgeServer` manages WebSocket connections between Go and the bridge extension. `WithBridgePort(port)` configures the WS port. `BridgeMessage` for request/response, `BridgeEvent` for browser-to-Go event streaming (mutations, interactions, navigation). CLI: `scout bridge events`, `scout bridge ws-send`.
 - **Profile gRPC RPCs**: `CaptureProfile` RPC captures running session state as a portable profile. `LoadProfile` RPC applies a profile to an existing session. CLI: `scout profile session-capture`, `scout profile session-load`.
 - **Docker CI/CD**: `.github/workflows/docker.yml` builds and pushes images to GHCR on tag. Multi-arch (`linux/amd64`, `linux/arm64`) via `docker buildx`. Trivy vulnerability scanning. Helm chart at `deploy/helm/scout/`.
+- **Built-in extraction helpers**: `InjectHelper(page, helper)` and `InjectAllHelpers(page)` inject bundled JS utilities. Constants: `HelperTableExtract` (table→JSON), `HelperInfiniteScroll` (scroll detection), `HelperShadowQuery` (shadow DOM), `HelperWaitForSelector` (wait), `HelperClickAll` (batch click). Injected via `EvalOnNewDocument`.
+- **Script templates**: `ScriptTemplate` wraps Go `text/template` for parameterized JS. `RenderTemplate(name, params)` renders, `InjectTemplate(page, name, params)` renders + injects. `BuiltinTemplates` includes `extract-list`, `fill-form`, `scroll-and-collect`.
+- **Bridge DOM commands**: `QueryDOM`, `ClickElement`, `TypeText`, `InsertHTML`, `RemoveElement`, `ModifyAttribute` bridge commands for DOM manipulation from Go. `ObserveDOM` for MutationObserver streaming. CLI: `scout bridge query/click/type/dom`.
+- **Bridge clipboard/tabs**: `GetClipboard`/`SetClipboard` for clipboard access, `ListTabs`/`CloseTab` for tab management. `ConsoleMessages` for console capture/forwarding. CLI: `scout bridge tabs/clipboard`.
+- **gRPC InjectJS RPC**: `InjectJS` RPC injects JavaScript into running sessions dynamically. Session-scoped, persists across navigations via `EvalOnNewDocument`.
 
 ## Testing
 
@@ -378,7 +386,9 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Snapshot routes: `/snapshot-basic`, `/snapshot-form`, `/snapshot-nested`, `/snapshot-hidden`
 - Challenge routes: `/challenge-cloudflare`, `/challenge-turnstile`, `/challenge-recaptcha-v2`, `/challenge-hcaptcha`, `/challenge-datadome`, `/challenge-none`, `/challenge-multi`
 - WebMCP routes: `/webmcp-meta`, `/webmcp-script`, `/webmcp-js`, `/webmcp-none`, `/mcp-api`, `/mcp-tools.json`, `/.well-known/mcp`
-- Bridge test routes: WebSocket server unit tests, message routing, event streaming
+- Bridge test routes: WebSocket server unit tests, message routing, event streaming, DOM manipulation commands (QueryDOM, ClickElement, TypeText, InsertHTML, RemoveElement, ModifyAttribute), clipboard, tab management, console forwarding
+- Helper/template test routes: extraction helper injection, script template rendering + injection
+- Recipe CLI integration test routes: `recipe create` and `recipe test` end-to-end CLI tests
 - Inject test routes: uses inline httptest servers for JS injection verification
 - Profile tests: uses `t.TempDir()` for encrypted save/load, merge, diff, validation
 - Async job tests: uses `t.TempDir()` for job manager persistence
