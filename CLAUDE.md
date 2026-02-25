@@ -117,6 +117,7 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `HijackRouter`, `HijackContext` | rod hijack types        | `pkg/scout/network.go`  |
 | `WindowState`, `WindowBounds`   | Window state control    | `pkg/scout/window.go`   |
 | `NetworkRecorder`               | HAR 1.2 traffic capture | `pkg/scout/recorder.go` |
+| `ScreenRecorder`                | CDP screencast recording + GIF export | `pkg/scout/screenrecord.go` |
 
 ### HAR Recording Types
 
@@ -158,6 +159,7 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `WebMCPTool`, `WebMCPToolResult`          | Web-native MCP tool discovery + call | `webmcp.go`    |
 | `PWAInfo`, `WebAppManifest`               | Progressive Web App detection        | `detect.go`    |
 | `AutoFreeConfig`                          | Browser recycling configuration      | `autofree.go`  |
+| `PageInfo`, `PageScreenInfo`, `PageViewportInfo`, `PageConnInfo`, `PageTimingInfo` | Browser environment info auto-collected per page | `page.go` |
 | `ValidationResult`, `ValidationError`     | Recipe dry-run validation results    | `recipe/validate.go` |
 | `LLMValidation`, `ValidateWithLLM`       | LLM-based recipe validation prompts  | `recipe/validate.go` |
 | `ChallengeSolver`, `SolveFunc`, `SolverOption` | Bot protection bypass orchestration | `challenge_solver.go` |
@@ -201,6 +203,14 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `AnthropicProvider`                           | Anthropic Messages API provider                  | `llm_anthropic.go`  |
 | `LLMWorkspace`, `LLMSession`, `LLMJob`       | Filesystem-based session/job persistence         | `llm_workspace.go`  |
 | `JobStatus`, `SessionIndex`, `JobIndex`       | Workspace state tracking types                   | `llm_workspace.go`  |
+
+### Bot Detection Probe Types
+
+| Type                                          | Purpose                                        | File                          |
+|-----------------------------------------------|------------------------------------------------|-------------------------------|
+| `DetectionCategory`                           | Probe category enum (webdriver, canvas, webgl, etc.) | `botdetect_probe_test.go` |
+| `ProbeResult`                                 | Single detection check outcome                 | `botdetect_probe_test.go`     |
+| `ProbeReport`                                 | Full probe report with pass/fail counts        | `botdetect_probe_test.go`     |
 
 ### gRPC Service Layer
 
@@ -377,6 +387,9 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **gRPC InjectJS RPC**: `InjectJS` RPC injects JavaScript into running sessions dynamically. Session-scoped, persists across navigations via `EvalOnNewDocument`.
 - **Bot protection bypass**: `ChallengeSolver` orchestrates detection → strategy selection → solving. `SolveFunc` is the pluggable solve function signature. `NavigateWithBypass(url)` combines navigation + auto-bypass. `WithAutoBypass()` enables automatic bypass on every navigation. `CaptchaSolverService` interface abstracts third-party solvers (`TwoCaptchaService`, `CapSolverService`). CLI: `scout challenge detect/solve`.
 - **Browser manager module**: `pkg/browser/` is a standalone module for browser detection, download, and cache management. `Manager` coordinates operations, `Detect()` finds installed browsers (platform-specific: Windows registry, macOS plist, Linux desktop files), `Download()` fetches from vendor APIs. `BrowserInfo` holds metadata (type, version, path, platform).
+- **PageInfo auto-collection**: `NewPage()` automatically calls `CollectInfo()` after page setup. `page.Info()` returns cached `PageInfo` with browser version, UA, screen, viewport, connection, and timing data. `page.CollectInfo()` refreshes via CDP JS eval.
+- **Browser version caching**: `Browser.version` is eagerly fetched at creation time. `Version()` returns the cached value without CDP round-trip.
+- **Bot detection probes**: `botdetect_probe_test.go` runs 35+ checks across 13 categories (webdriver, navigator, canvas, webgl, audio, screen, timing, webrtc, permissions, dom, behavior, http, fingerprint). Three test modes: bare, stealth, stealth+fingerprint. Skipped with `-short`.
 - **Screen recorder**: `ScreenRecorder` captures page frames via CDP `Page.startScreencast` with ACK-based flow control. `ScreenRecordOption` functional options: `WithFrameRate`, `WithQuality`, `WithMaxDuration`. `ExportGIF(path)` produces animated GIF, `ExportFrames(dir)` writes PNG sequence. Start/Stop lifecycle is nil-safe and idempotent. CLI: `scout record start/stop/export`.
 
 ## Testing
@@ -411,6 +424,8 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Async job tests: uses `t.TempDir()` for job manager persistence
 - Stability tests: `TestWaitSafe_NilPage`, `TestWaitSafe_Normal`, `TestHijack_InvalidRegexp` in `stability_test.go`
 - Bot detection tests: external sites (bot.sannysoft.com, arh.antoinevastel.com, pixelscan.net, brotector, fingerprint.com) — skipped with `-short`
+- Bot probe routes: no routes needed — probes run JS on the page itself
+- Bot detection sites: 12 external sites (bot.sannysoft.com, pixelscan.net, fingerprint.com, brotector, creepjs, datadome, overpoweredjs, nobotspls, scrapfly) — skipped with `-short`
 - Window tests: no routes needed — window control operates on the browser window itself
 - Tests use `t.Skipf` when browser is unavailable — they will not fail in headless CI without Chrome, they skip.
 - No mocking framework; tests run against a real headless browser and local HTTP test server.

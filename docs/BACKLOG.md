@@ -370,12 +370,18 @@ credentials/session.
 - **Status:** Complete — Forgeron integrated for diverse browser fingerprint generation complementing stealth mode. Released in v0.21.0.
 - **Effort:** Medium
 
-### Bridge Form Auto-Fill and Download Management
+### ~~Bridge Form Auto-Fill and Download Management~~ [DONE]
 
 - **Priority:** P2
-- **Description:** Extend the bridge extension with form auto-fill capabilities (pre-fill forms from profile data) and download management (intercept/track downloads, progress, auto-rename).
+- **Status:** Complete — Bridge form auto-fill from profile data and download management (intercept/track/auto-rename) implemented in v0.22.0.
 - **Effort:** Medium
-- **Dependencies:** Scout Bridge Extension (done), Profile system (done)
+
+### VPN Extension Integration — Phase 33
+
+- **Priority:** P2
+- **Description:** Surfshark proxy control via CDP for VPN extension integration. Enable per-session proxy rotation and geo-targeting through browser extension APIs.
+- **Effort:** Large
+- **Dependencies:** Chrome Extension Loading (done), Bridge Extension (done)
 
 ### Scraper Modes — Reddit, YouTube, Notion
 
@@ -390,6 +396,13 @@ credentials/session.
 - **Description:** Add configurable depth levels for the research agent (shallow/medium/deep), result caching with TTL, and incremental research that builds on previous results.
 - **Effort:** Small
 - **Dependencies:** Research agent (done)
+
+### Bot Probe Insights → Stealth Evasion Improvements
+
+- **Priority:** P3
+- **Description:** Use bot detection probe results (`botdetect_probe_test.go`) to identify and fix failing stealth checks. Analyze probe reports across bare/stealth/stealth+fingerprint modes to prioritize evasion improvements in `pkg/stealth/`.
+- **Effort:** Medium
+- **Dependencies:** Bot detection probes (done), Stealth mode (done), Forgeron integration (done)
 
 ### Fingerprint Profile Persistence and Rotation
 
@@ -491,3 +504,4 @@ credentials/session.
 | Scout-Browser Standalone Module (Phase 30) | `pkg/browser/` with Manager, Detect, Download, platform-specific version detection | 2026-02-25 |
 | Bridge window.__scout API (Phase 31) | Content script bidirectional RPC with `__scout.send()`, `__scout.on()`, `__scout.query()`, CDP fallback | 2026-02-25 |
 | Research Agent (Phase 31) | Orchestrated multi-source research workflows via `scout research` | 2026-02-25 |
+| Bridge Form Auto-Fill and Download Management | Bridge form auto-fill from profile data and download management (intercept/track/auto-rename) in v0.22.0 | 2026-02-25 |

@@ -61,6 +61,9 @@ type options struct {
 	bridgePort         int
 	autoBypass         *ChallengeSolver
 	fingerprint        *Fingerprint
+	vpnProvider        VPNProvider
+	vpnRotation        *VPNRotationConfig
+	proxyAuth          *proxyAuthConfig
 }
 
 func defaults() *options {
@@ -310,6 +313,26 @@ func WithFingerprint(fp *Fingerprint) Option {
 // and applies it to the browser session.
 func WithRandomFingerprint(opts ...FingerprintOption) Option {
 	return func(o *options) { o.fingerprint = GenerateFingerprint(opts...) }
+}
+
+// WithVPN sets the VPN provider for proxy-based connectivity.
+// The provider's Connect is called during browser creation to obtain the proxy URL.
+func WithVPN(provider VPNProvider) Option {
+	return func(o *options) { o.vpnProvider = provider }
+}
+
+// WithVPNRotation enables automatic server rotation through the configured VPN provider.
+func WithVPNRotation(cfg VPNRotationConfig) Option {
+	return func(o *options) { o.vpnRotation = &cfg }
+}
+
+// WithProxyAuth sets username and password for proxy authentication.
+// This configures Chrome's Fetch.AuthRequired handler to automatically
+// respond to proxy auth challenges.
+func WithProxyAuth(username, password string) Option {
+	return func(o *options) {
+		o.proxyAuth = &proxyAuthConfig{username: username, password: password}
+	}
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.
