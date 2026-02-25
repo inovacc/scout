@@ -505,3 +505,7 @@ credentials/session.
 | Bridge window.__scout API (Phase 31) | Content script bidirectional RPC with `__scout.send()`, `__scout.on()`, `__scout.query()`, CDP fallback | 2026-02-25 |
 | Research Agent (Phase 31) | Orchestrated multi-source research workflows via `scout research` | 2026-02-25 |
 | Bridge Form Auto-Fill and Download Management | Bridge form auto-fill from profile data and download management (intercept/track/auto-rename) in v0.22.0 | 2026-02-25 |
+| VPN Provider API (Phase 33a) | Pluggable VPN interface with Surfshark integration, direct proxy support, auth handling | 2026-02-25 |
+| VPN Extension Control (Phase 33b) | Chrome extension CDP manipulation, proxy settings, WebRTC leak prevention, connection tracking | 2026-02-25 |
+| VPN Server Rotation (Phase 33c) | Per-page/interval rotation, country-based selection, CLI commands, split tunneling bypass list | 2026-02-25 |
+| Stealth evasion fixes (5 new checks) | Added canvas/audio fingerprint noise, WebGL vendor spoofing, navigator.connection, Notification.permission | 2026-02-25 |

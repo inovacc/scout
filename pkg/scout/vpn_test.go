@@ -140,3 +140,74 @@ func TestDirectProxy_Name(t *testing.T) {
 		t.Errorf("Name = %q, want direct-proxy", dp.Name())
 	}
 }
+
+// TestVPN_DirectProxy_Integration tests that WithVPN+DirectProxy sets proxy options correctly.
+func TestVPN_DirectProxy_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping: requires browser")
+	}
+
+	ts := newTestServer()
+	defer ts.Close()
+
+	proxy := NewDirectProxy("127.0.0.1", 8080, WithDirectProxyAuth("user", "pass"))
+
+	// Verify provider integration with options
+	b, err := New(
+		WithHeadless(true),
+		WithNoSandbox(),
+		WithVPN(proxy),
+		WithoutBridge(),
+	)
+	if err != nil {
+		t.Skipf("browser unavailable: %v", err)
+	}
+	defer func() { _ = b.Close() }()
+
+	// Verify VPN status
+	status := b.VPNStatus()
+	if status == nil {
+		t.Log("VPN status is nil (proxy set at launch level, not CDP level)")
+	}
+
+	// Verify proxy was configured in options
+	if b.opts.proxy == "" {
+		t.Error("expected proxy to be set in browser options")
+	} else {
+		t.Logf("proxy configured: %s", b.opts.proxy)
+	}
+
+	if b.opts.proxyAuth == nil {
+		t.Error("expected proxyAuth to be set")
+	}
+}
+
+// TestVPN_RotationConfig_Integration tests rotation config is applied to browser.
+func TestVPN_RotationConfig_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping: requires browser")
+	}
+
+	proxy := NewDirectProxy("127.0.0.1", 8080)
+
+	b, err := New(
+		WithHeadless(true),
+		WithNoSandbox(),
+		WithVPN(proxy),
+		WithVPNRotation(VPNRotationConfig{
+			Countries: []string{"us", "de", "jp"},
+			PerPage:   true,
+		}),
+		WithoutBridge(),
+	)
+	if err != nil {
+		t.Skipf("browser unavailable: %v", err)
+	}
+	defer func() { _ = b.Close() }()
+
+	if b.vpnRot == nil {
+		t.Error("expected vpnRotator to be initialized")
+	} else {
+		t.Logf("rotator initialized with %d countries", len(b.vpnRot.countries))
+	}
+}
