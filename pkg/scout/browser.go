@@ -15,6 +15,8 @@ import (
 )
 
 // Browser wraps a rod browser instance with a simplified API.
+// For standalone browser detection, download, and cache management without the
+// full scout dependency, see the pkg/browser/ package.
 type Browser struct {
 	browser  *rod.Browser
 	opts     *options
