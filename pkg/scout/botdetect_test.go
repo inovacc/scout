@@ -223,6 +223,134 @@ var botCheckSites = []botCheckSite{
 			return true, s
 		},
 	},
+	{
+		Name: "datadome/browserscan",
+		URL:  "https://datadome.co/anti-detect-tools/browserscan",
+		Check: func(p *Page) (bool, string) {
+			// DataDome's BrowserScan analyzes canvas, WebGL, WebRTC, and other attributes.
+			result, err := p.Eval(`() => {
+				const text = document.body.innerText.toLowerCase();
+				const flags = [];
+				if (text.includes('bot') && (text.includes('detected') || text.includes('suspect'))) {
+					flags.push('bot detected');
+				}
+				if (text.includes('headless')) flags.push('headless detected');
+				if (text.includes('automation')) flags.push('automation detected');
+				// Look for inconsistency or anomaly markers
+				const warns = document.querySelectorAll('[class*="warn"], [class*="fail"], [class*="danger"], [class*="red"], [class*="suspect"]');
+				warns.forEach(el => {
+					const t = el.textContent.trim().substring(0, 80);
+					if (t && t.length > 2) flags.push(t);
+				});
+				return JSON.stringify(flags);
+			}`)
+			if err != nil {
+				return false, fmt.Sprintf("eval error: %v", err)
+			}
+			s := result.String()
+			if s == "[]" || s == "null" || s == "" {
+				return false, "no bot indicators"
+			}
+			return true, s
+		},
+	},
+	{
+		Name: "overpoweredjs.com",
+		URL:  "https://overpoweredjs.com/",
+		Check: func(p *Page) (bool, string) {
+			// OverpoweredJS tests fingerprinting and bot detection techniques.
+			result, err := p.Eval(`() => {
+				const text = document.body.innerText.toLowerCase();
+				const flags = [];
+				if (text.includes('bot') || text.includes('headless') || text.includes('automated')) {
+					if (text.includes('detected') || text.includes('true') || text.includes('yes')) {
+						flags.push('bot/automation detected');
+					}
+				}
+				// Check for failed tests or red indicators
+				const failed = document.querySelectorAll('[class*="fail"], [class*="red"], [class*="false"], [class*="warn"], .detected');
+				failed.forEach(el => {
+					const t = el.textContent.trim().substring(0, 80);
+					if (t && t.length > 2) flags.push(t);
+				});
+				// Check for webdriver detection
+				if (text.includes('webdriver') && (text.includes('true') || text.includes('detected'))) {
+					flags.push('webdriver detected');
+				}
+				return JSON.stringify(flags);
+			}`)
+			if err != nil {
+				return false, fmt.Sprintf("eval error: %v", err)
+			}
+			s := result.String()
+			if s == "[]" || s == "null" || s == "" {
+				return false, "no bot indicators"
+			}
+			return true, s
+		},
+	},
+	{
+		Name: "nobotspls.com",
+		URL:  "https://nobotspls.com/",
+		Check: func(p *Page) (bool, string) {
+			// nobotspls.com is a simple bot detection test page.
+			result, err := p.Eval(`() => {
+				const text = document.body.innerText.toLowerCase();
+				const flags = [];
+				if (text.includes('bot') && text.includes('detected')) flags.push('bot detected');
+				if (text.includes('headless')) flags.push('headless detected');
+				if (text.includes('fail')) flags.push('failed checks');
+				if (text.includes('blocked') || text.includes('denied')) flags.push('access blocked');
+				// Look for pass/fail indicators
+				const els = document.querySelectorAll('[class*="fail"], [class*="bot"], [class*="block"], [class*="red"]');
+				els.forEach(el => {
+					const t = el.textContent.trim().substring(0, 80);
+					if (t && t.length > 2) flags.push(t);
+				});
+				return JSON.stringify(flags);
+			}`)
+			if err != nil {
+				return false, fmt.Sprintf("eval error: %v", err)
+			}
+			s := result.String()
+			if s == "[]" || s == "null" || s == "" {
+				return false, "no bot indicators"
+			}
+			return true, s
+		},
+	},
+	{
+		Name: "scrapfly/antibot-detector",
+		URL:  "https://scrapfly.io/web-scraping-tools/antibot-detector",
+		Check: func(p *Page) (bool, string) {
+			// Scrapfly's antibot detector identifies CAPTCHAs, anti-bot systems, and fingerprinting.
+			result, err := p.Eval(`() => {
+				const text = document.body.innerText.toLowerCase();
+				const flags = [];
+				if (text.includes('bot detected') || text.includes('automation detected')) {
+					flags.push('bot/automation detected');
+				}
+				if (text.includes('captcha')) flags.push('CAPTCHA detected');
+				if (text.includes('headless')) flags.push('headless detected');
+				if (text.includes('webdriver')) flags.push('webdriver flag');
+				// Look for detection result elements
+				const els = document.querySelectorAll('[class*="detect"], [class*="result"], [class*="warn"], [class*="fail"]');
+				els.forEach(el => {
+					const t = el.textContent.trim().substring(0, 80);
+					if (t && t.length > 2 && !t.includes('cookie')) flags.push(t);
+				});
+				return JSON.stringify(flags);
+			}`)
+			if err != nil {
+				return false, fmt.Sprintf("eval error: %v", err)
+			}
+			s := result.String()
+			if s == "[]" || s == "null" || s == "" {
+				return false, "no bot indicators"
+			}
+			return true, s
+		},
+	},
 }
 
 // TestBotDetection_NoStealth visits bot-detection sites WITHOUT stealth mode.
