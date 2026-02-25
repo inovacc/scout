@@ -1,6 +1,7 @@
 package scout
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -30,10 +31,64 @@ type PDFOptions struct {
 	FooterTemplate      string
 }
 
+// PageInfo holds browser environment information collected via the bridge extension.
+type PageInfo struct {
+	URL                 string            `json:"url"`
+	Title               string            `json:"title"`
+	UserAgent           string            `json:"userAgent"`
+	Platform            string            `json:"platform"`
+	Language            string            `json:"language"`
+	Languages           []string          `json:"languages"`
+	CookieEnabled       bool              `json:"cookieEnabled"`
+	DoNotTrack          *string           `json:"doNotTrack"`
+	HardwareConcurrency int               `json:"hardwareConcurrency"`
+	DeviceMemory        float64           `json:"deviceMemory"`
+	MaxTouchPoints      int               `json:"maxTouchPoints"`
+	Vendor              string            `json:"vendor"`
+	Screen              PageScreenInfo    `json:"screen"`
+	Viewport            PageViewportInfo  `json:"viewport"`
+	Connection          *PageConnInfo     `json:"connection"`
+	Timing              *PageTimingInfo   `json:"timing"`
+	BrowserVersion      string            `json:"browserVersion"`
+}
+
+// PageScreenInfo holds screen dimensions.
+type PageScreenInfo struct {
+	Width      int `json:"width"`
+	Height     int `json:"height"`
+	AvailWidth int `json:"availWidth"`
+	AvailHeight int `json:"availHeight"`
+	ColorDepth int `json:"colorDepth"`
+	PixelDepth int `json:"pixelDepth"`
+}
+
+// PageViewportInfo holds viewport dimensions.
+type PageViewportInfo struct {
+	Width            int     `json:"width"`
+	Height           int     `json:"height"`
+	DevicePixelRatio float64 `json:"devicePixelRatio"`
+}
+
+// PageConnInfo holds network connection info.
+type PageConnInfo struct {
+	EffectiveType string  `json:"effectiveType"`
+	Downlink      float64 `json:"downlink"`
+	RTT           int     `json:"rtt"`
+	SaveData      bool    `json:"saveData"`
+}
+
+// PageTimingInfo holds performance timing info.
+type PageTimingInfo struct {
+	DOMContentLoaded int `json:"domContentLoaded"`
+	LoadEvent        int `json:"loadEvent"`
+	DOMInteractive   int `json:"domInteractive"`
+}
+
 // Page wraps a rod page (browser tab) with a simplified API.
 type Page struct {
 	page    *rod.Page
 	browser *Browser
+	info    *PageInfo
 }
 
 // Navigate loads the given URL in the page.
@@ -591,6 +646,101 @@ func (p *Page) KeyType(keys ...input.Key) error {
 // RodPage returns the underlying rod.Page for advanced use cases.
 func (p *Page) RodPage() *rod.Page {
 	return p.page
+}
+
+// Info returns the page environment info collected via the bridge extension.
+// Returns nil if info has not been collected yet.
+func (p *Page) Info() *PageInfo {
+	if p == nil {
+		return nil
+	}
+	return p.info
+}
+
+// CollectInfo gathers browser environment info via the bridge extension's page.info command.
+// Falls back to CDP evaluation if the bridge is unavailable. The result is cached on the page.
+func (p *Page) CollectInfo() (*PageInfo, error) {
+	if p == nil {
+		return nil, fmt.Errorf("scout: page is nil")
+	}
+
+	info, err := p.collectInfoJS()
+	if err != nil {
+		return nil, fmt.Errorf("scout: collect page info: %w", err)
+	}
+
+	// Attach browser version from the cached browser value.
+	if p.browser != nil {
+		if v, vErr := p.browser.Version(); vErr == nil {
+			info.BrowserVersion = v
+		}
+	}
+
+	p.info = info
+	return info, nil
+}
+
+// collectInfoJS evaluates JS to collect page environment info.
+func (p *Page) collectInfoJS() (*PageInfo, error) {
+	res, err := p.page.Eval(`() => {
+		var info = {
+			url: window.location.href,
+			title: document.title || "",
+			userAgent: navigator.userAgent || "",
+			platform: navigator.platform || "",
+			language: navigator.language || "",
+			languages: navigator.languages ? Array.from(navigator.languages) : [],
+			cookieEnabled: navigator.cookieEnabled,
+			doNotTrack: navigator.doNotTrack || null,
+			hardwareConcurrency: navigator.hardwareConcurrency || 0,
+			deviceMemory: navigator.deviceMemory || 0,
+			maxTouchPoints: navigator.maxTouchPoints || 0,
+			vendor: navigator.vendor || "",
+			screen: {
+				width: screen.width, height: screen.height,
+				availWidth: screen.availWidth, availHeight: screen.availHeight,
+				colorDepth: screen.colorDepth, pixelDepth: screen.pixelDepth,
+			},
+			viewport: {
+				width: window.innerWidth, height: window.innerHeight,
+				devicePixelRatio: window.devicePixelRatio || 1,
+			},
+			connection: null,
+			timing: null,
+		};
+		var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+		if (conn) {
+			info.connection = {
+				effectiveType: conn.effectiveType || "",
+				downlink: conn.downlink || 0,
+				rtt: conn.rtt || 0,
+				saveData: conn.saveData || false,
+			};
+		}
+		if (window.performance && performance.timing) {
+			var t = performance.timing;
+			info.timing = {
+				domContentLoaded: t.domContentLoadedEventEnd - t.navigationStart,
+				loadEvent: t.loadEventEnd > 0 ? t.loadEventEnd - t.navigationStart : 0,
+				domInteractive: t.domInteractive - t.navigationStart,
+			};
+		}
+		return info;
+	}`)
+	if err != nil {
+		return nil, err
+	}
+
+	raw, err := res.Value.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	var info PageInfo
+	if err := json.Unmarshal(raw, &info); err != nil {
+		return nil, err
+	}
+	return &info, nil
 }
 
 // remoteObjectToEvalResult converts a rod RemoteObject to our EvalResult.

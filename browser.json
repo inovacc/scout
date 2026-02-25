@@ -1,0 +1,232 @@
+{
+  "chromium": {
+    "description": "Open-source browser engine. Snapshot builds by revision number.",
+    "revision": {
+      "default": 1588893,
+      "playwright_arm64": 1124,
+      "latest_api": {
+        "windows_amd64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Win_x64/LAST_CHANGE",
+        "linux_amd64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/LAST_CHANGE",
+        "linux_arm64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/LAST_CHANGE",
+        "darwin_amd64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Mac/LAST_CHANGE",
+        "darwin_arm64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Mac_Arm/LAST_CHANGE"
+      }
+    },
+    "hosts": {
+      "google": {
+        "base": "https://storage.googleapis.com/chromium-browser-snapshots",
+        "pattern": "{base}/{prefix}/{revision}/{zip}",
+        "index": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html"
+      },
+      "npmmirror": {
+        "base": "https://registry.npmmirror.com/-/binary/chromium-browser-snapshots",
+        "pattern": "{base}/{prefix}/{revision}/{zip}"
+      },
+      "playwright": {
+        "base": "https://playwright.azureedge.net/builds/chromium",
+        "pattern": "{base}/{revision}/chromium-linux-arm64.zip",
+        "note": "Only used for linux_arm64 with RevisionPlaywright"
+      }
+    },
+    "platforms": {
+      "windows_amd64": {
+        "prefix": "Win_x64",
+        "zip": "chrome-win.zip",
+        "binary": "chrome-win/chrome.exe",
+        "urls": [
+          "https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/{revision}/chrome-win.zip",
+          "https://registry.npmmirror.com/-/binary/chromium-browser-snapshots/Win_x64/{revision}/chrome-win.zip"
+        ]
+      },
+      "windows_386": {
+        "prefix": "Win",
+        "zip": "chrome-win.zip",
+        "binary": "chrome-win/chrome.exe",
+        "urls": [
+          "https://storage.googleapis.com/chromium-browser-snapshots/Win/{revision}/chrome-win.zip",
+          "https://registry.npmmirror.com/-/binary/chromium-browser-snapshots/Win/{revision}/chrome-win.zip"
+        ]
+      },
+      "linux_amd64": {
+        "prefix": "Linux_x64",
+        "zip": "chrome-linux.zip",
+        "binary": "chrome-linux/chrome",
+        "urls": [
+          "https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/{revision}/chrome-linux.zip",
+          "https://registry.npmmirror.com/-/binary/chromium-browser-snapshots/Linux_x64/{revision}/chrome-linux.zip"
+        ]
+      },
+      "linux_arm64": {
+        "prefix": "Linux_x64",
+        "zip": "chromium-linux-arm64.zip",
+        "binary": "chrome-linux/chrome",
+        "urls": [
+          "https://playwright.azureedge.net/builds/chromium/{playwright_revision}/chromium-linux-arm64.zip"
+        ],
+        "note": "Uses RevisionPlaywright (1124), not RevisionDefault"
+      },
+      "darwin_amd64": {
+        "prefix": "Mac",
+        "zip": "chrome-mac.zip",
+        "binary": "chrome-mac/Chromium.app/Contents/MacOS/Chromium",
+        "urls": [
+          "https://storage.googleapis.com/chromium-browser-snapshots/Mac/{revision}/chrome-mac.zip",
+          "https://registry.npmmirror.com/-/binary/chromium-browser-snapshots/Mac/{revision}/chrome-mac.zip"
+        ]
+      },
+      "darwin_arm64": {
+        "prefix": "Mac_Arm",
+        "zip": "chrome-mac.zip",
+        "binary": "chrome-mac/Chromium.app/Contents/MacOS/Chromium",
+        "urls": [
+          "https://storage.googleapis.com/chromium-browser-snapshots/Mac_Arm/{revision}/chrome-mac.zip",
+          "https://registry.npmmirror.com/-/binary/chromium-browser-snapshots/Mac_Arm/{revision}/chrome-mac.zip"
+        ]
+      }
+    }
+  },
+  "brave": {
+    "description": "Privacy-focused Chromium browser. Distributed via GitHub releases.",
+    "api": {
+      "latest_release": "https://api.github.com/repos/brave/brave-browser/releases/latest",
+      "all_releases": "https://api.github.com/repos/brave/brave-browser/releases",
+      "versions_catalog": "https://versions.brave.com/"
+    },
+    "release_base": "https://github.com/brave/brave-browser/releases/download/v{version}",
+    "platforms": {
+      "windows_amd64": {
+        "zip": "brave-v{version}-win32-x64.zip",
+        "binary": "brave.exe",
+        "urls": [
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-v{version}-win32-x64.zip"
+        ],
+        "checksums": "https://github.com/brave/brave-browser/releases/download/v{version}/brave-v{version}-win32-x64.zip.sha256"
+      },
+      "windows_arm64": {
+        "zip": "brave-v{version}-win32-arm64.zip",
+        "binary": "brave.exe",
+        "urls": [
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-v{version}-win32-arm64.zip"
+        ],
+        "checksums": "https://github.com/brave/brave-browser/releases/download/v{version}/brave-v{version}-win32-arm64.zip.sha256"
+      },
+      "linux_amd64": {
+        "zip": "brave-browser-{version}-linux-amd64.zip",
+        "deb": "brave-browser_{version}_amd64.deb",
+        "rpm": "brave-browser-{version}-1.x86_64.rpm",
+        "binary": "brave",
+        "urls": [
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser-{version}-linux-amd64.zip",
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser_{version}_amd64.deb",
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser-{version}-1.x86_64.rpm"
+        ],
+        "checksums": "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser-{version}-linux-amd64.zip.sha256"
+      },
+      "linux_arm64": {
+        "zip": "brave-browser-{version}-linux-arm64.zip",
+        "deb": "brave-browser_{version}_arm64.deb",
+        "rpm": "brave-browser-{version}-1.aarch64.rpm",
+        "binary": "brave",
+        "urls": [
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser-{version}-linux-arm64.zip",
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser_{version}_arm64.deb",
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser-{version}-1.aarch64.rpm"
+        ],
+        "checksums": "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser-{version}-linux-arm64.zip.sha256"
+      },
+      "darwin_amd64": {
+        "zip": "brave-v{version}-darwin-x64.zip",
+        "binary": "Brave Browser.app/Contents/MacOS/Brave Browser",
+        "urls": [
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-v{version}-darwin-x64.zip"
+        ]
+      },
+      "darwin_arm64": {
+        "zip": "brave-v{version}-darwin-arm64.zip",
+        "binary": "Brave Browser.app/Contents/MacOS/Brave Browser",
+        "urls": [
+          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-v{version}-darwin-arm64.zip"
+        ]
+      }
+    },
+    "repos": {
+      "apt": {
+        "key": "https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg",
+        "source": "deb [arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main"
+      },
+      "rpm": {
+        "repo": "https://brave-browser-rpm-release.s3.brave.com/"
+      },
+      "install_script": "https://dl.brave.com/install.sh"
+    }
+  },
+  "edge": {
+    "description": "Microsoft Edge (Chromium-based). Enterprise MSI for Windows, DEB/RPM for Linux.",
+    "channels": ["stable", "beta", "dev"],
+    "platforms": {
+      "windows_amd64": {
+        "stable_msi": "https://go.microsoft.com/fwlink/?LinkID=2093437",
+        "binary": "msedge.exe",
+        "urls": [
+          "https://go.microsoft.com/fwlink/?LinkID=2093437"
+        ],
+        "note": "Permanent redirect to latest MicrosoftEdgeEnterpriseX64.msi"
+      },
+      "windows_386": {
+        "stable_msi": "https://go.microsoft.com/fwlink/?LinkID=2093505",
+        "binary": "msedge.exe",
+        "urls": [
+          "https://go.microsoft.com/fwlink/?LinkID=2093505"
+        ],
+        "note": "Permanent redirect to latest MicrosoftEdgeEnterpriseX86.msi"
+      },
+      "linux_amd64": {
+        "binary": "microsoft-edge-stable",
+        "deb": {
+          "stable": "https://packages.microsoft.com/repos/edge/pool/main/m/microsoft-edge-stable/microsoft-edge-stable_{version}-1_amd64.deb",
+          "beta": "https://packages.microsoft.com/repos/edge/pool/main/m/microsoft-edge-beta/microsoft-edge-beta_{version}-1_amd64.deb",
+          "dev": "https://packages.microsoft.com/repos/edge/pool/main/m/microsoft-edge-dev/microsoft-edge-dev_{version}-1_amd64.deb"
+        },
+        "rpm": {
+          "stable": "https://packages.microsoft.com/yumrepos/edge/Packages/m/microsoft-edge-stable-{version}-1.x86_64.rpm",
+          "beta": "https://packages.microsoft.com/yumrepos/edge/Packages/m/microsoft-edge-beta-{version}-1.x86_64.rpm",
+          "dev": "https://packages.microsoft.com/yumrepos/edge/Packages/m/microsoft-edge-dev-{version}-1.x86_64.rpm"
+        },
+        "urls": [
+          "https://packages.microsoft.com/repos/edge/pool/main/m/microsoft-edge-stable/",
+          "https://packages.microsoft.com/yumrepos/edge/Packages/m/"
+        ],
+        "index": {
+          "stable_deb": "https://packages.microsoft.com/repos/edge/pool/main/m/microsoft-edge-stable/",
+          "beta_deb": "https://packages.microsoft.com/repos/edge/pool/main/m/microsoft-edge-beta/",
+          "dev_deb": "https://packages.microsoft.com/repos/edge/pool/main/m/microsoft-edge-dev/"
+        },
+        "note": "amd64 only — no arm64 Linux packages published"
+      }
+    },
+    "repos": {
+      "apt": {
+        "key": "https://packages.microsoft.com/keys/microsoft.asc",
+        "source": "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main"
+      },
+      "rpm": {
+        "repo": "https://packages.microsoft.com/yumrepos/edge"
+      }
+    },
+    "business_download": "https://www.microsoft.com/en-us/edge/business/download"
+  },
+  "_meta": {
+    "generated": "2026-02-25",
+    "description": "Browser download sources for scout auto-download. URLs use {revision} or {version} as placeholders.",
+    "cache_dir": "~/.scout/browsers/",
+    "supported_platforms": [
+      "windows_amd64",
+      "windows_386",
+      "windows_arm64",
+      "linux_amd64",
+      "linux_arm64",
+      "darwin_amd64",
+      "darwin_arm64"
+    ]
+  }
+}

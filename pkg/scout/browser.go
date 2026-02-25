@@ -32,6 +32,9 @@ type Browser struct {
 
 	// bridgeServer is the WebSocket server for bridge communication, if enabled.
 	bridgeServer *BridgeServer
+
+	// version is the browser product string, eagerly fetched at creation time.
+	version string
 }
 
 // New creates and connects a new headless browser with the given options.
@@ -75,6 +78,12 @@ func New(opts ...Option) (*Browser, error) {
 		return nil, fmt.Errorf("scout: connect browser: %w", err)
 	}
 
+	// Eagerly fetch and cache the browser version.
+	var cachedVersion string
+	if v, vErr := b.Version(); vErr == nil {
+		cachedVersion = v.Product
+	}
+
 	if o.ignoreCerts {
 		if err := b.IgnoreCertErrors(true); err != nil {
 			_ = b.Close()
@@ -89,7 +98,7 @@ func New(opts ...Option) (*Browser, error) {
 			return nil, fmt.Errorf("scout: incognito mode: %w", err)
 		}
 
-		br := &Browser{browser: ctx, opts: o, launcher: l, done: make(chan struct{})}
+		br := &Browser{browser: ctx, opts: o, launcher: l, done: make(chan struct{}), version: cachedVersion}
 		if o.webmcpAutoDiscover {
 			br.webmcpRegistry = NewWebMCPRegistry()
 		}
@@ -108,7 +117,7 @@ func New(opts ...Option) (*Browser, error) {
 		return br, nil
 	}
 
-	br := &Browser{browser: b, opts: o, launcher: l, done: make(chan struct{})}
+	br := &Browser{browser: b, opts: o, launcher: l, done: make(chan struct{}), version: cachedVersion}
 	if o.webmcpAutoDiscover {
 		br.webmcpRegistry = NewWebMCPRegistry()
 	}
@@ -341,6 +350,11 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 		_ = b.opts.autoBypass.SolveAll(p)
 	}
 
+	// Eagerly collect page environment info (browser version, UA, screen, etc.).
+	if url != "" {
+		_, _ = p.CollectInfo()
+	}
+
 	return p, nil
 }
 
@@ -363,10 +377,14 @@ func (b *Browser) Pages() ([]*Page, error) {
 	return pages, nil
 }
 
-// Version returns the browser version string.
+// Version returns the browser version string (cached from startup).
 func (b *Browser) Version() (string, error) {
 	if b == nil || b.browser == nil {
 		return "", fmt.Errorf("scout: browser is nil")
+	}
+
+	if b.version != "" {
+		return b.version, nil
 	}
 
 	v, err := b.browser.Version()
@@ -374,7 +392,8 @@ func (b *Browser) Version() (string, error) {
 		return "", fmt.Errorf("scout: get version: %w", err)
 	}
 
-	return v.Product, nil
+	b.version = v.Product
+	return b.version, nil
 }
 
 // Close shuts down the browser and kills any orphan child processes.

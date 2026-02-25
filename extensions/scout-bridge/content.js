@@ -864,6 +864,67 @@
     configurable: false,
   });
 
-  // Notify Go that the bridge content script is loaded.
-  scout.send("__bridge_ready", { url: window.location.href });
+  // Collect browser environment info.
+  function collectPageInfo() {
+    var info = {
+      url: window.location.href,
+      title: document.title || "",
+      userAgent: navigator.userAgent || "",
+      platform: navigator.platform || "",
+      language: navigator.language || "",
+      languages: navigator.languages ? Array.from(navigator.languages) : [],
+      cookieEnabled: navigator.cookieEnabled,
+      doNotTrack: navigator.doNotTrack || null,
+      hardwareConcurrency: navigator.hardwareConcurrency || 0,
+      deviceMemory: navigator.deviceMemory || 0,
+      maxTouchPoints: navigator.maxTouchPoints || 0,
+      vendor: navigator.vendor || "",
+      screen: {
+        width: screen.width,
+        height: screen.height,
+        availWidth: screen.availWidth,
+        availHeight: screen.availHeight,
+        colorDepth: screen.colorDepth,
+        pixelDepth: screen.pixelDepth,
+      },
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        devicePixelRatio: window.devicePixelRatio || 1,
+      },
+      connection: null,
+      timing: null,
+    };
+
+    // Network info if available.
+    var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (conn) {
+      info.connection = {
+        effectiveType: conn.effectiveType || "",
+        downlink: conn.downlink || 0,
+        rtt: conn.rtt || 0,
+        saveData: conn.saveData || false,
+      };
+    }
+
+    // Performance timing.
+    if (window.performance && performance.timing) {
+      var t = performance.timing;
+      info.timing = {
+        domContentLoaded: t.domContentLoadedEventEnd - t.navigationStart,
+        loadEvent: t.loadEventEnd > 0 ? t.loadEventEnd - t.navigationStart : 0,
+        domInteractive: t.domInteractive - t.navigationStart,
+      };
+    }
+
+    return info;
+  }
+
+  // Built-in handler: page.info — return current page environment info.
+  scout.on("page.info", function () {
+    return collectPageInfo();
+  });
+
+  // Notify Go that the bridge content script is loaded with full environment info.
+  scout.send("__bridge_ready", collectPageInfo());
 })();
