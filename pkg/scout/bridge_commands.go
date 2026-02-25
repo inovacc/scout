@@ -1,6 +1,7 @@
 package scout
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 )
@@ -341,6 +342,70 @@ func (s *BridgeServer) ObserveDOM(pageID, selector string) error {
 	}
 
 	return nil
+}
+
+// AutoFillForm finds a form by selector and fills each field by name/id matching
+// the map keys with the map values. Input and change events are dispatched for
+// framework compatibility.
+func (s *BridgeServer) AutoFillForm(pageID, selector string, data map[string]string) error {
+	if s == nil {
+		return fmt.Errorf("scout: bridge: server is nil")
+	}
+
+	resp, err := s.Send(pageID, "form.autofill", map[string]any{
+		"selector": selector,
+		"data":     data,
+	})
+	if err != nil {
+		return fmt.Errorf("scout: bridge: autofill form: %w", err)
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return fmt.Errorf("scout: bridge: autofill form: unmarshal: %w", err)
+	}
+
+	if errStr, ok := result["error"]; ok {
+		return fmt.Errorf("scout: bridge: autofill form: %v", errStr)
+	}
+
+	return nil
+}
+
+// DownloadFile fetches a URL via the page's fetch API (inheriting cookies/auth)
+// and returns the response body as bytes. The data is base64-encoded over the bridge.
+func (s *BridgeServer) DownloadFile(pageID, url string) ([]byte, error) {
+	if s == nil {
+		return nil, fmt.Errorf("scout: bridge: server is nil")
+	}
+
+	resp, err := s.Send(pageID, "fetch.download", map[string]any{
+		"url": url,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("scout: bridge: download file: %w", err)
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return nil, fmt.Errorf("scout: bridge: download file: unmarshal: %w", err)
+	}
+
+	if errStr, ok := result["error"]; ok {
+		return nil, fmt.Errorf("scout: bridge: download file: %v", errStr)
+	}
+
+	b64, _ := result["data"].(string)
+	if b64 == "" {
+		return []byte{}, nil
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return nil, fmt.Errorf("scout: bridge: download file: decode base64: %w", err)
+	}
+
+	return decoded, nil
 }
 
 // StartConsoleCapture enables console message interception on the page.

@@ -1,6 +1,7 @@
 package scout
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 )
@@ -128,6 +129,108 @@ func (s *BridgeServer) ListFrames(pageID string) ([]map[string]any, error) {
 	}
 
 	return out, nil
+}
+
+// AutoFillFormViaScout fills a form using the window.__scout API as a fallback path.
+// It evaluates JavaScript directly via CDP to fill form fields by name/id.
+func (f *BridgeFallback) AutoFillForm(selector string, data map[string]string) error {
+	if f == nil || f.page == nil {
+		return fmt.Errorf("scout: bridge: fallback: nil page")
+	}
+
+	// Try bridge first.
+	if f.bridgeConnected() {
+		err := f.bridge.AutoFillForm(f.pageID, selector, data)
+		if err == nil {
+			return nil
+		}
+	}
+
+	// CDP fallback via page eval.
+	dataJSON, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("scout: bridge: fallback autofill: marshal data: %w", err)
+	}
+
+	_, err = f.page.Eval(`(selector, dataJSON) => {
+		var form = document.querySelector(selector);
+		if (!form) throw new Error("form not found: " + selector);
+		var data = JSON.parse(dataJSON);
+		var keys = Object.keys(data);
+		for (var i = 0; i < keys.length; i++) {
+			var key = keys[i];
+			var value = data[key];
+			var field = form.querySelector('[name="' + key + '"]') ||
+			            form.querySelector('#' + key);
+			if (!field) continue;
+			if (field.tagName === "SELECT") {
+				field.value = value;
+			} else if (field.type === "checkbox" || field.type === "radio") {
+				field.checked = (value === "true" || value === "1" || value === "on");
+			} else {
+				field.value = value;
+			}
+			field.dispatchEvent(new Event("input", { bubbles: true }));
+			field.dispatchEvent(new Event("change", { bubbles: true }));
+		}
+	}`, selector, string(dataJSON))
+	if err != nil {
+		return fmt.Errorf("scout: bridge: fallback autofill: %w", err)
+	}
+
+	return nil
+}
+
+// FetchFileViaScout downloads a file using the window.__scout API as a fallback path.
+// It evaluates JavaScript directly via CDP using XMLHttpRequest to fetch the URL.
+func (f *BridgeFallback) FetchFile(url string) ([]byte, error) {
+	if f == nil || f.page == nil {
+		return nil, fmt.Errorf("scout: bridge: fallback: nil page")
+	}
+
+	// Try bridge first.
+	if f.bridgeConnected() {
+		data, err := f.bridge.DownloadFile(f.pageID, url)
+		if err == nil {
+			return data, nil
+		}
+	}
+
+	// CDP fallback via page eval.
+	res, err := f.page.Eval(`(url) => {
+		var xhr = new XMLHttpRequest();
+		xhr.open("GET", url, false);
+		xhr.overrideMimeType("text/plain; charset=x-user-defined");
+		xhr.send(null);
+		if (xhr.status < 200 || xhr.status >= 300) {
+			throw new Error("fetch failed: HTTP " + xhr.status);
+		}
+		var raw = xhr.responseText;
+		var bytes = new Uint8Array(raw.length);
+		for (var i = 0; i < raw.length; i++) {
+			bytes[i] = raw.charCodeAt(i) & 0xff;
+		}
+		var binary = "";
+		for (var j = 0; j < bytes.length; j++) {
+			binary += String.fromCharCode(bytes[j]);
+		}
+		return btoa(binary);
+	}`, url)
+	if err != nil {
+		return nil, fmt.Errorf("scout: bridge: fallback fetch file: %w", err)
+	}
+
+	b64, ok := res.Value.(string)
+	if !ok {
+		return nil, fmt.Errorf("scout: bridge: fallback fetch file: unexpected result type")
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return nil, fmt.Errorf("scout: bridge: fallback fetch file: decode base64: %w", err)
+	}
+
+	return decoded, nil
 }
 
 // SendToFrame sends a command to a specific frame in the page. The frameIndex

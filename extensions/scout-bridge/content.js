@@ -766,6 +766,84 @@
     return { error: "chrome.runtime not available for frame relay" };
   });
 
+  // Built-in handler: form.autofill — find form by selector, fill fields by name/id.
+  _origOn.call(scout, "form.autofill", function (params) {
+    params = params || {};
+    var formSelector = params.selector;
+    var data = params.data || {};
+    if (!formSelector) return { error: "selector required" };
+
+    var form = document.querySelector(formSelector);
+    if (!form) return { error: "form not found: " + formSelector };
+
+    var filled = 0;
+    var keys = Object.keys(data);
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      var value = data[key];
+      // Try by name, then by id within the form.
+      var field = form.querySelector('[name="' + key + '"]') ||
+                  form.querySelector('#' + key);
+      if (!field) continue;
+
+      if (field.tagName === "SELECT") {
+        field.value = value;
+      } else if (field.type === "checkbox" || field.type === "radio") {
+        field.checked = (value === "true" || value === "1" || value === "on");
+      } else {
+        field.value = value;
+      }
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+      field.dispatchEvent(new Event("change", { bubbles: true }));
+      filled++;
+    }
+    return { filled: filled, total: keys.length };
+  });
+
+  // Built-in handler: fetch.download — fetch URL via page fetch API, return base64 body.
+  _origOn.call(scout, "fetch.download", function (params) {
+    params = params || {};
+    var url = params.url;
+    if (!url) return { error: "url required" };
+
+    // fetch is async; we return a marker and send result via event.
+    // However, bridge command handlers are synchronous. Use XMLHttpRequest sync mode
+    // as a pragmatic fallback that inherits cookies.
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", url, false); // synchronous
+      xhr.responseType = "arraybuffer";
+      // Note: sync XHR does not support arraybuffer responseType in all browsers.
+      // Fall back to overrideMimeType for binary safety.
+      xhr.overrideMimeType("text/plain; charset=x-user-defined");
+      xhr.send(null);
+
+      if (xhr.status < 200 || xhr.status >= 300) {
+        return { error: "fetch failed: HTTP " + xhr.status };
+      }
+
+      // Convert binary string to base64.
+      var raw = xhr.responseText;
+      var bytes = new Uint8Array(raw.length);
+      for (var i = 0; i < raw.length; i++) {
+        bytes[i] = raw.charCodeAt(i) & 0xff;
+      }
+      // Use btoa on chunks to avoid call stack overflow.
+      var binary = "";
+      var chunkSize = 8192;
+      for (var j = 0; j < bytes.length; j += chunkSize) {
+        var slice = bytes.subarray(j, j + chunkSize);
+        for (var k = 0; k < slice.length; k++) {
+          binary += String.fromCharCode(slice[k]);
+        }
+      }
+      var b64 = btoa(binary);
+      return { data: b64, status: xhr.status, size: bytes.length };
+    } catch (e) {
+      return { error: "fetch failed: " + e.message };
+    }
+  });
+
   // Make __scout non-enumerable to avoid detection.
   Object.defineProperty(window, "__scout", {
     value: scout,
