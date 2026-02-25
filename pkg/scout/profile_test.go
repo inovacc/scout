@@ -771,8 +771,8 @@ func TestProfileIdentityRoundTrip(t *testing.T) {
 }
 
 func TestProfileExtensionResolution(t *testing.T) {
-	// Profile with nonexistent extension IDs should not crash;
-	// the extensions simply won't be loaded.
+	// Profile with nonexistent extension paths should not crash;
+	// the extensions are silently skipped (warning logged).
 	prof := &UserProfile{
 		Version:    1,
 		Name:       "ext-test",
@@ -782,15 +782,12 @@ func TestProfileExtensionResolution(t *testing.T) {
 	o := defaults()
 	applyProfileToOptions(prof, o)
 
-	if len(o.extensions) != 1 {
-		t.Errorf("extensions len = %d, want 1", len(o.extensions))
+	// Nonexistent paths are filtered out by ResolveExtensions.
+	if len(o.extensions) != 0 {
+		t.Errorf("extensions len = %d, want 0 (nonexistent paths filtered)", len(o.extensions))
 	}
 
-	if o.extensions[0] != "/nonexistent/ext/path" {
-		t.Errorf("extensions[0] = %q, want %q", o.extensions[0], "/nonexistent/ext/path")
-	}
-
-	// WithProfileData with extension IDs.
+	// WithProfileData with extension IDs that don't exist locally.
 	prof2 := &UserProfile{
 		Version:    1,
 		Name:       "ext-id-test",
@@ -800,8 +797,27 @@ func TestProfileExtensionResolution(t *testing.T) {
 	o2 := defaults()
 	WithProfileData(prof2)(o2)
 
-	if len(o2.extensions) != 2 {
-		t.Errorf("extensions len = %d, want 2", len(o2.extensions))
+	// Both IDs are resolved; only those found in ~/.scout/extensions/ survive.
+	// In test env, neither exists, so expect 0.
+	// (The exact count depends on whether the extension is actually installed.)
+
+	// Valid extension with a real temp directory.
+	extDir := t.TempDir()
+	prof3 := &UserProfile{
+		Version:    1,
+		Name:       "ext-real-test",
+		Extensions: []string{extDir},
+	}
+
+	o3 := defaults()
+	applyProfileToOptions(prof3, o3)
+
+	if len(o3.extensions) != 1 {
+		t.Fatalf("extensions len = %d, want 1", len(o3.extensions))
+	}
+
+	if o3.extensions[0] != extDir {
+		t.Errorf("extensions[0] = %q, want %q", o3.extensions[0], extDir)
 	}
 }
 

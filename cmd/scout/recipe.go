@@ -14,7 +14,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(recipeCmd)
-	recipeCmd.AddCommand(recipeRunCmd, recipeValidateCmd, recipeCreateCmd, recipeTestCmd, recipeFixCmd, recipeSampleCmd)
+	recipeCmd.AddCommand(recipeRunCmd, recipeValidateCmd, recipeCreateCmd, recipeTestCmd, recipeFixCmd, recipeSampleCmd, recipeFlowCmd)
 
 	recipeRunCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
 	recipeRunCmd.Flags().StringP("output", "o", "", "output file for results")
@@ -36,7 +36,15 @@ func init() {
 
 	recipeTestCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
 	recipeTestCmd.Flags().String("format", "text", "output format (text or json)")
+	recipeTestCmd.Flags().Bool("validate-ai", false, "run LLM validation after selector checks")
+	recipeTestCmd.Flags().String("provider", "ollama", "LLM provider for --validate-ai: ollama, openai, anthropic, openrouter, deepseek, gemini")
+	recipeTestCmd.Flags().String("model", "", "LLM model name for --validate-ai")
+	recipeTestCmd.Flags().String("api-key", "", "API key for --validate-ai remote LLM providers")
+	recipeTestCmd.Flags().String("api-base", "", "custom API base URL for --validate-ai")
 	_ = recipeTestCmd.MarkFlagRequired("file")
+
+	recipeFlowCmd.Flags().StringP("output", "o", "", "output file for generated recipe")
+	recipeFlowCmd.Flags().String("name", "", "recipe name (default: flow-recipe)")
 
 	recipeFixCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
 	recipeFixCmd.Flags().StringP("output", "o", "", "output file for fixed recipe")
@@ -177,6 +185,52 @@ var recipeTestCmd = &cobra.Command{
 				_, _ = fmt.Fprintf(os.Stdout, "  %s (%s): %s\n", e.Field, e.Selector, e.Error)
 			}
 		}
+
+		// Optional LLM validation.
+		validateAI, _ := cmd.Flags().GetBool("validate-ai")
+		if validateAI {
+			providerName, _ := cmd.Flags().GetString("provider")
+			model, _ := cmd.Flags().GetString("model")
+			apiKey, _ := cmd.Flags().GetString("api-key")
+			apiBase, _ := cmd.Flags().GetString("api-base")
+
+			provider, provErr := createProviderFull(providerName, model, apiKey, apiBase, "")
+			if provErr != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "warning: LLM provider setup failed: %v\n", provErr)
+			} else {
+				_, _ = fmt.Fprintf(os.Stderr, "running LLM validation with %s...\n", provider.Name())
+
+				// Try to get sample items for context.
+				var samples []map[string]any
+				if r.Type == "extract" {
+					items, sampleErr := recipe.SampleExtract(browser, r)
+					if sampleErr == nil {
+						samples = items
+					}
+				}
+
+				llmResult, llmErr := recipe.ValidateWithLLM(provider, r, samples)
+				if llmErr != nil {
+					_, _ = fmt.Fprintf(os.Stderr, "warning: LLM validation failed: %v\n", llmErr)
+				} else {
+					if llmResult.Valid {
+						_, _ = fmt.Fprintln(os.Stdout, "LLM: recipe looks good")
+					} else {
+						_, _ = fmt.Fprintln(os.Stdout, "LLM: recipe has issues")
+					}
+					for _, s := range llmResult.Suggestions {
+						_, _ = fmt.Fprintf(os.Stdout, "  suggestion: %s\n", s)
+					}
+					for _, f := range llmResult.MissingFields {
+						_, _ = fmt.Fprintf(os.Stdout, "  missing field: %s\n", f)
+					}
+					for _, fs := range llmResult.FragileSelectors {
+						_, _ = fmt.Fprintf(os.Stdout, "  fragile: %s\n", fs)
+					}
+				}
+			}
+		}
+
 		return nil
 	},
 }
@@ -362,6 +416,55 @@ var recipeSampleCmd = &cobra.Command{
 		data, err := json.MarshalIndent(items, "", "  ")
 		if err != nil {
 			return fmt.Errorf("marshal sample: %w", err)
+		}
+
+		_, _ = fmt.Fprintln(os.Stdout, string(data))
+		return nil
+	},
+}
+
+var recipeFlowCmd = &cobra.Command{
+	Use:   "flow <url1> [url2] ...",
+	Short: "Detect a multi-page flow and generate a recipe",
+	Args:  cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		output, _ := cmd.Flags().GetString("output")
+		name, _ := cmd.Flags().GetString("name")
+
+		browser, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return fmt.Errorf("scout: browser launch: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		_, _ = fmt.Fprintf(os.Stderr, "detecting flow across %d URL(s)...\n", len(args))
+
+		steps, err := recipe.DetectFlow(browser, args)
+		if err != nil {
+			return err
+		}
+
+		for i, step := range steps {
+			_, _ = fmt.Fprintf(os.Stderr, "  step %d: %s (type=%s, login=%v, search=%v)\n",
+				i+1, step.URL, step.PageType, step.IsLogin, step.IsSearch)
+		}
+
+		r, err := recipe.GenerateFlowRecipe(steps, name)
+		if err != nil {
+			return err
+		}
+
+		data, err := json.MarshalIndent(r, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal recipe: %w", err)
+		}
+
+		if output != "" {
+			if err := os.WriteFile(output, data, 0o644); err != nil {
+				return err
+			}
+			_, _ = fmt.Fprintf(os.Stderr, "flow recipe written to %s\n", output)
+			return nil
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
