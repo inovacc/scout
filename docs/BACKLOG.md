@@ -453,3 +453,10 @@ credentials/session.
 | Docker CI/CD Publishing (Phase 21b) | GitHub Actions workflow, GHCR publishing, multi-arch builds, Trivy scanning, Helm chart | 2026-02 |
 | GitHub Data Extraction CLI + Tests (Phase 23c) | `scout github repo/issues/prs/user/releases/tree` CLI commands, mock httptest pages | 2026-02 |
 | Recipe Interactive Mode (Phase 12c) | `InteractiveCreate` wizard, `scout recipe create --interactive`, AI integration tests | 2026-02 |
+| Built-in Extraction Helpers (Phase 16) | `InjectHelper`/`InjectAllHelpers` with 5 bundled JS helpers (table, scroll, shadow DOM, wait, click all) | 2026-02 |
+| Script Templates (Phase 16) | `ScriptTemplate`, `RenderTemplate`, `InjectTemplate`, `BuiltinTemplates` (extract-list, fill-form, scroll-and-collect) | 2026-02 |
+| Session-scoped gRPC Injection (Phase 16) | `InjectJS` RPC for dynamic JS injection into running sessions | 2026-02 |
+| Bridge DOM Manipulation (Phase 17) | `QueryDOM`, `ClickElement`, `TypeText`, `InsertHTML`, `RemoveElement`, `ModifyAttribute`, `ObserveDOM` bridge commands | 2026-02 |
+| Bridge Clipboard & Tab Management (Phase 17) | `GetClipboard`, `SetClipboard`, `ListTabs`, `CloseTab` bridge commands | 2026-02 |
+| Bridge Console Forwarding (Phase 17) | `ConsoleMessages` bridge command for console capture/forwarding | 2026-02 |
+| Recipe CLI Integration Tests (Phase 12c) | End-to-end CLI tests for `recipe create` and `recipe test`, selector `$ref` resolution tests | 2026-02 |

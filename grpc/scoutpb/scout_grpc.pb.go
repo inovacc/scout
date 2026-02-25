@@ -45,6 +45,7 @@ const (
 	ScoutService_ExportHAR_FullMethodName      = "/scout.v1.ScoutService/ExportHAR"
 	ScoutService_CaptureProfile_FullMethodName = "/scout.v1.ScoutService/CaptureProfile"
 	ScoutService_LoadProfile_FullMethodName    = "/scout.v1.ScoutService/LoadProfile"
+	ScoutService_InjectJS_FullMethodName       = "/scout.v1.ScoutService/InjectJS"
 	ScoutService_StreamEvents_FullMethodName   = "/scout.v1.ScoutService/StreamEvents"
 	ScoutService_Interactive_FullMethodName    = "/scout.v1.ScoutService/Interactive"
 )
@@ -88,6 +89,8 @@ type ScoutServiceClient interface {
 	// Profile
 	CaptureProfile(ctx context.Context, in *CaptureProfileRequest, opts ...grpc.CallOption) (*CaptureProfileResponse, error)
 	LoadProfile(ctx context.Context, in *LoadProfileRequest, opts ...grpc.CallOption) (*LoadProfileResponse, error)
+	// Custom JS injection
+	InjectJS(ctx context.Context, in *InjectJSRequest, opts ...grpc.CallOption) (*InjectJSResponse, error)
 	// Real-time event stream (server -> client)
 	StreamEvents(ctx context.Context, in *SessionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[BrowserEvent], error)
 	// Bidirectional: client sends commands, server streams events
@@ -362,6 +365,16 @@ func (c *scoutServiceClient) LoadProfile(ctx context.Context, in *LoadProfileReq
 	return out, nil
 }
 
+func (c *scoutServiceClient) InjectJS(ctx context.Context, in *InjectJSRequest, opts ...grpc.CallOption) (*InjectJSResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InjectJSResponse)
+	err := c.cc.Invoke(ctx, ScoutService_InjectJS_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *scoutServiceClient) StreamEvents(ctx context.Context, in *SessionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[BrowserEvent], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &ScoutService_ServiceDesc.Streams[0], ScoutService_StreamEvents_FullMethodName, cOpts...)
@@ -433,6 +446,8 @@ type ScoutServiceServer interface {
 	// Profile
 	CaptureProfile(context.Context, *CaptureProfileRequest) (*CaptureProfileResponse, error)
 	LoadProfile(context.Context, *LoadProfileRequest) (*LoadProfileResponse, error)
+	// Custom JS injection
+	InjectJS(context.Context, *InjectJSRequest) (*InjectJSResponse, error)
 	// Real-time event stream (server -> client)
 	StreamEvents(*SessionRequest, grpc.ServerStreamingServer[BrowserEvent]) error
 	// Bidirectional: client sends commands, server streams events
@@ -524,6 +539,9 @@ func (UnimplementedScoutServiceServer) CaptureProfile(context.Context, *CaptureP
 }
 func (UnimplementedScoutServiceServer) LoadProfile(context.Context, *LoadProfileRequest) (*LoadProfileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method LoadProfile not implemented")
+}
+func (UnimplementedScoutServiceServer) InjectJS(context.Context, *InjectJSRequest) (*InjectJSResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InjectJS not implemented")
 }
 func (UnimplementedScoutServiceServer) StreamEvents(*SessionRequest, grpc.ServerStreamingServer[BrowserEvent]) error {
 	return status.Error(codes.Unimplemented, "method StreamEvents not implemented")
@@ -1020,6 +1038,24 @@ func _ScoutService_LoadProfile_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ScoutService_InjectJS_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InjectJSRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScoutServiceServer).InjectJS(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ScoutService_InjectJS_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScoutServiceServer).InjectJS(ctx, req.(*InjectJSRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ScoutService_StreamEvents_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SessionRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -1148,6 +1184,10 @@ var ScoutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LoadProfile",
 			Handler:    _ScoutService_LoadProfile_Handler,
+		},
+		{
+			MethodName: "InjectJS",
+			Handler:    _ScoutService_InjectJS_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

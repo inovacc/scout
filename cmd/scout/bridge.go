@@ -15,7 +15,8 @@ import (
 func init() {
 	rootCmd.AddCommand(bridgeCmd)
 	bridgeCmd.AddCommand(bridgeStatusCmd, bridgeSendCmd, bridgeListenCmd, bridgeObserveCmd,
-		bridgeEventsCmd, bridgeWSSendCmd)
+		bridgeEventsCmd, bridgeWSSendCmd, bridgeQueryCmd, bridgeClickCmd, bridgeTypeCmd,
+		bridgeDOMCmd, bridgeTabsCmd, bridgeClipboardCmd)
 
 	bridgeListenCmd.Flags().StringSlice("events", nil, "event types to filter (e.g. mutation)")
 	bridgeListenCmd.Flags().Duration("timeout", 0, "stop after duration (0 = indefinite)")
@@ -29,6 +30,30 @@ func init() {
 	bridgeWSSendCmd.Flags().String("params", "{}", "JSON params to send")
 	bridgeWSSendCmd.Flags().String("page", "", "target page ID (empty = first client)")
 	bridgeWSSendCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+
+	bridgeQueryCmd.Flags().Bool("all", false, "query all matching elements")
+	bridgeQueryCmd.Flags().String("page", "", "target page ID")
+	bridgeQueryCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+
+	bridgeClickCmd.Flags().String("page", "", "target page ID")
+	bridgeClickCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+
+	bridgeTypeCmd.Flags().String("page", "", "target page ID")
+	bridgeTypeCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+
+	bridgeDOMCmd.AddCommand(bridgeDOMInsertCmd, bridgeDOMRemoveCmd)
+	bridgeDOMInsertCmd.Flags().String("position", "afterend", "insert position (beforebegin/afterbegin/beforeend/afterend)")
+	bridgeDOMInsertCmd.Flags().String("page", "", "target page ID")
+	bridgeDOMInsertCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+	bridgeDOMRemoveCmd.Flags().String("page", "", "target page ID")
+	bridgeDOMRemoveCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+
+	bridgeTabsCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+
+	bridgeClipboardCmd.Flags().Bool("read", false, "read clipboard text")
+	bridgeClipboardCmd.Flags().String("write", "", "write text to clipboard")
+	bridgeClipboardCmd.Flags().String("page", "", "target page ID")
+	bridgeClipboardCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
 }
 
 var bridgeCmd = &cobra.Command{
@@ -316,6 +341,322 @@ var bridgeEventsCmd = &cobra.Command{
 		}
 
 		<-sigCh
+		return nil
+	},
+}
+
+func waitForBridgeClient(bs *scout.BridgeServer, pageID string) (string, error) {
+	deadline := time.After(30 * time.Second)
+	for {
+		clients := bs.Clients()
+		if len(clients) > 0 {
+			if pageID == "" {
+				return clients[0], nil
+			}
+			for _, c := range clients {
+				if c == pageID {
+					return c, nil
+				}
+			}
+		}
+		select {
+		case <-deadline:
+			return "", fmt.Errorf("no clients connected after 30s")
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
+}
+
+var bridgeQueryCmd = &cobra.Command{
+	Use:   "query <selector>",
+	Short: "Query DOM elements via the bridge",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		allFlag, _ := cmd.Flags().GetBool("all")
+		pageID, _ := cmd.Flags().GetString("page")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge query: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge query: WebSocket server not started")
+		}
+
+		pid, err := waitForBridgeClient(bs, pageID)
+		if err != nil {
+			return fmt.Errorf("scout: bridge query: %w", err)
+		}
+
+		results, err := bs.QueryDOM(pid, args[0], allFlag)
+		if err != nil {
+			return err
+		}
+
+		data, _ := json.MarshalIndent(results, "", "  ")
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
+		return nil
+	},
+}
+
+var bridgeClickCmd = &cobra.Command{
+	Use:   "click <selector>",
+	Short: "Click an element via the bridge",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		pageID, _ := cmd.Flags().GetString("page")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge click: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge click: WebSocket server not started")
+		}
+
+		pid, err := waitForBridgeClient(bs, pageID)
+		if err != nil {
+			return fmt.Errorf("scout: bridge click: %w", err)
+		}
+
+		if err := bs.ClickElement(pid, args[0]); err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "clicked: %s\n", args[0])
+		return nil
+	},
+}
+
+var bridgeTypeCmd = &cobra.Command{
+	Use:   "type <selector> <text>",
+	Short: "Type text into an element via the bridge",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		pageID, _ := cmd.Flags().GetString("page")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge type: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge type: WebSocket server not started")
+		}
+
+		pid, err := waitForBridgeClient(bs, pageID)
+		if err != nil {
+			return fmt.Errorf("scout: bridge type: %w", err)
+		}
+
+		if err := bs.TypeText(pid, args[0], args[1]); err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "typed into: %s\n", args[0])
+		return nil
+	},
+}
+
+var bridgeDOMCmd = &cobra.Command{
+	Use:   "dom",
+	Short: "DOM manipulation commands via the bridge",
+}
+
+var bridgeDOMInsertCmd = &cobra.Command{
+	Use:   "insert <selector> <html>",
+	Short: "Insert HTML adjacent to an element",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		position, _ := cmd.Flags().GetString("position")
+		pageID, _ := cmd.Flags().GetString("page")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge dom insert: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge dom insert: WebSocket server not started")
+		}
+
+		pid, err := waitForBridgeClient(bs, pageID)
+		if err != nil {
+			return fmt.Errorf("scout: bridge dom insert: %w", err)
+		}
+
+		if err := bs.InsertHTML(pid, args[0], position, args[1]); err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "inserted HTML at %s of %s\n", position, args[0])
+		return nil
+	},
+}
+
+var bridgeDOMRemoveCmd = &cobra.Command{
+	Use:   "remove <selector>",
+	Short: "Remove an element from the DOM",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		pageID, _ := cmd.Flags().GetString("page")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge dom remove: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge dom remove: WebSocket server not started")
+		}
+
+		pid, err := waitForBridgeClient(bs, pageID)
+		if err != nil {
+			return fmt.Errorf("scout: bridge dom remove: %w", err)
+		}
+
+		if err := bs.RemoveElement(pid, args[0]); err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "removed: %s\n", args[0])
+		return nil
+	},
+}
+
+var bridgeTabsCmd = &cobra.Command{
+	Use:   "tabs",
+	Short: "List open browser tabs via the bridge",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge tabs: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge tabs: WebSocket server not started")
+		}
+
+		if _, err := waitForBridgeClient(bs, ""); err != nil {
+			return fmt.Errorf("scout: bridge tabs: %w", err)
+		}
+
+		tabs, err := bs.ListTabs()
+		if err != nil {
+			return err
+		}
+
+		data, _ := json.MarshalIndent(tabs, "", "  ")
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
+		return nil
+	},
+}
+
+var bridgeClipboardCmd = &cobra.Command{
+	Use:   "clipboard",
+	Short: "Read or write clipboard via the bridge",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		readFlag, _ := cmd.Flags().GetBool("read")
+		writeText, _ := cmd.Flags().GetString("write")
+		pageID, _ := cmd.Flags().GetString("page")
+		port, _ := cmd.Flags().GetInt("port")
+
+		if !readFlag && writeText == "" {
+			return fmt.Errorf("scout: bridge clipboard: specify --read or --write=<text>")
+		}
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge clipboard: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge clipboard: WebSocket server not started")
+		}
+
+		pid, err := waitForBridgeClient(bs, pageID)
+		if err != nil {
+			return fmt.Errorf("scout: bridge clipboard: %w", err)
+		}
+
+		if writeText != "" {
+			if err := bs.SetClipboard(pid, writeText); err != nil {
+				return err
+			}
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "clipboard: written")
+			return nil
+		}
+
+		text, err := bs.GetClipboard(pid)
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", text)
 		return nil
 	},
 }

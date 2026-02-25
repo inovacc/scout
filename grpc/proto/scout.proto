@@ -46,6 +46,9 @@ service ScoutService {
   rpc CaptureProfile(CaptureProfileRequest) returns (CaptureProfileResponse);
   rpc LoadProfile(LoadProfileRequest)       returns (LoadProfileResponse);
 
+  // Custom JS injection
+  rpc InjectJS(InjectJSRequest)             returns (InjectJSResponse);
+
   // Real-time event stream (server -> client)
   rpc StreamEvents(SessionRequest)          returns (stream BrowserEvent);
 
@@ -186,6 +189,20 @@ message LoadProfileRequest {
 message LoadProfileResponse {
   bool   success = 1;
   string error = 2;
+}
+
+// ---------------------- JS Injection ----------------------
+
+message InjectJSRequest {
+  string session_id = 1;
+  string code = 2;            // raw JS code to evaluate
+  string template_name = 3;   // built-in template name (alternative to code)
+  string template_data = 4;   // JSON-encoded template data
+}
+
+message InjectJSResponse {
+  string result = 1;  // JSON-encoded result
+  string error = 2;   // error message if any
 }
 
 // ---------------------- Events ----------------------
