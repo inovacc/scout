@@ -16,7 +16,8 @@ func init() {
 	rootCmd.AddCommand(bridgeCmd)
 	bridgeCmd.AddCommand(bridgeStatusCmd, bridgeSendCmd, bridgeListenCmd, bridgeObserveCmd,
 		bridgeEventsCmd, bridgeWSSendCmd, bridgeQueryCmd, bridgeClickCmd, bridgeTypeCmd,
-		bridgeDOMCmd, bridgeTabsCmd, bridgeClipboardCmd, bridgeRecordCmd)
+		bridgeDOMCmd, bridgeTabsCmd, bridgeClipboardCmd, bridgeRecordCmd,
+		bridgeCallExposedCmd, bridgeEmitCmd, bridgeFramesCmd)
 
 	bridgeListenCmd.Flags().StringSlice("events", nil, "event types to filter (e.g. mutation)")
 	bridgeListenCmd.Flags().Duration("timeout", 0, "stop after duration (0 = indefinite)")
@@ -58,6 +59,17 @@ func init() {
 	bridgeClipboardCmd.Flags().String("write", "", "write text to clipboard")
 	bridgeClipboardCmd.Flags().String("page", "", "target page ID")
 	bridgeClipboardCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+
+	bridgeCallExposedCmd.Flags().String("args", "[]", "JSON array of arguments")
+	bridgeCallExposedCmd.Flags().String("page", "", "target page ID")
+	bridgeCallExposedCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+
+	bridgeEmitCmd.Flags().String("data", "{}", "JSON data to emit")
+	bridgeEmitCmd.Flags().String("page", "", "target page ID")
+	bridgeEmitCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+
+	bridgeFramesCmd.Flags().String("page", "", "target page ID")
+	bridgeFramesCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
 }
 
 var bridgeCmd = &cobra.Command{
@@ -730,6 +742,141 @@ var bridgeWSSendCmd = &cobra.Command{
 		data, _ := json.MarshalIndent(resp, "", "  ")
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
 
+		return nil
+	},
+}
+
+var bridgeCallExposedCmd = &cobra.Command{
+	Use:   "call-exposed <funcName>",
+	Short: "Call a function exposed via window.__scout.expose()",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		argsStr, _ := cmd.Flags().GetString("args")
+		pageID, _ := cmd.Flags().GetString("page")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge call-exposed: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge call-exposed: WebSocket server not started")
+		}
+
+		pid, err := waitForBridgeClient(bs, pageID)
+		if err != nil {
+			return fmt.Errorf("scout: bridge call-exposed: %w", err)
+		}
+
+		var fnArgs []any
+		if argsStr != "[]" && argsStr != "" {
+			if err := json.Unmarshal([]byte(argsStr), &fnArgs); err != nil {
+				return fmt.Errorf("scout: bridge call-exposed: invalid --args JSON: %w", err)
+			}
+		}
+
+		result, err := bs.CallExposed(pid, args[0], fnArgs...)
+		if err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(result))
+		return nil
+	},
+}
+
+var bridgeEmitCmd = &cobra.Command{
+	Use:   "emit <event>",
+	Short: "Emit an event to page's window.__scout.on() listeners",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		dataStr, _ := cmd.Flags().GetString("data")
+		pageID, _ := cmd.Flags().GetString("page")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge emit: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge emit: WebSocket server not started")
+		}
+
+		pid, err := waitForBridgeClient(bs, pageID)
+		if err != nil {
+			return fmt.Errorf("scout: bridge emit: %w", err)
+		}
+
+		var data any
+		if dataStr != "{}" && dataStr != "" {
+			if err := json.Unmarshal([]byte(dataStr), &data); err != nil {
+				data = dataStr
+			}
+		}
+
+		if err := bs.EmitEvent(pid, args[0], data); err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "emitted: %s\n", args[0])
+		return nil
+	},
+}
+
+var bridgeFramesCmd = &cobra.Command{
+	Use:   "frames",
+	Short: "List all frames in the page",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		pageID, _ := cmd.Flags().GetString("page")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge frames: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge frames: WebSocket server not started")
+		}
+
+		pid, err := waitForBridgeClient(bs, pageID)
+		if err != nil {
+			return fmt.Errorf("scout: bridge frames: %w", err)
+		}
+
+		frames, err := bs.ListFrames(pid)
+		if err != nil {
+			return err
+		}
+
+		data, _ := json.MarshalIndent(frames, "", "  ")
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
 		return nil
 	},
 }

@@ -11,6 +11,33 @@ var _requestCounter = 0;
 // Relay messages from content scripts.
 chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   if (message.target === "background") {
+    // Frame relay: route message to a specific frame in the same tab.
+    if (message.action === "frame_relay" && sender && sender.tab) {
+      var tabId = sender.tab.id;
+      var frameIndex = message.frameIndex;
+      // Get all frames in the tab, find the one at the given index.
+      chrome.webNavigation.getAllFrames({ tabId: tabId }, function (frames) {
+        if (!frames || frameIndex >= frames.length) {
+          sendResponse({ error: "frame not found: index " + frameIndex });
+          return;
+        }
+        var targetFrame = frames[frameIndex];
+        chrome.tabs.sendMessage(tabId, {
+          target: "content",
+          bridgeRequest: true,
+          method: message.method,
+          params: message.params,
+        }, { frameId: targetFrame.frameId }, function (response) {
+          if (chrome.runtime.lastError) {
+            sendResponse({ error: chrome.runtime.lastError.message });
+          } else {
+            sendResponse(response);
+          }
+        });
+      });
+      return true; // async response
+    }
+
     // Forward to all content scripts if needed.
     if (message.broadcast) {
       chrome.tabs.query({}, function (tabs) {
@@ -181,13 +208,23 @@ function _handleServerRequest(msg) {
 }
 
 function _forwardToTab(tabId, msg) {
+  var sendOpts = {};
+  // Support frame-targeted messages via _frameId param.
+  var params = {};
+  try {
+    if (msg.params) params = typeof msg.params === "string" ? JSON.parse(msg.params) : msg.params;
+  } catch (e) { params = {}; }
+  if (params._frameId !== undefined) {
+    sendOpts.frameId = params._frameId;
+  }
+
   chrome.tabs.sendMessage(tabId, {
     target: "content",
     bridgeRequest: true,
     id: msg.id,
     method: msg.method,
     params: msg.params,
-  }, function (response) {
+  }, sendOpts, function (response) {
     if (chrome.runtime.lastError) {
       _sendResponse(msg.id, null, chrome.runtime.lastError.message);
       return;

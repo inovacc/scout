@@ -237,11 +237,18 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 	)
 
 	hasInject := len(b.opts.injectScripts) > 0
+	hasFP := b.opts.fingerprint != nil
 
 	if b.opts.stealth {
 		rodPage, err = stealth.Page(b.browser)
 		if err != nil {
 			return nil, fmt.Errorf("scout: create stealth page: %w", err)
+		}
+
+		if hasFP {
+			if _, err := rodPage.EvalOnNewDocument(b.opts.fingerprint.ToJS()); err != nil {
+				return nil, fmt.Errorf("scout: inject fingerprint: %w", err)
+			}
 		}
 
 		for _, script := range b.opts.injectScripts {
@@ -255,11 +262,17 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 				return nil, fmt.Errorf("scout: navigate: %w", err)
 			}
 		}
-	} else if hasInject {
+	} else if hasInject || hasFP {
 		// Create page blank, inject scripts, then navigate so scripts run before page JS.
 		rodPage, err = b.browser.Page(proto.TargetCreateTarget{})
 		if err != nil {
 			return nil, fmt.Errorf("scout: create page: %w", err)
+		}
+
+		if hasFP {
+			if _, err := rodPage.EvalOnNewDocument(b.opts.fingerprint.ToJS()); err != nil {
+				return nil, fmt.Errorf("scout: inject fingerprint: %w", err)
+			}
 		}
 
 		for _, script := range b.opts.injectScripts {
@@ -278,6 +291,10 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 		if err != nil {
 			return nil, fmt.Errorf("scout: create page: %w", err)
 		}
+	}
+
+	if b.opts.userAgent == "" && hasFP {
+		b.opts.userAgent = b.opts.fingerprint.UserAgent
 	}
 
 	if b.opts.userAgent != "" {
