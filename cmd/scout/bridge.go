@@ -16,10 +16,14 @@ func init() {
 	rootCmd.AddCommand(bridgeCmd)
 	bridgeCmd.AddCommand(bridgeStatusCmd, bridgeSendCmd, bridgeListenCmd, bridgeObserveCmd,
 		bridgeEventsCmd, bridgeWSSendCmd, bridgeQueryCmd, bridgeClickCmd, bridgeTypeCmd,
-		bridgeDOMCmd, bridgeTabsCmd, bridgeClipboardCmd)
+		bridgeDOMCmd, bridgeTabsCmd, bridgeClipboardCmd, bridgeRecordCmd)
 
 	bridgeListenCmd.Flags().StringSlice("events", nil, "event types to filter (e.g. mutation)")
 	bridgeListenCmd.Flags().Duration("timeout", 0, "stop after duration (0 = indefinite)")
+
+	bridgeRecordCmd.Flags().String("output", "", "output file for recipe JSON (default: stdout)")
+	bridgeRecordCmd.Flags().String("name", "Recorded Recipe", "recipe name")
+	bridgeRecordCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
 
 	bridgeSendCmd.Flags().String("url", "", "URL to navigate to before sending")
 	bridgeObserveCmd.Flags().String("url", "", "URL to navigate to before observing")
@@ -725,6 +729,70 @@ var bridgeWSSendCmd = &cobra.Command{
 
 		data, _ := json.MarshalIndent(resp, "", "  ")
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
+
+		return nil
+	},
+}
+
+var bridgeRecordCmd = &cobra.Command{
+	Use:   "record <url>",
+	Short: "Record browser interactions as a recipe",
+	Long:  `Opens a non-headless browser with bridge enabled, records user interactions, and outputs a recipe JSON on Ctrl+C.`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		name, _ := cmd.Flags().GetString("name")
+		output, _ := cmd.Flags().GetString("output")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(false),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge record: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge record: WebSocket server not started")
+		}
+
+		url := args[0]
+		_, err = browser.NewPage(url)
+		if err != nil {
+			return fmt.Errorf("scout: bridge record: %w", err)
+		}
+
+		rec := scout.NewBridgeRecorder(bs)
+		rec.Start()
+
+		_, _ = fmt.Fprintf(os.Stderr, "recording interactions on %s... (Ctrl+C to stop)\n", url)
+
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, os.Interrupt)
+		<-sigCh
+
+		steps := rec.Stop()
+		recipeData := rec.ToRecipe(name, url)
+
+		_, _ = fmt.Fprintf(os.Stderr, "recorded %d steps\n", len(steps))
+
+		data, err := json.MarshalIndent(recipeData, "", "  ")
+		if err != nil {
+			return fmt.Errorf("scout: bridge record: marshal: %w", err)
+		}
+
+		if output != "" {
+			if err := os.WriteFile(output, data, 0o644); err != nil {
+				return fmt.Errorf("scout: bridge record: write: %w", err)
+			}
+			_, _ = fmt.Fprintf(os.Stderr, "recipe written to %s\n", output)
+		} else {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
+		}
 
 		return nil
 	},

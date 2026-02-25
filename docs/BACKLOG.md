@@ -314,26 +314,23 @@ credentials/session.
   `grpc:build`.
 - **Effort:** Small
 
-### Rod Fork Stability Patches (Phase 24)
+### ~~Rod Fork Stability Patches (Phase 24)~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Apply 3 confirmed upstream bug fixes to `pkg/rod/`: nil-guard on disconnected page (#1103), context propagation (#1179), page context caching (#1206). Plus 4 wrapper-level fixes in `pkg/scout/`: WaitStable panic recovery (#1157), WaitSafe method (#1224), zombie process cleanup (#865), hijack regexp validation (#982). See [ADR 007](adr/007-rod-ecosystem-analysis.md).
+- **Status:** Complete — all fork-level and wrapper-level patches applied, context propagation verified correct, zombie cleanup improved, dep-track.json updated, full test coverage
 - **Effort:** Medium
-- **Dependencies:** None (internal fork, no external deps)
 
-### Accessibility Snapshot (Phase 25)
-
-- **Priority:** P1
-- **Description:** Port the ARIA tree snapshot system from go-rod/rod-mcp. Produces YAML-like accessibility tree with `[ref=s{gen}e{id}]` markers for LLM-driven element addressing. ~1500 lines of embedded JS for role extraction, name computation, iframe traversal. Enables `Page.Snapshot()` and `Page.ElementByRef()` methods.
-- **Effort:** Large
-- **Dependencies:** None
-
-### MCP Transport (Phase 26)
+### ~~Accessibility Snapshot (Phase 25)~~ [DONE]
 
 - **Priority:** P1
-- **Description:** Expose Scout as an MCP server via stdio transport using official `modelcontextprotocol/go-sdk`. Map 15+ Scout capabilities to MCP tools (navigate, click, type, screenshot, snapshot, extract, search, fetch, eval). Expose page state as MCP resources (markdown, snapshot, screenshot). `scout mcp` command.
+- **Status:** Complete — `Page.Snapshot()`, `Page.ElementByRef()`, iframe traversal via `WithSnapshotIframes()`, LLM integration via `SnapshotWithLLM()`, CLI `scout snapshot`, 9+ tests
 - **Effort:** Large
-- **Dependencies:** Accessibility Snapshot (Phase 25) for snapshot tool
+
+### ~~MCP Transport (Phase 26)~~ [DONE]
+
+- **Priority:** P1
+- **Status:** Complete — 15 MCP tools (navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait, search, fetch, pdf, session_list, session_reset) + 3 resources, in-memory transport tests, `scout mcp` command
+- **Effort:** Large
 
 ### Browser Recycling — AutoFree (Phase 27)
 
@@ -460,3 +457,11 @@ credentials/session.
 | Bridge Clipboard & Tab Management (Phase 17) | `GetClipboard`, `SetClipboard`, `ListTabs`, `CloseTab` bridge commands | 2026-02 |
 | Bridge Console Forwarding (Phase 17) | `ConsoleMessages` bridge command for console capture/forwarding | 2026-02 |
 | Recipe CLI Integration Tests (Phase 12c) | End-to-end CLI tests for `recipe create` and `recipe test`, selector `$ref` resolution tests | 2026-02 |
+| Rod Fork Patches Complete (Phase 24) | Context propagation verified, page context in Info/Activate verified, zombie cleanup improved, dep-track.json updated, patch tests added | 2026-02 |
+| MCP Additional Tools (Phase 26) | 5 new tools (search, fetch, pdf, session_list, session_reset), in-memory transport tests | 2026-02 |
+| Accessibility Iframe/LLM (Phase 25) | `WithSnapshotIframes()` for iframe traversal, `SnapshotWithLLM()` for LLM integration, CLI `scout snapshot` | 2026-02 |
+| Bridge Record Command (Phase 17) | `BridgeRecorder` with `RecordedStep`/`RecordedRecipe` types, `scout bridge record`, WS protocol tests, bridge-record example | 2026-02 |
+| Recipe LLM Validation (Phase 12c) | `ValidateWithLLM()` with `LLMValidation` type for recipe completeness review | 2026-02 |
+| Recipe Flow Detection (Phase 12c) | `DetectFlow()`, `GenerateFlowRecipe()` with `FlowStep`/`FormInfo` types, `scout recipe flow` CLI | 2026-02 |
+| Profile Extension Resolution (Phase 18) | `ResolveExtensions()`, `ResolveExtensionsWithBase()` for extension ID→path resolution | 2026-02 |
+| Profile CLI Integration (Phase 18) | `scout session create --profile`, CLI integration tests, Phase 18 marked COMPLETE | 2026-02 |

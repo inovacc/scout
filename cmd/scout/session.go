@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
+	"github.com/inovacc/scout/pkg/scout"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -26,6 +27,9 @@ func init() {
 	sessionCreateCmd.Flags().Bool("maximized", false, "start browser window maximized")
 	sessionCreateCmd.Flags().Bool("devtools", false, "open Chrome DevTools automatically")
 	sessionCreateCmd.Flags().Bool("no-sandbox", false, "disable browser sandbox (containers/WSL)")
+	sessionCreateCmd.Flags().String("profile", "", "path to .scoutprofile file to apply at session creation")
+	sessionCreateCmd.Flags().Bool("decrypt", false, "decrypt the profile file (requires --passphrase)")
+	sessionCreateCmd.Flags().String("passphrase", "", "passphrase for encrypted profile decryption")
 
 	sessionDestroyCmd.Flags().Bool("all", false, "destroy all sessions")
 }
@@ -70,6 +74,41 @@ var sessionCreateCmd = &cobra.Command{
 		maximized, _ := cmd.Flags().GetBool("maximized")
 		devtools, _ := cmd.Flags().GetBool("devtools")
 		noSandbox, _ := cmd.Flags().GetBool("no-sandbox")
+
+		// Load profile if specified, applying overrides to session creation fields.
+		profilePath, _ := cmd.Flags().GetString("profile")
+		if profilePath != "" {
+			decrypt, _ := cmd.Flags().GetBool("decrypt")
+			var prof *scout.UserProfile
+			if decrypt {
+				passphrase, _ := cmd.Flags().GetString("passphrase")
+				if passphrase == "" {
+					passphrase, err = readPassphrase(cmd.ErrOrStderr(), "Enter passphrase: ")
+					if err != nil {
+						return err
+					}
+				}
+				prof, err = scout.LoadProfileEncrypted(profilePath, passphrase)
+			} else {
+				prof, err = scout.LoadProfile(profilePath)
+			}
+			if err != nil {
+				return fmt.Errorf("scout: session create: load profile: %w", err)
+			}
+
+			// Apply profile fields as defaults (explicit flags still win).
+			if !cmd.Flags().Changed("user-agent") && prof.Identity.UserAgent != "" {
+				userAgent = prof.Identity.UserAgent
+			}
+			if !cmd.Flags().Changed("proxy") && prof.Proxy != "" {
+				proxy = prof.Proxy
+			}
+			if !cmd.Flags().Changed("stealth") && prof.Browser.Type == "brave" {
+				stealth = true
+			}
+
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Applying profile: %s\n", prof.Name)
+		}
 
 		resp, err := client.CreateSession(context.Background(), &pb.CreateSessionRequest{
 			Headless:    headless,

@@ -158,6 +158,8 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `PWAInfo`, `WebAppManifest`               | Progressive Web App detection        | `detect.go`    |
 | `AutoFreeConfig`                          | Browser recycling configuration      | `autofree.go`  |
 | `ValidationResult`, `ValidationError`     | Recipe dry-run validation results    | `recipe/validate.go` |
+| `LLMValidation`, `ValidateWithLLM`       | LLM-based recipe validation prompts  | `recipe/validate.go` |
+| `FlowStep`, `FormInfo`, `DetectFlow`, `GenerateFlowRecipe` | Multi-page flow detection and recipe generation | `recipe/flow.go` |
 | `InjectHelper`, `InjectAllHelpers`        | Built-in JS extraction helper injection | `helpers.go`      |
 | `HelperTableExtract`, `HelperInfiniteScroll`, `HelperShadowQuery`, `HelperWaitForSelector`, `HelperClickAll` | Bundled JS helper constants | `helpers.go` |
 | `ScriptTemplate`, `RenderTemplate`, `InjectTemplate`, `BuiltinTemplates` | Parameterized JS script templates | `templates.go` |
@@ -166,6 +168,8 @@ Library code is in `pkg/scout/` (flat, single-package). Import as `github.com/in
 | `BridgeServer`                            | WebSocket server for bridge comms    | `bridge_ws.go`       |
 | `BridgeMessage`                           | Bridge WebSocket message type        | `bridge_ws.go`       |
 | `BridgeEvent`                             | Bridge event from browser→Go        | `bridge_events.go`   |
+| `BridgeRecorder`, `RecordedStep`, `RecordedRecipe` | Interaction recording for recipe generation | `bridge_record.go` |
+| `ResolveExtensions`, `ResolveExtensionsWithBase` | Profile extension ID→path resolution | `profile.go`    |
 
 ### MCP Server Types
 
@@ -262,13 +266,13 @@ cmd/scout/
 ├── fetch.go                # scout fetch <url> [--mode=markdown] [--main-only]
 ├── markdown.go             # scout markdown --url=<url> [--main-only]
 ├── map.go                  # scout map <url> [--search=term] [--limit=N]
-├── recipe.go               # scout recipe run/validate/create
+├── recipe.go               # scout recipe run/validate/create/flow
 ├── swagger.go              # scout swagger <url> (detect + extract OpenAPI/Swagger specs)
 ├── websearch.go            # scout websearch "query" [--engine=google] [--fetch=markdown]
 ├── extension.go            # scout extension load/test/list/download/remove
 ├── sitemap.go              # scout sitemap extract
 ├── browser.go              # scout browser list
-├── bridge.go               # scout bridge status/send/listen/events/ws-send/query/click/type/dom/tabs/clipboard
+├── bridge.go               # scout bridge status/send/listen/events/ws-send/query/click/type/dom/tabs/clipboard/record
 ├── llm.go                  # scout extract-ai, scout ollama, scout ai-job
 ├── auth.go                 # scout auth login/capture/status/logout/providers
 ├── device.go               # scout device pair/list/trust
@@ -282,6 +286,7 @@ cmd/scout/
 ├── jobs.go                 # scout jobs list/status/cancel
 ├── webmcp.go               # scout webmcp discover/call
 ├── profile.go              # scout profile capture/load/show/merge/diff/session-capture/session-load
+├── snapshot.go             # scout snapshot [--format=yaml|json] [--iframes] [--llm]
 └── cmdtree.go              # scout cmdtree [--json]
 ```
 
@@ -336,9 +341,9 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **CLI baseOpts pattern**: `baseOpts(cmd)` in `helpers.go` combines `WithHeadless`, `WithNoSandbox`, `browserOpt`, and `stealthOpts` into a reusable `[]scout.Option` slice. All CLI commands use `scout.New(baseOpts(cmd)...)` or `scout.New(append(baseOpts(cmd), extraOpt)...)`.
 - **Stealth mode**: `WithStealth()` or `SCOUT_STEALTH=true/1` enables anti-bot-detection. CLI: `--stealth` persistent flag. In `browser.go`, adds `disable-blink-features=AutomationControlled` launch flag. In `NewPage()`, creates pages via `stealth.Page()` which injects JS + ExtraJS.
 - **Stealth asset generation**: `task generate:stealth` (requires Node.js/npx) regenerates `pkg/stealth/assets.go` from `extract-stealth-evasions@latest`. Not part of `go generate`.
-- **Accessibility snapshot**: `Page.Snapshot()` and `Page.SnapshotWithOptions()` inject JS that walks the DOM, computes ARIA roles/names, and produces YAML-like indented output with `[ref=s{gen}e{id}]` markers. `Page.ElementByRef(ref)` finds elements by `data-scout-ref` attribute. JS lives in `snapshot_script.go` (not `snapshot_js.go` — `_js.go` suffix triggers GOOS=js build constraint).
+- **Accessibility snapshot**: `Page.Snapshot()` and `Page.SnapshotWithOptions()` inject JS that walks the DOM, computes ARIA roles/names, and produces YAML-like indented output with `[ref=s{gen}e{id}]` markers. `Page.ElementByRef(ref)` finds elements by `data-scout-ref` attribute. JS lives in `snapshot_script.go` (not `snapshot_js.go` — `_js.go` suffix triggers GOOS=js build constraint). `WithSnapshotIframes()` enables recursive iframe traversal. `SnapshotWithLLM()` feeds snapshot YAML to an LLM for element analysis. CLI: `scout snapshot [--format=yaml|json] [--iframes] [--llm]`.
 - **Challenge detection**: `Page.DetectChallenges()` evaluates JS to detect 9 bot protection types: Cloudflare, Turnstile, reCAPTCHA v2/v3, hCaptcha, DataDome, PerimeterX, Akamai, AWS WAF. Returns `[]ChallengeInfo` with `Type`, `Confidence`, `Details`. `Page.HasChallenge()` is a quick boolean check.
-- **MCP server**: `pkg/scout/mcp/` exposes Scout as MCP server via stdio. `mcpState` lazily initializes browser+page with mutex protection. 10 tools (navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait) and 3 resources (markdown, url, title). Logger writes to stderr (stdout = MCP JSON-RPC).
+- **MCP server**: `pkg/scout/mcp/` exposes Scout as MCP server via stdio. `mcpState` lazily initializes browser+page with mutex protection. 15 tools (navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait, search, fetch, pdf, session_list, session_reset) and 3 resources (markdown, url, title). In-memory transport tests via `mcp.NewInMemoryTransports()`. Logger writes to stderr (stdout = MCP JSON-RPC).
 - **Credential capture**: `CaptureCredentials(ctx, url, opts)` opens a headed browser, waits for Ctrl+C via `signal.NotifyContext`, then captures cookies, localStorage, sessionStorage, user agent, browser version. `SaveCredentials`/`LoadCredentials` serialize to JSON. `ToSessionState()` converts to `SessionState` for `Page.LoadSession()`. CLI: `scout credentials capture/replay/show`.
 - **Tech stack detection**: `Page.DetectTechStack()` detects CSS frameworks (Bootstrap, Tailwind, etc.), build tools (Webpack, Vite, etc.), CMS (WordPress, etc.), analytics (Google Analytics, etc.), and CDN (Cloudflare, etc.) via JS DOM inspection. Returns `TechStack` struct.
 - **Render mode detection**: `Page.DetectRenderMode()` classifies pages as CSR/SSR/SSG/ISR via framework-specific heuristics (Next.js data props, Nuxt payload, Gatsby static query, etc.). Returns `RenderInfo` with `Mode`, `Confidence`, `Details`.
@@ -361,6 +366,9 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - **Script templates**: `ScriptTemplate` wraps Go `text/template` for parameterized JS. `RenderTemplate(name, params)` renders, `InjectTemplate(page, name, params)` renders + injects. `BuiltinTemplates` includes `extract-list`, `fill-form`, `scroll-and-collect`.
 - **Bridge DOM commands**: `QueryDOM`, `ClickElement`, `TypeText`, `InsertHTML`, `RemoveElement`, `ModifyAttribute` bridge commands for DOM manipulation from Go. `ObserveDOM` for MutationObserver streaming. CLI: `scout bridge query/click/type/dom`.
 - **Bridge clipboard/tabs**: `GetClipboard`/`SetClipboard` for clipboard access, `ListTabs`/`CloseTab` for tab management. `ConsoleMessages` for console capture/forwarding. CLI: `scout bridge tabs/clipboard`.
+- **Bridge interaction recording**: `BridgeRecorder` captures user interactions (clicks, typing, navigation) as `RecordedStep` events and exports as `RecordedRecipe` compatible with the recipe system. CLI: `scout bridge record [--output=recipe.json]`.
+- **Recipe flow detection**: `DetectFlow(ctx, browser, url)` analyzes multi-page transitions (login → dashboard → settings) via `FlowStep` and `FormInfo` types. `GenerateFlowRecipe(steps)` produces multi-step automate recipes. `ValidateWithLLM(provider, recipe)` reviews recipes for completeness via `LLMValidation`. CLI: `scout recipe flow <url>`.
+- **Profile extension resolution**: `ResolveExtensions(profile)` and `ResolveExtensionsWithBase(profile, basePath)` resolve extension IDs in a profile to local filesystem paths via `extensionPathByID()`, warning on missing extensions. `scout session create --profile=<file>` applies full profile at session creation.
 - **gRPC InjectJS RPC**: `InjectJS` RPC injects JavaScript into running sessions dynamically. Session-scoped, persists across navigations via `EvalOnNewDocument`.
 
 ## Testing
@@ -386,7 +394,8 @@ Daemon state: `~/.scout/daemon.pid`, `~/.scout/current-session`, `~/.scout/sessi
 - Snapshot routes: `/snapshot-basic`, `/snapshot-form`, `/snapshot-nested`, `/snapshot-hidden`
 - Challenge routes: `/challenge-cloudflare`, `/challenge-turnstile`, `/challenge-recaptcha-v2`, `/challenge-hcaptcha`, `/challenge-datadome`, `/challenge-none`, `/challenge-multi`
 - WebMCP routes: `/webmcp-meta`, `/webmcp-script`, `/webmcp-js`, `/webmcp-none`, `/mcp-api`, `/mcp-tools.json`, `/.well-known/mcp`
-- Bridge test routes: WebSocket server unit tests, message routing, event streaming, DOM manipulation commands (QueryDOM, ClickElement, TypeText, InsertHTML, RemoveElement, ModifyAttribute), clipboard, tab management, console forwarding
+- Bridge test routes: WebSocket server unit tests, message routing, event streaming, DOM manipulation commands (QueryDOM, ClickElement, TypeText, InsertHTML, RemoveElement, ModifyAttribute), clipboard, tab management, console forwarding, interaction recording (BridgeRecorder)
+- Snapshot test routes: `/snapshot-basic`, `/snapshot-form`, `/snapshot-nested`, `/snapshot-hidden`, iframe traversal tests, LLM integration tests
 - Helper/template test routes: extraction helper injection, script template rendering + injection
 - Recipe CLI integration test routes: `recipe create` and `recipe test` end-to-end CLI tests
 - Inject test routes: uses inline httptest servers for JS injection verification

@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -239,11 +241,61 @@ func applyProfileToOptions(p *UserProfile, o *options) {
 	}
 
 	if len(p.Extensions) > 0 {
-		o.extensions = append(o.extensions, p.Extensions...)
+		resolved := ResolveExtensions(p)
+		o.extensions = append(o.extensions, resolved...)
 	}
 
 	// Store profile on options for later use by NewPage / ApplyProfile.
 	o.profile = p
+}
+
+// ResolveExtensions resolves extension entries in a profile to valid filesystem paths.
+// Each entry is checked as-is first (absolute path). If the path does not exist,
+// it is treated as an extension ID and looked up in ~/.scout/extensions/<id>/.
+// Missing extensions produce a warning log but do not cause errors.
+func ResolveExtensions(p *UserProfile) []string {
+	return ResolveExtensionsWithBase(p, "")
+}
+
+// ResolveExtensionsWithBase resolves extensions using a custom base directory
+// instead of the default ~/.scout/extensions/. If baseDir is empty, the default
+// is used. This variant exists for testing.
+func ResolveExtensionsWithBase(p *UserProfile, baseDir string) []string {
+	if p == nil || len(p.Extensions) == 0 {
+		return nil
+	}
+
+	var resolved []string
+
+	for _, ext := range p.Extensions {
+		// Check if the path exists as-is.
+		if info, err := os.Stat(ext); err == nil && info.IsDir() {
+			resolved = append(resolved, ext)
+			continue
+		}
+
+		// Treat as extension ID — look up in base dir.
+		var dir string
+		if baseDir != "" {
+			dir = filepath.Join(baseDir, ext)
+		} else {
+			extDir, err := ExtensionDir()
+			if err != nil {
+				slog.Warn("scout: profile: resolve extensions: cannot determine extension dir", "error", err)
+				continue
+			}
+			dir = filepath.Join(extDir, ext)
+		}
+
+		if info, err := os.Stat(dir); err == nil && info.IsDir() {
+			resolved = append(resolved, dir)
+			continue
+		}
+
+		slog.Warn("scout: profile: extension not found, skipping", "extension", ext)
+	}
+
+	return resolved
 }
 
 // ApplyProfile restores page-level state from a UserProfile: cookies, storage,
