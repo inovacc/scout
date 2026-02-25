@@ -217,6 +217,12 @@ func TestBridgeCommandsNilServer(t *testing.T) {
 	if err := s.StartConsoleCapture("p"); err == nil {
 		t.Fatal("expected error from nil StartConsoleCapture")
 	}
+	if err := s.AutoFillForm("p", "form", map[string]string{"a": "b"}); err == nil {
+		t.Fatal("expected error from nil AutoFillForm")
+	}
+	if _, err := s.DownloadFile("p", "http://x"); err == nil {
+		t.Fatal("expected error from nil DownloadFile")
+	}
 }
 
 func TestTypeText(t *testing.T) {
@@ -362,6 +368,137 @@ func TestModifyAttribute(t *testing.T) {
 	}
 	if receivedParams["value"] != "123" {
 		t.Fatalf("expected value 123, got %v", receivedParams["value"])
+	}
+}
+
+func TestAutoFillForm(t *testing.T) {
+	s := NewBridgeServer("127.0.0.1:0")
+	if err := s.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer func() { _ = s.Stop() }()
+
+	var receivedParams map[string]any
+
+	conn := mockBridgeClient(t, s.Addr(), "page-af", func(msg BridgeMessage) any {
+		_ = json.Unmarshal(msg.Params, &receivedParams)
+		if msg.Method != "form.autofill" {
+			return map[string]any{"error": "unexpected method: " + msg.Method}
+		}
+		return map[string]any{"filled": 2, "total": 2}
+	})
+	defer func() { _ = conn.Close() }()
+
+	data := map[string]string{
+		"username": "alice",
+		"password": "secret123",
+	}
+	if err := s.AutoFillForm("page-af", "#login-form", data); err != nil {
+		t.Fatalf("AutoFillForm: %v", err)
+	}
+
+	if receivedParams["selector"] != "#login-form" {
+		t.Fatalf("expected selector #login-form, got %v", receivedParams["selector"])
+	}
+
+	dataMap, ok := receivedParams["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected data map, got %T", receivedParams["data"])
+	}
+	if dataMap["username"] != "alice" {
+		t.Fatalf("expected username alice, got %v", dataMap["username"])
+	}
+	if dataMap["password"] != "secret123" {
+		t.Fatalf("expected password secret123, got %v", dataMap["password"])
+	}
+}
+
+func TestAutoFillFormError(t *testing.T) {
+	s := NewBridgeServer("127.0.0.1:0")
+	if err := s.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer func() { _ = s.Stop() }()
+
+	conn := mockBridgeClient(t, s.Addr(), "page-afe", func(msg BridgeMessage) any {
+		return map[string]any{"error": "form not found: #missing"}
+	})
+	defer func() { _ = conn.Close() }()
+
+	err := s.AutoFillForm("page-afe", "#missing", map[string]string{"a": "b"})
+	if err == nil {
+		t.Fatal("expected error for missing form")
+	}
+}
+
+func TestDownloadFile(t *testing.T) {
+	s := NewBridgeServer("127.0.0.1:0")
+	if err := s.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer func() { _ = s.Stop() }()
+
+	// "hello world" base64-encoded.
+	expectedData := "aGVsbG8gd29ybGQ="
+
+	conn := mockBridgeClient(t, s.Addr(), "page-dl", func(msg BridgeMessage) any {
+		if msg.Method != "fetch.download" {
+			return map[string]any{"error": "unexpected method: " + msg.Method}
+		}
+		var p map[string]any
+		_ = json.Unmarshal(msg.Params, &p)
+		if p["url"] != "https://example.com/file.bin" {
+			return map[string]any{"error": "wrong url"}
+		}
+		return map[string]any{"data": expectedData, "status": 200, "size": 11}
+	})
+	defer func() { _ = conn.Close() }()
+
+	data, err := s.DownloadFile("page-dl", "https://example.com/file.bin")
+	if err != nil {
+		t.Fatalf("DownloadFile: %v", err)
+	}
+	if string(data) != "hello world" {
+		t.Fatalf("expected 'hello world', got %q", string(data))
+	}
+}
+
+func TestDownloadFileError(t *testing.T) {
+	s := NewBridgeServer("127.0.0.1:0")
+	if err := s.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer func() { _ = s.Stop() }()
+
+	conn := mockBridgeClient(t, s.Addr(), "page-dle", func(msg BridgeMessage) any {
+		return map[string]any{"error": "fetch failed: HTTP 404"}
+	})
+	defer func() { _ = conn.Close() }()
+
+	_, err := s.DownloadFile("page-dle", "https://example.com/missing")
+	if err == nil {
+		t.Fatal("expected error for 404")
+	}
+}
+
+func TestDownloadFileEmptyBody(t *testing.T) {
+	s := NewBridgeServer("127.0.0.1:0")
+	if err := s.Start(); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer func() { _ = s.Stop() }()
+
+	conn := mockBridgeClient(t, s.Addr(), "page-dle2", func(msg BridgeMessage) any {
+		return map[string]any{"data": "", "status": 204, "size": 0}
+	})
+	defer func() { _ = conn.Close() }()
+
+	data, err := s.DownloadFile("page-dle2", "https://example.com/empty")
+	if err != nil {
+		t.Fatalf("DownloadFile empty: %v", err)
+	}
+	if len(data) != 0 {
+		t.Fatalf("expected empty data, got %d bytes", len(data))
 	}
 }
 

@@ -364,12 +364,39 @@ credentials/session.
 - **Effort:** Small
 - **Dependencies:** None
 
-### Forgeron Fingerprint Integration
+### ~~Forgeron Fingerprint Integration~~ [DONE]
 
 - **Priority:** P3
-- **Description:** Integrate [forgeron](https://github.com/Ta0uf19/forgeron) library for diverse browser fingerprint generation. Complements stealth mode with realistic, varied fingerprints. From rod issue #905.
+- **Status:** Complete — Forgeron integrated for diverse browser fingerprint generation complementing stealth mode. Released in v0.21.0.
 - **Effort:** Medium
-- **Dependencies:** Stealth mode (done)
+
+### Bridge Form Auto-Fill and Download Management
+
+- **Priority:** P2
+- **Description:** Extend the bridge extension with form auto-fill capabilities (pre-fill forms from profile data) and download management (intercept/track downloads, progress, auto-rename).
+- **Effort:** Medium
+- **Dependencies:** Scout Bridge Extension (done), Profile system (done)
+
+### Scraper Modes — Reddit, YouTube, Notion
+
+- **Priority:** P2
+- **Description:** Dedicated scraper modes for Reddit (posts, comments, subreddits), YouTube (video metadata, comments, channels), and Notion (pages, databases, blocks). Each provides structured extraction via headless browser automation.
+- **Effort:** Large
+- **Dependencies:** Generic auth framework (done), extraction engine (done)
+
+### Research Agent Depth Configuration and Caching
+
+- **Priority:** P3
+- **Description:** Add configurable depth levels for the research agent (shallow/medium/deep), result caching with TTL, and incremental research that builds on previous results.
+- **Effort:** Small
+- **Dependencies:** Research agent (done)
+
+### Fingerprint Profile Persistence and Rotation
+
+- **Priority:** P3
+- **Description:** Persist generated Forgeron fingerprints to disk for reuse across sessions. Support fingerprint rotation strategies (per-session, per-domain, time-based) for long-running scraping.
+- **Effort:** Small
+- **Dependencies:** Forgeron integration (done), Profile system (done)
 
 ## Resolved Items
 
@@ -460,3 +487,7 @@ credentials/session.
 | AI-Powered Bot Protection Bypass (Phase 17b) | `ChallengeSolver`, `NavigateWithBypass()`, `WithAutoBypass()`, TwoCaptcha/CapSolver services, Cloudflare/Turnstile/CAPTCHA solving | 2026-02 |
 | Scout-Browser Module (Phase 21c) | `pkg/browser/` with Manager, Detect, Download, BrowserInfo, platform-specific detection | 2026-02 |
 | Screen Recorder (Phase 30) | `ScreenRecorder` with CDP screencast, `ExportGIF()`, `ExportFrames()`, CLI `scout record` | 2026-02 |
+| Forgeron Fingerprint Integration | Forgeron library integrated for diverse browser fingerprint generation complementing stealth mode | 2026-02-25 |
+| Scout-Browser Standalone Module (Phase 30) | `pkg/browser/` with Manager, Detect, Download, platform-specific version detection | 2026-02-25 |
+| Bridge window.__scout API (Phase 31) | Content script bidirectional RPC with `__scout.send()`, `__scout.on()`, `__scout.query()`, CDP fallback | 2026-02-25 |
+| Research Agent (Phase 31) | Orchestrated multi-source research workflows via `scout research` | 2026-02-25 |

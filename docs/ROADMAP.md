@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Overall Progress:** 100% Complete (v0.19.0)
+**Overall Progress:** 100% Complete (v0.21.0)
 
 ## Phases
 
@@ -954,6 +954,68 @@ Launch a headed browser for manual login, capture all authentication state on Ct
 - [x] **CLI `scout credentials replay <file> [url]`** — Loads credentials, restores session, navigates to URL
 - [x] **CLI `scout credentials show <file>`** — Display credential file contents (cookies, storage keys)
 - [ ] **Tests** — Unit tests for save/load/toSessionState, integration test for capture flow
+
+### Phase 30: Scout-Browser Module & Screen Recorder [COMPLETE]
+
+Standalone browser management module and CDP-based screen recording. Released in v0.20.0.
+
+- [x] **`pkg/browser/` standalone module** — `Manager`, `Detect()`, `Download()`, `BrowserInfo` types
+- [x] **Platform-specific version detection** — Windows registry/PowerShell, macOS plist, Linux desktop files
+- [x] **`ScreenRecorder` type** (`pkg/scout/recorder.go`) — CDP screencast capture with `ScreenRecordOption` functional options
+- [x] **`ExportGIF()` and `ExportFrames()`** — Export recorded screencast as GIF or individual frames
+- [x] **CLI `scout record start/stop/export`** — Screen recording commands
+- [x] **CLI `scout browser list/download`** — Browser detection and download management
+- [x] **Windows browser detection fix** — Platform-specific PowerShell version detection avoids opening GUI windows
+
+### Phase 31: Bridge window.__scout API, Forgeron Fingerprints & Research Agent [COMPLETE]
+
+Bridge fallback/CDP integration, fingerprint generation via Forgeron, and research agent pipeline. Released in v0.21.0.
+
+- [x] **`window.__scout` content script API** — Bidirectional RPC via bridge content script with `__scout.send()`, `__scout.on()`, `__scout.query()`
+- [x] **Bridge CDP fallback** — Graceful degradation to CDP when bridge extension is unavailable
+- [x] **Forgeron fingerprint generation** — Integration with forgeron library for diverse browser fingerprint generation complementing stealth mode
+- [x] **Research agent pipeline** — Orchestrated multi-source research workflows via `scout research`
+- [x] **Fingerprint profile support** — Generated fingerprints applied via stealth options
+
+### Phase 32: Scraper Modes — Platform-Specific Extractors [NOT STARTED]
+
+Implement scraper modes for popular platforms using the generic auth framework (`scraper/auth/`). Each mode provides typed extractors, session persistence, and CLI commands.
+
+#### 32a: Communication Platforms
+- [ ] **Reddit** — Subreddit posts/comments, user profiles, search (public, no auth required)
+- [ ] **Slack** — Workspace messages, channels, threads, file downloads (OAuth/cookie auth)
+- [ ] **Microsoft Teams** — Chat messages, channels, meeting transcripts (Azure AD auth)
+- [ ] **Discord** — Server messages, channels, threads, member lists (token/OAuth auth)
+
+#### 32b: Professional Networks
+- [ ] **LinkedIn** — Profile scraping, job listings, company pages, connections (cookie auth)
+- [ ] **GitHub** — Enhanced extraction beyond current `GitHubRepo`/`GitHubIssues` (API token auth)
+
+#### 32c: Productivity & Enterprise
+- [ ] **Gmail/Google Workspace** — Email extraction, Drive files, Calendar events (Google OAuth)
+- [ ] **Outlook/Microsoft 365** — Email, OneDrive, SharePoint (Azure AD auth)
+- [ ] **Jira** — Issues, boards, sprints, comments (API token auth)
+- [ ] **Confluence** — Pages, spaces, search (API token auth)
+- [ ] **Notion** — Pages, databases, blocks (integration token auth)
+
+#### 32d: Content & Media
+- [ ] **YouTube** — Video metadata, transcripts, comments, channel info (public + API key)
+- [ ] **Twitter/X** — Tweets, profiles, search, timelines (cookie/API auth)
+
+#### 32e: E-Commerce & Maps
+- [ ] **Amazon** — Product details, reviews, pricing, search (public)
+- [ ] **Google Maps** — Business listings, reviews, place details (public)
+
+Each scraper mode follows the pattern:
+```
+pkg/scout/scraper/<platform>/
+├── <platform>.go        # Core extractor types and methods
+├── auth.go              # Platform-specific auth flow
+├── <platform>_test.go   # Tests with mock HTML responses
+└── doc.go               # Package documentation
+```
+
+CLI: `scout scrape <platform> [subcommand] [flags]`
 
 ## Test Coverage
 

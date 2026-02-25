@@ -42,6 +42,16 @@
 - **Severity:** Medium
 - **Status:** Fixed — `setWindowState()` now clears `EmulationDeviceMetricsOverride` after maximize/fullscreen so Chrome uses actual window dimensions instead of the initial 1920x1080 viewport pin.
 
+~~### Windows browser detection opens GUI~~ [RESOLVED]
+
+- **Severity:** Medium
+- **Status:** Fixed in v0.20.0 — Platform-specific PowerShell version detection now uses `-WindowStyle Hidden` to avoid opening visible GUI windows during browser detection on Windows.
+
+~~### ParseVersion returns wrong version for Brave~~ [RESOLVED]
+
+- **Severity:** Low
+- **Status:** Fixed in v0.20.0 — Version regex now returns the first match instead of the last, correctly extracting the Brave browser version string.
+
 ## Resolved Issues
 
 | Issue                                               | Resolution                                                                                                                                             | Date    |
@@ -56,3 +66,5 @@
 | Rod fork: context not propagated in page operations (#1179) | Fixed: `Info()`, `Activate()`, `TriggerFavicon()` now use `p.browser.Context(p.ctx)` instead of `p.browser.ctx` (commit 61fb628)              | 2026-02 |
 | Zombie Chrome processes after Browser.Close (#865) | Fixed: launcher reference retained in Browser struct; `launcher.Kill()` on Close() walks process tree (commit 61fb628)                              | 2026-02 |
 | WaitStable panic on "Execution context was destroyed" (#1157) | Fixed: `WaitSafe()` method provides panic recovery wrapping `WaitStable` (commit bd53ea6)                                                | 2026-02 |
+| Windows browser detection opens GUI                          | Fixed: platform-specific PowerShell version detection avoids opening GUI windows (v0.20.0)                                               | 2026-02 |
+| ParseVersion returns wrong version for Brave                 | Fixed: regex returns first match instead of last, correct version extracted (v0.20.0)                                                    | 2026-02 |
