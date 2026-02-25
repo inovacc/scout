@@ -271,6 +271,177 @@
     return result;
   });
 
+  // Built-in handler: dom.query — querySelector/querySelectorAll and return results.
+  scout.on("dom.query", function (params) {
+    params = params || {};
+    var selector = params.selector;
+    if (!selector) return { error: "selector required" };
+    var all = params.all || false;
+
+    if (all) {
+      var els = document.querySelectorAll(selector);
+      var results = [];
+      for (var i = 0; i < els.length; i++) {
+        results.push({
+          tag: els[i].tagName.toLowerCase(),
+          text: els[i].textContent.trim().substring(0, 200),
+          html: els[i].outerHTML.substring(0, 500),
+        });
+      }
+      return { count: results.length, elements: results };
+    }
+
+    var el = document.querySelector(selector);
+    if (!el) return { found: false };
+    return {
+      found: true,
+      tag: el.tagName.toLowerCase(),
+      text: el.textContent.trim().substring(0, 200),
+      html: el.outerHTML.substring(0, 500),
+    };
+  });
+
+  // Built-in handler: dom.click — click element by selector.
+  scout.on("dom.click", function (params) {
+    params = params || {};
+    var el = document.querySelector(params.selector);
+    if (!el) return { error: "element not found: " + params.selector };
+    el.click();
+    return { clicked: true };
+  });
+
+  // Built-in handler: dom.type — type text into element.
+  scout.on("dom.type", function (params) {
+    params = params || {};
+    var el = document.querySelector(params.selector);
+    if (!el) return { error: "element not found: " + params.selector };
+    el.focus();
+    el.value = params.text || "";
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    return { typed: true };
+  });
+
+  // Built-in handler: dom.getAttributes — get all attributes of element.
+  scout.on("dom.getAttributes", function (params) {
+    params = params || {};
+    var el = document.querySelector(params.selector);
+    if (!el) return { error: "element not found: " + params.selector };
+    var attrs = {};
+    for (var i = 0; i < el.attributes.length; i++) {
+      attrs[el.attributes[i].name] = el.attributes[i].value;
+    }
+    return { tag: el.tagName.toLowerCase(), attributes: attrs };
+  });
+
+  // Built-in handler: dom.observe — start MutationObserver, forward mutations.
+  scout.on("dom.observe", function (params) {
+    params = params || {};
+    scout.observeMutations(params.selector || "");
+    return { observing: true };
+  });
+
+  // Built-in handler: dom.shadowQuery — query inside shadow DOM roots.
+  scout.on("dom.shadowQuery", function (params) {
+    params = params || {};
+    var hostSelector = params.host;
+    var innerSelector = params.selector;
+    if (!hostSelector || !innerSelector) return { error: "host and selector required" };
+
+    var host = document.querySelector(hostSelector);
+    if (!host) return { error: "host not found: " + hostSelector };
+    if (!host.shadowRoot) return { error: "no shadow root on: " + hostSelector };
+
+    var el = host.shadowRoot.querySelector(innerSelector);
+    if (!el) return { found: false };
+    return {
+      found: true,
+      tag: el.tagName.toLowerCase(),
+      text: el.textContent.trim().substring(0, 200),
+      html: el.outerHTML.substring(0, 500),
+    };
+  });
+
+  // User interaction tracking (active when observation is enabled).
+  var _interactionTracking = false;
+
+  scout.on("__enable_interaction_tracking", function () {
+    if (_interactionTracking) return { already: true };
+    _interactionTracking = true;
+
+    document.addEventListener("click", function (e) {
+      if (!_interactionTracking) return;
+      scout.send("user.click", {
+        selector: _cssPath(e.target),
+        x: e.clientX,
+        y: e.clientY,
+        tag: e.target.tagName.toLowerCase(),
+        text: (e.target.textContent || "").trim().substring(0, 100),
+      });
+    }, true);
+
+    document.addEventListener("input", function (e) {
+      if (!_interactionTracking) return;
+      scout.send("user.input", {
+        selector: _cssPath(e.target),
+        tag: e.target.tagName.toLowerCase(),
+        value: (e.target.value || "").substring(0, 200),
+      });
+    }, true);
+
+    return { tracking: true };
+  });
+
+  // Generate a simple CSS path for an element.
+  function _cssPath(el) {
+    if (!el || el === document.body) return "body";
+    var parts = [];
+    while (el && el !== document.body && el.nodeType === Node.ELEMENT_NODE) {
+      var tag = el.tagName.toLowerCase();
+      if (el.id) {
+        parts.unshift(tag + "#" + el.id);
+        break;
+      }
+      var idx = 1;
+      for (var s = el.previousElementSibling; s; s = s.previousElementSibling) {
+        if (s.tagName === el.tagName) idx++;
+      }
+      var siblings = el.parentElement ? el.parentElement.querySelectorAll(":scope > " + tag) : [];
+      if (siblings.length > 1) {
+        parts.unshift(tag + ":nth-of-type(" + idx + ")");
+      } else {
+        parts.unshift(tag);
+      }
+      el = el.parentElement;
+    }
+    return parts.join(" > ");
+  }
+
+  // Handle messages forwarded from background (WebSocket bridge requests).
+  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
+      if (message.target !== "content" || !message.bridgeRequest) return false;
+
+      var method = message.method;
+      var fns = handlers[method];
+      if (fns && fns.length > 0) {
+        try {
+          var params = message.params;
+          if (typeof params === "string") {
+            try { params = JSON.parse(params); } catch (e) { /* use as-is */ }
+          }
+          var result = fns[0](params);
+          sendResponse(result !== undefined ? result : null);
+        } catch (err) {
+          sendResponse({ error: err.message || String(err) });
+        }
+      } else {
+        sendResponse({ error: "no handler for method: " + method });
+      }
+      return false;
+    });
+  }
+
   window.__scout = scout;
 
   // Notify Go that the bridge content script is loaded.

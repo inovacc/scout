@@ -1,6 +1,8 @@
 package scout
 
 import (
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -541,5 +543,315 @@ func TestProfileValidate_BadStorageOrigin(t *testing.T) {
 	err := p.Validate()
 	if err == nil {
 		t.Fatal("expected error for invalid storage origin")
+	}
+}
+
+// ════════════════════════ Round-Trip Integration Tests ════════════════════════
+
+func init() {
+	registerTestRoutes(func(mux *http.ServeMux) {
+		mux.HandleFunc("/profile-test", func(w http.ResponseWriter, _ *http.Request) {
+			http.SetCookie(w, &http.Cookie{Name: "profile_cookie", Value: "round-trip", Path: "/"})
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
+<html><head><title>Profile Test</title></head>
+<body><h1>Profile Test Page</h1></body></html>`)
+		})
+	})
+}
+
+func TestProfileCookieRoundTrip(t *testing.T) {
+	ts := newTestServer()
+	defer ts.Close()
+
+	// Browser 1: navigate, set cookies, capture profile.
+	b1 := newTestBrowser(t)
+
+	page1, err := b1.NewPage(ts.URL + "/profile-test")
+	if err != nil {
+		t.Fatalf("NewPage: %v", err)
+	}
+
+	if err := page1.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad: %v", err)
+	}
+
+	// Set an extra cookie manually.
+	if err := page1.SetCookies(Cookie{
+		Name:   "manual_cookie",
+		Value:  "manual_value",
+		Domain: "127.0.0.1",
+		Path:   "/",
+	}); err != nil {
+		t.Fatalf("SetCookies: %v", err)
+	}
+
+	prof, err := CaptureProfile(page1, WithProfileName("cookie-test"))
+	if err != nil {
+		t.Fatalf("CaptureProfile: %v", err)
+	}
+
+	if len(prof.Cookies) == 0 {
+		t.Fatal("expected at least one cookie in profile")
+	}
+
+	// Browser 2: load profile, verify cookies are present.
+	b2 := newTestBrowser(t)
+
+	page2, err := b2.NewPage(ts.URL + "/profile-test")
+	if err != nil {
+		t.Fatalf("NewPage b2: %v", err)
+	}
+
+	if err := page2.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad b2: %v", err)
+	}
+
+	if err := page2.ApplyProfile(prof); err != nil {
+		t.Fatalf("ApplyProfile: %v", err)
+	}
+
+	cookies, err := page2.GetCookies()
+	if err != nil {
+		t.Fatalf("GetCookies b2: %v", err)
+	}
+
+	found := false
+	for _, c := range cookies {
+		if c.Name == "manual_cookie" && c.Value == "manual_value" {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Errorf("manual_cookie not found after round-trip; got cookies: %v", cookies)
+	}
+}
+
+func TestProfileStorageRoundTrip(t *testing.T) {
+	ts := newTestServer()
+	defer ts.Close()
+
+	// Browser 1: set localStorage items, capture profile.
+	b1 := newTestBrowser(t)
+
+	page1, err := b1.NewPage(ts.URL + "/profile-test")
+	if err != nil {
+		t.Fatalf("NewPage: %v", err)
+	}
+
+	if err := page1.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad: %v", err)
+	}
+
+	if err := page1.LocalStorageSet("profile_key", "profile_value"); err != nil {
+		t.Fatalf("LocalStorageSet: %v", err)
+	}
+
+	if err := page1.LocalStorageSet("another_key", "another_value"); err != nil {
+		t.Fatalf("LocalStorageSet: %v", err)
+	}
+
+	prof, err := CaptureProfile(page1, WithProfileName("storage-test"))
+	if err != nil {
+		t.Fatalf("CaptureProfile: %v", err)
+	}
+
+	origin := originFromURL(ts.URL)
+	if _, ok := prof.Storage[origin]; !ok {
+		t.Fatalf("expected storage for origin %q, got keys: %v", origin, prof.Storage)
+	}
+
+	if prof.Storage[origin].LocalStorage["profile_key"] != "profile_value" {
+		t.Errorf("storage profile_key = %q, want %q", prof.Storage[origin].LocalStorage["profile_key"], "profile_value")
+	}
+
+	// Browser 2: load profile, verify storage values.
+	b2 := newTestBrowser(t)
+
+	page2, err := b2.NewPage(ts.URL + "/profile-test")
+	if err != nil {
+		t.Fatalf("NewPage b2: %v", err)
+	}
+
+	if err := page2.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad b2: %v", err)
+	}
+
+	if err := page2.ApplyProfile(prof); err != nil {
+		t.Fatalf("ApplyProfile: %v", err)
+	}
+
+	val, err := page2.LocalStorageGet("profile_key")
+	if err != nil {
+		t.Fatalf("LocalStorageGet: %v", err)
+	}
+
+	if val != "profile_value" {
+		t.Errorf("profile_key = %q, want %q", val, "profile_value")
+	}
+
+	val2, err := page2.LocalStorageGet("another_key")
+	if err != nil {
+		t.Fatalf("LocalStorageGet: %v", err)
+	}
+
+	if val2 != "another_value" {
+		t.Errorf("another_key = %q, want %q", val2, "another_value")
+	}
+}
+
+func TestProfileIdentityRoundTrip(t *testing.T) {
+	ts := newTestServer()
+	defer ts.Close()
+
+	// Browser 1: capture profile to get identity fields.
+	b1 := newTestBrowser(t)
+
+	page1, err := b1.NewPage(ts.URL + "/profile-test")
+	if err != nil {
+		t.Fatalf("NewPage: %v", err)
+	}
+
+	if err := page1.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad: %v", err)
+	}
+
+	prof, err := CaptureProfile(page1, WithProfileName("identity-test"))
+	if err != nil {
+		t.Fatalf("CaptureProfile: %v", err)
+	}
+
+	// Verify identity was captured.
+	if prof.Identity.UserAgent == "" {
+		t.Error("expected non-empty UserAgent in captured profile")
+	}
+
+	if prof.Identity.Language == "" {
+		t.Error("expected non-empty Language in captured profile")
+	}
+
+	if prof.Identity.Timezone == "" {
+		t.Error("expected non-empty Timezone in captured profile")
+	}
+
+	// Override user agent to verify it gets applied.
+	prof.Identity.UserAgent = "ScoutTest/1.0 ProfileRoundTrip"
+
+	// Browser 2: create with profile data, verify identity applied.
+	b2, err := New(
+		WithHeadless(true),
+		WithNoSandbox(),
+		WithProfileData(prof),
+	)
+	if err != nil {
+		t.Skipf("skipping: browser unavailable: %v", err)
+	}
+	t.Cleanup(func() { _ = b2.Close() })
+
+	page2, err := b2.NewPage(ts.URL + "/echo-headers")
+	if err != nil {
+		t.Fatalf("NewPage b2: %v", err)
+	}
+
+	if err := page2.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad b2: %v", err)
+	}
+
+	// Check user agent was applied via JS.
+	res, err := page2.Eval(`() => navigator.userAgent`)
+	if err != nil {
+		t.Fatalf("Eval userAgent: %v", err)
+	}
+
+	if res.String() != "ScoutTest/1.0 ProfileRoundTrip" {
+		t.Errorf("userAgent = %q, want %q", res.String(), "ScoutTest/1.0 ProfileRoundTrip")
+	}
+}
+
+func TestProfileExtensionResolution(t *testing.T) {
+	// Profile with nonexistent extension IDs should not crash;
+	// the extensions simply won't be loaded.
+	prof := &UserProfile{
+		Version:    1,
+		Name:       "ext-test",
+		Extensions: []string{"/nonexistent/ext/path"},
+	}
+
+	o := defaults()
+	applyProfileToOptions(prof, o)
+
+	if len(o.extensions) != 1 {
+		t.Errorf("extensions len = %d, want 1", len(o.extensions))
+	}
+
+	if o.extensions[0] != "/nonexistent/ext/path" {
+		t.Errorf("extensions[0] = %q, want %q", o.extensions[0], "/nonexistent/ext/path")
+	}
+
+	// WithProfileData with extension IDs.
+	prof2 := &UserProfile{
+		Version:    1,
+		Name:       "ext-id-test",
+		Extensions: []string{"cjpalhdlnbpafiamejdnhcphjbkeiagm", "bogus-id"},
+	}
+
+	o2 := defaults()
+	WithProfileData(prof2)(o2)
+
+	if len(o2.extensions) != 2 {
+		t.Errorf("extensions len = %d, want 2", len(o2.extensions))
+	}
+}
+
+func TestProfileCaptureAndSaveLoadRoundTrip(t *testing.T) {
+	ts := newTestServer()
+	defer ts.Close()
+
+	b := newTestBrowser(t)
+
+	page, err := b.NewPage(ts.URL + "/profile-test")
+	if err != nil {
+		t.Fatalf("NewPage: %v", err)
+	}
+
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad: %v", err)
+	}
+
+	if err := page.LocalStorageSet("persist_key", "persist_val"); err != nil {
+		t.Fatalf("LocalStorageSet: %v", err)
+	}
+
+	prof, err := CaptureProfile(page, WithProfileName("persist-test"))
+	if err != nil {
+		t.Fatalf("CaptureProfile: %v", err)
+	}
+
+	// Save to disk and reload.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "roundtrip.scoutprofile")
+
+	if err := SaveProfile(prof, path); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
+	}
+
+	loaded, err := LoadProfile(path)
+	if err != nil {
+		t.Fatalf("LoadProfile: %v", err)
+	}
+
+	if loaded.Name != "persist-test" {
+		t.Errorf("Name = %q, want %q", loaded.Name, "persist-test")
+	}
+
+	origin := originFromURL(ts.URL)
+	if loaded.Storage[origin].LocalStorage["persist_key"] != "persist_val" {
+		t.Errorf("persist_key not preserved through save/load")
+	}
+
+	if loaded.Identity.UserAgent == "" {
+		t.Error("UserAgent lost through save/load")
 	}
 }

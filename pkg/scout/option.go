@@ -58,6 +58,7 @@ type options struct {
 	autoFreeCallback   func()
 	tlsProfile         string
 	webmcpAutoDiscover bool
+	bridgePort         int
 }
 
 func defaults() *options {
@@ -287,6 +288,14 @@ func WithTLSProfile(profile string) Option {
 // across all pages. Use Browser.WebMCPRegistry() to access the collected tools.
 func WithWebMCPAutoDiscover() Option {
 	return func(o *options) { o.webmcpAutoDiscover = true }
+}
+
+// WithBridgePort sets the port for the Bridge WebSocket server. When set and
+// bridge is enabled, a WebSocket server starts at ws://127.0.0.1:{port}/bridge
+// allowing browser extensions to communicate bidirectionally with Go.
+// Use port 0 for auto-assigned port.
+func WithBridgePort(port int) Option {
+	return func(o *options) { o.bridgePort = port }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.

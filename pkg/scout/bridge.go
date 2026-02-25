@@ -17,8 +17,8 @@ import (
 // BridgeHandler processes an event received from the browser.
 type BridgeHandler func(data json.RawMessage)
 
-// BridgeEvent represents a message sent between Go and the browser.
-type BridgeEvent struct {
+// bridgeCDPEvent represents a message sent between Go and the browser via CDP binding.
+type bridgeCDPEvent struct {
 	Type string          `json:"type"`
 	Data json.RawMessage `json:"data"`
 	TS   int64           `json:"ts"`
@@ -101,7 +101,7 @@ func (b *Bridge) init() error {
 			return
 		}
 
-		var evt BridgeEvent
+		var evt bridgeCDPEvent
 		if err := json.Unmarshal([]byte(e.Payload), &evt); err != nil {
 			return
 		}

@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Overall Progress:** 97% Complete
+**Overall Progress:** 98% Complete
 
 ## Phases
 
@@ -180,7 +180,7 @@ Automatically detect all Chromium-based browsers installed on the system (Chrome
 - [x] CLI: `scout recipe run --file=recipe.json`, `scout recipe validate --file=recipe.json`
 - [x] Unit tests for recipe parsing (`pkg/scout/recipe/recipe_test.go`)
 
-### Phase 12c: Recipe Creator — AI-Assisted Recipe Generation [IN PROGRESS]
+### Phase 12c: Recipe Creator — AI-Assisted Recipe Generation [MOSTLY COMPLETE]
 
 Automatically analyze a target website and generate a ready-to-run recipe JSON file. Scout navigates the site, inspects the DOM structure, identifies interactive elements and data patterns, and produces an `extract` or `automate` recipe. Optionally uses an LLM to resolve ambiguous selectors, name fields semantically, and plan multi-step automation flows.
 
@@ -190,8 +190,8 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 - [x] **Page classification** — detect page type: listing, form, article, table, unknown — via heuristic scoring
 - [x] **Container detection** — find repeated DOM structures (article, card, item, product, result, li, tr, row) via count + field scoring
 - [x] **Field discovery** — JS-based child inspection: headings→title, a[href]→link, img[src]→image, price patterns, time/date elements
-- [ ] **Selector generation** — produce robust CSS selectors: prefer `[data-*]`, `[role]`, semantic tags over brittle `.class-hash` chains; validate uniqueness
-- [ ] **Selector resilience scoring** — score selectors by stability heuristics (attribute-based > class-based > nth-child); warn on fragile selectors
+- [x] **Selector generation** — produce robust CSS selectors: prefer `[data-*]`, `[role]`, semantic tags over brittle `.class-hash` chains; validate uniqueness
+- [x] **Selector resilience scoring** — score selectors by stability heuristics (attribute-based > class-based > nth-child); warn on fragile selectors via `SelectorScore` type and `ScoreSelector()`/`ScoreRecipeSelectors()` functions
 - [x] **Pagination detection** — identify next-page buttons via `a[rel="next"]`, `.next`, `[aria-label*="next"]`, `.pagination a:last-child`; URL pattern detection
 - [x] **Form detection** — find `<form>` elements via `DetectForms()`, map input fields (name, type, selector, placeholder, required)
 - [x] **Interactive element mapping** — detect buttons (non-submit), tabs (`[role="tab"]`), toggles (`[data-toggle]`)
@@ -231,7 +231,7 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 
 - [x] `scout recipe create <url> [--type=extract|automate] [--output=recipe.json]` — analyze site + generate recipe
 - [x] `scout recipe create <url> --ai [--goal="scrape all products"] [--provider=ollama]` — AI-assisted generation
-- [ ] `scout recipe create <url> --interactive` — step-by-step guided creation: show candidates, let user pick containers/fields
+- [x] `scout recipe create <url> --interactive` — step-by-step guided creation via `InteractiveCreate`: show candidates, let user pick containers/fields
 - [x] `scout recipe test --file=recipe.json` — dry-run validation with sample output
 - [ ] `scout recipe fix --file=recipe.json` — re-analyze site, update broken selectors in existing recipe
 
@@ -245,7 +245,7 @@ Automatically analyze a target website and generate a ready-to-run recipe JSON f
 - [x] Generate extract recipe tests (container + fields + validate + run end-to-end)
 - [x] Generate automate recipe tests (form → steps with navigate + type + click)
 - [x] Force type tests (WithGenerateType override)
-- [ ] AI integration tests with mock LLM provider
+- [x] AI integration tests with mock LLM provider
 - [ ] CLI integration tests for `recipe create` and `recipe test`
 
 ### Multi-Engine Search [COMPLETE]
@@ -308,24 +308,24 @@ Pre-inject custom JavaScript files and Chrome extensions into browser sessions t
 - [ ] **Session-scoped injection** — gRPC `InjectJS` RPC to inject scripts into running sessions dynamically
 - [ ] **Script templates** — parameterized JS templates with Go `text/template` syntax for reusable injection patterns
 
-### Phase 17: Scout Bridge Extension — Bidirectional Browser Control [IN PROGRESS]
+### Phase 17: Scout Bridge Extension — Bidirectional Browser Control [MOSTLY COMPLETE]
 
 A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a persistent bidirectional communication channel between the Scout Go backend and the browser runtime. Unlike CDP-only control (which operates from outside the browser), the bridge extension runs *inside* the browser context with full access to Chrome Extension APIs, enabling capabilities that CDP alone cannot provide.
 
 #### Core: Communication Channel
 
 - [x] **Extension scaffold** (`extensions/scout-bridge/`) — Manifest V3 Chrome extension with service worker and content script, embedded via `extensions/extensions.go` using `embed.FS` and written to temp dir at startup
-- [ ] **WebSocket transport** (`extensions/scout-bridge/ws.go` + `background.js`) — Extension service worker connects to a local WebSocket server embedded in Scout's gRPC daemon; auto-reconnect with exponential backoff
-- [ ] **Message protocol** — JSON-RPC 2.0 over WebSocket: `{method, params, id}` request/response + `{method, params}` notifications; message types: `command` (Go→browser), `event` (browser→Go), `query` (Go→browser with response)
-- [ ] **Go WebSocket server** (`pkg/scout/bridge/server.go`) — Embedded in the gRPC daemon, accepts extension connections, routes messages to/from Scout sessions; multiplexes multiple tabs/pages
-- [ ] **Session binding** — Extension auto-discovers which Scout session owns the browser via a launch flag or cookie; messages are routed to the correct `*scout.Page`
-- [ ] **Heartbeat & health** — Periodic ping/pong between extension and server; connection status exposed via `scout bridge status`
+- [x] **WebSocket transport** (`pkg/scout/bridge_ws.go` + `background.js`) — Extension service worker connects to a local WebSocket server; auto-reconnect with exponential backoff. `BridgeServer` type manages connections.
+- [x] **Message protocol** — JSON-RPC 2.0 over WebSocket: `{method, params, id}` request/response + `{method, params}` notifications; `BridgeMessage` type. Message types: `command` (Go→browser), `event` (browser→Go), `query` (Go→browser with response)
+- [x] **Go WebSocket server** (`pkg/scout/bridge_ws.go`) — `BridgeServer` embedded in Scout, accepts extension connections, routes messages to/from sessions; multiplexes multiple tabs/pages. `WithBridgePort(port)` option.
+- [x] **Session binding** — Extension auto-discovers which Scout session owns the browser via a launch flag or cookie; messages are routed to the correct `*scout.Page`
+- [x] **Heartbeat & health** — Periodic ping/pong between extension and server; connection status exposed via `scout bridge status`
 
 #### Browser→Go: Event Streaming
 
-- [ ] **DOM mutation observer** — Content script watches for DOM changes (element added/removed/modified) and streams structured events to Go: `{type: "mutation", selector, action, html}`
-- [ ] **User interaction capture** — Record clicks, keystrokes, form inputs, scrolls, selections as structured events; replay-friendly format compatible with recipe system
-- [ ] **Navigation events** — `beforeunload`, `hashchange`, `popstate`, SPA route changes (MutationObserver on `<title>` and URL), `pushState`/`replaceState` interception
+- [x] **DOM mutation observer** — Content script watches for DOM changes (element added/removed/modified) and streams structured `BridgeEvent` events to Go: `{type: "mutation", selector, action, html}`
+- [x] **User interaction capture** — Record clicks, keystrokes, form inputs, scrolls, selections as structured events via `bridge_events.go`; replay-friendly format compatible with recipe system
+- [x] **Navigation events** — `beforeunload`, `hashchange`, `popstate`, SPA route changes (MutationObserver on `<title>` and URL), `pushState`/`replaceState` interception
 - [ ] **Network observer** — `chrome.webRequest` API for request/response headers, timing, status codes; complements CDP HAR recording with extension-level visibility (service worker requests, extension requests)
 - [ ] **Console & error forwarding** — Capture `console.log/warn/error`, uncaught exceptions, CSP violations; forward to Go with source location and stack traces
 - [ ] **Storage change events** — Monitor `localStorage`, `sessionStorage`, `IndexedDB`, `cookie` changes in real-time; stream deltas to Go
@@ -366,9 +366,9 @@ A built-in Chrome extension (`extensions/scout-bridge/`) that establishes a pers
 
 #### CLI Commands
 
-- [ ] `scout bridge status` — Show bridge connection status, extension version, connected tabs
-- [ ] `scout bridge send <method> [params-json]` — Send command to browser via bridge
-- [ ] `scout bridge listen [--events=mutation,navigation,console]` — Stream bridge events to stdout
+- [x] `scout bridge status` — Show bridge connection status, extension version, connected tabs
+- [x] `scout bridge send <method> [params-json]` — Send command to browser via bridge (also `scout bridge ws-send`)
+- [x] `scout bridge listen [--events=mutation,navigation,console]` — Stream bridge events to stdout (also `scout bridge events`)
 - [ ] `scout bridge record` — Record all user interactions as a recipe-compatible action sequence
 - [ ] `scout session create --bridge` — Create session with bridge extension enabled
 
@@ -473,7 +473,7 @@ Use LLM vision and the Scout Bridge extension to detect and solve Cloudflare cha
 - [ ] Cookie persistence tests (solve → capture cookies → new session → verify bypass)
 - [ ] LLM vision mock tests (screenshot → mock LLM response → verify click coordinates)
 
-### Phase 18: User Profile — Portable Browser Identity [IN PROGRESS]
+### Phase 18: User Profile — Portable Browser Identity [MOSTLY COMPLETE]
 
 A self-contained profile file (`.scoutprofile`) that captures everything needed to launch a browser that looks and behaves like a returning user. Profiles are portable, versionable, and can be shared across machines. On `New()` or `scout session create --profile=<file>`, Scout reads the profile, configures the browser, and hydrates all stored state — no manual setup required.
 
@@ -541,16 +541,16 @@ A self-contained profile file (`.scoutprofile`) that captures everything needed 
 #### gRPC Integration
 
 - [ ] **`CreateSession` extension** — accept optional profile payload in session creation request
-- [ ] **`CaptureProfile` RPC** — capture running session state as profile, return serialized bytes
-- [ ] **`LoadProfile` RPC** — apply profile to existing session
+- [x] **`CaptureProfile` RPC** — capture running session state as profile, return serialized bytes
+- [x] **`LoadProfile` RPC** — apply profile to existing session
 
 #### Testing
 
 - [x] Profile round-trip tests (capture → save → load → verify all fields match)
 - [x] Encrypted profile tests (save encrypted → load with correct/wrong passphrase)
-- [ ] Cookie hydration tests (set cookies → capture → new browser → load → verify cookies present)
-- [ ] Storage hydration tests (set localStorage → capture → new browser → load → verify storage present)
-- [ ] Identity injection tests (user-agent, timezone, language preserved across capture/load)
+- [x] Cookie hydration tests (set cookies → capture → new browser → load → verify cookies present)
+- [x] Storage hydration tests (set localStorage → capture → new browser → load → verify storage present)
+- [x] Identity injection tests (user-agent, timezone, language preserved across capture/load)
 - [x] Merge and diff tests
 - [ ] CLI integration tests
 
@@ -608,7 +608,7 @@ Swarm distributes work units across multiple Scout instances (local or remote vi
 - [x] **DevTools option** — `WithDevTools()` for browser DevTools panel
 - [x] **CLI device commands** (`cmd/scout/internal/cli/device.go`) — `scout device pair/list/trust`
 
-### Phase 21b: Docker Images — Container Deployment [IN PROGRESS]
+### Phase 21b: Docker Images — Container Deployment [MOSTLY COMPLETE]
 
 Provide pre-built Docker images for running Scout CLI and gRPC server in containers. Supports headless browser automation in CI/CD pipelines, Kubernetes jobs, and serverless environments.
 
@@ -628,14 +628,14 @@ Provide pre-built Docker images for running Scout CLI and gRPC server in contain
 
 #### CI/CD Integration
 
-- [ ] **GitHub Actions workflow** — build and push images to GHCR on tag
-- [ ] **Multi-arch builds** — `linux/amd64` and `linux/arm64` via `docker buildx`
-- [ ] **Image scanning** — Trivy vulnerability scan in CI
-- [ ] **Size optimization** — target < 500MB for full image, < 50MB for slim
+- [x] **GitHub Actions workflow** — build and push images to GHCR on tag (`.github/workflows/docker.yml`)
+- [x] **Multi-arch builds** — `linux/amd64` and `linux/arm64` via `docker buildx`
+- [x] **Image scanning** — Trivy vulnerability scan in CI
+- [x] **Size optimization** — target < 500MB for full image, < 50MB for slim
 
 #### Kubernetes Support
 
-- [ ] **Helm chart** (`deploy/helm/scout/`) — deploy scout gRPC server as a Kubernetes Deployment/Service
+- [x] **Helm chart** (`deploy/helm/scout/`) — deploy scout gRPC server as a Kubernetes Deployment/Service
 - [ ] **Job template** — example Kubernetes Job for one-shot crawl/scrape tasks
 - [ ] **Resource limits** — recommended CPU/memory limits for browser containers (2 CPU, 2Gi RAM default)
 - [ ] **Shared memory** — `/dev/shm` volume mount for Chrome (required to avoid crashes in containers)
@@ -702,7 +702,7 @@ Extract browser download, patching, and management into a dedicated `inovacc/sco
 - [x] Add GoDoc examples for key functions (20 `Example*` functions in `example_test.go`)
 - [ ] Write integration test examples
 
-### Phase 23: WebFetch & WebSearch — GitHub Data Extraction [IN PROGRESS]
+### Phase 23: WebFetch & WebSearch — GitHub Data Extraction [MOSTLY COMPLETE]
 
 A high-level web intelligence toolkit inspired by Claude Code's `WebFetch()` and `WebSearch()` tools. Provides URL fetching with automatic content extraction (HTML→Markdown), web searching with result aggregation, and a dedicated GitHub data extraction pipeline. Built on top of Scout's existing crawl, search, markdown, and extract engines.
 
@@ -782,7 +782,7 @@ Dedicated GitHub extraction toolkit using WebFetch + WebSearch + Scout's existin
       MergedAt *time.Time
   }
   ```
-- [ ] **CLI commands**:
+- [x] **CLI commands**:
   - `scout github repo <owner/repo>` — extract repository info + README
   - `scout github issues <owner/repo> [--state=open] [--labels=bug] [--max-pages=5]`
   - `scout github prs <owner/repo> [--state=open] [--max-pages=5]`
@@ -790,7 +790,7 @@ Dedicated GitHub extraction toolkit using WebFetch + WebSearch + Scout's existin
   - `scout github user <username>`
   - `scout github releases <owner/repo>`
   - `scout github tree <owner/repo> [path]`
-- [ ] **Tests** — mock GitHub HTML pages in httptest, extraction accuracy, pagination, rate limiting
+- [x] **Tests** — mock GitHub HTML pages in httptest, extraction accuracy, pagination, rate limiting
 
 #### Sub-phase 23d: Research Agent Pipeline
 

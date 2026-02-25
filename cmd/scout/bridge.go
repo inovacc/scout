@@ -14,13 +14,21 @@ import (
 
 func init() {
 	rootCmd.AddCommand(bridgeCmd)
-	bridgeCmd.AddCommand(bridgeStatusCmd, bridgeSendCmd, bridgeListenCmd, bridgeObserveCmd)
+	bridgeCmd.AddCommand(bridgeStatusCmd, bridgeSendCmd, bridgeListenCmd, bridgeObserveCmd,
+		bridgeEventsCmd, bridgeWSSendCmd)
 
 	bridgeListenCmd.Flags().StringSlice("events", nil, "event types to filter (e.g. mutation)")
 	bridgeListenCmd.Flags().Duration("timeout", 0, "stop after duration (0 = indefinite)")
 
 	bridgeSendCmd.Flags().String("url", "", "URL to navigate to before sending")
 	bridgeObserveCmd.Flags().String("url", "", "URL to navigate to before observing")
+
+	bridgeEventsCmd.Flags().String("type", "", "filter by event type (e.g. dom.mutation)")
+	bridgeEventsCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
+
+	bridgeWSSendCmd.Flags().String("params", "{}", "JSON params to send")
+	bridgeWSSendCmd.Flags().String("page", "", "target page ID (empty = first client)")
+	bridgeWSSendCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
 }
 
 var bridgeCmd = &cobra.Command{
@@ -252,6 +260,130 @@ var bridgeObserveCmd = &cobra.Command{
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt)
 		<-sigCh
+
+		return nil
+	},
+}
+
+var bridgeEventsCmd = &cobra.Command{
+	Use:   "events",
+	Short: "Stream bridge WebSocket events to stdout",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		eventType, _ := cmd.Flags().GetString("type")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge events: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge events: WebSocket server not started (use --port)")
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "bridge WebSocket server at %s\n", bs.Addr())
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "streaming events... (Ctrl+C to stop)")
+
+		if eventType != "" {
+			bs.Subscribe(eventType, func(e scout.BridgeEvent) {
+				data, _ := json.Marshal(e)
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
+			})
+		}
+
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, os.Interrupt)
+
+		if eventType == "" {
+			// Stream all events from channel.
+			for {
+				select {
+				case evt := <-bs.Events():
+					data, _ := json.Marshal(evt)
+					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
+				case <-sigCh:
+					return nil
+				}
+			}
+		}
+
+		<-sigCh
+		return nil
+	},
+}
+
+var bridgeWSSendCmd = &cobra.Command{
+	Use:   "ws-send <method>",
+	Short: "Send a command via bridge WebSocket",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		headless, _ := cmd.Flags().GetBool("headless")
+		paramsStr, _ := cmd.Flags().GetString("params")
+		pageID, _ := cmd.Flags().GetString("page")
+		port, _ := cmd.Flags().GetInt("port")
+
+		browser, err := scout.New(
+			scout.WithHeadless(headless),
+			scout.WithNoSandbox(),
+			scout.WithBridge(),
+			scout.WithBridgePort(port),
+		)
+		if err != nil {
+			return fmt.Errorf("scout: bridge ws-send: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		bs := browser.BridgeServer()
+		if bs == nil {
+			return fmt.Errorf("scout: bridge ws-send: WebSocket server not started (use --port)")
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "bridge WebSocket server at %s\n", bs.Addr())
+
+		// Wait for a client to connect.
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "waiting for client connection...")
+		deadline := time.After(30 * time.Second)
+		for {
+			clients := bs.Clients()
+			if len(clients) > 0 {
+				if pageID == "" {
+					pageID = clients[0]
+				}
+				break
+			}
+			select {
+			case <-deadline:
+				return fmt.Errorf("scout: bridge ws-send: no clients connected after 30s")
+			case <-time.After(500 * time.Millisecond):
+			}
+		}
+
+		var params any
+		if paramsStr != "{}" && paramsStr != "" {
+			var parsed json.RawMessage
+			if err := json.Unmarshal([]byte(paramsStr), &parsed); err != nil {
+				params = paramsStr
+			} else {
+				params = parsed
+			}
+		}
+
+		method := args[0]
+		resp, err := bs.Send(pageID, method, params)
+		if err != nil {
+			return err
+		}
+
+		data, _ := json.MarshalIndent(resp, "", "  ")
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
 
 		return nil
 	},
