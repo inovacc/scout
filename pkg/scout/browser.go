@@ -38,6 +38,9 @@ type Browser struct {
 
 	// vpn holds VPN connection state and proxy auth configuration.
 	vpn *vpnState
+
+	// vpnRot manages automatic VPN server rotation across NewPage calls.
+	vpnRot *vpnRotator
 }
 
 // New creates and connects a new headless browser with the given options.
@@ -139,6 +142,9 @@ func New(opts ...Option) (*Browser, error) {
 				OnRecycle: o.autoFreeCallback,
 			})
 		}
+		if o.vpnRotation != nil && o.vpnProvider != nil {
+			br.vpnRot = newVPNRotator(o.vpnProvider, *o.vpnRotation)
+		}
 		return br, nil
 	}
 
@@ -157,6 +163,9 @@ func New(opts ...Option) (*Browser, error) {
 			Interval:  o.autoFreeInterval,
 			OnRecycle: o.autoFreeCallback,
 		})
+	}
+	if o.vpnRotation != nil && o.vpnProvider != nil {
+		br.vpnRot = newVPNRotator(o.vpnProvider, *o.vpnRotation)
 	}
 	return br, nil
 }
@@ -263,6 +272,27 @@ func launchLocal(o *options) (string, *launcher.Launcher, error) {
 func (b *Browser) NewPage(url string) (*Page, error) {
 	if b == nil || b.browser == nil {
 		return nil, fmt.Errorf("scout: browser is nil")
+	}
+
+	// VPN rotation: if due, connect to next server and recycle the browser
+	// so the new proxy launch flag takes effect.
+	if b.vpnRot != nil {
+		if conn, err := b.vpnRot.rotateIfNeeded(context.Background()); err != nil {
+			return nil, fmt.Errorf("scout: vpn: rotate: %w", err)
+		} else if conn != nil {
+			// Update proxy option for the recycled browser.
+			if dp, ok := b.vpnRot.provider.(*DirectProxy); ok {
+				b.opts.proxy = dp.ProxyURL()
+				if dp.username != "" {
+					b.opts.proxyAuth = &proxyAuthConfig{username: dp.username, password: dp.password}
+				}
+			} else {
+				b.opts.proxy = fmt.Sprintf("%s://%s:%d", conn.Protocol, conn.Server.Host, conn.Port)
+			}
+			if err := b.recycleBrowser(); err != nil {
+				return nil, fmt.Errorf("scout: vpn: rotate: recycle: %w", err)
+			}
+		}
 	}
 
 	var (

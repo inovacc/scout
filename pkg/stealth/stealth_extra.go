@@ -259,4 +259,102 @@ const ExtraJS = `
     enumerable: true,
   });
 })();
+
+// 10. Remove ChromeDriver leak variables and automation markers
+(function() {
+  try { delete window.cdc_adoQpoasnfa76pfcZLmcfl_l8; } catch(e) {}
+  // Remove any $cdc_ prefixed properties from document
+  try {
+    Object.getOwnPropertyNames(document).forEach(function(prop) {
+      if (/^\$cdc_/.test(prop)) {
+        try { delete document[prop]; } catch(e) {}
+      }
+    });
+  } catch(e) {}
+  // Remove automation markers from various frameworks
+  try { delete window.callPhantom; } catch(e) {}
+  try { delete window._phantom; } catch(e) {}
+  try { delete window.__nightmare; } catch(e) {}
+  try { delete window.domAutomation; } catch(e) {}
+  try { delete window.domAutomationController; } catch(e) {}
+})();
+
+// 11. Fix navigator properties for headless
+(function() {
+  // Ensure hardwareConcurrency is realistic
+  if (navigator.hardwareConcurrency === 0 || !navigator.hardwareConcurrency) {
+    Object.defineProperty(navigator, 'hardwareConcurrency', {
+      get: function() { return 8; },
+      configurable: true,
+    });
+  }
+  // Ensure deviceMemory is realistic
+  if (!navigator.deviceMemory) {
+    Object.defineProperty(navigator, 'deviceMemory', {
+      get: function() { return 8; },
+      configurable: true,
+    });
+  }
+  // Ensure vendor is correct for Chrome
+  if (!navigator.vendor || navigator.vendor === '') {
+    Object.defineProperty(navigator, 'vendor', {
+      get: function() { return 'Google Inc.'; },
+      configurable: true,
+    });
+  }
+})();
+
+// 12. Fix document.hasFocus for headless
+(function() {
+  Document.prototype.hasFocus = function() { return true; };
+})();
+
+// 13. Fix window outer dimensions for headless
+(function() {
+  if (window.outerWidth === 0) {
+    Object.defineProperty(window, 'outerWidth', {
+      get: function() { return window.innerWidth || 1920; },
+      configurable: true,
+    });
+  }
+  if (window.outerHeight === 0) {
+    Object.defineProperty(window, 'outerHeight', {
+      get: function() { return (window.innerHeight || 1080) + 85; }, // 85px for Chrome UI chrome
+      configurable: true,
+    });
+  }
+})();
+
+// 14. Protect toString integrity for overridden functions
+(function() {
+  var nativeToString = Function.prototype.toString;
+  var overrides = new WeakMap();
+
+  // Helper to mark a function as native-looking
+  function markNative(fn, name) {
+    overrides.set(fn, 'function ' + name + '() { [native code] }');
+  }
+
+  // Patch toString to return native-looking output for our overrides
+  var patchedToString = function toString() {
+    if (overrides.has(this)) {
+      return overrides.get(this);
+    }
+    return nativeToString.call(this);
+  };
+  overrides.set(patchedToString, 'function toString() { [native code] }');
+  Function.prototype.toString = patchedToString;
+
+  // Mark our patched functions as native
+  try { markNative(HTMLCanvasElement.prototype.toDataURL, 'toDataURL'); } catch(e) {}
+  try { markNative(CanvasRenderingContext2D.prototype.getImageData, 'getImageData'); } catch(e) {}
+  try { markNative(Document.prototype.hasFocus, 'hasFocus'); } catch(e) {}
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      markNative(navigator.permissions.query, 'query');
+    }
+  } catch(e) {}
+  try { markNative(document.fonts.check, 'check'); } catch(e) {}
+  try { markNative(document.fonts.forEach, 'forEach'); } catch(e) {}
+})();
 `
