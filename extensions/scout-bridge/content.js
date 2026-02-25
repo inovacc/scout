@@ -555,7 +555,236 @@
     });
   }
 
-  window.__scout = scout;
+  // --- Extended __scout API ---
+
+  // Event emitter for Go→browser events.
+  var _eventListeners = new Map();
+
+  // Exposed functions callable from Go.
+  var _exposedFunctions = {};
+
+  // Promise-based send: sends a message to Go via bridge, returns Promise.
+  scout.rpc = function (method, params) {
+    return new Promise(function (resolve, reject) {
+      var id = "__rpc_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      var timeout = setTimeout(function () {
+        delete _rpcCallbacks[id];
+        reject(new Error("rpc timeout: " + method));
+      }, 10000);
+      _rpcCallbacks[id] = function (result, error) {
+        clearTimeout(timeout);
+        if (error) reject(new Error(error));
+        else resolve(result);
+      };
+      scout.send("__rpc_request", { id: id, method: method, params: params || null });
+    });
+  };
+  var _rpcCallbacks = {};
+
+  // Override on/off for event emitter pattern.
+  var _origOn = scout.on;
+  scout.on = function (type, handler) {
+    // If it's an internal bridge handler, use original registration.
+    if (typeof handler === "function") {
+      // Also register in event listeners map for Go→browser events.
+      if (!_eventListeners.has(type)) _eventListeners.set(type, []);
+      _eventListeners.get(type).push(handler);
+      // Register in original handlers too for bridge command routing.
+      _origOn.call(scout, type, handler);
+    }
+  };
+
+  var _origOff = scout.off;
+  scout.off = function (type, handler) {
+    if (handler && _eventListeners.has(type)) {
+      var listeners = _eventListeners.get(type).filter(function (fn) { return fn !== handler; });
+      if (listeners.length === 0) _eventListeners.delete(type);
+      else _eventListeners.set(type, listeners);
+    } else if (!handler) {
+      _eventListeners.delete(type);
+    }
+    // Also remove from original handlers.
+    if (!handler) _origOff.call(scout, type);
+  };
+
+  // Shadow DOM piercing querySelector.
+  scout.query = function (selector) {
+    return _shadowQuery(document, selector, false);
+  };
+
+  // Shadow DOM piercing querySelectorAll.
+  scout.queryAll = function (selector) {
+    return _shadowQuery(document, selector, true);
+  };
+
+  function _shadowQuery(root, selector, all) {
+    // Try normal query first.
+    if (!all) {
+      var el = root.querySelector(selector);
+      if (el) return el;
+    }
+    var results = all ? Array.from(root.querySelectorAll(selector)) : [];
+
+    // Walk into shadow roots.
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+    while (walker.nextNode()) {
+      var node = walker.currentNode;
+      if (node.shadowRoot) {
+        if (all) {
+          results = results.concat(Array.from(node.shadowRoot.querySelectorAll(selector)));
+          // Recurse into nested shadows.
+          var nested = _shadowQuery(node.shadowRoot, selector, true);
+          if (Array.isArray(nested)) results = results.concat(nested);
+        } else {
+          var found = node.shadowRoot.querySelector(selector);
+          if (found) return found;
+          var nested2 = _shadowQuery(node.shadowRoot, selector, false);
+          if (nested2) return nested2;
+        }
+      }
+    }
+    return all ? results : null;
+  }
+
+  // Expose a JS function callable from Go via bridge.
+  scout.expose = function (name, fn) {
+    if (typeof fn !== "function") return;
+    _exposedFunctions[name] = fn;
+  };
+
+  // List all frames with their URLs.
+  scout.frames = function () {
+    var result = [];
+    try {
+      for (var i = 0; i < window.frames.length; i++) {
+        try {
+          result.push({ index: i, url: window.frames[i].location.href });
+        } catch (e) {
+          result.push({ index: i, url: "(cross-origin)" });
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return result;
+  };
+
+  // Send message to another frame via background.js relay.
+  scout.sendToFrame = function (frameIndex, method, params) {
+    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+      return new Promise(function (resolve, reject) {
+        chrome.runtime.sendMessage({
+          target: "background",
+          action: "frame_relay",
+          frameIndex: frameIndex,
+          method: method,
+          params: params || null,
+        }, function (response) {
+          if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+          else resolve(response);
+        });
+      });
+    }
+    return Promise.reject(new Error("chrome.runtime not available"));
+  };
+
+  // Built-in handler: __scout_call_exposed — call an exposed function from Go.
+  _origOn.call(scout, "__scout_call_exposed", function (params) {
+    params = params || {};
+    var name = params.name;
+    var args = params.args || [];
+    var fn = _exposedFunctions[name];
+    if (!fn) return { error: "exposed function not found: " + name };
+    try {
+      var result = fn.apply(null, args);
+      return { result: result !== undefined ? result : null };
+    } catch (e) {
+      return { error: e.message || String(e) };
+    }
+  });
+
+  // Built-in handler: __scout_emit_event — dispatch event to on() listeners.
+  _origOn.call(scout, "__scout_emit_event", function (params) {
+    params = params || {};
+    var eventName = params.event;
+    var data = params.data;
+    if (_eventListeners.has(eventName)) {
+      var listeners = _eventListeners.get(eventName);
+      for (var i = 0; i < listeners.length; i++) {
+        try { listeners[i](data); } catch (e) { /* ignore */ }
+      }
+    }
+    return { dispatched: true };
+  });
+
+  // Built-in handler: __scout_shadow_query — shadow DOM piercing query from Go.
+  _origOn.call(scout, "__scout_shadow_query", function (params) {
+    params = params || {};
+    var selector = params.selector;
+    if (!selector) return { error: "selector required" };
+    var all = params.all !== false; // default true for Go-side
+
+    var elements = _shadowQuery(document, selector, true);
+    var results = [];
+    for (var i = 0; i < elements.length; i++) {
+      results.push({
+        tag: elements[i].tagName.toLowerCase(),
+        text: elements[i].textContent.trim().substring(0, 200),
+        html: elements[i].outerHTML.substring(0, 500),
+        inShadow: _isInShadow(elements[i]),
+      });
+    }
+    return { count: results.length, elements: results };
+  });
+
+  function _isInShadow(el) {
+    var node = el;
+    while (node) {
+      if (node instanceof ShadowRoot) return true;
+      node = node.parentNode;
+    }
+    return false;
+  }
+
+  // Built-in handler: __scout_list_frames — list all frames.
+  _origOn.call(scout, "__scout_list_frames", function () {
+    return { frames: scout.frames() };
+  });
+
+  // Built-in handler: __scout_send_to_frame — relay to another frame.
+  _origOn.call(scout, "__scout_send_to_frame", function (params) {
+    params = params || {};
+    // This is handled via background.js relay, so we forward there.
+    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+      chrome.runtime.sendMessage({
+        target: "background",
+        action: "frame_relay",
+        frameIndex: params.frameIndex,
+        method: params.method,
+        params: params.params || null,
+      });
+      return { relayed: true };
+    }
+    return { error: "chrome.runtime not available for frame relay" };
+  });
+
+  // Make __scout non-enumerable to avoid detection.
+  Object.defineProperty(window, "__scout", {
+    value: scout,
+    writable: false,
+    enumerable: false,
+    configurable: false,
+  });
+
+  // Define read-only state property.
+  Object.defineProperty(scout, "state", {
+    get: function () {
+      return {
+        connected: typeof window.__scoutSend === "function",
+        pageID: (typeof chrome !== "undefined" && chrome.runtime) ? chrome.runtime.id : "",
+      };
+    },
+    enumerable: false,
+    configurable: false,
+  });
 
   // Notify Go that the bridge content script is loaded.
   scout.send("__bridge_ready", { url: window.location.href });

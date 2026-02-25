@@ -60,6 +60,7 @@ type options struct {
 	webmcpAutoDiscover bool
 	bridgePort         int
 	autoBypass         *ChallengeSolver
+	fingerprint        *Fingerprint
 }
 
 func defaults() *options {
@@ -297,6 +298,18 @@ func WithWebMCPAutoDiscover() Option {
 // Use port 0 for auto-assigned port.
 func WithBridgePort(port int) Option {
 	return func(o *options) { o.bridgePort = port }
+}
+
+// WithFingerprint applies a specific fingerprint to the browser session.
+// The fingerprint JS is injected via EvalOnNewDocument on every new page.
+func WithFingerprint(fp *Fingerprint) Option {
+	return func(o *options) { o.fingerprint = fp }
+}
+
+// WithRandomFingerprint generates a random fingerprint with the given options
+// and applies it to the browser session.
+func WithRandomFingerprint(opts ...FingerprintOption) Option {
+	return func(o *options) { o.fingerprint = GenerateFingerprint(opts...) }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.

@@ -3,7 +3,7 @@
   "name": "Scout Bridge",
   "version": "0.1.0",
   "description": "Bidirectional communication bridge between Scout and the browser runtime",
-  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "permissions": ["activeTab", "scripting", "storage", "tabs", "webNavigation"],
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
