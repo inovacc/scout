@@ -1017,29 +1017,29 @@ pkg/scout/scraper/<platform>/
 
 CLI: `scout scrape <platform> [subcommand] [flags]`
 
-### Phase 33: VPN Extension Integration — Surfshark & Proxy Rotation [NOT STARTED]
+### Phase 33: VPN Extension Integration — Surfshark & Proxy Rotation [COMPLETE]
 
-Programmatic VPN control via Chrome extension CDP manipulation and direct HTTPS proxy support. Enables IP rotation per-page/session for geo-unblocking and bot detection evasion.
+VPN provider API, Surfshark integration, direct proxy support, and per-page/interval rotation. Released in v0.25.0.
 
 See: `docs/adr/ADR-surfshark-vpn-integration.md` for full analysis.
 
 #### 33a: Core VPN API
-- [ ] **VPN Provider interface** — Pluggable backend: `Connect(country)`, `Disconnect()`, `Status()`, `Servers()`
-- [ ] **Direct proxy mode** — `WithProxy(host:port)` + `WithProxyAuth(user, pass)` for any HTTPS/SOCKS5 proxy
-- [ ] **Surfshark provider** — Fetch server list via `/v5/server/clusters/all`, proxy creds via `/v1/server/user`
-- [ ] **Proxy authentication** — `chrome.webRequest.onAuthRequired` handler via CDP for extension-based proxies
+- [x] **VPN Provider interface** — Pluggable backend: `Connect(country)`, `Disconnect()`, `Status()`, `Servers()`
+- [x] **Direct proxy mode** — `WithProxy(host:port)` + `WithProxyAuth(user, pass)` for any HTTPS/SOCKS5 proxy
+- [x] **Surfshark provider** — Fetch server list via `/v5/server/clusters/all`, proxy creds via `/v1/server/user`
+- [x] **Proxy authentication** — `chrome.webRequest.onAuthRequired` handler via CDP for extension-based proxies
 
 #### 33b: Extension Control
-- [ ] **Extension storage injection** — Set `auth-token`, `auth-status` via CDP `chrome.storage.local.set()`
-- [ ] **chrome.proxy.settings** — `fixed_servers` mode with `singleProxy: {host, port: 443, scheme: "https"}`
-- [ ] **WebRTC leak prevention** — `chrome.privacy.network.webRTCIPHandlingPolicy` via CDP
-- [ ] **Connection state tracking** — Monitor `connection-was-connected`, `vpn-sessions` storage keys
+- [x] **Extension storage injection** — Set `auth-token`, `auth-status` via CDP `chrome.storage.local.set()`
+- [x] **chrome.proxy.settings** — `fixed_servers` mode with `singleProxy: {host, port: 443, scheme: "https"}`
+- [x] **WebRTC leak prevention** — `chrome.privacy.network.webRTCIPHandlingPolicy` via CDP
+- [x] **Connection state tracking** — Monitor `connection-was-connected`, `vpn-sessions` storage keys
 
 #### 33c: Server Rotation & CLI
-- [ ] **WithVPNRotation(interval, countries)** — Auto-rotate server per time interval or per-page
-- [ ] **Country-based selection** — `VPNConnect("us")`, `VPNConnect("de")` with automatic server selection
-- [ ] **CLI commands** — `scout vpn connect/disconnect/status/servers/rotate`
-- [ ] **Bypass list** — Per-domain split tunneling via `bypass-list` storage key
+- [x] **WithVPNRotation(interval, countries)** — Auto-rotate server per time interval or per-page
+- [x] **Country-based selection** — `VPNConnect("us")`, `VPNConnect("de")` with automatic server selection
+- [x] **CLI commands** — `scout vpn connect/disconnect/status/servers/rotate`
+- [x] **Bypass list** — Per-domain split tunneling via `bypass-list` storage key
 
 ## Test Coverage
 
