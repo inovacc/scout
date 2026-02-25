@@ -544,6 +544,21 @@
       "file": "lib/launcher/revision.go",
       "issue": "local",
       "description": "Chromium revision pinned for reproducible builds"
+    },
+    {
+      "file": "lib/launcher/os_unix.go",
+      "issue": "go-rod/rod#865",
+      "description": "killGroup sends SIGTERM first for graceful shutdown, then SIGKILL after 300ms timeout to ensure zombie process cleanup"
+    },
+    {
+      "file": "lib/launcher/os_windows.go",
+      "issue": "go-rod/rod#865",
+      "description": "killGroup uses taskkill /F /T to terminate entire process tree instead of single process, with fallback to TerminateProcess"
+    },
+    {
+      "file": "patch_test.go",
+      "issue": "go-rod/rod#1179, go-rod/rod#1206, go-rod/rod#865",
+      "description": "Tests verifying context propagation patterns, page context in Info/Activate/TriggerFavicon, and browser close behavior"
     }
   ]
 }

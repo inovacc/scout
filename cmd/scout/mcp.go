@@ -15,7 +15,8 @@ var mcpCmd = &cobra.Command{
 	Long: `Start a Model Context Protocol server that exposes Scout browser
 automation capabilities as MCP tools. Communicates via stdio (JSON-RPC).
 
-Tools: navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait
+Tools: navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait,
+       search, fetch, pdf, session_list, session_reset
 Resources: scout://page/markdown, scout://page/url, scout://page/title`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		logger := slog.New(slog.NewTextHandler(os.Stderr, nil))

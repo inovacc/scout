@@ -302,7 +302,7 @@ func TestListTools(t *testing.T) {
 		toolNames[tool.Name] = true
 	}
 
-	expected := []string{"navigate", "click", "type", "screenshot", "snapshot", "extract", "eval", "back", "forward", "wait", "search", "fetch", "pdf"}
+	expected := []string{"navigate", "click", "type", "screenshot", "snapshot", "extract", "eval", "back", "forward", "wait", "search", "fetch", "pdf", "session_list", "session_reset"}
 	for _, name := range expected {
 		if !toolNames[name] {
 			t.Errorf("expected tool %q not found in server tools", name)
@@ -329,6 +329,162 @@ func TestListResources(t *testing.T) {
 		if !uris[uri] {
 			t.Errorf("expected resource %q not found", uri)
 		}
+	}
+}
+
+func TestSearchTool(t *testing.T) {
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	// Search requires a real browser and network; verify it returns an error or results gracefully.
+	result, err := callTool(ctx, cs, "search", map[string]any{"query": "test query", "engine": "google"})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("search: %v", err)
+	}
+
+	// Either a valid result or an error result (e.g., no network, CAPTCHA) is acceptable.
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolErr{text})
+		t.Logf("search returned error (expected in test env): %s", text)
+	}
+}
+
+func TestFetchTool(t *testing.T) {
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := callTool(ctx, cs, "fetch", map[string]any{"url": ts.URL + "/", "mode": "full"})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("fetch: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolErr{text})
+		t.Fatalf("fetch error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if !strings.Contains(text, "Hello Scout") && !strings.Contains(text, "Test Page") {
+		t.Errorf("expected page content in fetch result, got: %s", text)
+	}
+}
+
+func TestSessionListTool(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	// Before any navigation, session should report no active session.
+	result, err := callTool(ctx, cs, "session_list", map[string]any{})
+	if err != nil {
+		t.Fatalf("session_list: %v", err)
+	}
+
+	if result.IsError {
+		t.Fatalf("session_list error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if !strings.Contains(text, "no active session") {
+		t.Errorf("expected 'no active session' before navigation, got: %s", text)
+	}
+
+	// Navigate, then check again.
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/")
+
+	result, err = callTool(ctx, cs, "session_list", map[string]any{})
+	if err != nil {
+		t.Fatalf("session_list after navigate: %v", err)
+	}
+
+	text = result.Content[0].(*mcp.TextContent).Text
+	if !strings.Contains(text, "active") || !strings.Contains(text, "Test Page") {
+		t.Errorf("expected active session with title, got: %s", text)
+	}
+}
+
+func TestSessionResetTool(t *testing.T) {
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/")
+
+	// Reset the session.
+	result, err := callTool(ctx, cs, "session_reset", map[string]any{})
+	if err != nil {
+		t.Fatalf("session_reset: %v", err)
+	}
+
+	if result.IsError {
+		t.Fatalf("session_reset error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if text != "Session reset" {
+		t.Errorf("expected 'Session reset', got: %s", text)
+	}
+
+	// After reset, session_list should show no active session.
+	result, err = callTool(ctx, cs, "session_list", map[string]any{})
+	if err != nil {
+		t.Fatalf("session_list after reset: %v", err)
+	}
+
+	text = result.Content[0].(*mcp.TextContent).Text
+	if !strings.Contains(text, "no active session") {
+		t.Errorf("expected 'no active session' after reset, got: %s", text)
+	}
+
+	// Navigate again to verify re-initialization works.
+	navigateHelper(t, ctx, cs, ts.URL+"/page2")
+
+	result, err = callTool(ctx, cs, "session_list", map[string]any{})
+	if err != nil {
+		t.Fatalf("session_list after re-navigate: %v", err)
+	}
+
+	text = result.Content[0].(*mcp.TextContent).Text
+	if !strings.Contains(text, "Page Two") {
+		t.Errorf("expected 'Page Two' after re-navigate, got: %s", text)
+	}
+}
+
+func TestSnapshotTool(t *testing.T) {
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/")
+
+	result, err := callTool(ctx, cs, "snapshot", map[string]any{})
+	if err != nil {
+		t.Fatalf("snapshot: %v", err)
+	}
+
+	if result.IsError {
+		t.Fatalf("snapshot error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if text == "" {
+		t.Error("expected non-empty snapshot")
 	}
 }
 

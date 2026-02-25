@@ -73,6 +73,17 @@ func (s *mcpState) ensurePage(ctx context.Context) (*scout.Page, error) {
 	return p, nil
 }
 
+func (s *mcpState) reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.browser != nil {
+		_ = s.browser.Close()
+	}
+	s.browser = nil
+	s.page = nil
+}
+
 func errResult(msg string) (*mcp.CallToolResult, error) {
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: msg}},
@@ -512,6 +523,45 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 				Data:     data,
 			}},
 		}, nil
+	})
+
+	server.AddTool(&mcp.Tool{
+		Name:        "session_list",
+		Description: "List current session info (URL, title of current page)",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
+	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		state.mu.Lock()
+		hasPage := state.page != nil
+		state.mu.Unlock()
+
+		if !hasPage {
+			return textResult(`{"status":"no active session"}`)
+		}
+
+		page, err := state.ensurePage(ctx)
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		u, _ := page.URL()
+		title, _ := page.Title()
+
+		info := map[string]string{
+			"status": "active",
+			"url":    u,
+			"title":  title,
+		}
+		data, _ := json.Marshal(info)
+		return textResult(string(data))
+	})
+
+	server.AddTool(&mcp.Tool{
+		Name:        "session_reset",
+		Description: "Close the current browser and page, forcing re-initialization on next use",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
+	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		state.reset()
+		return textResult("Session reset")
 	})
 
 	// --- Resources ---

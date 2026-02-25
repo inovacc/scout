@@ -3,11 +3,18 @@
 package launcher
 
 import (
+	"fmt"
 	"os/exec"
 	"syscall"
 )
 
 func killGroup(pid int) {
+	// Use Windows Job Objects or taskkill to terminate the entire process tree (rod#865).
+	// taskkill /T /F terminates the process and all child processes.
+	cmd := exec.Command("taskkill", "/F", "/T", "/PID", fmt.Sprintf("%d", pid))
+	_ = cmd.Run()
+
+	// Fallback: directly terminate the process if taskkill failed.
 	terminateProcess(pid)
 }
 

@@ -1,6 +1,8 @@
 package scout
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -71,6 +73,16 @@ func init() {
 <div hidden>
   <button>Hidden Button</button>
 </div>
+</body></html>`))
+		})
+
+		mux.HandleFunc("/snapshot-iframe", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/html")
+			// Use a relative URL so the iframe is same-origin
+			_, _ = w.Write([]byte(`<!DOCTYPE html>
+<html><body>
+<h1>Parent Page</h1>
+<iframe src="/snapshot-basic" title="Embedded"></iframe>
 </body></html>`))
 		})
 	})
@@ -322,5 +334,156 @@ func TestElementByRef_EmptyRef(t *testing.T) {
 	_, err = page.ElementByRef("")
 	if err == nil {
 		t.Error("expected error for empty ref")
+	}
+}
+
+func TestSnapshotWithIframes(t *testing.T) {
+	b := newTestBrowser(t)
+	srv := newTestServer()
+	defer srv.Close()
+
+	// Navigate to the iframe page, passing origin via a custom header trick.
+	// Since same-origin, the iframe handler needs to know the server URL.
+	// We use a direct URL construction instead.
+	page, err := b.NewPage(srv.URL + "/snapshot-iframe")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := page.WaitLoad(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Without iframes option, snapshot should not contain iframe content
+	snapNoIframes, err := page.Snapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(snapNoIframes, `heading "Parent Page"`) {
+		t.Error("snapshot should contain parent page heading")
+	}
+
+	// With iframes option, snapshot should include iframe content
+	snapWithIframes, err := page.SnapshotWithOptions(WithSnapshotIframes())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(snapWithIframes, "[iframe") {
+		t.Error("snapshot with iframes should contain [iframe marker")
+	}
+}
+
+// mockLLMProvider is a simple LLM mock for testing.
+type mockLLMProvider struct {
+	name     string
+	response string
+	err      error
+	lastSys  string
+	lastUser string
+}
+
+func (m *mockLLMProvider) Name() string { return m.name }
+
+func (m *mockLLMProvider) Complete(_ context.Context, systemPrompt, userPrompt string) (string, error) {
+	m.lastSys = systemPrompt
+	m.lastUser = userPrompt
+	if m.err != nil {
+		return "", m.err
+	}
+	return m.response, nil
+}
+
+func TestSnapshotWithLLM_NilProvider(t *testing.T) {
+	b := newTestBrowser(t)
+	srv := newTestServer()
+	defer srv.Close()
+
+	page, err := b.NewPage(srv.URL + "/snapshot-basic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := page.WaitLoad(); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = SnapshotWithLLM(page, nil, "describe this page")
+	if err == nil {
+		t.Error("expected error for nil provider")
+	}
+	if !strings.Contains(err.Error(), "nil LLM provider") {
+		t.Errorf("expected nil provider error, got: %v", err)
+	}
+}
+
+func TestSnapshotWithLLM_MockProvider(t *testing.T) {
+	b := newTestBrowser(t)
+	srv := newTestServer()
+	defer srv.Close()
+
+	page, err := b.NewPage(srv.URL + "/snapshot-basic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := page.WaitLoad(); err != nil {
+		t.Fatal(err)
+	}
+
+	mock := &mockLLMProvider{
+		name:     "mock",
+		response: "This page has a navigation bar and a submit button.",
+	}
+
+	result, err := SnapshotWithLLM(page, mock, "describe this page")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result != mock.response {
+		t.Errorf("expected %q, got %q", mock.response, result)
+	}
+
+	// Verify the snapshot was included in the user prompt
+	if !strings.Contains(mock.lastUser, "describe this page") {
+		t.Error("user prompt should contain the original prompt")
+	}
+	if !strings.Contains(mock.lastUser, "- document") {
+		t.Error("user prompt should contain the accessibility tree")
+	}
+	if !strings.Contains(mock.lastUser, "button") {
+		t.Error("user prompt should contain snapshot content")
+	}
+
+	// Verify system prompt explains the format
+	if !strings.Contains(mock.lastSys, "accessibility tree") {
+		t.Error("system prompt should describe the accessibility tree format")
+	}
+	if !strings.Contains(mock.lastSys, "[ref=") {
+		t.Error("system prompt should mention ref markers")
+	}
+}
+
+func TestSnapshotWithLLM_Error(t *testing.T) {
+	b := newTestBrowser(t)
+	srv := newTestServer()
+	defer srv.Close()
+
+	page, err := b.NewPage(srv.URL + "/snapshot-basic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := page.WaitLoad(); err != nil {
+		t.Fatal(err)
+	}
+
+	mock := &mockLLMProvider{
+		name: "failing-mock",
+		err:  fmt.Errorf("connection refused"),
+	}
+
+	_, err = SnapshotWithLLM(page, mock, "test")
+	if err == nil {
+		t.Error("expected error from failing provider")
+	}
+	if !strings.Contains(err.Error(), "failing-mock") {
+		t.Errorf("error should mention provider name, got: %v", err)
 	}
 }
