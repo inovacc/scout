@@ -35,6 +35,9 @@ type Browser struct {
 
 	// version is the browser product string, eagerly fetched at creation time.
 	version string
+
+	// vpn holds VPN connection state and proxy auth configuration.
+	vpn *vpnState
 }
 
 // New creates and connects a new headless browser with the given options.
@@ -51,6 +54,22 @@ func New(opts ...Option) (*Browser, error) {
 	// Default to maximized window in headed mode unless explicitly set.
 	if !o.headless && o.windowState == "" {
 		o.windowState = WindowStateMaximized
+	}
+
+	// If a VPN provider is set, connect and derive proxy URL + auth.
+	if o.vpnProvider != nil && o.proxy == "" {
+		conn, err := o.vpnProvider.Connect(context.Background(), "")
+		if err != nil {
+			return nil, fmt.Errorf("scout: vpn: connect: %w", err)
+		}
+		if dp, ok := o.vpnProvider.(*DirectProxy); ok {
+			o.proxy = dp.ProxyURL()
+			if dp.username != "" && o.proxyAuth == nil {
+				o.proxyAuth = &proxyAuthConfig{username: dp.username, password: dp.password}
+			}
+		} else {
+			o.proxy = fmt.Sprintf("%s://%s:%d", conn.Protocol, conn.Server.Host, conn.Port)
+		}
 	}
 
 	var (
@@ -82,6 +101,12 @@ func New(opts ...Option) (*Browser, error) {
 	var cachedVersion string
 	if v, vErr := b.Version(); vErr == nil {
 		cachedVersion = v.Product
+	}
+
+	// Set up proxy authentication handler if configured.
+	if o.proxyAuth != nil {
+		wait := b.HandleAuth(o.proxyAuth.username, o.proxyAuth.password)
+		go func() { _ = wait() }()
 	}
 
 	if o.ignoreCerts {

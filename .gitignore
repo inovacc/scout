@@ -16,3 +16,4 @@ screenshot_*.png
 forensic_*.har
 .tmp/
 /.scripts/
+extract/
