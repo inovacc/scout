@@ -1,0 +1,67 @@
+{{- if .Values.job.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "scout.fullname" . }}-{{ .Values.job.name | default "scrape" }}
+  labels:
+    {{- include "scout.labels" . | nindent 4 }}
+spec:
+  backoffLimit: {{ .Values.job.backoffLimit | default 3 }}
+  ttlSecondsAfterFinished: {{ .Values.job.ttlSecondsAfterFinished | default 3600 }}
+  {{- if .Values.job.parallelism }}
+  parallelism: {{ .Values.job.parallelism }}
+  completions: {{ .Values.job.completions | default .Values.job.parallelism }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "scout.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: {{ .Values.job.restartPolicy | default "OnFailure" }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: scout
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            {{- toYaml .Values.job.args | nindent 12 }}
+          env:
+            - name: SCOUT_HEADLESS
+              value: {{ .Values.scout.headless | quote }}
+            - name: SCOUT_NO_SANDBOX
+              value: {{ .Values.scout.noSandbox | quote }}
+            - name: SCOUT_STEALTH
+              value: {{ .Values.scout.stealth | quote }}
+            {{- with .Values.job.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            {{- if .Values.job.outputVolume }}
+            - name: output
+              mountPath: /output
+            {{- end }}
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.shmSize | default "2Gi" }}
+        {{- if .Values.job.outputVolume }}
+        - name: output
+          {{- toYaml .Values.job.outputVolume | nindent 10 }}
+        {{- end }}
+{{- end }}

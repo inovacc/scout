@@ -1,0 +1,53 @@
+# Scout Docker Compose examples
+#
+# Full image (CLI + Chromium):
+#   docker compose up scout
+#
+# gRPC server:
+#   docker compose up grpc
+#
+# Batch scrape job:
+#   docker compose run --rm batch
+
+services:
+  # Interactive scout with Chromium
+  scout:
+    image: ghcr.io/inovacc/scout:latest
+    shm_size: "2g"
+    environment:
+      SCOUT_HEADLESS: "true"
+      SCOUT_NO_SANDBOX: "true"
+    command: ["version"]
+
+  # Long-running gRPC server
+  grpc:
+    image: ghcr.io/inovacc/scout:latest
+    shm_size: "2g"
+    ports:
+      - "9551:9551"
+    environment:
+      SCOUT_HEADLESS: "true"
+      SCOUT_NO_SANDBOX: "true"
+    command: ["serve", "--addr=0.0.0.0:9551"]
+    healthcheck:
+      test: ["CMD", "scout", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # One-off batch scrape
+  batch:
+    image: ghcr.io/inovacc/scout:latest
+    shm_size: "2g"
+    environment:
+      SCOUT_HEADLESS: "true"
+      SCOUT_NO_SANDBOX: "true"
+      SCOUT_STEALTH: "true"
+    volumes:
+      - ./output:/output
+    command: ["scrape", "--url=https://example.com", "--output=/output/result.json"]
+
+  # Slim image — gRPC client only (no browser)
+  client:
+    image: ghcr.io/inovacc/scout:slim
+    command: ["version"]
