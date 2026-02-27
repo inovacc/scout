@@ -41,6 +41,9 @@ type Browser struct {
 
 	// vpnRot manages automatic VPN server rotation across NewPage calls.
 	vpnRot *vpnRotator
+
+	// fpRot manages automatic fingerprint rotation across NewPage calls.
+	fpRot *fingerprintRotator
 }
 
 // New creates and connects a new headless browser with the given options.
@@ -145,6 +148,9 @@ func New(opts ...Option) (*Browser, error) {
 		if o.vpnRotation != nil && o.vpnProvider != nil {
 			br.vpnRot = newVPNRotator(o.vpnProvider, *o.vpnRotation)
 		}
+		if o.fpRotation != nil {
+			br.fpRot = newFingerprintRotator(*o.fpRotation)
+		}
 		return br, nil
 	}
 
@@ -166,6 +172,9 @@ func New(opts ...Option) (*Browser, error) {
 	}
 	if o.vpnRotation != nil && o.vpnProvider != nil {
 		br.vpnRot = newVPNRotator(o.vpnProvider, *o.vpnRotation)
+	}
+	if o.fpRotation != nil {
+		br.fpRot = newFingerprintRotator(*o.fpRotation)
 	}
 	return br, nil
 }
@@ -303,6 +312,12 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 		rodPage *rod.Page
 		err     error
 	)
+
+	// Resolve fingerprint: rotation takes precedence over static.
+	if b.fpRot != nil {
+		domain := domainFromURL(url)
+		b.opts.fingerprint = b.fpRot.forPage(domain)
+	}
 
 	hasInject := len(b.opts.injectScripts) > 0
 	hasFP := b.opts.fingerprint != nil

@@ -38,6 +38,8 @@ type researchOpts struct {
 	concurrency int
 	engine      SearchEngine
 	mainOnly    bool
+	cache       *ResearchCache
+	prior       *ResearchResult
 }
 
 func researchDefaults() *researchOpts {
@@ -116,6 +118,13 @@ func (ra *ResearchAgent) Research(ctx context.Context, query string) (*ResearchR
 		return nil, fmt.Errorf("scout: research: LLM provider is nil")
 	}
 
+	// Check cache first.
+	if ra.opts.cache != nil {
+		if cached, ok := ra.opts.cache.Get(query); ok {
+			return cached, nil
+		}
+	}
+
 	start := time.Now()
 
 	ctx, cancel := context.WithTimeout(ctx, ra.opts.timeout)
@@ -153,6 +162,16 @@ func (ra *ResearchAgent) Research(ctx context.Context, query string) (*ResearchR
 	result := ra.parseResponse(query, llmResp, sources)
 	result.Duration = time.Since(start)
 	result.Depth = 0
+
+	// Merge with prior results if provided.
+	if ra.opts.prior != nil {
+		result.Sources = deduplicateSources(append(ra.opts.prior.Sources, result.Sources...))
+	}
+
+	// Store in cache.
+	if ra.opts.cache != nil {
+		ra.opts.cache.Put(query, result)
+	}
 
 	return result, nil
 }

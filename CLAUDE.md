@@ -59,6 +59,9 @@ Import: `github.com/inovacc/scout/pkg/scout`. Core does NOT import gRPC or Cobra
 - **Recipe selectors**: `$name` references resolved at parse time. `+` sibling prefix and `@attr` suffix preserved.
 - **Smart wait**: `WaitFrameworkReady()` detects framework and waits for readiness.
 - **Snapshot JS**: Lives in `snapshot_script.go` (not `_js.go` — that suffix triggers GOOS=js build constraint).
+- **Fingerprint rotation**: `WithFingerprintRotation(cfg)` with strategies: PerSession, PerPage, PerDomain, Interval. `FingerprintStore` persists to `~/.scout/fingerprints/`.
+- **Research presets**: `WithResearchPreset(ResearchShallow|Medium|Deep)`. `ResearchCache` with TTL. `WithResearchPrior(result)` for incremental research.
+- **Stealth evasions**: 17 evasions in `pkg/stealth/stealth_extra.go` including languages, plugins/mimeTypes, timezone, canvas/audio noise, WebGL, WebRTC, fonts, screen, battery, hasFocus, outer dimensions, toString integrity.
 
 ## Dependencies
 
