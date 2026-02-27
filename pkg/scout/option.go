@@ -38,6 +38,7 @@ type options struct {
 	env           []string
 	incognito     bool
 	noSandbox     bool
+	noLeakless    bool
 	windowState   WindowState
 	xvfb          bool
 	xvfbArgs      []string
@@ -167,6 +168,12 @@ func WithIncognito() Option {
 // WithNoSandbox disables the browser sandbox. Use only in containers.
 func WithNoSandbox() Option {
 	return func(o *options) { o.noSandbox = true }
+}
+
+// WithNoLeakless disables the leakless process manager.
+// Use when the leakless binary is blocked by antivirus software.
+func WithNoLeakless() Option {
+	return func(o *options) { o.noLeakless = true }
 }
 
 // WithWindowState sets the initial window state for new pages.

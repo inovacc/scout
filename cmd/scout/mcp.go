@@ -2,12 +2,24 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 
 	scoutmcp "github.com/inovacc/scout/pkg/scout/mcp"
 	"github.com/spf13/cobra"
 )
+
+type mcpServerConfig struct {
+	Command string   `json:"command"`
+	Args    []string `json:"args"`
+}
+
+type mcpConfig struct {
+	MCPServers map[string]mcpServerConfig `json:"mcpServers"`
+}
 
 var mcpCmd = &cobra.Command{
 	Use:   "mcp",
@@ -15,10 +27,58 @@ var mcpCmd = &cobra.Command{
 	Long: `Start a Model Context Protocol server that exposes Scout browser
 automation capabilities as MCP tools. Communicates via stdio (JSON-RPC).
 
+Use --install to generate .mcp.json in the current directory.
+Use --install --global to register via "claude mcp add" (global Claude Code config).
+
 Tools: navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait,
        search, fetch, pdf, session_list, session_reset
 Resources: scout://page/markdown, scout://page/url, scout://page/title`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		install, _ := cmd.Flags().GetBool("install")
+		if install {
+			global, _ := cmd.Flags().GetBool("global")
+
+			cfg := mcpConfig{
+				MCPServers: map[string]mcpServerConfig{
+					"scout": {
+						Command: "scout",
+						Args:    []string{"mcp"},
+					},
+				},
+			}
+
+			if global {
+				// Use `claude mcp add` to register globally.
+				bin, err := exec.LookPath("claude")
+				if err != nil {
+					return fmt.Errorf("scout: claude CLI not found: %w", err)
+				}
+
+				add := exec.Command(bin, "mcp", "add", "-s", "user", "scout", "--", "scout", "mcp")
+				add.Stdout = os.Stdout
+				add.Stderr = os.Stderr
+
+				if err := add.Run(); err != nil {
+					return fmt.Errorf("scout: claude mcp add: %w", err)
+				}
+
+				_, _ = fmt.Fprintln(os.Stderr, "Registered scout MCP server globally via claude mcp add")
+				return nil
+			}
+
+			data, err := json.MarshalIndent(cfg, "", "  ")
+			if err != nil {
+				return fmt.Errorf("scout: marshal mcp config: %w", err)
+			}
+
+			if err := os.WriteFile(".mcp.json", append(data, '\n'), 0644); err != nil {
+				return fmt.Errorf("scout: write .mcp.json: %w", err)
+			}
+
+			_, _ = fmt.Fprintln(os.Stderr, "Wrote .mcp.json")
+			return nil
+		}
+
 		logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 		headless, _ := cmd.Flags().GetBool("headless")
 		stealth, _ := cmd.Flags().GetBool("stealth")
@@ -28,4 +88,6 @@ Resources: scout://page/markdown, scout://page/url, scout://page/title`,
 
 func init() {
 	rootCmd.AddCommand(mcpCmd)
+	mcpCmd.Flags().BoolP("install", "i", false, "Generate and write .mcp.json to current directory")
+	mcpCmd.Flags().BoolP("global", "g", false, "Write to ~/.claude/mcp.json (use with --install)")
 }
