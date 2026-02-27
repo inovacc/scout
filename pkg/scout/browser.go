@@ -257,7 +257,9 @@ func launchLocal(o *options) (string, *launcher.Launcher, error) {
 		o.extensions = append(o.extensions, dir)
 	}
 
-	if o.bridge {
+	// Only load bridge extension in headed mode or headless=new.
+	// Old --headless does not support extensions.
+	if o.bridge && !o.headless {
 		bridgeDir, err := writeBridgeExtension()
 		if err != nil {
 			return "", nil, err
