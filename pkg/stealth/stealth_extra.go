@@ -325,7 +325,93 @@ const ExtraJS = `
   }
 })();
 
-// 14. Protect toString integrity for overridden functions
+// 14. Spoof navigator.languages for headless
+(function() {
+  try {
+    if (!navigator.languages || navigator.languages.length === 0) {
+      Object.defineProperty(navigator, 'languages', {
+        get: function() { return ['en-US', 'en']; },
+        configurable: true,
+      });
+    }
+    if (!navigator.language) {
+      Object.defineProperty(navigator, 'language', {
+        get: function() { return 'en-US'; },
+        configurable: true,
+      });
+    }
+  } catch(e) {}
+})();
+
+// 15. Spoof navigator.plugins and mimeTypes for headless
+(function() {
+  try {
+    if (navigator.plugins.length === 0) {
+      const fakePlugins = [
+        { name: 'PDF Viewer', description: 'Portable Document Format', filename: 'internal-pdf-viewer', length: 1 },
+        { name: 'Chrome PDF Viewer', description: 'Portable Document Format', filename: 'internal-pdf-viewer', length: 1 },
+        { name: 'Chromium PDF Viewer', description: 'Portable Document Format', filename: 'internal-pdf-viewer', length: 1 },
+        { name: 'Microsoft Edge PDF Viewer', description: 'Portable Document Format', filename: 'internal-pdf-viewer', length: 1 },
+        { name: 'WebKit built-in PDF', description: 'Portable Document Format', filename: 'internal-pdf-viewer', length: 1 },
+      ];
+      const pluginArray = Object.create(PluginArray.prototype);
+      for (let i = 0; i < fakePlugins.length; i++) {
+        const p = Object.create(Plugin.prototype);
+        Object.defineProperties(p, {
+          name:        { value: fakePlugins[i].name,        enumerable: true },
+          description: { value: fakePlugins[i].description, enumerable: true },
+          filename:    { value: fakePlugins[i].filename,    enumerable: true },
+          length:      { value: fakePlugins[i].length,      enumerable: true },
+        });
+        pluginArray[i] = p;
+      }
+      Object.defineProperty(pluginArray, 'length', { value: fakePlugins.length, enumerable: true });
+      Object.defineProperty(navigator, 'plugins', {
+        get: function() { return pluginArray; },
+        configurable: true,
+        enumerable: true,
+      });
+    }
+    if (navigator.mimeTypes.length === 0) {
+      const fakeMimeType = Object.create(MimeType.prototype);
+      Object.defineProperties(fakeMimeType, {
+        type:        { value: 'application/pdf', enumerable: true },
+        suffixes:    { value: 'pdf',             enumerable: true },
+        description: { value: 'Portable Document Format', enumerable: true },
+      });
+      const mimeArray = Object.create(MimeTypeArray.prototype);
+      mimeArray[0] = fakeMimeType;
+      Object.defineProperty(mimeArray, 'length', { value: 1, enumerable: true });
+      Object.defineProperty(navigator, 'mimeTypes', {
+        get: function() { return mimeArray; },
+        configurable: true,
+        enumerable: true,
+      });
+    }
+  } catch(e) {}
+})();
+
+// 16. Spoof Intl.DateTimeFormat timezone for headless
+(function() {
+  try {
+    var resolved = Intl.DateTimeFormat().resolvedOptions();
+    if (resolved.timeZone === 'UTC' || !resolved.timeZone) {
+      var origDTF = Intl.DateTimeFormat;
+      var fakeTimezone = 'America/New_York';
+      Intl.DateTimeFormat = function(locales, options) {
+        options = Object.assign({}, options);
+        if (!options.timeZone) {
+          options.timeZone = fakeTimezone;
+        }
+        return new origDTF(locales, options);
+      };
+      Intl.DateTimeFormat.prototype = origDTF.prototype;
+      Intl.DateTimeFormat.supportedLocalesOf = origDTF.supportedLocalesOf;
+    }
+  } catch(e) {}
+})();
+
+// 17. Protect toString integrity for overridden functions
 (function() {
   var nativeToString = Function.prototype.toString;
   var overrides = new WeakMap();

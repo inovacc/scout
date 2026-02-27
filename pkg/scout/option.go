@@ -62,6 +62,7 @@ type options struct {
 	bridgePort         int
 	autoBypass         *ChallengeSolver
 	fingerprint        *Fingerprint
+	fpRotation         *FingerprintRotationConfig
 	vpnProvider        VPNProvider
 	vpnRotation        *VPNRotationConfig
 	proxyAuth          *proxyAuthConfig
@@ -320,6 +321,14 @@ func WithFingerprint(fp *Fingerprint) Option {
 // and applies it to the browser session.
 func WithRandomFingerprint(opts ...FingerprintOption) Option {
 	return func(o *options) { o.fingerprint = GenerateFingerprint(opts...) }
+}
+
+// WithFingerprintRotation enables automatic fingerprint rotation.
+// When set, a new fingerprint is generated or selected according to the
+// strategy (per-session, per-page, per-domain, or time interval).
+// This overrides WithFingerprint and WithRandomFingerprint.
+func WithFingerprintRotation(cfg FingerprintRotationConfig) Option {
+	return func(o *options) { o.fpRotation = &cfg }
 }
 
 // WithVPN sets the VPN provider for proxy-based connectivity.
