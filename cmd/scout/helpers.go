@@ -31,7 +31,12 @@ func writeOutput(cmd *cobra.Command, data []byte, defaultName string) (string, e
 }
 
 // readPassphrase prompts for a passphrase with echo disabled.
+// If SCOUT_PASSPHRASE is set, it is used without prompting.
 func readPassphrase(w io.Writer, prompt string) (string, error) {
+	if v := os.Getenv("SCOUT_PASSPHRASE"); v != "" {
+		return v, nil
+	}
+
 	_, _ = fmt.Fprint(w, prompt)
 
 	fd := int(os.Stdin.Fd())
