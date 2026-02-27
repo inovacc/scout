@@ -40,8 +40,4 @@
 
 See [BACKLOG.md](BACKLOG.md) for prioritized open items:
 
-- **Fingerprint persistence & rotation** — P3, small
-- **Bot probe → stealth improvements** — P3, medium
-- **Research agent depth config & caching** — P3, small
-- **Docker K8s job template & examples** — P2, medium
 - **Scraper modes** (18 authenticated services) — P2/P3, large each

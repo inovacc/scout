@@ -1,0 +1,49 @@
+# Standalone K8s Job example — no Helm required.
+# Apply with: kubectl apply -f k8s-job.yaml
+#
+# For Helm-based jobs, use the chart with job.enabled=true:
+#   helm install scout-job deploy/helm/scout --set job.enabled=true
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: scout-scrape
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: scout
+          image: ghcr.io/inovacc/scout:latest
+          args:
+            - scrape
+            - --url=https://example.com
+            - --output=/output/result.json
+          env:
+            - name: SCOUT_HEADLESS
+              value: "true"
+            - name: SCOUT_NO_SANDBOX
+              value: "true"
+            - name: SCOUT_STEALTH
+              value: "true"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: output
+              mountPath: /output
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: "2Gi"
+        - name: output
+          emptyDir: {}

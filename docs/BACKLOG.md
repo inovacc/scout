@@ -9,13 +9,6 @@
 
 ## Open Items
 
-### Docker — K8s Job Template and Examples
-
-- **Priority:** P2
-- **Effort:** Medium
-- **Description:** Add Kubernetes job template for batch scraping workloads and `examples/docker/` usage examples. Completes the container deployment story.
-- **Dependencies:** Docker images (done), Helm chart (done)
-
 ### Scraper Modes — Authenticated Services
 
 Dedicated scraper modes for authenticated services. Each provides structured extraction via headless browser automation.

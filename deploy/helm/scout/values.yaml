@@ -24,6 +24,24 @@ scout:
   noSandbox: true
   stealth: false
 
+## Batch job configuration (disabled by default)
+job:
+  enabled: false
+  name: scrape
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  restartPolicy: OnFailure
+  # parallelism: 4
+  # completions: 4
+  args:
+    - scrape
+    - --url=https://example.com
+    - --output=/output/result.json
+  env: []
+  # outputVolume:
+  #   persistentVolumeClaim:
+  #     claimName: scout-output
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

@@ -21,3 +21,4 @@ No open issues at this time.
 | Window maximize blank space | Fixed: clears DeviceMetricsOverride after maximize | 2026-02 |
 | Windows browser detection opens GUI | Fixed: PowerShell `-WindowStyle Hidden` (v0.20.0) | 2026-02 |
 | ParseVersion wrong for Brave | Fixed: regex returns first match (v0.20.0) | 2026-02 |
+| Bridge extension opens visible browser in headless tests | Fixed: skip bridge loading when `--headless` active (old mode doesn't support extensions) | 2026-02 |
