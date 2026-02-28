@@ -66,6 +66,8 @@ type options struct {
 	vpnProvider        VPNProvider
 	vpnRotation        *VPNRotationConfig
 	proxyAuth          *proxyAuthConfig
+	hijack             bool
+	hijackFilter       *HijackFilter
 }
 
 func defaults() *options {
@@ -349,6 +351,17 @@ func WithProxyAuth(username, password string) Option {
 	return func(o *options) {
 		o.proxyAuth = &proxyAuthConfig{username: username, password: password}
 	}
+}
+
+// WithSessionHijack enables automatic session hijacking on new pages.
+// When enabled, NewPage will auto-create a SessionHijacker.
+func WithSessionHijack() Option {
+	return func(o *options) { o.hijack = true }
+}
+
+// WithHijackFilter sets the filter for session hijacking.
+func WithHijackFilter(f HijackFilter) Option {
+	return func(o *options) { o.hijackFilter = &f }
 }
 
 // WithLaunchFlag adds a custom Chrome CLI flag. The name should not include the "--" prefix.

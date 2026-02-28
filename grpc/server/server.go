@@ -24,12 +24,14 @@ import (
 
 // session holds a browser instance, page, recorder, and event subscribers.
 type session struct {
-	id       string
-	browser  *scout.Browser
-	page     *scout.Page
-	recorder *scout.NetworkRecorder
-	subs     map[string]chan *pb.BrowserEvent
-	mu       sync.RWMutex
+	id         string
+	browser    *scout.Browser
+	page       *scout.Page
+	recorder   *scout.NetworkRecorder
+	hijacker   *scout.SessionHijacker
+	subs       map[string]chan *pb.BrowserEvent
+	hijackSubs map[string]chan *pb.HijackedEvent
+	mu         sync.RWMutex
 }
 
 func (s *session) broadcast(ev *pb.BrowserEvent) {
@@ -811,6 +813,169 @@ func (s *ScoutServer) ExportHAR(_ context.Context, req *pb.SessionRequest) (*pb.
 		Data:       data,
 		EntryCount: int32(count),
 	}, nil
+}
+
+// ════════════════════════ Session Hijacking ════════════════════════
+
+func (s *session) broadcastHijack(ev *pb.HijackedEvent) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ev.SessionId = s.id
+	ev.Timestamp = time.Now().UnixMilli()
+
+	for _, ch := range s.hijackSubs {
+		select {
+		case ch <- ev:
+		default:
+		}
+	}
+}
+
+func (s *session) subscribeHijack(id string) chan *pb.HijackedEvent {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.hijackSubs == nil {
+		s.hijackSubs = make(map[string]chan *pb.HijackedEvent)
+	}
+
+	ch := make(chan *pb.HijackedEvent, 256)
+	s.hijackSubs[id] = ch
+	return ch
+}
+
+func (s *session) unsubscribeHijack(id string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if ch, ok := s.hijackSubs[id]; ok {
+		close(ch)
+		delete(s.hijackSubs, id)
+	}
+}
+
+func (s *ScoutServer) StartHijack(_ context.Context, req *pb.HijackRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(req.GetSessionId())
+	if err != nil {
+		return nil, err
+	}
+
+	if sess.hijacker != nil {
+		return nil, status.Error(codes.AlreadyExists, "hijack already active")
+	}
+
+	var opts []scout.HijackOption
+	if req.GetCaptureBody() {
+		opts = append(opts, scout.WithHijackBodyCapture())
+	}
+	if len(req.GetUrlPatterns()) > 0 {
+		opts = append(opts, scout.WithHijackURLFilter(req.GetUrlPatterns()...))
+	}
+
+	hijacker, err := sess.page.NewSessionHijacker(opts...)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "hijack start failed: %v", sanitizeError(err))
+	}
+	sess.hijacker = hijacker
+
+	// Fan-out goroutine: read from hijacker channel and broadcast to gRPC subscribers.
+	go func() {
+		for ev := range hijacker.Events() {
+			pbEv := hijackEventToProto(ev)
+			sess.broadcastHijack(pbEv)
+		}
+	}()
+
+	return &pb.Empty{}, nil
+}
+
+func (s *ScoutServer) StopHijack(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(req.GetSessionId())
+	if err != nil {
+		return nil, err
+	}
+
+	if sess.hijacker != nil {
+		sess.hijacker.Stop()
+		sess.hijacker = nil
+	}
+
+	return &pb.Empty{}, nil
+}
+
+func (s *ScoutServer) StreamHijack(req *pb.SessionRequest, stream pb.ScoutService_StreamHijackServer) error {
+	sess, err := s.getSession(req.GetSessionId())
+	if err != nil {
+		return err
+	}
+
+	subID := uuid.NewString()
+	ch := sess.subscribeHijack(subID)
+	defer sess.unsubscribeHijack(subID)
+
+	for {
+		select {
+		case ev, ok := <-ch:
+			if !ok {
+				return nil
+			}
+			if err := stream.Send(ev); err != nil {
+				return err
+			}
+		case <-stream.Context().Done():
+			return nil
+		}
+	}
+}
+
+func hijackEventToProto(ev scout.HijackEvent) *pb.HijackedEvent {
+	pbEv := &pb.HijackedEvent{}
+
+	switch ev.Type {
+	case scout.HijackEventRequest:
+		if ev.Request != nil {
+			pbEv.Event = &pb.HijackedEvent_Request{
+				Request: &pb.HijackedRequestEvent{
+					RequestId:    ev.Request.RequestID,
+					Method:       ev.Request.Method,
+					Url:          ev.Request.URL,
+					Headers:      ev.Request.Headers,
+					Body:         ev.Request.Body,
+					ResourceType: ev.Request.ResourceType,
+				},
+			}
+		}
+	case scout.HijackEventResponse:
+		if ev.Response != nil {
+			pbEv.Event = &pb.HijackedEvent_Response{
+				Response: &pb.HijackedResponseEvent{
+					RequestId: ev.Response.RequestID,
+					Url:       ev.Response.URL,
+					Status:    int32(ev.Response.Status),
+					Headers:   ev.Response.Headers,
+					Body:      ev.Response.Body,
+					MimeType:  ev.Response.MimeType,
+					ElapsedMs: ev.Response.ElapsedMs,
+				},
+			}
+		}
+	case scout.HijackWSSent, scout.HijackWSReceived, scout.HijackWSOpened, scout.HijackWSClosed:
+		if ev.Frame != nil {
+			pbEv.Event = &pb.HijackedEvent_WsFrame{
+				WsFrame: &pb.WebSocketFrameEvent{
+					RequestId: ev.Frame.RequestID,
+					Url:       ev.Frame.URL,
+					Direction: ev.Frame.Direction,
+					Opcode:    ev.Frame.Opcode,
+					Payload:   ev.Frame.Payload,
+					Masked:    ev.Frame.Masked,
+				},
+			}
+		}
+	}
+
+	return pbEv
 }
 
 // ════════════════════════ Profile ════════════════════════

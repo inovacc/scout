@@ -1,6 +1,7 @@
 version: 3
 
 vars:
+  MAIN_PACKAGE: ./cmd/scout
   COVERAGE_FILE: coverage.out
 
 tasks:
@@ -9,6 +10,11 @@ tasks:
     desc: List all available tasks
     cmds:
       - task --list
+
+  install:
+    desc: Install omni to $GOPATH/bin
+    cmds:
+      - go install -ldflags="-s -w" {{.MAIN_PACKAGE}}
 
   # === CODE GENERATION ===
   proto:
