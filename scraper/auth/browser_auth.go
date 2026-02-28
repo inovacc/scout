@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/pkg/scout"
-	"github.com/inovacc/scout/scraper"
 )
 
 // BrowserAuthOptions configures the browser-based auth flow.
@@ -34,7 +33,7 @@ type BrowserAuthOptions struct {
 	CaptureOnClose bool
 
 	// Progress receives status updates during the auth flow.
-	Progress scraper.ProgressFunc
+	Progress ProgressFunc
 }
 
 // DefaultBrowserAuthOptions returns sensible defaults.
@@ -123,7 +122,7 @@ func BrowserAuth(ctx context.Context, provider Provider, opts BrowserAuthOptions
 		return captureGenericSession(provider.Name(), page)
 	}
 
-	return nil, &scraper.AuthError{Reason: "login timeout: auth not detected within " + opts.Timeout.String()}
+	return nil, &AuthError{Reason: "login timeout: auth not detected within " + opts.Timeout.String()}
 }
 
 // BrowserCapture launches a browser to a URL and captures all session data
@@ -197,9 +196,9 @@ func captureGenericSession(providerName string, page *scout.Page) (*Session, err
 	}, nil
 }
 
-func reportProgress(fn scraper.ProgressFunc, phase string, current, total int, message string) {
+func reportProgress(fn ProgressFunc, phase string, current, total int, message string) {
 	if fn != nil {
-		fn(scraper.Progress{
+		fn(Progress{
 			Phase:   phase,
 			Current: current,
 			Total:   total,

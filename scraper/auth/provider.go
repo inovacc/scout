@@ -26,6 +26,14 @@ type Session struct {
 	ExpiresAt      time.Time         `json:"expires_at,omitzero"`
 }
 
+// ProviderName returns the provider name, satisfying scraper.SessionData.
+func (s *Session) ProviderName() string {
+	if s == nil {
+		return ""
+	}
+	return s.Provider
+}
+
 // Provider defines the interface that each auth provider must implement.
 type Provider interface {
 	// Name returns the unique provider identifier (e.g. "slack", "teams").
@@ -44,6 +52,26 @@ type Provider interface {
 
 	// ValidateSession checks if a previously captured session is still valid.
 	ValidateSession(ctx context.Context, session *Session) error
+}
+
+// Progress reports the current state of a long-running operation.
+type Progress struct {
+	Phase   string `json:"phase"`
+	Current int    `json:"current"`
+	Total   int    `json:"total"`
+	Message string `json:"message"`
+}
+
+// ProgressFunc is a callback for receiving progress updates.
+type ProgressFunc func(Progress)
+
+// AuthError indicates an authentication failure.
+type AuthError struct {
+	Reason string
+}
+
+func (e *AuthError) Error() string {
+	return fmt.Sprintf("auth: %s", e.Reason)
 }
 
 // Registry holds registered auth providers.

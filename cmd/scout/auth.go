@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/inovacc/scout/scraper"
 	"github.com/inovacc/scout/scraper/auth"
 	"github.com/spf13/cobra"
 )
@@ -81,7 +80,7 @@ var authLoginCmd = &cobra.Command{
 		opts := auth.DefaultBrowserAuthOptions()
 		opts.Timeout = timeout
 		opts.CaptureOnClose = true
-		opts.Progress = func(p scraper.Progress) {
+		opts.Progress = func(p auth.Progress) {
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "  [%s] %s\n", p.Phase, p.Message)
 		}
 
@@ -150,7 +149,7 @@ This is the generic "launch browser and capture everything" flow.`,
 
 		opts := auth.DefaultBrowserAuthOptions()
 		opts.Timeout = timeout
-		opts.Progress = func(p scraper.Progress) {
+		opts.Progress = func(p auth.Progress) {
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "  [%s] %s\n", p.Phase, p.Message)
 		}
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/inovacc/scout/scraper"
+	"github.com/inovacc/scout/scraper/crypt"
 )
 
 // SaveEncrypted marshals the session to JSON, encrypts it, and writes to the given path.
@@ -15,7 +15,7 @@ func SaveEncrypted(session *Session, path, passphrase string) error {
 		return fmt.Errorf("auth: save session: marshal: %w", err)
 	}
 
-	encrypted, err := scraper.EncryptData(data, passphrase)
+	encrypted, err := crypt.EncryptData(data, passphrase)
 	if err != nil {
 		return fmt.Errorf("auth: save session: %w", err)
 	}
@@ -34,7 +34,7 @@ func LoadEncrypted(path, passphrase string) (*Session, error) {
 		return nil, fmt.Errorf("auth: load session: read: %w", err)
 	}
 
-	plaintext, err := scraper.DecryptData(data, passphrase)
+	plaintext, err := crypt.DecryptData(data, passphrase)
 	if err != nil {
 		return nil, fmt.Errorf("auth: load session: %w", err)
 	}

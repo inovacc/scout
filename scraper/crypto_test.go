@@ -3,6 +3,8 @@ package scraper
 import (
 	"bytes"
 	"testing"
+
+	"github.com/inovacc/scout/scraper/crypt"
 )
 
 func TestEncryptDecryptRoundTrip(t *testing.T) {
@@ -14,12 +16,12 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 		t.Fatalf("EncryptData: %v", err)
 	}
 
-	if len(encrypted) <= headerLen {
+	if len(encrypted) <= crypt.HeaderLen {
 		t.Fatalf("encrypted data too short: %d bytes", len(encrypted))
 	}
 
-	if encrypted[0] != cryptoVersion {
-		t.Fatalf("version byte = %d, want %d", encrypted[0], cryptoVersion)
+	if encrypted[0] != crypt.Version() {
+		t.Fatalf("version byte = %d, want %d", encrypted[0], crypt.Version())
 	}
 
 	decrypted, err := DecryptData(encrypted, passphrase)
@@ -66,7 +68,6 @@ func TestDecryptCorruptedData(t *testing.T) {
 }
 
 func TestDecryptTooShort(t *testing.T) {
-	// Less than header length
 	_, err := DecryptData([]byte{0x01, 0x02, 0x03}, "passphrase")
 	if err == nil {
 		t.Fatal("DecryptData with truncated data should fail")
@@ -74,7 +75,7 @@ func TestDecryptTooShort(t *testing.T) {
 }
 
 func TestDecryptUnsupportedVersion(t *testing.T) {
-	data := make([]byte, headerLen+16)
+	data := make([]byte, crypt.HeaderLen+16)
 	data[0] = 0xFF // unsupported version
 
 	_, err := DecryptData(data, "passphrase")
