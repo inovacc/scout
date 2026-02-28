@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Core library complete through Phase 36 (v0.22.0+).** All 36 phases delivered. See git history for details.
+**Core library complete through Phase 37 (v0.22.0+).** All 37 phases delivered. See git history for details.
 
 ### Completed Phases (Summary)
 
@@ -38,9 +38,10 @@
 | 34 | Session Hijacking (real-time HTTP + WebSocket capture, gRPC streaming, CLI) | Done |
 | 35 | Scraper Framework + Modes (Mode interface, Slack, Discord, Teams, Reddit) | Done |
 | 36 | Scraper Modes Batch 2 (Gmail, Outlook, LinkedIn, Jira, Confluence) | Done |
+| 37 | Scraper Modes Batch 3 (Twitter/X, YouTube, Notion, Google Drive, SharePoint) | Done |
 
 ### Remaining Work
 
 See [BACKLOG.md](BACKLOG.md) for prioritized open items:
 
-- **Scraper modes** (9 remaining authenticated services) — P3, large each
+- **Scraper modes** (4 remaining authenticated services) — P3

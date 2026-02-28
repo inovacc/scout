@@ -23,12 +23,12 @@ Dedicated scraper modes for authenticated services. Each provides structured ext
 | ~~LinkedIn~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 36)~~ |
 | ~~Jira~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 36)~~ |
 | ~~Confluence~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 36)~~ |
-| Twitter/X | P3 | Large | Tweets, profiles, followers, trends |
+| ~~Twitter/X~~ | ~~P3~~ | ~~Large~~ | ~~Done (Phase 37)~~ |
 | ~~Reddit~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 35)~~ |
-| YouTube | P3 | Medium | Video metadata, comments, channels |
-| Notion | P3 | Medium | Pages, databases, blocks |
-| Google Drive | P3 | Medium | Files, metadata, sharing, folders |
-| SharePoint | P3 | Large | Documents, lists, sites, pages |
+| ~~YouTube~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 37)~~ |
+| ~~Notion~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 37)~~ |
+| ~~Google Drive~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 37)~~ |
+| ~~SharePoint~~ | ~~P3~~ | ~~Large~~ | ~~Done (Phase 37)~~ |
 | Salesforce | P3 | Large | Leads, contacts, opportunities, reports |
 | Amazon Products | P3 | Medium | Product details, prices, reviews |
 | Google Maps | P3 | Medium | Business listings, reviews, locations |
