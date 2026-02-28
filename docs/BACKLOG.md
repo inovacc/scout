@@ -29,8 +29,8 @@ Dedicated scraper modes for authenticated services. Each provides structured ext
 | ~~Notion~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 37)~~ |
 | ~~Google Drive~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 37)~~ |
 | ~~SharePoint~~ | ~~P3~~ | ~~Large~~ | ~~Done (Phase 37)~~ |
-| Salesforce | P3 | Large | Leads, contacts, opportunities, reports |
-| Amazon Products | P3 | Medium | Product details, prices, reviews |
-| Google Maps | P3 | Medium | Business listings, reviews, locations |
-| Cloud Consoles | P3 | XL | AWS/GCP/Azure resource inventory, billing |
-| Grafana/Datadog | P3 | Medium | Dashboard screenshots, panel data, alerts |
+| ~~Salesforce~~ | ~~P3~~ | ~~Large~~ | ~~Done (Phase 38)~~ |
+| ~~Amazon Products~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 38)~~ |
+| ~~Google Maps~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 38)~~ |
+| ~~Cloud Consoles~~ | ~~P3~~ | ~~XL~~ | ~~Done (Phase 38)~~ |
+| ~~Grafana/Datadog~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 38)~~ |

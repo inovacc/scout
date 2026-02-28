@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Core library complete through Phase 37 (v0.22.0+).** All 37 phases delivered. See git history for details.
+**Core library complete through Phase 38 (v0.22.0+).** All 38 phases delivered. See git history for details.
 
 ### Completed Phases (Summary)
 
@@ -39,9 +39,8 @@
 | 35 | Scraper Framework + Modes (Mode interface, Slack, Discord, Teams, Reddit) | Done |
 | 36 | Scraper Modes Batch 2 (Gmail, Outlook, LinkedIn, Jira, Confluence) | Done |
 | 37 | Scraper Modes Batch 3 (Twitter/X, YouTube, Notion, Google Drive, SharePoint) | Done |
+| 38 | Scraper Modes Batch 4 (Amazon, Google Maps, Salesforce, Grafana, Cloud Consoles) | Done |
 
 ### Remaining Work
 
-See [BACKLOG.md](BACKLOG.md) for prioritized open items:
-
-- **Scraper modes** (4 remaining authenticated services) — P3
+All planned scraper modes delivered. See [BACKLOG.md](BACKLOG.md) for future work.
