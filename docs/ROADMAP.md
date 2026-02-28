@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Core library complete through Phase 34 (v0.22.0+).** All 34 phases delivered. See git history for details.
+**Core library complete through Phase 36 (v0.22.0+).** All 36 phases delivered. See git history for details.
 
 ### Completed Phases (Summary)
 
@@ -36,9 +36,11 @@
 | 32 | Bridge Form Auto-Fill & Download Management | Done |
 | 33 | VPN Extension Integration (Surfshark, proxy rotation) | Done |
 | 34 | Session Hijacking (real-time HTTP + WebSocket capture, gRPC streaming, CLI) | Done |
+| 35 | Scraper Framework + Modes (Mode interface, Slack, Discord, Teams, Reddit) | Done |
+| 36 | Scraper Modes Batch 2 (Gmail, Outlook, LinkedIn, Jira, Confluence) | Done |
 
 ### Remaining Work
 
 See [BACKLOG.md](BACKLOG.md) for prioritized open items:
 
-- **Scraper modes** (18 authenticated services) — P2/P3, large each
+- **Scraper modes** (9 remaining authenticated services) — P3, large each
