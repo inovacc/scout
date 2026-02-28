@@ -15,15 +15,16 @@ Dedicated scraper modes for authenticated services. Each provides structured ext
 
 | Mode | Priority | Effort | Scope |
 |------|----------|--------|-------|
-| Teams | P2 | Large | Chats, channels, meetings, files, wiki |
-| Discord | P2 | Large | Messages, channels, threads, pins, members |
-| Gmail | P2 | Large | Emails, labels, attachments, contacts |
-| Outlook | P2 | Large | Emails, folders, calendar, contacts |
-| LinkedIn | P2 | Large | Profiles, posts, jobs, companies |
-| Jira | P2 | Large | Issues, boards, sprints, comments |
-| Confluence | P2 | Large | Pages, spaces, comments, attachments |
+| ~~Slack~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 35)~~ |
+| ~~Teams~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 35)~~ |
+| ~~Discord~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 35)~~ |
+| ~~Gmail~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 36)~~ |
+| ~~Outlook~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 36)~~ |
+| ~~LinkedIn~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 36)~~ |
+| ~~Jira~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 36)~~ |
+| ~~Confluence~~ | ~~P2~~ | ~~Large~~ | ~~Done (Phase 36)~~ |
 | Twitter/X | P3 | Large | Tweets, profiles, followers, trends |
-| Reddit | P3 | Medium | Posts, comments, subreddits, profiles |
+| ~~Reddit~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 35)~~ |
 | YouTube | P3 | Medium | Video metadata, comments, channels |
 | Notion | P3 | Medium | Pages, databases, blocks |
 | Google Drive | P3 | Medium | Files, metadata, sharing, folders |
