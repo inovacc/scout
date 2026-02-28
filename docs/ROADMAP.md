@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Core library complete through Phase 33 (v0.22.0+).** All 33 phases delivered. See git history for details.
+**Core library complete through Phase 34 (v0.22.0+).** All 34 phases delivered. See git history for details.
 
 ### Completed Phases (Summary)
 
@@ -35,6 +35,7 @@
 | 31 | Research Agent, window.__scout API, Forgeron fingerprints | Done |
 | 32 | Bridge Form Auto-Fill & Download Management | Done |
 | 33 | VPN Extension Integration (Surfshark, proxy rotation) | Done |
+| 34 | Session Hijacking (real-time HTTP + WebSocket capture, gRPC streaming, CLI) | Done |
 
 ### Remaining Work
 
