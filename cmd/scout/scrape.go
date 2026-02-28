@@ -17,13 +17,18 @@ import (
 	// Register all scraper modes.
 	_ "github.com/inovacc/scout/scraper/modes/confluence"
 	_ "github.com/inovacc/scout/scraper/modes/discord"
+	_ "github.com/inovacc/scout/scraper/modes/gdrive"
 	_ "github.com/inovacc/scout/scraper/modes/gmail"
 	_ "github.com/inovacc/scout/scraper/modes/jira"
 	_ "github.com/inovacc/scout/scraper/modes/linkedin"
+	_ "github.com/inovacc/scout/scraper/modes/notion"
 	_ "github.com/inovacc/scout/scraper/modes/outlook"
 	_ "github.com/inovacc/scout/scraper/modes/reddit"
+	_ "github.com/inovacc/scout/scraper/modes/sharepoint"
 	_ "github.com/inovacc/scout/scraper/modes/slack"
 	_ "github.com/inovacc/scout/scraper/modes/teams"
+	_ "github.com/inovacc/scout/scraper/modes/twitter"
+	_ "github.com/inovacc/scout/scraper/modes/youtube"
 )
 
 func init() {
