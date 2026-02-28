@@ -86,9 +86,18 @@ type PageTimingInfo struct {
 
 // Page wraps a rod page (browser tab) with a simplified API.
 type Page struct {
-	page    *rod.Page
-	browser *Browser
-	info    *PageInfo
+	page     *rod.Page
+	browser  *Browser
+	info     *PageInfo
+	hijacker *SessionHijacker
+}
+
+// Hijacker returns the session hijacker attached to this page, or nil.
+func (p *Page) Hijacker() *SessionHijacker {
+	if p == nil {
+		return nil
+	}
+	return p.hijacker
 }
 
 // Navigate loads the given URL in the page.

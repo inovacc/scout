@@ -85,7 +85,18 @@ func New(opts ...Option) (*Browser, error) {
 
 	if o.remoteCDP != "" {
 		// Remote CDP endpoint — skip launcher entirely.
-		u = o.remoteCDP
+		// If URL already contains a full path (e.g., /devtools/browser/UUID), use as-is.
+		// Otherwise resolve via /json/version to get the full WebSocket URL.
+		if strings.Contains(o.remoteCDP, "/devtools/") {
+			u = o.remoteCDP
+		} else {
+			resolved, resolveErr := launcher.ResolveURL(o.remoteCDP)
+			if resolveErr != nil {
+				u = o.remoteCDP
+			} else {
+				u = resolved
+			}
+		}
 	} else {
 		var err error
 		u, l, err = launchLocal(o)
@@ -424,6 +435,24 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 
 	if b.opts.autoBypass != nil && url != "" {
 		_ = b.opts.autoBypass.SolveAll(p)
+	}
+
+	// Auto-attach session hijacker if enabled.
+	if b.opts.hijack {
+		var hijackOpts []HijackOption
+		if b.opts.hijackFilter != nil {
+			if len(b.opts.hijackFilter.URLPatterns) > 0 {
+				hijackOpts = append(hijackOpts, WithHijackURLFilter(b.opts.hijackFilter.URLPatterns...))
+			}
+			if b.opts.hijackFilter.CaptureBody {
+				hijackOpts = append(hijackOpts, WithHijackBodyCapture())
+			}
+		}
+		hijacker, hijackErr := p.NewSessionHijacker(hijackOpts...)
+		if hijackErr != nil {
+			return nil, fmt.Errorf("scout: auto-hijack: %w", hijackErr)
+		}
+		p.hijacker = hijacker
 	}
 
 	// Eagerly collect page environment info (browser version, UA, screen, etc.).

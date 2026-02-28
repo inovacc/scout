@@ -111,6 +111,11 @@ func (r *HijackRequest) Body() string {
 	return r.req.Body()
 }
 
+// Body returns the response body as a string. Only available after LoadResponse(true).
+func (r *HijackResponse) Body() string {
+	return r.resp.Body()
+}
+
 // SetBody sets the response body. Accepts string, []byte, or any JSON-serializable value.
 func (r *HijackResponse) SetBody(body any) {
 	r.resp.SetBody(body)

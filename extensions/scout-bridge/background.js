@@ -177,6 +177,40 @@ function _handleServerRequest(msg) {
     return;
   }
 
+  if (method === "hijack.start") {
+    var params = msg.params ? (typeof msg.params === "string" ? JSON.parse(msg.params) : msg.params) : {};
+    var tabId = params.tabId || params._tabId;
+    if (tabId) {
+      _startHijack(tabId);
+      _sendResponse(msg.id, { started: true });
+    } else {
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        if (tabs.length > 0) {
+          _startHijack(tabs[0].id);
+          _sendResponse(msg.id, { started: true, tabId: tabs[0].id });
+        } else {
+          _sendResponse(msg.id, null, "no active tab");
+        }
+      });
+    }
+    return;
+  }
+
+  if (method === "hijack.stop") {
+    var params = msg.params ? (typeof msg.params === "string" ? JSON.parse(msg.params) : msg.params) : {};
+    var tabId = params.tabId || params._tabId;
+    if (tabId) {
+      _stopHijack(tabId);
+    } else {
+      // Stop all.
+      for (var tid in _hijackTargets) {
+        _stopHijack(parseInt(tid));
+      }
+    }
+    _sendResponse(msg.id, { stopped: true });
+    return;
+  }
+
   if (method === "clipboard.read" || method === "clipboard.write") {
     // Clipboard operations not available in service worker context.
     _sendResponse(msg.id, null, "clipboard not available in service worker");
@@ -246,6 +280,50 @@ function _sendResponse(id, result, error) {
   }
   _ws.send(JSON.stringify(resp));
 }
+
+// ════════════════════════ Hijack (debugger-based network capture) ════════════════════════
+
+var _hijackTargets = {}; // tabId -> true
+
+function _startHijack(tabId) {
+  if (_hijackTargets[tabId]) return;
+  _hijackTargets[tabId] = true;
+
+  chrome.debugger.attach({ tabId: tabId }, "1.3", function () {
+    if (chrome.runtime.lastError) {
+      delete _hijackTargets[tabId];
+      return;
+    }
+    chrome.debugger.sendCommand({ tabId: tabId }, "Network.enable", {});
+  });
+}
+
+function _stopHijack(tabId) {
+  if (!_hijackTargets[tabId]) return;
+  delete _hijackTargets[tabId];
+  chrome.debugger.detach({ tabId: tabId }, function () {});
+}
+
+chrome.debugger.onEvent.addListener(function (source, method, params) {
+  if (!source.tabId || !_hijackTargets[source.tabId]) return;
+  if (!_ws || _ws.readyState !== WebSocket.OPEN) return;
+
+  var eventType = null;
+  if (method === "Network.requestWillBeSent") eventType = "network.request";
+  else if (method === "Network.responseReceived") eventType = "network.response";
+  else if (method === "Network.webSocketCreated") eventType = "network.ws.opened";
+  else if (method === "Network.webSocketFrameSent") eventType = "network.ws.sent";
+  else if (method === "Network.webSocketFrameReceived") eventType = "network.ws.received";
+  else if (method === "Network.webSocketClosed") eventType = "network.ws.closed";
+
+  if (eventType) {
+    _ws.send(JSON.stringify({
+      type: "event",
+      method: eventType,
+      params: Object.assign({}, params, { _tabId: source.tabId }),
+    }));
+  }
+});
 
 // Listen for bridge port configuration via storage.
 chrome.storage.local.get(["scoutBridgePort"], function (data) {

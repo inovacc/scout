@@ -49,6 +49,11 @@ service ScoutService {
   // Custom JS injection
   rpc InjectJS(InjectJSRequest)             returns (InjectJSResponse);
 
+  // Session hijacking (real-time network capture)
+  rpc StartHijack(HijackRequest)            returns (Empty);
+  rpc StopHijack(SessionRequest)            returns (Empty);
+  rpc StreamHijack(SessionRequest)          returns (stream HijackedEvent);
+
   // Real-time event stream (server -> client)
   rpc StreamEvents(SessionRequest)          returns (stream BrowserEvent);
 
@@ -169,6 +174,54 @@ message RecordingRequest {
 message HARResponse {
   bytes  data = 1;  // HAR JSON
   int32  entry_count = 2;
+}
+
+// ---------------------- Hijack ----------------------
+
+message HijackRequest {
+  string session_id = 1;
+  bool   capture_body = 2;
+  repeated string url_patterns = 3;
+  repeated string resource_types = 4;
+}
+
+message HijackedEvent {
+  string session_id = 1;
+  int64  timestamp = 2;  // unix millis
+
+  oneof event {
+    HijackedRequestEvent   request = 10;
+    HijackedResponseEvent  response = 11;
+    WebSocketFrameEvent    ws_frame = 12;
+  }
+}
+
+message HijackedRequestEvent {
+  string request_id = 1;
+  string method = 2;
+  string url = 3;
+  map<string, string> headers = 4;
+  string body = 5;
+  string resource_type = 6;
+}
+
+message HijackedResponseEvent {
+  string request_id = 1;
+  string url = 2;
+  int32  status = 3;
+  map<string, string> headers = 4;
+  string body = 5;
+  string mime_type = 6;
+  double elapsed_ms = 7;
+}
+
+message WebSocketFrameEvent {
+  string request_id = 1;
+  string url = 2;
+  string direction = 3;  // "sent", "received", "opened", "closed"
+  double opcode = 4;
+  string payload = 5;
+  bool   masked = 6;
 }
 
 // ---------------------- Profile ----------------------
