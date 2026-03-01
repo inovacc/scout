@@ -21,7 +21,7 @@ func init() {
 	recipePresetsCmd.Flags().String("service", "", "filter presets by service name")
 	recipePresetsCmd.Flags().Bool("json", false, "output as JSON")
 
-	recipeRunPresetCmd.Flags().StringSliceP("var", "v", nil, "variable in key=value format (repeatable)")
+	recipeRunPresetCmd.Flags().StringSlice("var", nil, "variable in key=value format (repeatable)")
 	recipeRunPresetCmd.Flags().StringP("output", "o", "", "output file for results")
 
 	recipeRunCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
@@ -486,6 +486,10 @@ var recipeRunPresetCmd = &cobra.Command{
 		}
 		applyVars(r, varMap)
 
+		if unresolved := findUnresolvedVars(r); len(unresolved) > 0 {
+			return fmt.Errorf("unresolved variables: %s (use --var key=value)", strings.Join(unresolved, ", "))
+		}
+
 		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
@@ -529,6 +533,38 @@ func applyVars(r *recipe.Recipe, vars map[string]string) {
 			r.Steps[i].Text = strings.ReplaceAll(r.Steps[i].Text, placeholder, v)
 		}
 	}
+}
+
+// findUnresolvedVars returns placeholder names that were not substituted.
+func findUnresolvedVars(r *recipe.Recipe) []string {
+	seen := make(map[string]bool)
+	scan := func(s string) {
+		for {
+			start := strings.Index(s, "{{")
+			if start < 0 {
+				return
+			}
+			end := strings.Index(s[start:], "}}")
+			if end < 0 {
+				return
+			}
+			name := s[start+2 : start+end]
+			if name != "" && !seen[name] {
+				seen[name] = true
+			}
+			s = s[start+end+2:]
+		}
+	}
+	scan(r.URL)
+	for _, step := range r.Steps {
+		scan(step.URL)
+		scan(step.Text)
+	}
+	var names []string
+	for name := range seen {
+		names = append(names, name)
+	}
+	return names
 }
 
 var recipeFlowCmd = &cobra.Command{
