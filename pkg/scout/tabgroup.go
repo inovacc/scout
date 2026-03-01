@@ -1,6 +1,7 @@
 package scout
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -80,6 +81,69 @@ func (tg *TabGroup) Len() int {
 		return 0
 	}
 	return len(tg.tabs)
+}
+
+// Do executes fn on the i-th tab. It returns an error if i is out of range.
+func (tg *TabGroup) Do(i int, fn func(*Page) error) error {
+	if i < 0 || i >= len(tg.tabs) {
+		return fmt.Errorf("scout: tab %d: index out of range [0, %d)", i, len(tg.tabs))
+	}
+	if tg.limiter != nil {
+		if err := tg.limiter.Wait(context.Background()); err != nil {
+			return fmt.Errorf("scout: tab %d: rate limiter: %w", i, err)
+		}
+	}
+	if err := fn(tg.tabs[i]); err != nil {
+		return fmt.Errorf("scout: tab %d: %w", i, err)
+	}
+	return nil
+}
+
+// DoAll executes fn sequentially on all tabs, stopping on the first error.
+func (tg *TabGroup) DoAll(fn func(i int, p *Page) error) error {
+	for i, p := range tg.tabs {
+		if tg.limiter != nil {
+			if err := tg.limiter.Wait(context.Background()); err != nil {
+				return fmt.Errorf("scout: tab %d: rate limiter: %w", i, err)
+			}
+		}
+		if err := fn(i, p); err != nil {
+			return fmt.Errorf("scout: tab %d: %w", i, err)
+		}
+	}
+	return nil
+}
+
+// DoParallel executes fn concurrently on all tabs. It returns a slice of errors
+// (nil entries for successful tabs).
+func (tg *TabGroup) DoParallel(fn func(i int, p *Page) error) []error {
+	errs := make([]error, len(tg.tabs))
+	var wg sync.WaitGroup
+	for i, p := range tg.tabs {
+		wg.Add(1)
+		go func(i int, p *Page) {
+			defer wg.Done()
+			if tg.limiter != nil {
+				if err := tg.limiter.Wait(context.Background()); err != nil {
+					errs[i] = fmt.Errorf("scout: tab %d: rate limiter: %w", i, err)
+					return
+				}
+			}
+			if err := fn(i, p); err != nil {
+				errs[i] = fmt.Errorf("scout: tab %d: %w", i, err)
+			}
+		}(i, p)
+	}
+	wg.Wait()
+	return errs
+}
+
+// Broadcast executes fn concurrently on all tabs. It is a convenience wrapper
+// around DoParallel that adapts a single-page function.
+func (tg *TabGroup) Broadcast(fn func(*Page) error) []error {
+	return tg.DoParallel(func(_ int, p *Page) error {
+		return fn(p)
+	})
 }
 
 // Close closes all tabs in the group. It is nil-safe and idempotent.
