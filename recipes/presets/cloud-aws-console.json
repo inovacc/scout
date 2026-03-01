@@ -1,0 +1,58 @@
+{
+  "version": "1",
+  "name": "aws_iam_users",
+  "type": "automate",
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://signin.aws.amazon.com/signin?redirect_uri=https%3A%2F%2Fconsole.aws.amazon.com%2Fconsole%2Fhome&client_id=arn%3Aaws%3Aiam%3A%3A015428540659%3Auser%2Fhomepage&response_type=code&response_mode=form_post&state=0&account_id=&mfa_required=false&signin_country_code=&debug=false"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type=\"email\"]"
+    },
+    {
+      "action": "type",
+      "selector": "input[type=\"email\"]",
+      "text": "{{username}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type=\"submit\"]"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type=\"password\"]"
+    },
+    {
+      "action": "type",
+      "selector": "input[type=\"password\"]",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type=\"submit\"]"
+    },
+    {
+      "action": "navigate",
+      "url": "https://console.aws.amazon.com/iam/home#/users"
+    },
+    {
+      "action": "wait",
+      "selector": "table tbody tr"
+    },
+    {
+      "action": "extract",
+      "selector": "table tbody tr td:first-child",
+      "as": "usernames"
+    },
+    {
+      "action": "eval",
+      "script": "() => Array.from(document.querySelectorAll('table tbody tr')).map(row => { const cells = row.querySelectorAll('td'); return { username: cells[0]?.textContent?.trim() || '', access_key_age: cells[3]?.textContent?.trim() || '', last_activity: cells[4]?.textContent?.trim() || '' } })",
+      "as": "users"
+    }
+  ],
+  "output": {
+    "format": "json"
+  }
+}

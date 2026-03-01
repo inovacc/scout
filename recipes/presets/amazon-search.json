@@ -1,0 +1,19 @@
+{
+  "version": "1",
+  "name": "amazon_search",
+  "type": "extract",
+  "url": "https://www.amazon.com/s?k={{query}}",
+  "wait_for": "[data-component-type=\"s-search-result\"]",
+  "items": {
+    "container": "[data-component-type=\"s-search-result\"]",
+    "fields": {
+      "title": "h2 a span",
+      "price": ".a-price .a-offscreen",
+      "rating": ".a-icon-alt",
+      "link": "h2 a@href"
+    }
+  },
+  "output": {
+    "format": "json"
+  }
+}

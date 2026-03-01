@@ -1,0 +1,64 @@
+{
+  "version": "1",
+  "name": "jira-issues",
+  "type": "automate",
+  "output": {
+    "format": "json"
+  },
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://{{instance}}.atlassian.net/login"
+    },
+    {
+      "action": "wait",
+      "selector": "input[name='email']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[name='email']",
+      "text": "{{email}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type='submit']"
+    },
+    {
+      "action": "wait",
+      "selector": "input[name='password']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[name='password']",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type='submit']"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-testid='board']",
+      "timeout": 30
+    },
+    {
+      "action": "navigate",
+      "url": "https://{{instance}}.atlassian.net/jira/software/projects/{{project}}/board"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-testid='issue-key']",
+      "timeout": 30
+    },
+    {
+      "action": "extract",
+      "fields": {
+        "key": "[data-testid='issue-key']",
+        "summary": "[data-testid='issue-summary']",
+        "status": "[data-testid='issue-status']"
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "version": "1",
+  "name": "notion-pages",
+  "type": "automate",
+  "output": {
+    "format": "json"
+  },
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://www.notion.so/login"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type='email']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[type='email']",
+      "text": "{{email}}"
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text('Continue with email')"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type='password']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[type='password']",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type='submit']"
+    },
+    {
+      "action": "wait",
+      "selector": "[role='treeitem']",
+      "timeout": 30
+    },
+    {
+      "action": "extract",
+      "fields": {
+        "title": ".notranslate"
+      }
+    }
+  ]
+}

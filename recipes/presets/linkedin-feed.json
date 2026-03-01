@@ -1,0 +1,26 @@
+{
+  "version": "1",
+  "name": "LinkedIn Feed",
+  "type": "automate",
+  "steps": [
+    {"action": "navigate", "url": "https://www.linkedin.com/login"},
+    {"action": "wait", "selector": "#username"},
+    {"action": "type", "selector": "#username", "text": "{{username}}"},
+    {"action": "type", "selector": "#password", "text": "{{password}}"},
+    {"action": "click", "selector": ".login__form_action_container button"},
+    {"action": "wait", "selector": ".feed-shared-update-v2"},
+    {
+      "action": "extract",
+      "selector": ".feed-shared-update-v2",
+      "name": "posts",
+      "items": {
+        "container": ".feed-shared-update-v2",
+        "fields": {
+          "author": ".feed-shared-actor__name",
+          "text": ".feed-shared-text"
+        }
+      }
+    }
+  ],
+  "output": {"format": "json"}
+}

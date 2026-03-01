@@ -1,0 +1,28 @@
+{
+  "version": "1",
+  "name": "Outlook Inbox",
+  "type": "automate",
+  "steps": [
+    {"action": "navigate", "url": "https://outlook.live.com"},
+    {"action": "wait", "selector": "input[type=\"email\"]"},
+    {"action": "type", "selector": "input[type=\"email\"]", "text": "{{username}}"},
+    {"action": "click", "selector": "button[id=\"idSIButton9\"]"},
+    {"action": "wait", "selector": "input[type=\"password\"]"},
+    {"action": "type", "selector": "input[type=\"password\"]", "text": "{{password}}"},
+    {"action": "click", "selector": "button[id=\"idSIButton9\"]"},
+    {"action": "wait", "selector": "[role=\"option\"]"},
+    {
+      "action": "extract",
+      "selector": "[role=\"option\"]",
+      "name": "messages",
+      "items": {
+        "container": "[role=\"option\"]",
+        "fields": {
+          "from": "[aria-label*=\"from\"]",
+          "subject": "[aria-label*=\"subject\"]"
+        }
+      }
+    }
+  ],
+  "output": {"format": "json"}
+}

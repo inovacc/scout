@@ -1,0 +1,20 @@
+{
+  "version": "1",
+  "name": "amazon_product",
+  "type": "extract",
+  "url": "https://www.amazon.com/dp/{{asin}}",
+  "wait_for": "#productTitle",
+  "items": {
+    "container": "#dp-container",
+    "fields": {
+      "title": "#productTitle",
+      "price": ".a-price .a-offscreen",
+      "rating": "#acrPopover .a-icon-alt",
+      "reviews": "#acrCustomerReviewText",
+      "description": "#productDescription p"
+    }
+  },
+  "output": {
+    "format": "json"
+  }
+}

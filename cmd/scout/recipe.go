@@ -6,15 +6,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/recipe"
+	"github.com/inovacc/scout/recipes"
 	"github.com/spf13/cobra"
 )
 
 func init() {
 	rootCmd.AddCommand(recipeCmd)
-	recipeCmd.AddCommand(recipeRunCmd, recipeValidateCmd, recipeCreateCmd, recipeTestCmd, recipeFixCmd, recipeSampleCmd, recipeFlowCmd)
+	recipeCmd.AddCommand(recipeRunCmd, recipeValidateCmd, recipeCreateCmd, recipeTestCmd, recipeFixCmd, recipeSampleCmd, recipeFlowCmd, recipePresetsCmd, recipeRunPresetCmd)
+
+	recipePresetsCmd.Flags().String("service", "", "filter presets by service name")
+	recipePresetsCmd.Flags().Bool("json", false, "output as JSON")
+
+	recipeRunPresetCmd.Flags().StringSliceP("var", "v", nil, "variable in key=value format (repeatable)")
+	recipeRunPresetCmd.Flags().StringP("output", "o", "", "output file for results")
 
 	recipeRunCmd.Flags().StringP("file", "f", "", "recipe JSON file path")
 	recipeRunCmd.Flags().StringP("output", "o", "", "output file for results")
@@ -421,6 +429,106 @@ var recipeSampleCmd = &cobra.Command{
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
 		return nil
 	},
+}
+
+var recipePresetsCmd = &cobra.Command{
+	Use:   "presets",
+	Short: "List available recipe presets",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		service, _ := cmd.Flags().GetString("service")
+		asJSON, _ := cmd.Flags().GetBool("json")
+
+		all := recipes.All()
+		var filtered []recipes.Preset
+		for _, p := range all {
+			if service == "" || p.Service == service {
+				filtered = append(filtered, p)
+			}
+		}
+
+		if asJSON {
+			data, err := json.MarshalIndent(filtered, "", "  ")
+			if err != nil {
+				return fmt.Errorf("marshal presets: %w", err)
+			}
+			_, _ = fmt.Fprintln(os.Stdout, string(data))
+			return nil
+		}
+
+		for _, p := range filtered {
+			_, _ = fmt.Fprintf(os.Stdout, "%-25s %-12s %s\n", p.ID, p.Service, p.Description)
+		}
+		return nil
+	},
+}
+
+var recipeRunPresetCmd = &cobra.Command{
+	Use:   "run-preset <id>",
+	Short: "Run a built-in recipe preset",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id := args[0]
+		vars, _ := cmd.Flags().GetStringSlice("var")
+		output, _ := cmd.Flags().GetString("output")
+
+		r, err := recipes.Load(id)
+		if err != nil {
+			return err
+		}
+
+		varMap := make(map[string]string)
+		for _, v := range vars {
+			k, val, ok := strings.Cut(v, "=")
+			if !ok {
+				return fmt.Errorf("invalid --var format %q (expected key=value)", v)
+			}
+			varMap[k] = val
+		}
+		applyVars(r, varMap)
+
+		browser, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return fmt.Errorf("scout: browser launch: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
+		result, err := recipe.Run(context.Background(), browser, r)
+		if err != nil {
+			return err
+		}
+
+		out := struct {
+			Items     []map[string]string `json:"items,omitempty"`
+			Variables map[string]any      `json:"variables,omitempty"`
+		}{
+			Items:     result.Items,
+			Variables: result.Variables,
+		}
+
+		data, err := json.MarshalIndent(out, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal results: %w", err)
+		}
+
+		if output != "" {
+			return os.WriteFile(output, data, 0o644)
+		}
+
+		_, _ = fmt.Fprintln(os.Stdout, string(data))
+		return nil
+	},
+}
+
+// applyVars replaces {{key}} placeholders in recipe URLs and step fields.
+func applyVars(r *recipe.Recipe, vars map[string]string) {
+	for k, v := range vars {
+		placeholder := "{{" + k + "}}"
+		r.URL = strings.ReplaceAll(r.URL, placeholder, v)
+		for i := range r.Steps {
+			r.Steps[i].URL = strings.ReplaceAll(r.Steps[i].URL, placeholder, v)
+			r.Steps[i].Text = strings.ReplaceAll(r.Steps[i].Text, placeholder, v)
+		}
+	}
 }
 
 var recipeFlowCmd = &cobra.Command{
