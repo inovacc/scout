@@ -198,6 +198,32 @@ func tlsVersionString(v uint16) string {
 	}
 }
 
+const perfTimingJS = `(() => {
+	const e = performance.getEntriesByType('navigation')[0];
+	if (!e) return null;
+	return JSON.stringify({
+		dns_ms: e.domainLookupEnd - e.domainLookupStart,
+		connect_ms: e.connectEnd - e.connectStart,
+		tls_ms: e.secureConnectionStart > 0 ? e.connectEnd - e.secureConnectionStart : 0,
+		ttfb_ms: e.responseStart - e.requestStart,
+		total_ms: e.responseEnd - e.startTime
+	});
+})()`
+
+func summarizePings(pings []pingResult) *pingSummary {
+	var min, max, sum float64
+	for i, p := range pings {
+		if i == 0 || p.TotalMS < min {
+			min = p.TotalMS
+		}
+		if p.TotalMS > max {
+			max = p.TotalMS
+		}
+		sum += p.TotalMS
+	}
+	return &pingSummary{MinMS: min, MaxMS: max, AvgMS: sum / float64(len(pings))}
+}
+
 func pingRaw(ctx context.Context, rawURL string, count int) (*mcp.CallToolResult, error) {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
@@ -284,19 +310,7 @@ func pingRaw(ctx context.Context, rawURL string, count int) (*mcp.CallToolResult
 
 	resp.Pings = pings
 	resp.TotalMS = pings[len(pings)-1].TotalMS
-
-	// Summary stats.
-	var min, max, sum float64
-	for i, p := range pings {
-		if i == 0 || p.TotalMS < min {
-			min = p.TotalMS
-		}
-		if p.TotalMS > max {
-			max = p.TotalMS
-		}
-		sum += p.TotalMS
-	}
-	resp.Summary = &pingSummary{MinMS: min, MaxMS: max, AvgMS: sum / float64(len(pings))}
+	resp.Summary = summarizePings(pings)
 
 	return jsonResult(resp)
 }
@@ -322,19 +336,7 @@ func pingViaBrowser(ctx context.Context, state *mcpState, rawURL string, count i
 		pings = append(pings, pingResult{Seq: i + 1, TotalMS: ms(total)})
 	}
 
-	// Try to get Performance API timing from browser.
-	perfJS := `(() => {
-		const e = performance.getEntriesByType('navigation')[0];
-		if (!e) return null;
-		return JSON.stringify({
-			dns_ms: e.domainLookupEnd - e.domainLookupStart,
-			connect_ms: e.connectEnd - e.connectStart,
-			tls_ms: e.secureConnectionStart > 0 ? e.connectEnd - e.secureConnectionStart : 0,
-			ttfb_ms: e.responseStart - e.requestStart,
-			total_ms: e.responseEnd - e.startTime
-		});
-	})()`
-	if result, err := page.Eval(perfJS); err == nil {
+	if result, err := page.Eval(perfTimingJS); err == nil {
 		s := result.String()
 		if s != "" && s != "null" {
 			var perf curlTiming
@@ -354,18 +356,7 @@ func pingViaBrowser(ctx context.Context, state *mcpState, rawURL string, count i
 
 	resp.Pings = pings
 	resp.TotalMS = pings[len(pings)-1].TotalMS
-
-	var min, max, sum float64
-	for i, p := range pings {
-		if i == 0 || p.TotalMS < min {
-			min = p.TotalMS
-		}
-		if p.TotalMS > max {
-			max = p.TotalMS
-		}
-		sum += p.TotalMS
-	}
-	resp.Summary = &pingSummary{MinMS: min, MaxMS: max, AvgMS: sum / float64(len(pings))}
+	resp.Summary = summarizePings(pings)
 
 	return jsonResult(resp)
 }
@@ -529,19 +520,7 @@ func curlViaBrowser(ctx context.Context, state *mcpState, rawURL string) (*mcp.C
 		Size:       &curlSize{Body: len(bodyText)},
 	}
 
-	// Try Performance API for timing.
-	perfJS := `(() => {
-		const e = performance.getEntriesByType('navigation')[0];
-		if (!e) return null;
-		return JSON.stringify({
-			dns_ms: e.domainLookupEnd - e.domainLookupStart,
-			connect_ms: e.connectEnd - e.connectStart,
-			tls_ms: e.secureConnectionStart > 0 ? e.connectEnd - e.secureConnectionStart : 0,
-			ttfb_ms: e.responseStart - e.requestStart,
-			total_ms: e.responseEnd - e.startTime
-		});
-	})()`
-	if result, err := page.Eval(perfJS); err == nil {
+	if result, err := page.Eval(perfTimingJS); err == nil {
 		s := result.String()
 		if s != "" && s != "null" {
 			var perf curlTiming
