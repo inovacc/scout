@@ -578,3 +578,221 @@ func Example_convertHTMLToMarkdown() { //nolint:testableexamples // requires bro
 
 	fmt.Println(md)
 }
+
+func ExampleForm_Fill() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com/login")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+
+	// Detect a form by CSS selector, then fill fields by name/id.
+	form, err := page.DetectForm("form#login")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	if err := form.Fill(map[string]string{
+		"username": "alice",
+		"password": "s3cret",
+	}); err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	if err := form.Submit(); err != nil {
+		fmt.Println("error:", err)
+	}
+}
+
+func ExamplePaginateByClick() { //nolint:testableexamples // requires browser
+	type Item struct {
+		Title string `scout:"h3.item-title"`
+	}
+
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com/items")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+
+	// Paginate by clicking a "Next" button, extracting items from each page.
+	items, err := scout.PaginateByClick[Item](page, "a.next-page",
+		scout.WithPaginateMaxPages(5),
+	)
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	fmt.Printf("Collected %d items\n", len(items))
+}
+
+func ExamplePage_SaveCookiesToFile() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+
+	// Persist cookies to a file (excluding session cookies).
+	if err := page.SaveCookiesToFile("cookies.json", false); err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	fmt.Println("Cookies saved")
+}
+
+func ExampleBrowser_Close() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	// Close is nil-safe and idempotent — safe to call multiple times.
+	_ = b.Close()
+	_ = b.Close() // no-op, no error
+
+	// Also safe on a nil *Browser.
+	var nilBrowser *scout.Browser
+	_ = nilBrowser.Close()
+}
+
+func ExampleWithStealth() { //nolint:testableexamples // requires browser
+	// WithStealth enables anti-bot-detection evasions:
+	// automation flag removal, JS property masking, etc.
+	b, err := scout.New(
+		scout.WithHeadless(true),
+		scout.WithStealth(),
+	)
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://bot.sannysoft.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+	title, _ := page.Title()
+	fmt.Println(title)
+}
+
+func ExamplePage_WaitFrameworkReady() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	// WaitFrameworkReady detects the frontend framework (React, Vue, Angular, etc.)
+	// and waits for its specific readiness signal. Falls back to WaitLoad + DOM stable.
+	if err := page.WaitFrameworkReady(); err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	title, _ := page.Title()
+	fmt.Println(title)
+}
+
+func ExamplePage_EvalOnNewDocument() { //nolint:testableexamples // requires browser
+	b, err := scout.New(scout.WithHeadless(true))
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	// Inject JS that runs before any page script. Returns a cleanup function.
+	remove, err := page.EvalOnNewDocument(`window.__injected = true`)
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.Navigate("https://example.com")
+	_ = page.WaitLoad()
+
+	// Clean up the injection when no longer needed.
+	if err := remove(); err != nil {
+		fmt.Println("error:", err)
+	}
+}
+
+func ExampleWithWindowSize() { //nolint:testableexamples // requires browser
+	// Set a custom viewport size (width x height in pixels).
+	b, err := scout.New(
+		scout.WithHeadless(true),
+		scout.WithWindowSize(1440, 900),
+	)
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	defer func() { _ = b.Close() }()
+
+	page, err := b.NewPage("https://example.com")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+
+	_ = page.WaitLoad()
+	title, _ := page.Title()
+	fmt.Println(title)
+}
