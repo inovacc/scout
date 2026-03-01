@@ -29,6 +29,8 @@ automation capabilities as MCP tools. Communicates via stdio (JSON-RPC).
 
 Use --install to generate .mcp.json in the current directory.
 Use --install --global to register via "claude mcp add" (global Claude Code config).
+Use --sse to start with HTTP+SSE transport instead of stdio (default addr: localhost:8080).
+Use --addr to customize the SSE listen address.
 
 Tools: navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait,
        search, fetch, pdf, session_list, session_reset
@@ -82,6 +84,12 @@ Resources: scout://page/markdown, scout://page/url, scout://page/title`,
 		logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 		headless, _ := cmd.Flags().GetBool("headless")
 		stealth, _ := cmd.Flags().GetBool("stealth")
+		useSSE, _ := cmd.Flags().GetBool("sse")
+		addr, _ := cmd.Flags().GetString("addr")
+
+		if useSSE {
+			return scoutmcp.ServeSSE(context.Background(), logger, addr, headless, stealth)
+		}
 		return scoutmcp.Serve(context.Background(), logger, headless, stealth)
 	},
 }
@@ -90,4 +98,6 @@ func init() {
 	rootCmd.AddCommand(mcpCmd)
 	mcpCmd.Flags().BoolP("install", "i", false, "Generate and write .mcp.json to current directory")
 	mcpCmd.Flags().BoolP("global", "g", false, "Write to ~/.claude/mcp.json (use with --install)")
+	mcpCmd.Flags().Bool("sse", false, "Use HTTP+SSE transport instead of stdio")
+	mcpCmd.Flags().String("addr", "localhost:8080", "Listen address for SSE transport")
 }
