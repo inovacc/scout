@@ -1,0 +1,63 @@
+{
+  "version": "1",
+  "name": "gdrive-files",
+  "type": "automate",
+  "output": {
+    "format": "json"
+  },
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://accounts.google.com/login"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type='email']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[type='email']",
+      "text": "{{email}}"
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text('Next')"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type='password']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[type='password']",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text('Next')"
+    },
+    {
+      "action": "wait",
+      "selector": ".a4bIc",
+      "timeout": 30
+    },
+    {
+      "action": "navigate",
+      "url": "https://drive.google.com"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-id][aria-label]",
+      "timeout": 30
+    },
+    {
+      "action": "extract",
+      "fields": {
+        "name": "[data-tooltip]@data-tooltip",
+        "type": "[data-column-field='type']"
+      }
+    }
+  ]
+}

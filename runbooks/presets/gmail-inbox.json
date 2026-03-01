@@ -1,0 +1,29 @@
+{
+  "version": "1",
+  "name": "Gmail Inbox",
+  "type": "automate",
+  "steps": [
+    {"action": "navigate", "url": "https://accounts.google.com/signin/v2/identifier"},
+    {"action": "wait", "selector": "input[type=\"email\"]"},
+    {"action": "type", "selector": "input[type=\"email\"]", "text": "{{username}}"},
+    {"action": "click", "selector": "button[id=\"identifierNext\"]"},
+    {"action": "wait", "selector": "input[type=\"password\"]"},
+    {"action": "type", "selector": "input[type=\"password\"]", "text": "{{password}}"},
+    {"action": "click", "selector": "button[id=\"passwordNext\"]"},
+    {"action": "wait", "selector": "[role=\"row\"]"},
+    {
+      "action": "extract",
+      "selector": "[role=\"row\"]",
+      "name": "messages",
+      "items": {
+        "container": "[role=\"row\"]",
+        "fields": {
+          "sender": "[data-email]",
+          "subject": "[data-subject]",
+          "date": "[data-date]"
+        }
+      }
+    }
+  ],
+  "output": {"format": "json"}
+}

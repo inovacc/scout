@@ -1,0 +1,14 @@
+{
+  "version": "1",
+  "name": "Slack Channels",
+  "type": "automate",
+  "steps": [
+    {"action": "navigate", "url": "https://{{workspace}}.slack.com"},
+    {"action": "type", "selector": "input[data-qa=\"login_email\"]", "text": "{{username}}"},
+    {"action": "type", "selector": "input[data-qa=\"login_password\"]", "text": "{{password}}"},
+    {"action": "click", "selector": "[data-qa=\"signin_button\"]"},
+    {"action": "wait", "selector": "[data-qa=\"channel_sidebar_name\"]"},
+    {"action": "extract", "selector": "[data-qa=\"channel_sidebar_name\"]", "name": "channels"}
+  ],
+  "output": {"format": "json"}
+}

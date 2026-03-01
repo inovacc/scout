@@ -1,0 +1,27 @@
+{
+  "version": "1",
+  "name": "hackernews_top",
+  "type": "extract",
+  "url": "https://news.ycombinator.com",
+  "wait_for": ".titleline",
+  "items": {
+    "container": ".athing",
+    "fields": {
+      "rank": ".rank",
+      "title": ".titleline > a",
+      "url": ".titleline > a@href",
+      "score": "+.subline .score",
+      "author": "+.subline .hnuser",
+      "time": "+.subline .age@title"
+    }
+  },
+  "pagination": {
+    "strategy": "click",
+    "next_selector": "a.morelink",
+    "max_pages": 3,
+    "delay_ms": 1000
+  },
+  "output": {
+    "format": "json"
+  }
+}

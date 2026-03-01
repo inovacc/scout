@@ -1,0 +1,16 @@
+{
+  "version": "1",
+  "name": "Reddit Posts",
+  "type": "extract",
+  "url": "https://www.reddit.com/r/{{subreddit}}",
+  "wait_for": "[data-testid=\"post-container\"]",
+  "items": {
+    "container": "[data-testid=\"post-container\"]",
+    "fields": {
+      "title": "h3",
+      "author": "[data-testid=\"post_author_link\"]",
+      "score": "[data-testid=\"post-score\"]"
+    }
+  },
+  "output": {"format": "json"}
+}

@@ -1,0 +1,56 @@
+{
+  "version": "1",
+  "name": "linkedin-profile",
+  "type": "automate",
+  "output": {
+    "format": "json"
+  },
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://www.linkedin.com/login"
+    },
+    {
+      "action": "wait",
+      "selector": "input[name='username']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[name='username']",
+      "text": "{{username}}"
+    },
+    {
+      "action": "type",
+      "selector": "input[name='password']",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type='submit']"
+    },
+    {
+      "action": "wait",
+      "selector": "main",
+      "timeout": 30
+    },
+    {
+      "action": "navigate",
+      "url": "{{profile_url}}"
+    },
+    {
+      "action": "wait",
+      "selector": "main",
+      "timeout": 30
+    },
+    {
+      "action": "extract",
+      "fields": {
+        "name": "main h1",
+        "headline": ".text-body-medium",
+        "location": ".pv-top-card--list:nth-child(2) span",
+        "about": "#about ~ div .pv-shared-text-with-see-more span[aria-hidden]"
+      }
+    }
+  ]
+}

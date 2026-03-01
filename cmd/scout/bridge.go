@@ -22,8 +22,8 @@ func init() {
 	bridgeListenCmd.Flags().StringSlice("events", nil, "event types to filter (e.g. mutation)")
 	bridgeListenCmd.Flags().Duration("timeout", 0, "stop after duration (0 = indefinite)")
 
-	bridgeRecordCmd.Flags().String("output", "", "output file for recipe JSON (default: stdout)")
-	bridgeRecordCmd.Flags().String("name", "Recorded Recipe", "recipe name")
+	bridgeRecordCmd.Flags().String("output", "", "output file for runbook JSON (default: stdout)")
+	bridgeRecordCmd.Flags().String("name", "Recorded Runbook", "runbook name")
 	bridgeRecordCmd.Flags().Int("port", 0, "bridge WebSocket port (0 = auto)")
 
 	bridgeSendCmd.Flags().String("url", "", "URL to navigate to before sending")
@@ -883,8 +883,8 @@ var bridgeFramesCmd = &cobra.Command{
 
 var bridgeRecordCmd = &cobra.Command{
 	Use:   "record <url>",
-	Short: "Record browser interactions as a recipe",
-	Long:  `Opens a non-headless browser with bridge enabled, records user interactions, and outputs a recipe JSON on Ctrl+C.`,
+	Short: "Record browser interactions as a runbook",
+	Long:  `Opens a non-headless browser with bridge enabled, records user interactions, and outputs a runbook JSON on Ctrl+C.`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
@@ -923,11 +923,11 @@ var bridgeRecordCmd = &cobra.Command{
 		<-sigCh
 
 		steps := rec.Stop()
-		recipeData := rec.ToRecipe(name, url)
+		runbookData := rec.ToRunbook(name, url)
 
 		_, _ = fmt.Fprintf(os.Stderr, "recorded %d steps\n", len(steps))
 
-		data, err := json.MarshalIndent(recipeData, "", "  ")
+		data, err := json.MarshalIndent(runbookData, "", "  ")
 		if err != nil {
 			return fmt.Errorf("scout: bridge record: marshal: %w", err)
 		}
@@ -936,7 +936,7 @@ var bridgeRecordCmd = &cobra.Command{
 			if err := os.WriteFile(output, data, 0o644); err != nil {
 				return fmt.Errorf("scout: bridge record: write: %w", err)
 			}
-			_, _ = fmt.Fprintf(os.Stderr, "recipe written to %s\n", output)
+			_, _ = fmt.Fprintf(os.Stderr, "runbook written to %s\n", output)
 		} else {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
 		}

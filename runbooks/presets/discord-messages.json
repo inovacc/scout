@@ -1,0 +1,27 @@
+{
+  "version": "1",
+  "name": "Discord Messages",
+  "type": "automate",
+  "steps": [
+    {"action": "navigate", "url": "https://discord.com/login"},
+    {"action": "type", "selector": "input[name=\"email\"]", "text": "{{username}}"},
+    {"action": "type", "selector": "input[name=\"password\"]", "text": "{{password}}"},
+    {"action": "click", "selector": "button[type=\"submit\"]"},
+    {"action": "wait", "selector": "[class*=\"channelName\"]"},
+    {"action": "click", "selector": "[class*=\"channelName\"]"},
+    {"action": "wait", "selector": "[class*=\"messageContent\"]"},
+    {
+      "action": "extract",
+      "selector": "[class*=\"messageContent\"]",
+      "name": "messages",
+      "items": {
+        "container": "[class*=\"message\"]",
+        "fields": {
+          "username": "[class*=\"username\"]",
+          "content": "[class*=\"messageContent\"]"
+        }
+      }
+    }
+  ],
+  "output": {"format": "json"}
+}
