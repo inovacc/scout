@@ -302,7 +302,7 @@ func TestListTools(t *testing.T) {
 		toolNames[tool.Name] = true
 	}
 
-	expected := []string{"navigate", "click", "type", "screenshot", "snapshot", "extract", "eval", "back", "forward", "wait", "search", "fetch", "pdf", "session_list", "session_reset", "open", "ping", "curl", "markdown", "table", "meta"}
+	expected := []string{"navigate", "click", "type", "screenshot", "snapshot", "extract", "eval", "back", "forward", "wait", "search", "fetch", "pdf", "session_list", "session_reset", "open", "ping", "curl", "markdown", "table", "meta", "cookie", "header", "block"}
 	for _, name := range expected {
 		if !toolNames[name] {
 			t.Errorf("expected tool %q not found in server tools", name)
