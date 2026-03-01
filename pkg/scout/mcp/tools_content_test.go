@@ -160,11 +160,11 @@ func TestMetaTool(t *testing.T) {
 	text := result.Content[0].(*mcp.TextContent).Text
 
 	var meta struct {
-		Title       string            `json:"title"`
-		Description string            `json:"description"`
-		Canonical   string            `json:"canonical"`
-		OG          map[string]string `json:"og"`
-		Twitter     map[string]string `json:"twitter"`
+		Title       string            `json:"Title"`
+		Description string            `json:"Description"`
+		Canonical   string            `json:"Canonical"`
+		OG          map[string]string `json:"OG"`
+		Twitter     map[string]string `json:"Twitter"`
 	}
 	if err := json.Unmarshal([]byte(text), &meta); err != nil {
 		t.Fatalf("unmarshal meta: %v", err)
@@ -179,10 +179,10 @@ func TestMetaTool(t *testing.T) {
 	if meta.Canonical != "https://example.com/content" {
 		t.Errorf("unexpected canonical: %s", meta.Canonical)
 	}
-	if meta.OG["title"] != "OG Title" {
-		t.Errorf("unexpected og:title: %s", meta.OG["title"])
+	if meta.OG["og:title"] != "OG Title" {
+		t.Errorf("unexpected og:title: %s", meta.OG["og:title"])
 	}
-	if meta.Twitter["card"] != "summary" {
-		t.Errorf("unexpected twitter:card: %s", meta.Twitter["card"])
+	if meta.Twitter["twitter:card"] != "summary" {
+		t.Errorf("unexpected twitter:card: %s", meta.Twitter["twitter:card"])
 	}
 }

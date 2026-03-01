@@ -216,7 +216,7 @@ func TestEvalTool(t *testing.T) {
 
 	navigateHelper(t, ctx, cs, ts.URL+"/")
 
-	result, err := callTool(ctx, cs, "eval", map[string]any{"expression": "1 + 2"})
+	result, err := callTool(ctx, cs, "eval", map[string]any{"expression": "() => 1 + 2"})
 	if err != nil {
 		t.Fatalf("eval: %v", err)
 	}

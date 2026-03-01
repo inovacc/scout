@@ -179,7 +179,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
-		result, err := page.Eval(`JSON.stringify(performance.getEntriesByType('resource'))`)
+		result, err := page.Eval(`() => JSON.stringify(performance.getEntriesByType('resource'))`)
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: har export: %s", err))
 		}
