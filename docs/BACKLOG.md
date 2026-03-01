@@ -34,7 +34,7 @@
 | ~~Proxy chain support~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — WithProxyChain, ValidateProxyChain, ProxyChainDescription~~ |
 | ~~HAR export~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.27.0) — HijackRecorder with ExportHAR()~~ |
 | ~~Cookie jar persistence~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — SaveCookiesToFile/LoadCookiesFromFile~~ |
-| Multi-tab orchestration | P3 | Large | Coordinate actions across tabs with shared state and sync primitives |
+| ~~Multi-tab orchestration~~ | ~~P3~~ | ~~Large~~ | ~~Done — TabGroup with Do/DoAll/DoParallel/Broadcast/Navigate/Wait/Collect~~ |
 | PDF form filling | P3 | Medium | Fill interactive PDF forms via browser rendering |
 | ~~Visual regression testing~~ | ~~P3~~ | ~~Large~~ | ~~Done (v0.28.0) — VisualDiff with threshold, color tolerance, diff image overlay~~ |
 
