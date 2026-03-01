@@ -172,6 +172,139 @@ func TestTabGroupDoOutOfRange(t *testing.T) {
 	}
 }
 
+func TestTabGroupNavigate(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	tg, err := b.NewTabGroup(2)
+	if err != nil {
+		t.Fatalf("NewTabGroup: %v", err)
+	}
+	defer func() { _ = tg.Close() }()
+
+	errs := tg.Navigate(srv.URL, srv.URL+"/page2")
+	for i, e := range errs {
+		if e != nil {
+			t.Fatalf("Navigate tab %d: %v", i, e)
+		}
+	}
+}
+
+func TestTabGroupNavigateMismatch(t *testing.T) {
+	b := newTestBrowser(t)
+
+	tg, err := b.NewTabGroup(2)
+	if err != nil {
+		t.Fatalf("NewTabGroup: %v", err)
+	}
+	defer func() { _ = tg.Close() }()
+
+	errs := tg.Navigate("http://localhost:1")
+	for i, e := range errs {
+		if e == nil {
+			t.Fatalf("Navigate tab %d: expected error, got nil", i)
+		}
+	}
+}
+
+func TestTabGroupWait(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	tg, err := b.NewTabGroup(1)
+	if err != nil {
+		t.Fatalf("NewTabGroup: %v", err)
+	}
+	defer func() { _ = tg.Close() }()
+
+	errs := tg.Navigate(srv.URL)
+	if errs[0] != nil {
+		t.Fatalf("Navigate: %v", errs[0])
+	}
+
+	err = tg.Wait(0, func(p *Page) bool {
+		title, _ := p.Title()
+		return title != ""
+	}, 5*time.Second)
+	if err != nil {
+		t.Fatalf("Wait: %v", err)
+	}
+}
+
+func TestTabGroupWaitTimeout(t *testing.T) {
+	b := newTestBrowser(t)
+
+	tg, err := b.NewTabGroup(1)
+	if err != nil {
+		t.Fatalf("NewTabGroup: %v", err)
+	}
+	defer func() { _ = tg.Close() }()
+
+	err = tg.Wait(0, func(p *Page) bool {
+		return false
+	}, 100*time.Millisecond)
+	if err == nil {
+		t.Fatal("expected timeout error, got nil")
+	}
+}
+
+func TestTabGroupCollect(t *testing.T) {
+	srv := newTestServer()
+	defer srv.Close()
+	b := newTestBrowser(t)
+
+	tg, err := b.NewTabGroup(2)
+	if err != nil {
+		t.Fatalf("NewTabGroup: %v", err)
+	}
+	defer func() { _ = tg.Close() }()
+
+	errs := tg.Navigate(srv.URL, srv.URL+"/page2")
+	for i, e := range errs {
+		if e != nil {
+			t.Fatalf("Navigate tab %d: %v", i, e)
+		}
+	}
+
+	titles, cerrs := TabGroupCollect(tg, func(p *Page) (string, error) {
+		return p.Title()
+	})
+	for i, e := range cerrs {
+		if e != nil {
+			t.Fatalf("Collect tab %d: %v", i, e)
+		}
+	}
+	if len(titles) != 2 {
+		t.Fatalf("expected 2 titles, got %d", len(titles))
+	}
+	for i, title := range titles {
+		if title == "" {
+			t.Fatalf("tab %d: expected non-empty title", i)
+		}
+	}
+}
+
+func TestTabGroupStore(t *testing.T) {
+	b := newTestBrowser(t)
+
+	tg, err := b.NewTabGroup(1)
+	if err != nil {
+		t.Fatalf("NewTabGroup: %v", err)
+	}
+	defer func() { _ = tg.Close() }()
+
+	tg.Store.Store("token", "abc123")
+	val, ok := tg.Store.Load("token")
+	if !ok {
+		t.Fatal("expected Store to contain 'token'")
+	}
+	if val.(string) != "abc123" {
+		t.Fatalf("Store value = %v, want abc123", val)
+	}
+}
+
 func TestTabGroupCloseIdempotent(t *testing.T) {
 	b := newTestBrowser(t)
 

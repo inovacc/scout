@@ -146,6 +146,84 @@ func (tg *TabGroup) Broadcast(fn func(*Page) error) []error {
 	})
 }
 
+// Navigate navigates tab[i] to urls[i] in parallel. If len(urls) != len(tabs),
+// all error slots are filled with a mismatch error.
+func (tg *TabGroup) Navigate(urls ...string) []error {
+	errs := make([]error, len(tg.tabs))
+	if len(urls) != len(tg.tabs) {
+		mismatch := fmt.Errorf("scout: tab group: %d urls for %d tabs", len(urls), len(tg.tabs))
+		for i := range errs {
+			errs[i] = mismatch
+		}
+		return errs
+	}
+	var wg sync.WaitGroup
+	for i, p := range tg.tabs {
+		wg.Add(1)
+		go func(i int, p *Page, url string) {
+			defer wg.Done()
+			if tg.limiter != nil {
+				if err := tg.limiter.Wait(context.Background()); err != nil {
+					errs[i] = fmt.Errorf("scout: tab %d: rate limiter: %w", i, err)
+					return
+				}
+			}
+			if err := p.Navigate(url); err != nil {
+				errs[i] = fmt.Errorf("scout: tab %d: navigate: %w", i, err)
+			}
+		}(i, p, urls[i])
+	}
+	wg.Wait()
+	return errs
+}
+
+// Wait polls every 50ms until cond returns true for tab i, or timeout elapses.
+func (tg *TabGroup) Wait(i int, cond func(*Page) bool, timeout time.Duration) error {
+	if i < 0 || i >= len(tg.tabs) {
+		return fmt.Errorf("scout: tab %d: index out of range [0, %d)", i, len(tg.tabs))
+	}
+	deadline := time.After(timeout)
+	tick := time.NewTicker(50 * time.Millisecond)
+	defer tick.Stop()
+	for {
+		if cond(tg.tabs[i]) {
+			return nil
+		}
+		select {
+		case <-deadline:
+			return fmt.Errorf("scout: tab %d: wait timed out after %v", i, timeout)
+		case <-tick.C:
+		}
+	}
+}
+
+// TabGroupCollect extracts T from each tab in parallel using fn.
+func TabGroupCollect[T any](tg *TabGroup, fn func(*Page) (T, error)) ([]T, []error) {
+	results := make([]T, len(tg.tabs))
+	errs := make([]error, len(tg.tabs))
+	var wg sync.WaitGroup
+	for i, p := range tg.tabs {
+		wg.Add(1)
+		go func(i int, p *Page) {
+			defer wg.Done()
+			if tg.limiter != nil {
+				if err := tg.limiter.Wait(context.Background()); err != nil {
+					errs[i] = fmt.Errorf("scout: tab %d: rate limiter: %w", i, err)
+					return
+				}
+			}
+			val, err := fn(p)
+			if err != nil {
+				errs[i] = fmt.Errorf("scout: tab %d: collect: %w", i, err)
+				return
+			}
+			results[i] = val
+		}(i, p)
+	}
+	wg.Wait()
+	return results, errs
+}
+
 // Close closes all tabs in the group. It is nil-safe and idempotent.
 func (tg *TabGroup) Close() error {
 	if tg == nil {
