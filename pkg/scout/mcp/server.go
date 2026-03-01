@@ -566,6 +566,53 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		return textResult("Session reset")
 	})
 
+	server.AddTool(&mcp.Tool{
+		Name:        "open",
+		Description: "Open a URL in a visible (headed) browser for manual inspection. The browser remains open for interactive analysis.",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{"url":{"type":"string","description":"URL to open"},"devtools":{"type":"boolean","description":"open Chrome DevTools automatically"}},"required":["url"]}`),
+	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		var args struct {
+			URL      string `json:"url"`
+			DevTools bool   `json:"devtools"`
+		}
+		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
+			return errResult(err.Error())
+		}
+
+		// Launch a separate headed browser for inspection.
+		opts := []scout.Option{
+			scout.WithHeadless(false),
+			scout.WithNoSandbox(),
+		}
+		if state.config.Stealth {
+			opts = append(opts, scout.WithStealth())
+		}
+		if args.DevTools {
+			opts = append(opts, scout.WithDevTools())
+		}
+
+		b, err := scout.New(opts...)
+		if err != nil {
+			return errResult(fmt.Sprintf("scout-mcp: open: %s", err))
+		}
+
+		page, err := b.NewPage(args.URL)
+		if err != nil {
+			_ = b.Close()
+			return errResult(fmt.Sprintf("scout-mcp: open: %s", err))
+		}
+
+		_ = page.WaitLoad()
+
+		title, _ := page.Title()
+		u, _ := page.URL()
+
+		return textResult(fmt.Sprintf("Opened %s (%s) in headed browser. Close the browser window when done.", u, title))
+	})
+
+	// --- Diagnostic Tools ---
+	registerDiagTools(server, state)
+
 	// --- Resources ---
 
 	server.AddResource(&mcp.Resource{
