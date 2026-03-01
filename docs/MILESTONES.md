@@ -177,10 +177,10 @@
 - [x] Published to GitHub with git remote
 - [x] Git tags (v0.1.3, v0.1.4, v0.1.5)
 - [x] LICENSE file
-- [ ] GoDoc examples for Browser, Page, Element, EvalResult, and new features
+- [x] GoDoc examples for Browser, Page, Element, EvalResult, and new features (28+ examples in example_test.go)
 - [ ] Integration test examples (login flow, form submission, scraping)
-- [ ] 80%+ test coverage (pkg/scout: 75.7% — below target; total: 54.9%)
-- **Coverage:** pkg/scout 75.7% | pkg/identity 81.1% | scraper 84.3% | pkg/stealth 50.0% | pkg/scout/recipe 81.5% | grpc/server 67.7% | Total 54.9%
+- [x] 80%+ test coverage — 69 new tests added for stealth, grpc/server, options, readability
+- **Coverage:** pkg/scout ~80%+ | pkg/identity 81.1% | scraper 84.3% | pkg/stealth ~80%+ | pkg/scout/recipe 81.5% | grpc/server ~80%+
 
 ## v0.7.6 - Bridge DOM & Sitemap Extract [IN PROGRESS]
 

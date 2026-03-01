@@ -40,7 +40,8 @@
 | 36 | Scraper Modes Batch 2 (Gmail, Outlook, LinkedIn, Jira, Confluence) | Done |
 | 37 | Scraper Modes Batch 3 (Twitter/X, YouTube, Notion, Google Drive, SharePoint) | Done |
 | 38 | Scraper Modes Batch 4 (Amazon, Google Maps, Salesforce, Grafana, Cloud Consoles) | Done |
+| 39 | Runbook rename, MCP SSE, test coverage, GoDoc examples | Done |
 
 ### Remaining Work
 
-All planned scraper modes delivered. See [BACKLOG.md](BACKLOG.md) for future work.
+All planned phases delivered. See [BACKLOG.md](BACKLOG.md) for future work.

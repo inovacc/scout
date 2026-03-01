@@ -42,7 +42,7 @@
 
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
-| MCP server SSE transport | P2 | Medium | Add HTTP+SSE transport alongside stdio for remote MCP access |
+| ~~MCP server SSE transport~~ | ~~P2~~ | ~~Medium~~ | ~~Done — ServeSSE() with --sse/--addr CLI flags~~ |
 | ~~gRPC reflection + health service~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — health.NewServer() registered~~ |
 | ~~CLI shell completions~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — scout completion bash/zsh/fish/powershell~~ |
 | OpenTelemetry tracing | P3 | Large | Instrument core operations with span context propagation |
