@@ -40,6 +40,7 @@ A Go-idiomatic API for headless browser automation, web scraping, and search bui
 - **LLM-Powered Extraction** - AI-powered data extraction via pluggable `LLMProvider` interface with 6 built-in providers: Ollama (local), OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini. `ExtractWithLLM()` sends page markdown + prompt to LLM; `ExtractWithLLMJSON()` for typed extraction with schema validation
 - **LLM Review Pipeline** - Two-pass extraction: extract with LLM1, review with LLM2. `ExtractWithLLMReview()` with workspace persistence tracking sessions and jobs in filesystem directories
 - **Sitemap Extract** - Crawl an entire site and extract DOM JSON + Markdown for every page via the bridge extension. `SitemapExtract()` with output directory support for per-page files and index
+- **MCP Server** - Model Context Protocol server exposing 33 tools for LLM browser control via stdio or HTTP+SSE transport. Install with `scout mcp --install`
 
 ## Installation
 
@@ -363,6 +364,51 @@ The `scout` CLI provides a unified interface to all library features. It communi
 | `scout cmdtree [--json]`                    | Visualize full command tree with flags                                               |
 | `scout version`                             | Show version info                                                                    |
 
+## MCP Server (LLM Integration)
+
+Scout includes a [Model Context Protocol](https://modelcontextprotocol.io/) server that exposes browser automation as 33 tools for LLMs like Claude.
+
+```bash
+# Install for Claude Code (local project)
+scout mcp --install
+
+# Install globally
+scout mcp --install --global
+
+# Start manually (stdio)
+scout mcp
+
+# Start with HTTP+SSE transport
+scout mcp --sse --addr=localhost:8080
+```
+
+### Tools (33)
+
+| Category | Tools | Description |
+|----------|-------|-------------|
+| **Browser** | `navigate`, `click`, `type`, `back`, `forward`, `wait`, `screenshot`, `snapshot`, `extract`, `eval`, `open` | Page navigation, interaction, and content extraction |
+| **Content** | `markdown`, `table`, `meta`, `pdf`, `search`, `fetch` | Convert pages to markdown, extract tables/metadata, PDF export, web search, URL fetching |
+| **Network** | `cookie`, `header`, `block`, `ping`, `curl` | Cookie/header management, URL blocking, site diagnostics with timing breakdown |
+| **Forms** | `form_detect`, `form_fill`, `form_submit` | Detect form fields, fill values, submit forms |
+| **Analysis** | `crawl`, `detect` | BFS crawling with depth/page limits, framework/tech stack detection |
+| **Inspection** | `storage`, `hijack`, `har`, `swagger` | Web storage CRUD, network traffic capture, performance entries, OpenAPI extraction |
+| **Session** | `session_list`, `session_reset` | List active sessions, reset browser state |
+
+### Resources
+
+| URI | Description |
+|-----|-------------|
+| `scout://page/markdown` | Current page as markdown |
+| `scout://page/url` | Current page URL |
+| `scout://page/title` | Current page title |
+
+### CLI Subcommands
+
+```bash
+scout mcp screenshot <url>   # Take a screenshot and save to file
+scout mcp open <url>         # Open URL in headed browser for inspection
+```
+
 ## Development
 
 Requires [Task](https://taskfile.dev) for build automation.
@@ -395,6 +441,7 @@ task grpc:client   # Run interactive CLI client
 | [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | Argon2id key derivation for session encryption                |
 | [golang.org/x/term](https://pkg.go.dev/golang.org/x/term)     | Secure passphrase input (no-echo terminal)                    |
 | [ollama/ollama](https://github.com/ollama/ollama)              | Ollama Go client for local LLM provider                       |
+| [go-sdk/mcp](https://github.com/modelcontextprotocol/go-sdk)  | Model Context Protocol server for LLM integration             |
 
 **gRPC layer and CLI** (`grpc/` and `cmd/` only):
 
