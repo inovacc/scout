@@ -10,7 +10,13 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// registerInspectTools adds storage, hijack, har, and swagger tools.
+func storageKind(sessionStorage bool) string {
+	if sessionStorage {
+		return "sessionStorage"
+	}
+	return "localStorage"
+}
+
 func registerInspectTools(server *mcp.Server, state *mcpState) {
 	server.AddTool(&mcp.Tool{
 		Name:        "storage",
@@ -60,11 +66,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 			if err != nil {
 				return errResult(err.Error())
 			}
-			kind := "localStorage"
-			if args.SessionStorage {
-				kind = "sessionStorage"
-			}
-			return textResult(fmt.Sprintf("%s[%q] set", kind, args.Key))
+			return textResult(fmt.Sprintf("%s[%q] set", storageKind(args.SessionStorage), args.Key))
 
 		case "list":
 			var items map[string]string
@@ -87,11 +89,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 			if err != nil {
 				return errResult(err.Error())
 			}
-			kind := "localStorage"
-			if args.SessionStorage {
-				kind = "sessionStorage"
-			}
-			return textResult(fmt.Sprintf("%s cleared", kind))
+			return textResult(fmt.Sprintf("%s cleared", storageKind(args.SessionStorage)))
 
 		default:
 			return errResult(fmt.Sprintf("unknown action %q (use get, set, list, or clear)", args.Action))
