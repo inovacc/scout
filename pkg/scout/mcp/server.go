@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
+	"net/http"
 	"sync"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -661,4 +663,46 @@ func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool) err
 
 	server := NewServer(cfg)
 	return server.Run(ctx, &mcp.StdioTransport{})
+}
+
+// ServeSSE starts the MCP server with HTTP+SSE transport on the given address.
+// Blocks until the context is cancelled.
+func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, stealth bool) error {
+	cfg := ServerConfig{
+		Headless: headless,
+		Stealth:  stealth,
+		Logger:   logger,
+	}
+
+	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
+		return NewServer(cfg)
+	}, nil)
+
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: handler,
+	}
+
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("scout: mcp: %w", err)
+	}
+
+	logger.Info("MCP SSE server listening", "addr", ln.Addr().String())
+
+	errCh := make(chan error, 1)
+	go func() {
+		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
+			errCh <- fmt.Errorf("scout: mcp: %w", err)
+		}
+		close(errCh)
+	}()
+
+	select {
+	case <-ctx.Done():
+		_ = srv.Close()
+		return ctx.Err()
+	case err := <-errCh:
+		return err
+	}
 }

@@ -488,6 +488,58 @@ func TestSnapshotTool(t *testing.T) {
 	}
 }
 
+func TestServeSSE(t *testing.T) {
+	cfg := ServerConfig{Headless: true, Logger: slog.Default()}
+
+	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
+		return NewServer(cfg)
+	}, nil)
+
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	// Connect an SSE client to the test server.
+	client := mcp.NewClient(&mcp.Implementation{Name: "test-sse-client", Version: "1.0.0"}, nil)
+	transport := &mcp.SSEClientTransport{Endpoint: ts.URL}
+
+	ctx := context.Background()
+	cs, err := client.Connect(ctx, transport, nil)
+	if err != nil {
+		t.Fatalf("SSE client connect: %v", err)
+	}
+	defer func() { _ = cs.Close() }()
+
+	// Verify tools are listed over SSE transport.
+	result, err := cs.ListTools(ctx, &mcp.ListToolsParams{})
+	if err != nil {
+		t.Fatalf("ListTools over SSE: %v", err)
+	}
+
+	toolNames := make(map[string]bool)
+	for _, tool := range result.Tools {
+		toolNames[tool.Name] = true
+	}
+
+	if !toolNames["navigate"] {
+		t.Error("expected 'navigate' tool over SSE transport")
+	}
+	if !toolNames["screenshot"] {
+		t.Error("expected 'screenshot' tool over SSE transport")
+	}
+}
+
+func TestServeSSEListenError(t *testing.T) {
+	logger := slog.Default()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Use an invalid address to trigger a listen error.
+	err := ServeSSE(ctx, logger, "invalid-addr-no-port", true, false)
+	if err == nil {
+		t.Fatal("expected error for invalid address")
+	}
+}
+
 // toolErr wraps a string as an error for skipIfNoBrowser.
 type toolErr struct{ msg string }
 
