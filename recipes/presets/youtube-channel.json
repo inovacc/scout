@@ -1,0 +1,19 @@
+{
+  "version": "1",
+  "name": "youtube-channel",
+  "type": "extract",
+  "output": {
+    "format": "json"
+  },
+  "url": "https://www.youtube.com/@{{channel}}/videos",
+  "wait_for": "ytd-rich-item-renderer",
+  "items": {
+    "container": "ytd-rich-item-renderer",
+    "fields": {
+      "title": "#video-title",
+      "views": "#metadata-line span:first-child",
+      "published": "#metadata-line span:last-child",
+      "link": "#video-title@href"
+    }
+  }
+}

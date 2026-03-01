@@ -1,0 +1,73 @@
+{
+  "version": "1",
+  "name": "sharepoint-files",
+  "type": "automate",
+  "output": {
+    "format": "json"
+  },
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://login.microsoftonline.com"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type='email']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[type='email']",
+      "text": "{{email}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[id='idSIButton9']"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type='password']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[type='password']",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[id='idSIButton9']"
+    },
+    {
+      "action": "wait",
+      "selector": "button[id='idSIButton9']",
+      "timeout": 30
+    },
+    {
+      "action": "click",
+      "selector": "button[id='idSIButton9']"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-automationid='row']",
+      "timeout": 30
+    },
+    {
+      "action": "navigate",
+      "url": "https://{{tenant}}.sharepoint.com/{{site}}"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-automationid='row']",
+      "timeout": 30
+    },
+    {
+      "action": "extract",
+      "fields": {
+        "name": "[data-automationid='name']",
+        "modified": "[data-automationid='modified']",
+        "size": "[data-automationid='size']"
+      }
+    }
+  ]
+}

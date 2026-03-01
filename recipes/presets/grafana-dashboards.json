@@ -1,0 +1,46 @@
+{
+  "version": "1",
+  "name": "grafana_dashboards",
+  "type": "automate",
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "{{host}}/login"
+    },
+    {
+      "action": "wait",
+      "selector": "input[name=\"user\"]"
+    },
+    {
+      "action": "type",
+      "selector": "input[name=\"user\"]",
+      "text": "{{username}}"
+    },
+    {
+      "action": "type",
+      "selector": "input[name=\"password\"]",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type=\"submit\"]"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-testid=\"dashboard-section-item\"]"
+    },
+    {
+      "action": "extract",
+      "selector": "[data-testid=\"dashboard-section-item\"]",
+      "as": "dashboards"
+    },
+    {
+      "action": "eval",
+      "script": "() => Array.from(document.querySelectorAll('[data-testid=\"dashboard-section-item\"]')).map(el => ({ name: el.textContent?.trim() || '', url: el.href || '' }))",
+      "as": "dashboard_list"
+    }
+  ],
+  "output": {
+    "format": "json"
+  }
+}

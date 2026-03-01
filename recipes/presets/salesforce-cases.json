@@ -1,0 +1,56 @@
+{
+  "version": "1",
+  "name": "salesforce_cases",
+  "type": "automate",
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://{{instance}}.my.salesforce.com"
+    },
+    {
+      "action": "wait",
+      "selector": "#username"
+    },
+    {
+      "action": "type",
+      "selector": "#username",
+      "text": "{{username}}"
+    },
+    {
+      "action": "type",
+      "selector": "#password",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "#Login"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-label=\"Case Number\"]"
+    },
+    {
+      "action": "extract",
+      "selector": "[data-label=\"Case Number\"]",
+      "as": "case_numbers"
+    },
+    {
+      "action": "extract",
+      "selector": "[data-label=\"Subject\"]",
+      "as": "subjects"
+    },
+    {
+      "action": "extract",
+      "selector": "[data-label=\"Status\"]",
+      "as": "statuses"
+    },
+    {
+      "action": "extract",
+      "selector": "[data-label=\"Priority\"]",
+      "as": "priorities"
+    }
+  ],
+  "output": {
+    "format": "json"
+  }
+}

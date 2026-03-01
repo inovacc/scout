@@ -1,0 +1,24 @@
+{
+  "version": "1",
+  "name": "Discord Channels",
+  "type": "automate",
+  "steps": [
+    {"action": "navigate", "url": "https://discord.com/login"},
+    {"action": "type", "selector": "input[name=\"email\"]", "text": "{{username}}"},
+    {"action": "type", "selector": "input[name=\"password\"]", "text": "{{password}}"},
+    {"action": "click", "selector": "button[type=\"submit\"]"},
+    {"action": "wait", "selector": "[class*=\"channelName\"]"},
+    {
+      "action": "extract",
+      "selector": "[class*=\"channelName\"]",
+      "name": "channels",
+      "items": {
+        "container": "[class*=\"channelName\"]",
+        "fields": {
+          "name": "[class*=\"channelName\"]"
+        }
+      }
+    }
+  ],
+  "output": {"format": "json"}
+}

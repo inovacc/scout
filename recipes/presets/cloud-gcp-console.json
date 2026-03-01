@@ -1,0 +1,57 @@
+{
+  "version": "1",
+  "name": "gcp_projects",
+  "type": "automate",
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://console.cloud.google.com"
+    },
+    {
+      "action": "wait",
+      "selector": "button[aria-label*=\"Sign in\"], [data-testid=\"login\"]"
+    },
+    {
+      "action": "click",
+      "selector": "button[aria-label*=\"Sign in\"]"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type=\"email\"]"
+    },
+    {
+      "action": "type",
+      "selector": "input[type=\"email\"]",
+      "text": "{{email}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type=\"submit\"]"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type=\"password\"]"
+    },
+    {
+      "action": "type",
+      "selector": "input[type=\"password\"]",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type=\"submit\"]"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-testid=\"project-list-item\"], .goog-menuitem"
+    },
+    {
+      "action": "eval",
+      "script": "() => Array.from(document.querySelectorAll('[data-testid=\"project-list-item\"], .goog-menuitem')).map(el => ({ name: el.textContent?.trim() || '', id: el.getAttribute('data-project-id') || el.getAttribute('data-id') || '' }))",
+      "as": "projects"
+    }
+  ],
+  "output": {
+    "format": "json"
+  }
+}

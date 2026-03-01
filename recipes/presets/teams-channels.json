@@ -1,0 +1,27 @@
+{
+  "version": "1",
+  "name": "Teams Channels",
+  "type": "automate",
+  "steps": [
+    {"action": "navigate", "url": "https://teams.microsoft.com"},
+    {"action": "wait", "selector": "input[type=\"email\"]"},
+    {"action": "type", "selector": "input[type=\"email\"]", "text": "{{username}}"},
+    {"action": "click", "selector": "button[id=\"idSIButton9\"]"},
+    {"action": "wait", "selector": "input[type=\"password\"]"},
+    {"action": "type", "selector": "input[type=\"password\"]", "text": "{{password}}"},
+    {"action": "click", "selector": "button[id=\"idSIButton9\"]"},
+    {"action": "wait", "selector": "[data-tid=\"channel-item\"]"},
+    {
+      "action": "extract",
+      "selector": "[data-tid=\"channel-item\"]",
+      "name": "channels",
+      "items": {
+        "container": "[data-tid=\"channel-item\"]",
+        "fields": {
+          "name": "[data-tid=\"channel-item\"]"
+        }
+      }
+    }
+  ],
+  "output": {"format": "json"}
+}

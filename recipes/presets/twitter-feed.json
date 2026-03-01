@@ -1,0 +1,55 @@
+{
+  "version": "1",
+  "name": "twitter-feed",
+  "type": "automate",
+  "output": {
+    "format": "json"
+  },
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://x.com/login"
+    },
+    {
+      "action": "wait",
+      "selector": "input[autocomplete='username']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[autocomplete='username']",
+      "text": "{{username}}"
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text('Next')"
+    },
+    {
+      "action": "wait",
+      "selector": "input[autocomplete='current-password']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[autocomplete='current-password']",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button:has-text('Log in')"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-testid='tweet']",
+      "timeout": 30
+    },
+    {
+      "action": "extract",
+      "fields": {
+        "author": "[data-testid='User-Name']",
+        "text": "[data-testid='tweetText']",
+        "time": "time"
+      }
+    }
+  ]
+}

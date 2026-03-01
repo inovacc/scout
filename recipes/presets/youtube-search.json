@@ -1,0 +1,19 @@
+{
+  "version": "1",
+  "name": "youtube-search",
+  "type": "extract",
+  "output": {
+    "format": "json"
+  },
+  "url": "https://www.youtube.com/results?search_query={{query}}",
+  "wait_for": "ytd-video-renderer",
+  "items": {
+    "container": "ytd-video-renderer",
+    "fields": {
+      "title": "#video-title",
+      "channel": ".ytd-channel-name a",
+      "views": "#metadata-line span:first-child",
+      "link": "#video-title@href"
+    }
+  }
+}
