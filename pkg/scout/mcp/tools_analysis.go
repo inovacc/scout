@@ -79,9 +79,9 @@ func registerAnalysisTools(server *mcp.Server, state *mcpState) {
 
 		type detectResult struct {
 			Frameworks []scout.FrameworkInfo `json:"frameworks"`
-			PWA        *scout.PWAInfo       `json:"pwa"`
-			RenderMode *scout.RenderInfo    `json:"renderMode"`
-			TechStack  *scout.TechStack     `json:"techStack"`
+			PWA        *scout.PWAInfo        `json:"pwa"`
+			RenderMode *scout.RenderInfo     `json:"renderMode"`
+			TechStack  *scout.TechStack      `json:"techStack"`
 		}
 
 		var result detectResult

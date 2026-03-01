@@ -11,7 +11,7 @@ import (
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
 	"github.com/inovacc/scout/grpc/server"
-	"github.com/inovacc/scout/pkg/identity"
+	identity2 "github.com/inovacc/scout/pkg/scout/identity"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -61,14 +61,14 @@ var serverCmd = &cobra.Command{
 				return err
 			}
 
-			id, err := identity.LoadOrGenerate(filepath.Join(dir, "identity"))
+			id, err := identity2.LoadOrGenerate(filepath.Join(dir, "identity"))
 			if err != nil {
 				return fmt.Errorf("scout: load identity: %w", err)
 			}
 
 			deviceID = id.DeviceID
 
-			trustStore, err := identity.NewTrustStore(filepath.Join(dir, "trusted"))
+			trustStore, err := identity2.NewTrustStore(filepath.Join(dir, "trusted"))
 			if err != nil {
 				return fmt.Errorf("scout: trust store: %w", err)
 			}
@@ -120,8 +120,8 @@ var serverCmd = &cobra.Command{
 		var pairingGRPC *grpc.Server
 		if !insecureMode {
 			dir, _ := scoutDir()
-			id, _ := identity.LoadOrGenerate(filepath.Join(dir, "identity"))
-			trustStore, _ := identity.NewTrustStore(filepath.Join(dir, "trusted"))
+			id, _ := identity2.LoadOrGenerate(filepath.Join(dir, "identity"))
+			trustStore, _ := identity2.NewTrustStore(filepath.Join(dir, "trusted"))
 
 			pairingAddr = fmt.Sprintf(":%d", port+1)
 			pairingLis, err := net.Listen("tcp", pairingAddr)

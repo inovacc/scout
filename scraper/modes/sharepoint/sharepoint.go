@@ -170,8 +170,10 @@ type SharePointMode struct {
 	provider sharepointProvider
 }
 
-func (m *SharePointMode) Name() string        { return "sharepoint" }
-func (m *SharePointMode) Description() string { return "Scrape SharePoint sites, documents, lists, pages, and users" }
+func (m *SharePointMode) Name() string { return "sharepoint" }
+func (m *SharePointMode) Description() string {
+	return "Scrape SharePoint sites, documents, lists, pages, and users"
+}
 func (m *SharePointMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, navigates to the SharePoint site,
@@ -421,8 +423,8 @@ func parseFileResponse(body string, targetSet map[string]struct{}) []scraper.Res
 			Content:   resp.Name,
 			URL:       resp.ServerRelativeURL,
 			Metadata: map[string]any{
-				"size":              resp.Length,
-				"time_created":      resp.TimeCreated,
+				"size":               resp.Length,
+				"time_created":       resp.TimeCreated,
 				"time_last_modified": resp.TimeLastModified,
 			},
 			Raw: resp,
@@ -435,9 +437,9 @@ type spListItemsResponse struct {
 }
 
 type spListItem struct {
-	ID    string `json:"Id"`
-	Title string `json:"Title"`
-	Body  string `json:"Body"`
+	ID       string `json:"Id"`
+	Title    string `json:"Title"`
+	Body     string `json:"Body"`
 	AuthorID *struct {
 		ID string `json:"Id"`
 	} `json:"AuthorId"`
@@ -480,14 +482,14 @@ type spPagesResponse struct {
 }
 
 type spPage struct {
-	ID                string `json:"id"`
-	Name              string `json:"name"`
-	Title             string `json:"title"`
-	Description       string `json:"description"`
-	WebURL            string `json:"webUrl"`
-	CreatedDateTime   string `json:"createdDateTime"`
+	ID                   string `json:"id"`
+	Name                 string `json:"name"`
+	Title                string `json:"title"`
+	Description          string `json:"description"`
+	WebURL               string `json:"webUrl"`
+	CreatedDateTime      string `json:"createdDateTime"`
 	LastModifiedDateTime string `json:"lastModifiedDateTime"`
-	CreatedBy         *struct {
+	CreatedBy            *struct {
 		User *struct {
 			ID          string `json:"id"`
 			DisplayName string `json:"displayName"`
@@ -522,10 +524,10 @@ func parsePagesResponse(body string, targetSet map[string]struct{}) []scraper.Re
 			Content:   page.Description,
 			URL:       page.WebURL,
 			Metadata: map[string]any{
-				"title":       page.Title,
-				"name":        page.Name,
-				"created":     page.CreatedDateTime,
-				"modified":    page.LastModifiedDateTime,
+				"title":    page.Title,
+				"name":     page.Name,
+				"created":  page.CreatedDateTime,
+				"modified": page.LastModifiedDateTime,
 			},
 			Raw: page,
 		})
@@ -559,9 +561,9 @@ func parseSiteUsersResponse(body string) []scraper.Result {
 			ID:     user.ID,
 			Author: user.Title,
 			Metadata: map[string]any{
-				"login_name":  user.LoginName,
-				"email":       user.Email,
-				"is_admin":    user.IsSiteAdmin,
+				"login_name": user.LoginName,
+				"email":      user.Email,
+				"is_admin":   user.IsSiteAdmin,
 			},
 			Raw: user,
 		})
@@ -570,9 +572,9 @@ func parseSiteUsersResponse(body string) []scraper.Result {
 }
 
 type graphSite struct {
-	ID          string `json:"id"`
-	DisplayName string `json:"displayName"`
-	WebURL      string `json:"webUrl"`
+	ID              string `json:"id"`
+	DisplayName     string `json:"displayName"`
+	WebURL          string `json:"webUrl"`
 	CreatedDateTime string `json:"createdDateTime"`
 }
 

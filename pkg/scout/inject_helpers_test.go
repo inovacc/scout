@@ -182,11 +182,11 @@ func TestInjectAllHelpers(t *testing.T) {
 
 func TestRenderTemplate(t *testing.T) {
 	tests := []struct {
-		name     string
-		tmpl     string
-		data     map[string]any
-		wantSub  string
-		wantErr  bool
+		name    string
+		tmpl    string
+		data    map[string]any
+		wantSub string
+		wantErr bool
 	}{
 		{
 			name:    "extract-list renders container",
@@ -288,4 +288,3 @@ func TestInjectTemplate_ExtractList(t *testing.T) {
 		}
 	}
 }
-

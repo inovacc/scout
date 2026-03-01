@@ -6,19 +6,19 @@ import (
 	"testing"
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
-	"github.com/inovacc/scout/pkg/identity"
+	identity2 "github.com/inovacc/scout/pkg/scout/identity"
 )
 
-func newTestPairingServer(t *testing.T) (*PairingServer, *identity.Identity) {
+func newTestPairingServer(t *testing.T) (*PairingServer, *identity2.Identity) {
 	t.Helper()
 
-	serverID, err := identity.GenerateIdentity()
+	serverID, err := identity2.GenerateIdentity()
 	if err != nil {
 		t.Fatalf("GenerateIdentity server: %v", err)
 	}
 
 	dir := t.TempDir()
-	ts, err := identity.NewTrustStore(dir)
+	ts, err := identity2.NewTrustStore(dir)
 	if err != nil {
 		t.Fatalf("NewTrustStore: %v", err)
 	}
@@ -30,7 +30,7 @@ func newTestPairingServer(t *testing.T) (*PairingServer, *identity.Identity) {
 func TestPair_HappyPath(t *testing.T) {
 	ps, _ := newTestPairingServer(t)
 
-	clientID, err := identity.GenerateIdentity()
+	clientID, err := identity2.GenerateIdentity()
 	if err != nil {
 		t.Fatalf("GenerateIdentity client: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestPair_EmptyCert(t *testing.T) {
 func TestPair_EmptyDeviceID(t *testing.T) {
 	ps, _ := newTestPairingServer(t)
 
-	clientID, err := identity.GenerateIdentity()
+	clientID, err := identity2.GenerateIdentity()
 	if err != nil {
 		t.Fatalf("GenerateIdentity: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestPair_CertParseFail(t *testing.T) {
 func TestPair_DeviceIDMismatch(t *testing.T) {
 	ps, _ := newTestPairingServer(t)
 
-	clientID, err := identity.GenerateIdentity()
+	clientID, err := identity2.GenerateIdentity()
 	if err != nil {
 		t.Fatalf("GenerateIdentity: %v", err)
 	}

@@ -23,29 +23,29 @@ const (
 type Option func(*options)
 
 type options struct {
-	browserType   BrowserType
-	headless      bool
-	stealth       bool
-	userAgent     string
-	proxy         string
-	windowW       int
-	windowH       int
-	timeout       time.Duration
-	slowMotion    time.Duration
-	ignoreCerts   bool
-	execPath      string
-	userDataDir   string
-	env           []string
-	incognito     bool
-	noSandbox     bool
-	windowState WindowState
-	xvfb          bool
-	xvfbArgs      []string
-	launchFlags   map[string][]string
-	extensions    []string
-	extensionIDs  []string
-	devtools      bool
-	bridge        bool
+	browserType        BrowserType
+	headless           bool
+	stealth            bool
+	userAgent          string
+	proxy              string
+	windowW            int
+	windowH            int
+	timeout            time.Duration
+	slowMotion         time.Duration
+	ignoreCerts        bool
+	execPath           string
+	userDataDir        string
+	env                []string
+	incognito          bool
+	noSandbox          bool
+	windowState        WindowState
+	xvfb               bool
+	xvfbArgs           []string
+	launchFlags        map[string][]string
+	extensions         []string
+	extensionIDs       []string
+	devtools           bool
+	bridge             bool
 	blockPatterns      []string
 	remoteCDP          string
 	userAgentMetadata  *proto.EmulationUserAgentMetadata

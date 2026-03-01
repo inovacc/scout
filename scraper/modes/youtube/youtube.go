@@ -166,8 +166,10 @@ type YouTubeMode struct {
 	provider youtubeProvider
 }
 
-func (m *YouTubeMode) Name() string        { return "youtube" }
-func (m *YouTubeMode) Description() string { return "Scrape YouTube videos, comments, channels, and playlists" }
+func (m *YouTubeMode) Name() string { return "youtube" }
+func (m *YouTubeMode) Description() string {
+	return "Scrape YouTube videos, comments, channels, and playlists"
+}
 func (m *YouTubeMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, navigates to YouTube,
@@ -382,8 +384,8 @@ type videoRenderer struct {
 }
 
 type channelRenderer struct {
-	ChannelID   string `json:"channelId"`
-	Title       struct {
+	ChannelID string `json:"channelId"`
+	Title     struct {
 		SimpleText string `json:"simpleText"`
 	} `json:"title"`
 	DescriptionSnippet struct {
@@ -421,8 +423,8 @@ func parseSearchResults(body string, targetSet map[string]struct{}) []scraper.Re
 				for _, content := range section.ItemSectionRenderer.Contents {
 					// Try to parse as video renderer.
 					var videoData struct {
-						VideoRenderer *videoRenderer `json:"videoRenderer"`
-						ChannelRenderer *channelRenderer `json:"channelRenderer"`
+						VideoRenderer    *videoRenderer    `json:"videoRenderer"`
+						ChannelRenderer  *channelRenderer  `json:"channelRenderer"`
 						PlaylistRenderer *playlistRenderer `json:"playlistRenderer"`
 					}
 					if json.Unmarshal(content, &videoData) == nil {
@@ -459,7 +461,7 @@ func parseBrowseResults(body string, targetSet map[string]struct{}) []scraper.Re
 						for _, content := range section.ItemSectionRenderer.Contents {
 							// Try to parse as video renderer.
 							var videoData struct {
-								VideoRenderer *videoRenderer `json:"videoRenderer"`
+								VideoRenderer    *videoRenderer    `json:"videoRenderer"`
 								PlaylistRenderer *playlistRenderer `json:"playlistRenderer"`
 							}
 							if json.Unmarshal(content, &videoData) == nil {
@@ -567,10 +569,10 @@ func videoRendererToResult(v *videoRenderer) scraper.Result {
 		Content:   title,
 		URL:       "https://www.youtube.com/watch?v=" + v.VideoID,
 		Metadata: map[string]any{
-			"title":           title,
-			"view_count":      viewCount,
-			"published_time":  publishedTime,
-			"video_id":        v.VideoID,
+			"title":          title,
+			"view_count":     viewCount,
+			"published_time": publishedTime,
+			"video_id":       v.VideoID,
 		},
 		Raw: v,
 	}
@@ -590,8 +592,8 @@ func channelRendererToResult(c *channelRenderer) scraper.Result {
 		Content:   description,
 		URL:       "https://www.youtube.com/channel/" + c.ChannelID,
 		Metadata: map[string]any{
-			"title":           title,
-			"channel_id":      c.ChannelID,
+			"title":            title,
+			"channel_id":       c.ChannelID,
 			"subscriber_count": subscriberCount,
 		},
 		Raw: c,
@@ -610,8 +612,8 @@ func playlistRendererToResult(p *playlistRenderer) scraper.Result {
 		Content:   title,
 		URL:       "https://www.youtube.com/playlist?list=" + p.PlaylistID,
 		Metadata: map[string]any{
-			"title":      title,
-			"subtitle":   subtitle,
+			"title":       title,
+			"subtitle":    subtitle,
 			"playlist_id": p.PlaylistID,
 		},
 		Raw: p,

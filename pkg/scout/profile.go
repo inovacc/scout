@@ -19,18 +19,18 @@ import (
 // loaded, and applied to browser sessions. It captures browser configuration,
 // identity fingerprint data, cookies, storage, and custom headers.
 type UserProfile struct {
-	Version    int                              `json:"version"`
-	Name       string                           `json:"name"`
-	CreatedAt  time.Time                        `json:"created_at"`
-	UpdatedAt  time.Time                        `json:"updated_at"`
-	Browser    ProfileBrowser                   `json:"browser"`
-	Identity   ProfileIdentity                  `json:"identity"`
-	Cookies    []Cookie                         `json:"cookies"`
-	Storage    map[string]ProfileOriginStorage  `json:"storage,omitempty"`
-	Headers    map[string]string                `json:"headers,omitempty"`
-	Extensions []string                         `json:"extensions,omitempty"`
-	Proxy      string                           `json:"proxy,omitempty"`
-	Notes      string                           `json:"notes,omitempty"`
+	Version    int                             `json:"version"`
+	Name       string                          `json:"name"`
+	CreatedAt  time.Time                       `json:"created_at"`
+	UpdatedAt  time.Time                       `json:"updated_at"`
+	Browser    ProfileBrowser                  `json:"browser"`
+	Identity   ProfileIdentity                 `json:"identity"`
+	Cookies    []Cookie                        `json:"cookies"`
+	Storage    map[string]ProfileOriginStorage `json:"storage,omitempty"`
+	Headers    map[string]string               `json:"headers,omitempty"`
+	Extensions []string                        `json:"extensions,omitempty"`
+	Proxy      string                          `json:"proxy,omitempty"`
+	Notes      string                          `json:"notes,omitempty"`
 }
 
 // ProfileBrowser holds browser type and launch configuration.

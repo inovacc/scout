@@ -254,9 +254,9 @@ func TestGitHubExtractMaxItems(t *testing.T) {
 
 func TestGitHubExtractOptions(t *testing.T) {
 	tests := []struct {
-		name     string
-		opt      GitHubExtractOption
-		checkFn  func(*githubExtractOpts) bool
+		name    string
+		opt     GitHubExtractOption
+		checkFn func(*githubExtractOpts) bool
 	}{
 		{
 			name: "WithGitHubExtractBody",

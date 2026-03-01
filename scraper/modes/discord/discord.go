@@ -131,8 +131,10 @@ type DiscordMode struct {
 	provider *discordProvider
 }
 
-func (m *DiscordMode) Name() string        { return "discord" }
-func (m *DiscordMode) Description() string  { return "Discord message and channel scraper via API interception" }
+func (m *DiscordMode) Name() string { return "discord" }
+func (m *DiscordMode) Description() string {
+	return "Discord message and channel scraper via API interception"
+}
 func (m *DiscordMode) AuthProvider() scraper.AuthProvider { return m.provider }
 
 // Scrape launches a browser with the restored Discord session, navigates to the
@@ -375,8 +377,8 @@ func (m *DiscordMode) parseMessages(body, source string, results chan<- scraper.
 			Content:   msg.Content,
 			URL:       source,
 			Metadata: map[string]any{
-				"channel_id":  msg.ChannelID,
-				"author_id":   msg.Author.ID,
+				"channel_id":   msg.ChannelID,
+				"author_id":    msg.Author.ID,
 				"message_type": msg.Type,
 			},
 		}
@@ -403,12 +405,12 @@ func (m *DiscordMode) parseChannels(body, source string, results chan<- scraper.
 	count := 0
 	for _, ch := range channels {
 		results <- scraper.Result{
-			Type:   scraper.ResultChannel,
-			Source: ch.GuildID,
-			ID:     ch.ID,
+			Type:      scraper.ResultChannel,
+			Source:    ch.GuildID,
+			ID:        ch.ID,
 			Timestamp: time.Now(),
-			Content: ch.Topic,
-			URL:     source,
+			Content:   ch.Topic,
+			URL:       source,
 			Metadata: map[string]any{
 				"name":         ch.Name,
 				"channel_type": ch.Type,

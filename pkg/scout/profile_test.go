@@ -317,26 +317,26 @@ func TestLoadProfileEncrypted_WrongPassphrase(t *testing.T) {
 
 func TestMergeProfiles(t *testing.T) {
 	base := &UserProfile{
-		Version:   1,
-		Name:      "base",
-		CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		UpdatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-		Identity:  ProfileIdentity{UserAgent: "BaseAgent", Language: "en-US"},
-		Browser:   ProfileBrowser{Type: "chrome", WindowW: 1920, WindowH: 1080},
-		Headers:   map[string]string{"X-Base": "1", "X-Shared": "base"},
+		Version:    1,
+		Name:       "base",
+		CreatedAt:  time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		UpdatedAt:  time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		Identity:   ProfileIdentity{UserAgent: "BaseAgent", Language: "en-US"},
+		Browser:    ProfileBrowser{Type: "chrome", WindowW: 1920, WindowH: 1080},
+		Headers:    map[string]string{"X-Base": "1", "X-Shared": "base"},
 		Extensions: []string{"/ext/a", "/ext/b"},
-		Proxy:     "socks5://base:1080",
-		Notes:     "base notes",
+		Proxy:      "socks5://base:1080",
+		Notes:      "base notes",
 	}
 
 	overlay := &UserProfile{
-		Version:   1,
-		Name:      "overlay",
-		CreatedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
-		UpdatedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
-		Identity:  ProfileIdentity{UserAgent: "OverlayAgent"},
-		Browser:   ProfileBrowser{Type: "brave"},
-		Headers:   map[string]string{"X-Overlay": "2", "X-Shared": "overlay"},
+		Version:    1,
+		Name:       "overlay",
+		CreatedAt:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+		UpdatedAt:  time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+		Identity:   ProfileIdentity{UserAgent: "OverlayAgent"},
+		Browser:    ProfileBrowser{Type: "brave"},
+		Headers:    map[string]string{"X-Overlay": "2", "X-Shared": "overlay"},
 		Extensions: []string{"/ext/b", "/ext/c"},
 	}
 

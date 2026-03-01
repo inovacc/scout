@@ -10,8 +10,8 @@ import (
 	"time"
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
-	"github.com/inovacc/scout/pkg/discovery"
-	"github.com/inovacc/scout/pkg/identity"
+	"github.com/inovacc/scout/pkg/scout/discovery"
+	identity2 "github.com/inovacc/scout/pkg/scout/identity"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -40,7 +40,7 @@ var deviceIDCmd = &cobra.Command{
 			return err
 		}
 
-		id, err := identity.LoadOrGenerate(filepath.Join(dir, "identity"))
+		id, err := identity2.LoadOrGenerate(filepath.Join(dir, "identity"))
 		if err != nil {
 			return fmt.Errorf("scout: load identity: %w", err)
 		}
@@ -56,7 +56,7 @@ var deviceTrustCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		deviceID := args[0]
-		if !identity.ValidateDeviceID(deviceID) {
+		if !identity2.ValidateDeviceID(deviceID) {
 			return fmt.Errorf("scout: invalid device ID: %s", deviceID)
 		}
 
@@ -65,7 +65,7 @@ var deviceTrustCmd = &cobra.Command{
 			return err
 		}
 
-		ts, err := identity.NewTrustStore(filepath.Join(dir, "trusted"))
+		ts, err := identity2.NewTrustStore(filepath.Join(dir, "trusted"))
 		if err != nil {
 			return err
 		}
@@ -90,7 +90,7 @@ var deviceListCmd = &cobra.Command{
 			return err
 		}
 
-		ts, err := identity.NewTrustStore(filepath.Join(dir, "trusted"))
+		ts, err := identity2.NewTrustStore(filepath.Join(dir, "trusted"))
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ var deviceRemoveCmd = &cobra.Command{
 			return err
 		}
 
-		ts, err := identity.NewTrustStore(filepath.Join(dir, "trusted"))
+		ts, err := identity2.NewTrustStore(filepath.Join(dir, "trusted"))
 		if err != nil {
 			return err
 		}
@@ -151,12 +151,12 @@ var devicePairCmd = &cobra.Command{
 			return err
 		}
 
-		id, err := identity.LoadOrGenerate(filepath.Join(dir, "identity"))
+		id, err := identity2.LoadOrGenerate(filepath.Join(dir, "identity"))
 		if err != nil {
 			return fmt.Errorf("scout: load identity: %w", err)
 		}
 
-		trustStore, err := identity.NewTrustStore(filepath.Join(dir, "trusted"))
+		trustStore, err := identity2.NewTrustStore(filepath.Join(dir, "trusted"))
 		if err != nil {
 			return fmt.Errorf("scout: trust store: %w", err)
 		}
@@ -189,7 +189,7 @@ var devicePairCmd = &cobra.Command{
 		if expectedID != "" {
 			if serverID != expectedID {
 				return fmt.Errorf("scout: server ID mismatch: expected %s, got %s",
-					identity.ShortID(expectedID), identity.ShortID(serverID))
+					identity2.ShortID(expectedID), identity2.ShortID(serverID))
 			}
 		} else {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Server device ID: %s\nTrust this server? [y/N] ", serverID)
@@ -206,7 +206,7 @@ var devicePairCmd = &cobra.Command{
 			return fmt.Errorf("scout: store server cert: %w", err)
 		}
 
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Paired with %s successfully.\n", identity.ShortID(serverID))
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Paired with %s successfully.\n", identity2.ShortID(serverID))
 		return nil
 	},
 }

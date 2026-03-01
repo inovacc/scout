@@ -14,7 +14,7 @@ import (
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
 	"github.com/inovacc/scout/grpc/server"
-	"github.com/inovacc/scout/pkg/identity"
+	"github.com/inovacc/scout/pkg/scout/identity"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"

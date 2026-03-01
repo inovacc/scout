@@ -179,4 +179,3 @@ type RecordedRecipe = RecordedRunbook
 func (r *BridgeRecorder) ToRecipe(name, url string) *RecordedRunbook {
 	return r.ToRunbook(name, url)
 }
-

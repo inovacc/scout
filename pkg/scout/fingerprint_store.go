@@ -14,13 +14,13 @@ import (
 
 // StoredFingerprint wraps a Fingerprint with persistence metadata.
 type StoredFingerprint struct {
-	ID        string       `json:"id"`
+	ID          string       `json:"id"`
 	Fingerprint *Fingerprint `json:"fingerprint"`
-	CreatedAt time.Time    `json:"created_at"`
-	LastUsed  time.Time    `json:"last_used"`
-	UseCount  int          `json:"use_count"`
-	Domains   []string     `json:"domains,omitempty"`
-	Tags      []string     `json:"tags,omitempty"`
+	CreatedAt   time.Time    `json:"created_at"`
+	LastUsed    time.Time    `json:"last_used"`
+	UseCount    int          `json:"use_count"`
+	Domains     []string     `json:"domains,omitempty"`
+	Tags        []string     `json:"tags,omitempty"`
 }
 
 // FingerprintStore manages fingerprint persistence on disk.

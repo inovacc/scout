@@ -30,8 +30,8 @@ type mockMode struct {
 }
 
 func (m *mockMode) Name() string               { return m.name }
-func (m *mockMode) Description() string         { return m.description }
-func (m *mockMode) AuthProvider() AuthProvider   { return m.provider }
+func (m *mockMode) Description() string        { return m.description }
+func (m *mockMode) AuthProvider() AuthProvider { return m.provider }
 
 func (m *mockMode) Scrape(ctx context.Context, session SessionData, opts ScrapeOptions) (<-chan Result, error) {
 	if m.scrapeFunc != nil {

@@ -17,7 +17,7 @@ type ScriptTemplate struct {
 // BuiltinTemplates maps template names to their ScriptTemplate definitions.
 var BuiltinTemplates = map[string]ScriptTemplate{
 	"extract-list": {
-		Name: "extract-list",
+		Name:        "extract-list",
 		Description: "Extract items from a list by container and field selectors",
 		Template: `(function() {
   var container = document.querySelector('{{.container}}');
@@ -36,7 +36,7 @@ var BuiltinTemplates = map[string]ScriptTemplate{
 })()`,
 	},
 	"fill-form": {
-		Name: "fill-form",
+		Name:        "fill-form",
 		Description: "Fill a form by field name/value pairs",
 		Template: `(function() {
   var filled = 0;
@@ -56,7 +56,7 @@ var BuiltinTemplates = map[string]ScriptTemplate{
 })()`,
 	},
 	"scroll-and-collect": {
-		Name: "scroll-and-collect",
+		Name:        "scroll-and-collect",
 		Description: "Scroll page and collect items matching a selector as they load",
 		Template: `(function() {
   var selector = '{{.selector}}';

@@ -160,8 +160,10 @@ type LinkedInMode struct {
 	provider linkedinProvider
 }
 
-func (m *LinkedInMode) Name() string        { return "linkedin" }
-func (m *LinkedInMode) Description() string  { return "Scrape LinkedIn profiles, posts, connections, and jobs" }
+func (m *LinkedInMode) Name() string { return "linkedin" }
+func (m *LinkedInMode) Description() string {
+	return "Scrape LinkedIn profiles, posts, connections, and jobs"
+}
 func (m *LinkedInMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, navigates to LinkedIn,
@@ -317,28 +319,28 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 
 // linkedinAPIResponse is a wrapper for LinkedIn Voyager API responses.
 type linkedinAPIResponse struct {
-	Data     json.RawMessage            `json:"data"`
-	Elements []json.RawMessage          `json:"elements"`
-	Included []json.RawMessage          `json:"included"`
-	Status   int                        `json:"status"`
-	Errors   []map[string]any           `json:"errors"`
+	Data     json.RawMessage   `json:"data"`
+	Elements []json.RawMessage `json:"elements"`
+	Included []json.RawMessage `json:"included"`
+	Status   int               `json:"status"`
+	Errors   []map[string]any  `json:"errors"`
 }
 
 // profileResponse represents LinkedIn profile data from Voyager API.
 type profileResponse struct {
-	FirstName                 string `json:"firstName"`
-	LastName                  string `json:"lastName"`
-	Headline                  string `json:"headline"`
-	ProfilePictureDisplayURL  string `json:"profilePictureDisplayUrl"`
-	Location                  string `json:"location"`
-	Industry                  string `json:"industry"`
-	PublicIdentifier          string `json:"publicIdentifier"`
-	EntityURN                 string `json:"entityUrn"`
-	CreatedAt                 int64  `json:"createdAt"`
-	PublicProfileURL          string `json:"publicProfileUrl"`
-	DerivedLocation           string `json:"derivedLocation"`
-	OpenToWork                bool   `json:"openToWork"`
-	PremiumSubscriber         bool   `json:"premiumSubscriber"`
+	FirstName                string `json:"firstName"`
+	LastName                 string `json:"lastName"`
+	Headline                 string `json:"headline"`
+	ProfilePictureDisplayURL string `json:"profilePictureDisplayUrl"`
+	Location                 string `json:"location"`
+	Industry                 string `json:"industry"`
+	PublicIdentifier         string `json:"publicIdentifier"`
+	EntityURN                string `json:"entityUrn"`
+	CreatedAt                int64  `json:"createdAt"`
+	PublicProfileURL         string `json:"publicProfileUrl"`
+	DerivedLocation          string `json:"derivedLocation"`
+	OpenToWork               bool   `json:"openToWork"`
+	PremiumSubscriber        bool   `json:"premiumSubscriber"`
 }
 
 func parseProfileResponse(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -374,14 +376,14 @@ func parseProfileResponse(body string, targetSet map[string]struct{}) []scraper.
 		Content:   profile.Headline,
 		URL:       profile.PublicProfileURL,
 		Metadata: map[string]any{
-			"first_name":     profile.FirstName,
-			"last_name":      profile.LastName,
-			"location":       profile.Location,
-			"industry":       profile.Industry,
-			"public_id":      profile.PublicIdentifier,
-			"open_to_work":   profile.OpenToWork,
-			"premium":        profile.PremiumSubscriber,
-			"derived_loc":    profile.DerivedLocation,
+			"first_name":   profile.FirstName,
+			"last_name":    profile.LastName,
+			"location":     profile.Location,
+			"industry":     profile.Industry,
+			"public_id":    profile.PublicIdentifier,
+			"open_to_work": profile.OpenToWork,
+			"premium":      profile.PremiumSubscriber,
+			"derived_loc":  profile.DerivedLocation,
 		},
 		Raw: profile,
 	}
@@ -427,8 +429,8 @@ func parseFeedResponse(body string, targetSet map[string]struct{}) []scraper.Res
 			Author:    post.Actor,
 			Content:   post.Commentary,
 			Metadata: map[string]any{
-				"object_urn":      post.ObjectUrn,
-				"reaction_count":  post.ReactionCount,
+				"object_urn":     post.ObjectUrn,
+				"reaction_count": post.ReactionCount,
 			},
 			Raw: post,
 		}
@@ -441,15 +443,15 @@ func parseFeedResponse(body string, targetSet map[string]struct{}) []scraper.Res
 
 // connectionResponse represents a connection/member from LinkedIn.
 type connectionResponse struct {
-	EntityURN            string `json:"entityUrn"`
-	PublicIdentifier     string `json:"publicIdentifier"`
-	FirstName            string `json:"firstName"`
-	LastName             string `json:"lastName"`
-	Headline             string `json:"headline"`
-	ProfilePictureURL    string `json:"profilePictureUrl"`
-	Location             string `json:"location"`
-	ConnectionDegree     string `json:"connectionDegree"`
-	CreatedTime          int64  `json:"createdTime"`
+	EntityURN         string `json:"entityUrn"`
+	PublicIdentifier  string `json:"publicIdentifier"`
+	FirstName         string `json:"firstName"`
+	LastName          string `json:"lastName"`
+	Headline          string `json:"headline"`
+	ProfilePictureURL string `json:"profilePictureUrl"`
+	Location          string `json:"location"`
+	ConnectionDegree  string `json:"connectionDegree"`
+	CreatedTime       int64  `json:"createdTime"`
 }
 
 func parseConnectionsResponse(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -479,8 +481,8 @@ func parseConnectionsResponse(body string, targetSet map[string]struct{}) []scra
 			Author:    conn.FirstName + " " + conn.LastName,
 			Content:   conn.Headline,
 			Metadata: map[string]any{
-				"public_id":        conn.PublicIdentifier,
-				"location":         conn.Location,
+				"public_id":         conn.PublicIdentifier,
+				"location":          conn.Location,
 				"connection_degree": conn.ConnectionDegree,
 			},
 			Raw: conn,
@@ -494,15 +496,15 @@ func parseConnectionsResponse(body string, targetSet map[string]struct{}) []scra
 
 // jobResponse represents a job posting from LinkedIn.
 type jobResponse struct {
-	EntityURN        string `json:"entityUrn"`
-	JobID            string `json:"jobID"`
-	Title            string `json:"title"`
-	CompanyName      string `json:"companyName"`
-	Location         string `json:"location"`
-	Description      string `json:"description"`
-	PostedDate       int64  `json:"postedDate"`
-	ApplyURL         string `json:"applyUrl"`
-	ExperienceLevel  string `json:"experienceLevel"`
+	EntityURN       string `json:"entityUrn"`
+	JobID           string `json:"jobID"`
+	Title           string `json:"title"`
+	CompanyName     string `json:"companyName"`
+	Location        string `json:"location"`
+	Description     string `json:"description"`
+	PostedDate      int64  `json:"postedDate"`
+	ApplyURL        string `json:"applyUrl"`
+	ExperienceLevel string `json:"experienceLevel"`
 }
 
 func parseJobsResponse(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -533,10 +535,10 @@ func parseJobsResponse(body string, targetSet map[string]struct{}) []scraper.Res
 			Content:   job.Title + ": " + job.Description,
 			URL:       job.ApplyURL,
 			Metadata: map[string]any{
-				"job_id":            job.JobID,
-				"company":           job.CompanyName,
-				"location":          job.Location,
-				"experience_level":  job.ExperienceLevel,
+				"job_id":           job.JobID,
+				"company":          job.CompanyName,
+				"location":         job.Location,
+				"experience_level": job.ExperienceLevel,
 			},
 			Raw: job,
 		}
@@ -555,10 +557,10 @@ type messageResponse struct {
 	CreatedTime    int64  `json:"createdTime"`
 	LastMessageAt  int64  `json:"lastMessageAt"`
 	Messages       []struct {
-		MessageID    string `json:"messageId"`
-		Content      string `json:"content"`
-		CreatedTime  int64  `json:"createdTime"`
-		SenderID     string `json:"senderId"`
+		MessageID   string `json:"messageId"`
+		Content     string `json:"content"`
+		CreatedTime int64  `json:"createdTime"`
+		SenderID    string `json:"senderId"`
 	} `json:"messages"`
 }
 
@@ -589,7 +591,7 @@ func parseMessagingResponse(body string, targetSet map[string]struct{}) []scrape
 			Author:    msg.ParticipantID,
 			Content:   msg.Subject,
 			Metadata: map[string]any{
-				"participant_id": msg.ParticipantID,
+				"participant_id":  msg.ParticipantID,
 				"last_message_at": msg.LastMessageAt,
 				"message_count":   len(msg.Messages),
 			},

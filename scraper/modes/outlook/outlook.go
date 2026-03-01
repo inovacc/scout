@@ -157,8 +157,10 @@ type OutlookMode struct {
 	provider outlookProvider
 }
 
-func (m *OutlookMode) Name() string        { return "outlook" }
-func (m *OutlookMode) Description() string  { return "Outlook emails, folders, contacts, calendar events, and meetings" }
+func (m *OutlookMode) Name() string { return "outlook" }
+func (m *OutlookMode) Description() string {
+	return "Outlook emails, folders, contacts, calendar events, and meetings"
+}
 func (m *OutlookMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape opens an authenticated Outlook session, intercepts API traffic, and emits results.
@@ -378,10 +380,10 @@ func (m *OutlookMode) parseFolders(data map[string]any, results chan<- scraper.R
 			Content:   stringVal(folder, "displayName"),
 			Timestamp: parseTime(stringVal(folder, "createdDateTime")),
 			Metadata: map[string]any{
-				"unread_count":   folder["unreadItemCount"],
-				"total_count":    folder["totalItemCount"],
-				"folder_type":    stringVal(folder, "parentFolderId"),
-				"child_count":    folder["childFolderCount"],
+				"unread_count": folder["unreadItemCount"],
+				"total_count":  folder["totalItemCount"],
+				"folder_type":  stringVal(folder, "parentFolderId"),
+				"child_count":  folder["childFolderCount"],
 			},
 			Raw: folder,
 		}
@@ -436,11 +438,11 @@ func (m *OutlookMode) parseEmails(data map[string]any, url string, results chan<
 			URL:       url,
 			Timestamp: parseTime(stringVal(email, "receivedDateTime")),
 			Metadata: map[string]any{
-				"body":           bodyContent,
-				"to_recipients":  toAddrs,
+				"body":            bodyContent,
+				"to_recipients":   toAddrs,
 				"has_attachments": email["hasAttachments"],
-				"is_read":        email["isRead"],
-				"importance":     stringVal(email, "importance"),
+				"is_read":         email["isRead"],
+				"importance":      stringVal(email, "importance"),
 			},
 			Raw: email,
 		}
@@ -481,10 +483,10 @@ func (m *OutlookMode) parseContacts(data map[string]any, results chan<- scraper.
 			Content:   stringVal(contact, "givenName"),
 			Timestamp: parseTime(stringVal(contact, "createdDateTime")),
 			Metadata: map[string]any{
-				"surname":     stringVal(contact, "surname"),
-				"emails":      emails,
+				"surname":      stringVal(contact, "surname"),
+				"emails":       emails,
 				"phone_number": stringVal(contact, "mobilePhone"),
-				"company":     stringVal(contact, "companyName"),
+				"company":      stringVal(contact, "companyName"),
 			},
 			Raw: contact,
 		}
@@ -524,11 +526,11 @@ func (m *OutlookMode) parseMeetings(data map[string]any, results chan<- scraper.
 			URL:       stringVal(meeting, "webLink"),
 			Timestamp: parseTime(stringVal(meeting, "start.dateTime")),
 			Metadata: map[string]any{
-				"organizer":  stringVal(meeting, "organizer.emailAddress.address"),
-				"attendees":  attendees,
-				"end_time":   stringVal(meeting, "end.dateTime"),
+				"organizer": stringVal(meeting, "organizer.emailAddress.address"),
+				"attendees": attendees,
+				"end_time":  stringVal(meeting, "end.dateTime"),
 				"is_online": meeting["isOnlineMeeting"],
-				"location":   stringVal(meeting, "location.displayName"),
+				"location":  stringVal(meeting, "location.displayName"),
 			},
 			Raw: meeting,
 		}
@@ -598,8 +600,8 @@ func (m *OutlookMode) parseGraphEvents(data map[string]any, results chan<- scrap
 			URL:       stringVal(event, "webLink"),
 			Timestamp: parseTime(stringVal(event, "start.dateTime")),
 			Metadata: map[string]any{
-				"organizer":     stringVal(event, "organizer.emailAddress.address"),
-				"end_time":      stringVal(event, "end.dateTime"),
+				"organizer":      stringVal(event, "organizer.emailAddress.address"),
+				"end_time":       stringVal(event, "end.dateTime"),
 				"is_reminder_on": event["isReminderOn"],
 			},
 			Raw: event,
@@ -627,9 +629,9 @@ func (m *OutlookMode) parseGraphContacts(data map[string]any, results chan<- scr
 			Content:   stringVal(contact, "givenName"),
 			Timestamp: parseTime(stringVal(contact, "createdDateTime")),
 			Metadata: map[string]any{
-				"surname":       stringVal(contact, "surname"),
-				"mobile_phone":  stringVal(contact, "mobilePhone"),
-				"company_name":  stringVal(contact, "companyName"),
+				"surname":      stringVal(contact, "surname"),
+				"mobile_phone": stringVal(contact, "mobilePhone"),
+				"company_name": stringVal(contact, "companyName"),
 			},
 			Raw: contact,
 		}

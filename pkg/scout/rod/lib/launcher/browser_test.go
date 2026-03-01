@@ -144,9 +144,9 @@ func TestURLParserErr(t *testing.T) {
 
 func TestToHTTPAndToWS(t *testing.T) {
 	tests := []struct {
-		input    string
-		toHTTP   string
-		toWS     string
+		input  string
+		toHTTP string
+		toWS   string
 	}{
 		{"ws://host:9222", "http://host:9222", "ws://host:9222"},
 		{"wss://host:9222", "https://host:9222", "wss://host:9222"},

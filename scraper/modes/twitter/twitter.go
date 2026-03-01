@@ -159,8 +159,10 @@ type TwitterMode struct {
 	provider twitterProvider
 }
 
-func (m *TwitterMode) Name() string        { return "twitter" }
-func (m *TwitterMode) Description() string { return "Scrape Twitter/X tweets, profiles, trends, and members" }
+func (m *TwitterMode) Name() string { return "twitter" }
+func (m *TwitterMode) Description() string {
+	return "Scrape Twitter/X tweets, profiles, trends, and members"
+}
 func (m *TwitterMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, navigates to Twitter,
@@ -374,9 +376,9 @@ func extractGraphQLTweets(data map[string]any, targetSet map[string]struct{}) []
 						Author:    author,
 						Content:   fullText,
 						Metadata: map[string]any{
-							"retweet_count": val["retweet_count"],
+							"retweet_count":  val["retweet_count"],
 							"favorite_count": val["favorite_count"],
-							"reply_count":   val["reply_count"],
+							"reply_count":    val["reply_count"],
 						},
 						Raw: val,
 					})

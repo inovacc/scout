@@ -43,11 +43,11 @@ By default runs all detectors. Use flags to select specific checks.`,
 
 		// Collect results for JSON mode.
 		type detectResult struct {
-			URL        string             `json:"url"`
+			URL        string                `json:"url"`
 			Frameworks []scout.FrameworkInfo `json:"frameworks,omitempty"`
-			PWA        *scout.PWAInfo       `json:"pwa,omitempty"`
-			TechStack  *scout.TechStack     `json:"tech_stack,omitempty"`
-			Render     *scout.RenderInfo    `json:"render,omitempty"`
+			PWA        *scout.PWAInfo        `json:"pwa,omitempty"`
+			TechStack  *scout.TechStack      `json:"tech_stack,omitempty"`
+			Render     *scout.RenderInfo     `json:"render,omitempty"`
 		}
 		result := detectResult{URL: args[0]}
 

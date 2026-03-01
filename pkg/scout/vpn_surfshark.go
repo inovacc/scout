@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	surfsharkAPIBase    = "https://ext.surfshark.com"
-	surfsharkLoginPath  = "/v1/auth/login"
-	surfsharkRenewPath  = "/v1/auth/renew"
-	surfsharkUserPath   = "/v1/server/user"
+	surfsharkAPIBase     = "https://ext.surfshark.com"
+	surfsharkLoginPath   = "/v1/auth/login"
+	surfsharkRenewPath   = "/v1/auth/renew"
+	surfsharkUserPath    = "/v1/server/user"
 	surfsharkServersPath = "/v5/server/clusters/all"
 )
 

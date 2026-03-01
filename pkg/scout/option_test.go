@@ -9,7 +9,7 @@ func TestDefaults(t *testing.T) {
 	opts := defaults()
 
 	tests := []struct {
-		name string
+		name  string
 		check func() bool
 	}{
 		{"headless_true", func() bool { return opts.headless }},

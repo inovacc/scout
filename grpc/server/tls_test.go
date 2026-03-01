@@ -3,17 +3,17 @@ package server
 import (
 	"testing"
 
-	"github.com/inovacc/scout/pkg/identity"
+	identity2 "github.com/inovacc/scout/pkg/scout/identity"
 )
 
 func TestNewTLSServer(t *testing.T) {
-	id, err := identity.GenerateIdentity()
+	id, err := identity2.GenerateIdentity()
 	if err != nil {
 		t.Fatalf("GenerateIdentity: %v", err)
 	}
 
 	dir := t.TempDir()
-	ts, err := identity.NewTrustStore(dir)
+	ts, err := identity2.NewTrustStore(dir)
 	if err != nil {
 		t.Fatalf("NewTrustStore: %v", err)
 	}
@@ -34,7 +34,7 @@ func TestNewTLSServer(t *testing.T) {
 }
 
 func TestClientTLSCredentials(t *testing.T) {
-	id, err := identity.GenerateIdentity()
+	id, err := identity2.GenerateIdentity()
 	if err != nil {
 		t.Fatalf("GenerateIdentity: %v", err)
 	}

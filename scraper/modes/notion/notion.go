@@ -169,8 +169,10 @@ type NotionMode struct {
 	provider notionProvider
 }
 
-func (m *NotionMode) Name() string        { return "notion" }
-func (m *NotionMode) Description() string { return "Scrape Notion workspace pages, databases, blocks, comments, and users" }
+func (m *NotionMode) Name() string { return "notion" }
+func (m *NotionMode) Description() string {
+	return "Scrape Notion workspace pages, databases, blocks, comments, and users"
+}
 func (m *NotionMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, navigates to notion.so,

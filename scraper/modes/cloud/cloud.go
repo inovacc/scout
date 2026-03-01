@@ -251,8 +251,10 @@ type CloudMode struct {
 	provider cloudProvider
 }
 
-func (m *CloudMode) Name() string        { return "cloud" }
-func (m *CloudMode) Description() string { return "Scrape cloud consoles (AWS/GCP/Azure) resources, billing, IAM, and services" }
+func (m *CloudMode) Name() string { return "cloud" }
+func (m *CloudMode) Description() string {
+	return "Scrape cloud consoles (AWS/GCP/Azure) resources, billing, IAM, and services"
+}
 func (m *CloudMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, navigates to the cloud console,
@@ -555,11 +557,11 @@ func parseAWSIAM(body string, targetSet map[string]struct{}) []scraper.Result {
 					Timestamp: time.Now(),
 					Author:    userName,
 					Metadata: map[string]any{
-						"service":       "iam",
-						"user_details":  userMap,
-						"arn":           userMap["Arn"],
-						"create_date":   userMap["CreateDate"],
-						"path":          userMap["Path"],
+						"service":      "iam",
+						"user_details": userMap,
+						"arn":          userMap["Arn"],
+						"create_date":  userMap["CreateDate"],
+						"path":         userMap["Path"],
 					},
 					Raw: userMap,
 				})
@@ -591,12 +593,12 @@ func parseAWSIAM(body string, targetSet map[string]struct{}) []scraper.Result {
 					Timestamp: time.Now(),
 					Content:   roleName,
 					Metadata: map[string]any{
-						"service":       "iam",
-						"role_type":     "role",
-						"role_details":  roleMap,
-						"arn":           roleMap["Arn"],
-						"create_date":   roleMap["CreateDate"],
-						"path":          roleMap["Path"],
+						"service":      "iam",
+						"role_type":    "role",
+						"role_details": roleMap,
+						"arn":          roleMap["Arn"],
+						"create_date":  roleMap["CreateDate"],
+						"path":         roleMap["Path"],
 					},
 					Raw: roleMap,
 				})
@@ -624,9 +626,9 @@ func parseAWSPricing(body string, targetSet map[string]struct{}) []scraper.Resul
 		Timestamp: time.Now(),
 		Content:   "AWS pricing data",
 		Metadata: map[string]any{
-			"service":        "pricing",
-			"pricing_data":   resp,
-			"captured_at":    time.Now(),
+			"service":      "pricing",
+			"pricing_data": resp,
+			"captured_at":  time.Now(),
 		},
 		Raw: resp,
 	})

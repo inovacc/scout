@@ -91,8 +91,10 @@ type GMapsMode struct {
 	provider gmapsProvider
 }
 
-func (m *GMapsMode) Name() string        { return "gmaps" }
-func (m *GMapsMode) Description() string { return "Scrape Google Maps places, reviews, and business information" }
+func (m *GMapsMode) Name() string { return "gmaps" }
+func (m *GMapsMode) Description() string {
+	return "Scrape Google Maps places, reviews, and business information"
+}
 func (m *GMapsMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, navigates to Google Maps with search targets,
@@ -308,15 +310,15 @@ func parseMapsPLACES(body string, targetSet map[string]struct{}) []scraper.Resul
 
 // businessProfile represents extracted Google Maps business data.
 type businessProfile struct {
-	ID       string
-	Name     string
-	Address  string
-	Rating   float64
-	Reviews  int
-	Phone    string
-	Website  string
-	Hours    map[string]string
-	Types    []string
+	ID      string
+	Name    string
+	Address string
+	Rating  float64
+	Reviews int
+	Phone   string
+	Website string
+	Hours   map[string]string
+	Types   []string
 }
 
 func parseBusinessProfile(body string) *scraper.Result {

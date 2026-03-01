@@ -346,26 +346,26 @@ type issuesSearchResponse struct {
 }
 
 type jiraIssue struct {
-	Key    string              `json:"key"`
-	ID     string              `json:"id"`
-	Fields jiraIssueFields     `json:"fields"`
-	Expand string              `json:"expand,omitempty"`
-	Self   string              `json:"self,omitempty"`
+	Key    string          `json:"key"`
+	ID     string          `json:"id"`
+	Fields jiraIssueFields `json:"fields"`
+	Expand string          `json:"expand,omitempty"`
+	Self   string          `json:"self,omitempty"`
 }
 
 type jiraIssueFields struct {
-	Summary     string              `json:"summary"`
-	Description string              `json:"description"`
-	Status      jiraStatus          `json:"status"`
-	Assignee    *jiraUser           `json:"assignee"`
-	Reporter    *jiraUser           `json:"reporter"`
-	Created     string              `json:"created"`
-	Updated     string              `json:"updated"`
-	Project     jiraProject         `json:"project"`
-	Priority    jiraPriority        `json:"priority"`
-	Labels      []string            `json:"labels"`
+	Summary     string               `json:"summary"`
+	Description string               `json:"description"`
+	Status      jiraStatus           `json:"status"`
+	Assignee    *jiraUser            `json:"assignee"`
+	Reporter    *jiraUser            `json:"reporter"`
+	Created     string               `json:"created"`
+	Updated     string               `json:"updated"`
+	Project     jiraProject          `json:"project"`
+	Priority    jiraPriority         `json:"priority"`
+	Labels      []string             `json:"labels"`
 	Comments    jiraCommentContainer `json:"comment"`
-	Attachment  []jiraAttachment    `json:"attachment"`
+	Attachment  []jiraAttachment     `json:"attachment"`
 }
 
 type jiraCommentContainer struct {
@@ -374,21 +374,21 @@ type jiraCommentContainer struct {
 }
 
 type jiraComment struct {
-	ID      string      `json:"id"`
-	Author  jiraUser    `json:"author"`
-	Body    string      `json:"body"`
-	Created string      `json:"created"`
-	Updated string      `json:"updated"`
+	ID      string   `json:"id"`
+	Author  jiraUser `json:"author"`
+	Body    string   `json:"body"`
+	Created string   `json:"created"`
+	Updated string   `json:"updated"`
 }
 
 type jiraAttachment struct {
-	ID       string `json:"id"`
-	Filename string `json:"filename"`
-	MimeType string `json:"mimeType"`
-	Size     int64  `json:"size"`
-	Created  string `json:"created"`
+	ID       string   `json:"id"`
+	Filename string   `json:"filename"`
+	MimeType string   `json:"mimeType"`
+	Size     int64    `json:"size"`
+	Created  string   `json:"created"`
 	Author   jiraUser `json:"author"`
-	Content  string `json:"content"`
+	Content  string   `json:"content"`
 }
 
 type jiraStatus struct {
@@ -408,11 +408,11 @@ type jiraProject struct {
 }
 
 type jiraUser struct {
-	Name        string `json:"name,omitempty"`
-	Key         string `json:"key,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Key          string `json:"key,omitempty"`
 	EmailAddress string `json:"emailAddress,omitempty"`
-	DisplayName string `json:"displayName"`
-	AccountID   string `json:"accountId,omitempty"`
+	DisplayName  string `json:"displayName"`
+	AccountID    string `json:"accountId,omitempty"`
 }
 
 func parseIssuesSearch(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -443,12 +443,12 @@ func parseIssuesSearch(body string, targetSet map[string]struct{}) []scraper.Res
 			Author:    author,
 			Content:   issue.Fields.Summary,
 			Metadata: map[string]any{
-				"issue_id":   issue.ID,
-				"status":     issue.Fields.Status.Name,
-				"priority":   issue.Fields.Priority.Name,
-				"project":    issue.Fields.Project.Key,
-				"labels":     issue.Fields.Labels,
-				"updated":    issue.Fields.Updated,
+				"issue_id": issue.ID,
+				"status":   issue.Fields.Status.Name,
+				"priority": issue.Fields.Priority.Name,
+				"project":  issue.Fields.Project.Key,
+				"labels":   issue.Fields.Labels,
+				"updated":  issue.Fields.Updated,
 			},
 			Raw: issue,
 		}
@@ -525,12 +525,12 @@ func parseIssueDetail(body string, targetSet map[string]struct{}) []scraper.Resu
 		Author:    author,
 		Content:   issue.Fields.Summary,
 		Metadata: map[string]any{
-			"issue_id":   issue.ID,
-			"status":     issue.Fields.Status.Name,
-			"priority":   issue.Fields.Priority.Name,
-			"project":    issue.Fields.Project.Key,
-			"labels":     issue.Fields.Labels,
-			"updated":    issue.Fields.Updated,
+			"issue_id": issue.ID,
+			"status":   issue.Fields.Status.Name,
+			"priority": issue.Fields.Priority.Name,
+			"project":  issue.Fields.Project.Key,
+			"labels":   issue.Fields.Labels,
+			"updated":  issue.Fields.Updated,
 		},
 		Raw: issue,
 	}
@@ -631,13 +631,13 @@ type sprintsResponse struct {
 }
 
 type jiraSprint struct {
-	ID            int       `json:"id"`
-	Name          string    `json:"name"`
-	State         string    `json:"state"`
-	StartDate     *string   `json:"startDate"`
-	EndDate       *string   `json:"endDate"`
-	CreatedDate   string    `json:"createdDate"`
-	Self          string    `json:"self"`
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	State       string  `json:"state"`
+	StartDate   *string `json:"startDate"`
+	EndDate     *string `json:"endDate"`
+	CreatedDate string  `json:"createdDate"`
+	Self        string  `json:"self"`
 }
 
 func parseSprints(body string, targetSet map[string]struct{}) []scraper.Result {
