@@ -14,10 +14,10 @@
 
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
-| Integration test suite for scraper modes | P2 | Large | httptest-based tests for each scraper mode with mock HTML fixtures |
+| ~~Integration test suite for scraper modes~~ | ~~P2~~ | ~~Large~~ | ~~Done (v0.28.0) — mock Mode/Session/AuthProvider, registry, progress, cancellation tests~~ |
 | ~~Test coverage for gRPC streaming RPCs~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — StreamHijack, double-start/stop, invalid session tests~~ |
 | Benchmark suite for core operations | P3 | Medium | Page creation, extraction, pagination, snapshot throughput |
-| Fuzz testing for recipe parser | P3 | Medium | Go native fuzzing for YAML recipe parsing edge cases |
+| ~~Fuzz testing for recipe parser~~ | ~~P3~~ | ~~Medium~~ | ~~Done (v0.28.0) — FuzzParse + FuzzResolveSelector with 12 seed corpus entries~~ |
 
 ### Platform & Compatibility
 
@@ -36,7 +36,7 @@
 | ~~Cookie jar persistence~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — SaveCookiesToFile/LoadCookiesFromFile~~ |
 | Multi-tab orchestration | P3 | Large | Coordinate actions across tabs with shared state and sync primitives |
 | PDF form filling | P3 | Medium | Fill interactive PDF forms via browser rendering |
-| Visual regression testing | P3 | Large | Screenshot comparison with diff threshold for page change detection |
+| ~~Visual regression testing~~ | ~~P3~~ | ~~Large~~ | ~~Done (v0.28.0) — VisualDiff with threshold, color tolerance, diff image overlay~~ |
 
 ### Infrastructure
 
