@@ -15,7 +15,7 @@
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
 | Integration test suite for scraper modes | P2 | Large | httptest-based tests for each scraper mode with mock HTML fixtures |
-| Test coverage for gRPC streaming RPCs | P2 | Medium | StreamHijack, ScreenRecord, and other streaming RPCs |
+| ~~Test coverage for gRPC streaming RPCs~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — StreamHijack, double-start/stop, invalid session tests~~ |
 | Benchmark suite for core operations | P3 | Medium | Page creation, extraction, pagination, snapshot throughput |
 | Fuzz testing for recipe parser | P3 | Medium | Go native fuzzing for YAML recipe parsing edge cases |
 
@@ -24,14 +24,14 @@
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
 | ARM64 Linux browser download | P2 | Medium | Playwright host fallback for arm64; validate in CI |
-| Chrome protocol version tracking | P2 | Medium | Script to diff upstream rod CDP bindings and flag breaking changes |
+| ~~Chrome protocol version tracking~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — .scripts/rod-upstream-diff.sh with --check/--full modes~~ |
 | ~~Headless=new migration~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0)~~ |
 
 ### Features
 
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
-| Proxy chain support | P2 | Medium | Route through multiple proxies (SOCKS5 → HTTP) for layered anonymity |
+| ~~Proxy chain support~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — WithProxyChain, ValidateProxyChain, ProxyChainDescription~~ |
 | ~~HAR export~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.27.0) — HijackRecorder with ExportHAR()~~ |
 | ~~Cookie jar persistence~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — SaveCookiesToFile/LoadCookiesFromFile~~ |
 | Multi-tab orchestration | P3 | Large | Coordinate actions across tabs with shared state and sync primitives |
