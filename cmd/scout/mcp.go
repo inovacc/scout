@@ -33,8 +33,12 @@ Use --sse to start with HTTP+SSE transport instead of stdio (default addr: local
 Use --addr to customize the SSE listen address.
 
 Tools: navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait,
-       search, fetch, pdf, session_list, session_reset
-Resources: scout://page/markdown, scout://page/url, scout://page/title`,
+       search, fetch, pdf, session_list, session_reset, open, ping, curl
+Resources: scout://page/markdown, scout://page/url, scout://page/title
+
+Subcommands:
+  scout mcp screenshot <url>  Take a screenshot and save to file
+  scout mcp open <url>        Open URL in headed browser for inspection`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		install, _ := cmd.Flags().GetBool("install")
 		if install {
