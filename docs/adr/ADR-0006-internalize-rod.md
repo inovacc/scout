@@ -62,7 +62,6 @@ All 6 direct dependencies are from the `ysmood` ecosystem:
 |------------------------------------|------------------------------------|-------------------------------------------------|
 | `github.com/ysmood/gson`           | JSON encoding/decoding             | **Low** — small, widely used in rod             |
 | `github.com/ysmood/goob`           | Observable/event pattern           | **Low** — small utility                         |
-| `github.com/ysmood/leakless`       | Process leak prevention            | **Medium** — platform-specific binary embedding |
 | `github.com/ysmood/fetchup`        | HTTP download with progress        | **Low** — used only for browser downloads       |
 | `github.com/ysmood/got`            | Testing utilities (only `lib/lcs`) | **Low** — only LCS algorithm used at runtime    |
 | `github.com/ysmood/gotrace`        | Goroutine tracing/debugging        | **None** — only used in examples                |
@@ -146,7 +145,6 @@ examples/docker/benchmarks.
 - **Platform-specific code** in launcher (`os_unix.go`, `os_windows.go`) — manageable
 - **Generated code** in `lib/proto` — would need generator tooling or manual updates
 - **Chrome protocol evolution** — the protocol changes with each Chrome release; rod tracks this
-- **`leakless` dependency** — embeds platform-specific binaries for process management
 
 ### Breaking Changes Risk
 

@@ -210,10 +210,6 @@ func launchLocal(o *options) (string, *launcher.Launcher, error) {
 		l = l.Bin(binPath)
 	}
 
-	if o.noLeakless {
-		l = l.Leakless(false)
-	}
-
 	if o.proxy != "" {
 		l = l.Proxy(o.proxy)
 	}

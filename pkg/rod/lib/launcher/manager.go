@@ -35,7 +35,7 @@ func MustNewManaged(serviceURL string) *Launcher {
 // The serviceURL must point to a launcher.Manager. It will send a http request to the serviceURL
 // to get the default settings of the Launcher instance. For example if the launcher.Manager running on a
 // Linux machine will return different default settings from the one on Mac.
-// If Launcher.Leakless is enabled, the remote browser will be killed after the websocket is closed.
+// The remote browser will be killed after the websocket is closed.
 func NewManaged(serviceURL string) (*Launcher, error) {
 	if serviceURL == "" {
 		serviceURL = "ws://127.0.0.1:7317"
@@ -177,11 +177,9 @@ func (m *Manager) launch(w http.ResponseWriter, r *http.Request) {
 
 	m.BeforeLaunch(l, w, r)
 
-	kill := l.Has(flags.Leakless)
+	kill := true
 
-	// Always enable leakless so that if the Manager process crashes
-	// all the managed browsers will be killed.
-	u := l.Leakless(true).MustLaunch()
+	u := l.MustLaunch()
 	defer m.cleanup(l, kill)
 
 	parsedURL, err := url.Parse(u)

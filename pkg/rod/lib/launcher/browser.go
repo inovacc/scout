@@ -13,10 +13,12 @@ import (
 	"runtime"
 	"strings"
 
+	"net"
+	"time"
+
 	"github.com/inovacc/scout/pkg/rod/lib/defaults"
 	"github.com/inovacc/scout/pkg/rod/lib/utils"
 	"github.com/ysmood/fetchup"
-	"github.com/ysmood/leakless"
 )
 
 // Host formats a revision number to a downloadable URL for the browser.
@@ -153,7 +155,7 @@ func (lc *Browser) Download() error {
 // Get is a smart helper to get the browser executable path.
 // If [Browser.BinPath] is not valid it will auto download the browser to [Browser.BinPath].
 func (lc *Browser) Get() (string, error) {
-	defer leakless.LockPort(lc.LockPort)()
+	defer lockPort(lc.LockPort)()
 
 	if lc.Validate() == nil {
 		return lc.BinPath(), nil
@@ -262,6 +264,18 @@ func Open(url string) {
 		p := openExec(bin, url)
 		_ = p.Start()
 		_ = p.Process.Release()
+	}
+}
+
+// lockPort uses a TCP listener to prevent concurrent browser downloads.
+// Returns a cleanup function that releases the lock.
+func lockPort(port int) func() {
+	for {
+		ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		if err == nil {
+			return func() { _ = ln.Close() }
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 

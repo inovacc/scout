@@ -48,9 +48,6 @@ const (
 	// Preferences flag.
 	Preferences Flag = "rod-preferences"
 
-	// Leakless flag.
-	Leakless Flag = "rod-leakless"
-
 	// Bin is the browser executable file path. If it's empty, launcher will automatically search or download the bin.
 	Bin Flag = "rod-bin"
 
