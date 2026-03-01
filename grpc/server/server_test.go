@@ -924,6 +924,114 @@ func TestInteractive_Wait(t *testing.T) {
 	_ = stream.CloseSend()
 }
 
+func TestStreamHijack(t *testing.T) {
+	env := setupTestServer(t)
+	sid := env.createSession(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Navigate first so the page has a URL
+	env.navigate(t, sid, "/recorder-page")
+
+	// Start hijack with body capture
+	_, err := env.client.StartHijack(ctx, &pb.HijackRequest{
+		SessionId:   sid,
+		CaptureBody: true,
+	})
+	if err != nil {
+		t.Fatalf("start hijack: %v", err)
+	}
+
+	// Open the stream
+	stream, err := env.client.StreamHijack(ctx, &pb.SessionRequest{SessionId: sid})
+	if err != nil {
+		t.Fatalf("stream hijack: %v", err)
+	}
+
+	// Navigate to trigger network events that the hijacker captures
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		navCtx, navCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer navCancel()
+		_, _ = env.client.Navigate(navCtx, &pb.NavigateRequest{
+			SessionId:  sid,
+			Url:        env.baseURL + "/recorder-page",
+			WaitStable: true,
+		})
+	}()
+
+	// Collect at least one hijack event
+	ev, err := stream.Recv()
+	if err != nil {
+		t.Fatalf("recv hijack event: %v", err)
+	}
+	if ev == nil {
+		t.Fatal("received nil hijack event")
+	}
+
+	// Should have either a request or response event
+	if ev.GetRequest() == nil && ev.GetResponse() == nil && ev.GetWsFrame() == nil {
+		t.Error("hijack event has no request, response, or ws_frame")
+	}
+
+	// Stop hijack
+	_, err = env.client.StopHijack(ctx, &pb.SessionRequest{SessionId: sid})
+	if err != nil {
+		t.Fatalf("stop hijack: %v", err)
+	}
+}
+
+func TestStreamHijack_InvalidSession(t *testing.T) {
+	env := setupTestServer(t)
+	ctx := context.Background()
+
+	stream, err := env.client.StreamHijack(ctx, &pb.SessionRequest{SessionId: "nonexistent"})
+	if err != nil {
+		// Some gRPC implementations return error on call
+		return
+	}
+
+	// Others return error on first Recv
+	_, err = stream.Recv()
+	if err == nil {
+		t.Error("expected error for invalid session stream hijack")
+	}
+}
+
+func TestHijack_DoubleStart(t *testing.T) {
+	env := setupTestServer(t)
+	sid := env.createSession(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	env.navigate(t, sid, "/")
+
+	_, err := env.client.StartHijack(ctx, &pb.HijackRequest{SessionId: sid})
+	if err != nil {
+		t.Fatalf("start hijack: %v", err)
+	}
+
+	// Double start should fail
+	_, err = env.client.StartHijack(ctx, &pb.HijackRequest{SessionId: sid})
+	if err == nil {
+		t.Error("expected error for double start hijack")
+	}
+
+	// Stop should succeed
+	_, err = env.client.StopHijack(ctx, &pb.SessionRequest{SessionId: sid})
+	if err != nil {
+		t.Fatalf("stop hijack: %v", err)
+	}
+
+	// Stop again should be idempotent
+	_, err = env.client.StopHijack(ctx, &pb.SessionRequest{SessionId: sid})
+	if err != nil {
+		t.Fatalf("double stop hijack: %v", err)
+	}
+}
+
 func TestCreateSession_WithOptions(t *testing.T) {
 	env := setupTestServer(t)
 	ctx := context.Background()

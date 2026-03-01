@@ -65,6 +65,7 @@ type options struct {
 	vpnProvider        VPNProvider
 	vpnRotation        *VPNRotationConfig
 	proxyAuth          *proxyAuthConfig
+	proxyChain         *ProxyChain
 	hijack             bool
 	hijackFilter       *HijackFilter
 }
