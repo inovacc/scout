@@ -32,8 +32,14 @@ Use --install --global to register via "claude mcp add" (global Claude Code conf
 Use --sse to start with HTTP+SSE transport instead of stdio (default addr: localhost:8080).
 Use --addr to customize the SSE listen address.
 
-Tools: navigate, click, type, screenshot, snapshot, extract, eval, back, forward, wait,
-       search, fetch, pdf, session_list, session_reset, open, ping, curl
+Tools (33):
+  Browser:     navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open
+  Content:     markdown, table, meta, pdf, search, fetch
+  Network:     cookie, header, block, ping, curl
+  Forms:       form_detect, form_fill, form_submit
+  Analysis:    crawl, detect
+  Inspection:  storage, hijack, har, swagger
+  Session:     session_list, session_reset
 Resources: scout://page/markdown, scout://page/url, scout://page/title
 
 Subcommands:
