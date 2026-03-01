@@ -28,8 +28,10 @@ pkg/stealth/        Anti-bot-detection (internalized go-rod/stealth + ExtraJS)
 pkg/identity/       Device identity, Luhn check digits
 pkg/discovery/      mDNS service discovery
 pkg/browser/        Browser detection, download, cache management
-pkg/scout/recipe/   Recipe system (extract + automate + analyze)
+pkg/scout/runbook/  Runbook system (extract + automate + analyze + Plan/Apply)
+pkg/scout/recipe/   Deprecated compat aliases → runbook package
 pkg/scout/mcp/      MCP server (stdio transport)
+runbooks/           Embedded preset runbooks (26 JSON files)
 extensions/         Embedded Chrome extensions (scout-bridge)
 cmd/scout/          Unified Cobra CLI (50+ subcommands)
 grpc/               gRPC service (proto, server, mTLS, pairing)
@@ -56,7 +58,8 @@ Import: `github.com/inovacc/scout/pkg/scout`. Core does NOT import gRPC or Cobra
 - **Platform-specific**: `WithXvfb()` in `option_unix.go`. gRPC `platform_*.go` for OS defaults.
 - **gRPC port**: Default `9551`. Daemon state in `~/.scout/`.
 - **LLM providers**: `LLMProvider` interface with `Name()` + `Complete()`. Ollama, OpenAI-compatible, Anthropic implementations.
-- **Recipe selectors**: `$name` references resolved at parse time. `+` sibling prefix and `@attr` suffix preserved.
+- **Runbook selectors**: `$name` references resolved at parse time. `+` sibling prefix and `@attr` suffix preserved.
+- **Runbook Plan/Apply**: `Plan()` dry-runs selectors on live page, `Apply()` executes. CLI: `scout runbook plan -f`, `scout runbook apply -f`.
 - **Smart wait**: `WaitFrameworkReady()` detects framework and waits for readiness.
 - **Snapshot JS**: Lives in `snapshot_script.go` (not `_js.go` — that suffix triggers GOOS=js build constraint).
 - **Fingerprint rotation**: `WithFingerprintRotation(cfg)` with strategies: PerSession, PerPage, PerDomain, Interval. `FingerprintStore` persists to `~/.scout/fingerprints/`.

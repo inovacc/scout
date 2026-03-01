@@ -1,0 +1,61 @@
+{
+  "version": "1",
+  "name": "azure_resource_groups",
+  "type": "automate",
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://portal.azure.com"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type=\"email\"], input[name=\"loginfmt\"]"
+    },
+    {
+      "action": "type",
+      "selector": "input[type=\"email\"], input[name=\"loginfmt\"]",
+      "text": "{{email}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type=\"submit\"], input[value=\"Next\"]"
+    },
+    {
+      "action": "wait",
+      "selector": "input[type=\"password\"], input[name=\"passwd\"]"
+    },
+    {
+      "action": "type",
+      "selector": "input[type=\"password\"], input[name=\"passwd\"]",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type=\"submit\"], input[value=\"Sign in\"]"
+    },
+    {
+      "action": "wait",
+      "selector": "button[aria-label*=\"Keep me signed in\"]"
+    },
+    {
+      "action": "click",
+      "selector": "button[aria-label*=\"Keep me signed in\"]"
+    },
+    {
+      "action": "navigate",
+      "url": "https://portal.azure.com/#browse/resourcegroups"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-testid=\"resource-group-item\"], [role=\"row\"]"
+    },
+    {
+      "action": "eval",
+      "script": "() => Array.from(document.querySelectorAll('[data-testid=\"resource-group-item\"], table tbody tr')).map(row => { const cells = row.querySelectorAll('td'); return { name: cells[0]?.textContent?.trim() || '', subscription: cells[1]?.textContent?.trim() || '', location: cells[2]?.textContent?.trim() || '' } })",
+      "as": "resource_groups"
+    }
+  ],
+  "output": {
+    "format": "json"
+  }
+}

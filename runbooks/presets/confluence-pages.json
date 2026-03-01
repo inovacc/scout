@@ -1,0 +1,62 @@
+{
+  "version": "1",
+  "name": "confluence-pages",
+  "type": "automate",
+  "output": {
+    "format": "json"
+  },
+  "steps": [
+    {
+      "action": "navigate",
+      "url": "https://{{instance}}.atlassian.net/login"
+    },
+    {
+      "action": "wait",
+      "selector": "input[name='email']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[name='email']",
+      "text": "{{email}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type='submit']"
+    },
+    {
+      "action": "wait",
+      "selector": "input[name='password']",
+      "timeout": 30
+    },
+    {
+      "action": "type",
+      "selector": "input[name='password']",
+      "text": "{{password}}"
+    },
+    {
+      "action": "click",
+      "selector": "button[type='submit']"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-testid='page-tree-item']",
+      "timeout": 30
+    },
+    {
+      "action": "navigate",
+      "url": "https://{{instance}}.atlassian.net/wiki/spaces/{{space}}/pages"
+    },
+    {
+      "action": "wait",
+      "selector": "[data-testid='page-tree-item']",
+      "timeout": 30
+    },
+    {
+      "action": "extract",
+      "fields": {
+        "title": "[data-testid='page-tree-item-title']"
+      }
+    }
+  ]
+}

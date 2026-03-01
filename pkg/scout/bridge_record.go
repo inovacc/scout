@@ -13,8 +13,8 @@ type RecordedStep struct {
 	Text     string `json:"text,omitempty"`
 }
 
-// RecordedRecipe represents a recipe generated from recorded interactions.
-type RecordedRecipe struct {
+// RecordedRunbook represents a runbook generated from recorded interactions.
+type RecordedRunbook struct {
 	Version string         `json:"version"`
 	Name    string         `json:"name"`
 	Type    string         `json:"type"`
@@ -22,12 +22,12 @@ type RecordedRecipe struct {
 	Steps   []RecordedStep `json:"steps,omitempty"`
 }
 
-// RecordedRecipeJSON returns the recipe as indented JSON bytes.
-func (r *RecordedRecipe) RecordedRecipeJSON() ([]byte, error) {
+// RecordedRunbookJSON returns the runbook as indented JSON bytes.
+func (r *RecordedRunbook) RecordedRunbookJSON() ([]byte, error) {
 	return json.MarshalIndent(r, "", "  ")
 }
 
-// BridgeRecorder records bridge events and converts them to recipe steps.
+// BridgeRecorder records bridge events and converts them to runbook steps.
 type BridgeRecorder struct {
 	server    *BridgeServer
 	steps     []RecordedStep
@@ -48,7 +48,7 @@ func NewBridgeRecorder(server *BridgeServer) *BridgeRecorder {
 	}
 }
 
-// Start begins recording bridge events and converting them to recipe steps.
+// Start begins recording bridge events and converting them to runbook steps.
 // It subscribes to user.click, user.input, and navigation events.
 func (r *BridgeRecorder) Start() {
 	if r == nil {
@@ -151,8 +151,8 @@ func (r *BridgeRecorder) Steps() []RecordedStep {
 	return out
 }
 
-// ToRecipe converts the recorded steps into a full automate recipe.
-func (r *BridgeRecorder) ToRecipe(name, url string) *RecordedRecipe {
+// ToRunbook converts the recorded steps into a full automate runbook.
+func (r *BridgeRecorder) ToRunbook(name, url string) *RecordedRunbook {
 	if r == nil {
 		return nil
 	}
@@ -163,7 +163,7 @@ func (r *BridgeRecorder) ToRecipe(name, url string) *RecordedRecipe {
 	steps := make([]RecordedStep, len(r.steps))
 	copy(steps, r.steps)
 
-	return &RecordedRecipe{
+	return &RecordedRunbook{
 		Version: "1",
 		Name:    name,
 		Type:    "automate",
@@ -171,3 +171,12 @@ func (r *BridgeRecorder) ToRecipe(name, url string) *RecordedRecipe {
 		Steps:   steps,
 	}
 }
+
+// Deprecated: RecordedRecipe is an alias for RecordedRunbook. Use RecordedRunbook instead.
+type RecordedRecipe = RecordedRunbook
+
+// Deprecated: ToRecipe is an alias for ToRunbook. Use ToRunbook instead.
+func (r *BridgeRecorder) ToRecipe(name, url string) *RecordedRunbook {
+	return r.ToRunbook(name, url)
+}
+

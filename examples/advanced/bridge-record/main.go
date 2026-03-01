@@ -1,5 +1,5 @@
 // Example: bridge-record
-// Records browser interactions via the bridge and outputs a recipe JSON.
+// Records browser interactions via the bridge and outputs a runbook JSON.
 package main
 
 import (
@@ -49,13 +49,13 @@ func main() {
 	signal.Notify(sigCh, os.Interrupt)
 	<-sigCh
 
-	// Stop and convert to recipe.
+	// Stop and convert to runbook.
 	steps := rec.Stop()
-	recipe := rec.ToRecipe("Recorded Session", url)
+	rb := rec.ToRunbook("Recorded Session", url)
 
 	_, _ = fmt.Fprintf(os.Stderr, "\nRecorded %d steps.\n", len(steps))
 
-	data, err := json.MarshalIndent(recipe, "", "  ")
+	data, err := json.MarshalIndent(rb, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
