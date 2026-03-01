@@ -23,9 +23,9 @@ const (
 // FingerprintRotationConfig configures fingerprint rotation behaviour.
 type FingerprintRotationConfig struct {
 	Strategy FingerprintRotation
-	Interval time.Duration        // for FingerprintRotateInterval
-	Options  []FingerprintOption  // generation constraints
-	Pool     []*Fingerprint       // optional pre-generated pool (round-robin)
+	Interval time.Duration       // for FingerprintRotateInterval
+	Options  []FingerprintOption // generation constraints
+	Pool     []*Fingerprint      // optional pre-generated pool (round-robin)
 }
 
 // fingerprintRotator manages fingerprint rotation state.

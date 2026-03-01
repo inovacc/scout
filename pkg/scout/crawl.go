@@ -132,9 +132,9 @@ func (b *Browser) CrawlWithJob(startURL string, handler CrawlHandler, opts ...Cr
 	}
 
 	var (
-		results    []CrawlResult
-		mu         sync.Mutex
-		errCount   int
+		results  []CrawlResult
+		mu       sync.Mutex
+		errCount int
 	)
 
 	type crawlItem struct {

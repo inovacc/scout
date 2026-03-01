@@ -92,16 +92,16 @@ type curlSize struct {
 
 // curlResponse is the full curl tool output.
 type curlResponse struct {
-	Status        int                 `json:"status"`
-	StatusText    string              `json:"status_text"`
-	Headers       map[string]string   `json:"headers"`
-	Body          string              `json:"body"`
-	BodyTruncated bool                `json:"body_truncated"`
-	Timing        *curlTiming         `json:"timing"`
-	Redirects     []curlRedirect      `json:"redirects,omitempty"`
-	TLS           *pingTLS            `json:"tls,omitempty"`
-	Size          *curlSize           `json:"size"`
-	Error         string              `json:"error,omitempty"`
+	Status        int               `json:"status"`
+	StatusText    string            `json:"status_text"`
+	Headers       map[string]string `json:"headers"`
+	Body          string            `json:"body"`
+	BodyTruncated bool              `json:"body_truncated"`
+	Timing        *curlTiming       `json:"timing"`
+	Redirects     []curlRedirect    `json:"redirects,omitempty"`
+	TLS           *pingTLS          `json:"tls,omitempty"`
+	Size          *curlSize         `json:"size"`
+	Error         string            `json:"error,omitempty"`
 }
 
 // registerDiagTools adds ping and curl diagnostic tools to the MCP server.
@@ -246,8 +246,8 @@ func pingRaw(ctx context.Context, rawURL string, count int) (*mcp.CallToolResult
 					resolvedAddrs = append(resolvedAddrs, addr.String())
 				}
 			},
-			ConnectStart: func(_, _ string) { connStart = time.Now() },
-			ConnectDone:  func(_, _ string, _ error) { connEnd = time.Now() },
+			ConnectStart:      func(_, _ string) { connStart = time.Now() },
+			ConnectDone:       func(_, _ string, _ error) { connEnd = time.Now() },
 			TLSHandshakeStart: func() { tlsStart = time.Now() },
 			TLSHandshakeDone: func(state tls.ConnectionState, _ error) {
 				tlsEnd = time.Now()
@@ -366,10 +366,10 @@ func curlRaw(ctx context.Context, rawURL, method string, headers map[string]stri
 	var tlsState *tls.ConnectionState
 
 	trace := &httptrace.ClientTrace{
-		DNSStart:     func(_ httptrace.DNSStartInfo) { dnsStart = time.Now() },
-		DNSDone:      func(_ httptrace.DNSDoneInfo) { dnsEnd = time.Now() },
-		ConnectStart: func(_, _ string) { connStart = time.Now() },
-		ConnectDone:  func(_, _ string, _ error) { connEnd = time.Now() },
+		DNSStart:          func(_ httptrace.DNSStartInfo) { dnsStart = time.Now() },
+		DNSDone:           func(_ httptrace.DNSDoneInfo) { dnsEnd = time.Now() },
+		ConnectStart:      func(_, _ string) { connStart = time.Now() },
+		ConnectDone:       func(_, _ string, _ error) { connEnd = time.Now() },
 		TLSHandshakeStart: func() { tlsStart = time.Now() },
 		TLSHandshakeDone: func(state tls.ConnectionState, _ error) {
 			tlsEnd = time.Now()
@@ -511,13 +511,13 @@ func curlViaBrowser(ctx context.Context, state *mcpState, rawURL string) (*mcp.C
 	}
 
 	cr := curlResponse{
-		Status:     200,
-		StatusText: "OK",
-		Headers:    map[string]string{"x-final-url": u, "x-page-title": title},
-		Body:       bodyText,
+		Status:        200,
+		StatusText:    "OK",
+		Headers:       map[string]string{"x-final-url": u, "x-page-title": title},
+		Body:          bodyText,
 		BodyTruncated: len(bodyText) >= maxBodySize,
-		Timing:     &curlTiming{TotalMS: ms(total)},
-		Size:       &curlSize{Body: len(bodyText)},
+		Timing:        &curlTiming{TotalMS: ms(total)},
+		Size:          &curlSize{Body: len(bodyText)},
 	}
 
 	if result, err := page.Eval(perfTimingJS); err == nil {

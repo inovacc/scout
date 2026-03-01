@@ -167,8 +167,10 @@ type GrafanaMode struct {
 	provider grafanaProvider
 }
 
-func (m *GrafanaMode) Name() string        { return "grafana" }
-func (m *GrafanaMode) Description() string  { return "Scrape Grafana dashboards, datasources, alerts, and panels" }
+func (m *GrafanaMode) Name() string { return "grafana" }
+func (m *GrafanaMode) Description() string {
+	return "Scrape Grafana dashboards, datasources, alerts, and panels"
+}
 func (m *GrafanaMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, navigates to the Grafana instance,
@@ -335,13 +337,13 @@ type dashboardListResponse struct {
 }
 
 type grafanaDashboard struct {
-	ID       int64  `json:"id"`
-	UID      string `json:"uid"`
-	Title    string `json:"title"`
-	FolderID int64  `json:"folderId"`
-	Folder   string `json:"folder,omitempty"`
-	URL      string `json:"url,omitempty"`
-	Type     string `json:"type,omitempty"`
+	ID       int64    `json:"id"`
+	UID      string   `json:"uid"`
+	Title    string   `json:"title"`
+	FolderID int64    `json:"folderId"`
+	Folder   string   `json:"folder,omitempty"`
+	URL      string   `json:"url,omitempty"`
+	Type     string   `json:"type,omitempty"`
 	Tags     []string `json:"tags,omitempty"`
 }
 
@@ -388,21 +390,21 @@ type dashboardDetailResponse struct {
 }
 
 type grafanaDashboardDetail struct {
-	ID       int64  `json:"id"`
-	UID      string `json:"uid"`
-	Title    string `json:"title"`
-	Tags     []string `json:"tags,omitempty"`
-	Panels   []grafanaPanel `json:"panels,omitempty"`
-	Timezone string `json:"timezone,omitempty"`
-	SchemaVersion int `json:"schemaVersion"`
+	ID            int64          `json:"id"`
+	UID           string         `json:"uid"`
+	Title         string         `json:"title"`
+	Tags          []string       `json:"tags,omitempty"`
+	Panels        []grafanaPanel `json:"panels,omitempty"`
+	Timezone      string         `json:"timezone,omitempty"`
+	SchemaVersion int            `json:"schemaVersion"`
 }
 
 type grafanaPanel struct {
-	ID       int64  `json:"id"`
-	Title    string `json:"title"`
-	Type     string `json:"type"`
-	GridPos  map[string]int `json:"gridPos,omitempty"`
-	Targets  []map[string]any `json:"targets,omitempty"`
+	ID      int64            `json:"id"`
+	Title   string           `json:"title"`
+	Type    string           `json:"type"`
+	GridPos map[string]int   `json:"gridPos,omitempty"`
+	Targets []map[string]any `json:"targets,omitempty"`
 }
 
 func parseDashboardDetail(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -432,11 +434,11 @@ func parseDashboardDetail(body string, targetSet map[string]struct{}) []scraper.
 		Timestamp: ts,
 		Content:   dash.Title,
 		Metadata: map[string]any{
-			"id":               dash.ID,
-			"tags":             dash.Tags,
-			"timezone":         dash.Timezone,
-			"schema_version":   dash.SchemaVersion,
-			"panel_count":      len(dash.Panels),
+			"id":             dash.ID,
+			"tags":           dash.Tags,
+			"timezone":       dash.Timezone,
+			"schema_version": dash.SchemaVersion,
+			"panel_count":    len(dash.Panels),
 		},
 		Raw: dash,
 	})
@@ -468,14 +470,14 @@ type datasourcesListResponse struct {
 }
 
 type grafanaDatasource struct {
-	ID       int64  `json:"id"`
-	UID      string `json:"uid"`
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	URL      string `json:"url"`
-	IsDefault bool  `json:"isDefault"`
-	Database string `json:"database,omitempty"`
-	User     string `json:"user,omitempty"`
+	ID        int64  `json:"id"`
+	UID       string `json:"uid"`
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	URL       string `json:"url"`
+	IsDefault bool   `json:"isDefault"`
+	Database  string `json:"database,omitempty"`
+	User      string `json:"user,omitempty"`
 }
 
 func parseDatasourcesList(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -514,14 +516,14 @@ type alertsListResponse struct {
 }
 
 type grafanaAlert struct {
-	ID       int64  `json:"id"`
-	DashboardID int64 `json:"dashboardId"`
+	ID           int64  `json:"id"`
+	DashboardID  int64  `json:"dashboardId"`
 	DashboardUID string `json:"dashboardUid"`
-	Name     string `json:"name"`
-	State    string `json:"state"`
-	Message  string `json:"message,omitempty"`
-	Created  int64  `json:"created"`
-	Updated  int64  `json:"updated"`
+	Name         string `json:"name"`
+	State        string `json:"state"`
+	Message      string `json:"message,omitempty"`
+	Created      int64  `json:"created"`
+	Updated      int64  `json:"updated"`
 }
 
 func parseAlertsList(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -542,12 +544,12 @@ func parseAlertsList(body string, targetSet map[string]struct{}) []scraper.Resul
 			Content:   alert.Message,
 			Author:    alert.Name,
 			Metadata: map[string]any{
-				"id":               alert.ID,
-				"dashboard_id":     alert.DashboardID,
-				"dashboard_uid":    alert.DashboardUID,
-				"state":            alert.State,
-				"created":          alert.Created,
-				"updated":          alert.Updated,
+				"id":            alert.ID,
+				"dashboard_id":  alert.DashboardID,
+				"dashboard_uid": alert.DashboardUID,
+				"state":         alert.State,
+				"created":       alert.Created,
+				"updated":       alert.Updated,
 			},
 			Raw: alert,
 		})
@@ -561,13 +563,13 @@ type searchResultsResponse struct {
 }
 
 type grafanaSearchResult struct {
-	ID       int64  `json:"id"`
-	UID      string `json:"uid"`
-	Title    string `json:"title"`
-	Type     string `json:"type"`
-	URL      string `json:"url"`
-	FolderID int64  `json:"folderId,omitempty"`
-	Folder   string `json:"folder,omitempty"`
+	ID       int64    `json:"id"`
+	UID      string   `json:"uid"`
+	Title    string   `json:"title"`
+	Type     string   `json:"type"`
+	URL      string   `json:"url"`
+	FolderID int64    `json:"folderId,omitempty"`
+	Folder   string   `json:"folder,omitempty"`
 	Tags     []string `json:"tags,omitempty"`
 }
 
@@ -624,7 +626,7 @@ type panelQueryResponse struct {
 type grafanaQueryResult struct {
 	FrameMeta map[string]any `json:"frameMeta,omitempty"`
 	Meta      map[string]any `json:"meta,omitempty"`
-	Status    int `json:"status,omitempty"`
+	Status    int            `json:"status,omitempty"`
 }
 
 func parsePanelQuery(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -659,13 +661,13 @@ type annotationsResponse struct {
 }
 
 type grafanaAnnotation struct {
-	ID        int64  `json:"id"`
-	DashboardID int64 `json:"dashboardId"`
-	AlertID   int64  `json:"alertId,omitempty"`
-	Text      string `json:"text"`
-	Time      int64  `json:"time"`
-	TimeEnd   int64  `json:"timeEnd,omitempty"`
-	Tags      []string `json:"tags,omitempty"`
+	ID          int64    `json:"id"`
+	DashboardID int64    `json:"dashboardId"`
+	AlertID     int64    `json:"alertId,omitempty"`
+	Text        string   `json:"text"`
+	Time        int64    `json:"time"`
+	TimeEnd     int64    `json:"timeEnd,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
 }
 
 func parseAnnotations(body string, targetSet map[string]struct{}) []scraper.Result {

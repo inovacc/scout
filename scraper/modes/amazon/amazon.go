@@ -101,8 +101,10 @@ type AmazonMode struct {
 	provider amazonProvider
 }
 
-func (m *AmazonMode) Name() string        { return "amazon" }
-func (m *AmazonMode) Description() string { return "Scrape Amazon product details, prices, reviews, and seller information" }
+func (m *AmazonMode) Name() string { return "amazon" }
+func (m *AmazonMode) Description() string {
+	return "Scrape Amazon product details, prices, reviews, and seller information"
+}
 func (m *AmazonMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, and performs product extraction

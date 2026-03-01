@@ -11,7 +11,7 @@ import (
 // SiteAnalysis holds the result of analyzing a page's structure.
 type SiteAnalysis struct {
 	URL           string
-	PageType      string // "listing", "detail", "form", "article", "table", "unknown"
+	PageType      string               // "listing", "detail", "form", "article", "table", "unknown"
 	Framework     *scout.FrameworkInfo `json:"framework,omitempty"`
 	RenderMode    *scout.RenderInfo    `json:"render_mode,omitempty"`
 	Containers    []ContainerCandidate
@@ -355,8 +355,8 @@ func detectPagination(page *scout.Page) *PaginationCandidate {
 
 func detectInteractables(page *scout.Page) []InteractableElement {
 	selectors := []struct {
-		sel  string
-		typ  string
+		sel string
+		typ string
 	}{
 		{`button:not([type="submit"])`, "button"},
 		{`[role="tab"]`, "tab"},

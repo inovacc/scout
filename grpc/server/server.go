@@ -12,10 +12,10 @@ import (
 
 	"github.com/google/uuid"
 	pb "github.com/inovacc/scout/grpc/scoutpb"
-	"github.com/inovacc/scout/pkg/identity"
 	"github.com/inovacc/scout/pkg/rod/lib/input"
 	"github.com/inovacc/scout/pkg/rod/lib/proto"
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/identity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"

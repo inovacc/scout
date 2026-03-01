@@ -120,8 +120,10 @@ func (p *teamsProvider) ValidateSession(_ context.Context, session *auth.Session
 // TeamsMode implements scraper.Mode for Microsoft Teams.
 type TeamsMode struct{}
 
-func (m *TeamsMode) Name() string        { return "teams" }
-func (m *TeamsMode) Description() string  { return "Microsoft Teams messages, channels, users, files, meetings, and threads" }
+func (m *TeamsMode) Name() string { return "teams" }
+func (m *TeamsMode) Description() string {
+	return "Microsoft Teams messages, channels, users, files, meetings, and threads"
+}
 func (m *TeamsMode) AuthProvider() scraper.AuthProvider { return &teamsProvider{} }
 
 // Scrape opens an authenticated Teams session, intercepts API traffic, and emits results.

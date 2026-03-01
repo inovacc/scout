@@ -205,9 +205,9 @@ func (s *CapSolverService) Solve(ctx context.Context, req SolveRequest) (string,
 	defer func() { _ = resp.Body.Close() }()
 
 	var createResp struct {
-		ErrorID     int    `json:"errorId"`
-		ErrorCode   string `json:"errorCode"`
-		TaskID      string `json:"taskId"`
+		ErrorID   int    `json:"errorId"`
+		ErrorCode string `json:"errorCode"`
+		TaskID    string `json:"taskId"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&createResp); err != nil {
 		return "", fmt.Errorf("scout: challenge: capsolver: decode response: %w", err)

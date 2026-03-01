@@ -285,7 +285,7 @@ func TestRunbookPipeline_ScoreAndWarn(t *testing.T) {
 				Selector: "[data-testid=\"item\"]",
 				Count:    10,
 				Fields: []FieldCandidate{
-					{Name: "title", Selector: "span", Attr: ""},          // tag-only = fragile
+					{Name: "title", Selector: "span", Attr: ""},           // tag-only = fragile
 					{Name: "link", Selector: "[data-link]", Attr: "href"}, // data-* = excellent
 					{Name: "price", Selector: ".price", Attr: ""},         // class = fair
 				},

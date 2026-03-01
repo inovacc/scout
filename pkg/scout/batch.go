@@ -15,7 +15,7 @@ type BatchResult struct {
 // BatchOutput holds the overall results of a batch scrape, including a job ID
 // when an AsyncJobManager is attached.
 type BatchOutput struct {
-	JobID   string        // non-empty when WithBatchJobManager is used
+	JobID   string // non-empty when WithBatchJobManager is used
 	Results []BatchResult
 }
 
@@ -101,10 +101,10 @@ func (b *Browser) BatchScrapeWithJob(urls []string, handler BatchHandler, opts .
 	sem := make(chan struct{}, o.concurrency)
 
 	var (
-		wg      sync.WaitGroup
-		mu      sync.Mutex
-		done    int
-		failed  int
+		wg     sync.WaitGroup
+		mu     sync.Mutex
+		done   int
+		failed int
 	)
 
 	for i, u := range urls {

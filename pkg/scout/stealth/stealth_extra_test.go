@@ -51,8 +51,8 @@ func TestExtraJS_ContainsAllEvasions(t *testing.T) {
 func TestExtraJS_ValidJavaScript(t *testing.T) {
 	// Verify structural integrity: matching parens and IIFEs
 	tests := []struct {
-		name    string
-		check   func(string) bool
+		name  string
+		check func(string) bool
 	}{
 		{"starts_with_IIFE", func(s string) bool { return strings.Contains(s, "(function()") }},
 		{"balanced_braces", func(s string) bool {

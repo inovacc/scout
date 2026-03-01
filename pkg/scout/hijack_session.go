@@ -16,10 +16,10 @@ type HijackEventType string
 const (
 	HijackEventRequest  HijackEventType = "request"
 	HijackEventResponse HijackEventType = "response"
-	HijackWSSent     HijackEventType = "ws.sent"
-	HijackWSReceived HijackEventType = "ws.received"
-	HijackWSOpened   HijackEventType = "ws.opened"
-	HijackWSClosed   HijackEventType = "ws.closed"
+	HijackWSSent        HijackEventType = "ws.sent"
+	HijackWSReceived    HijackEventType = "ws.received"
+	HijackWSOpened      HijackEventType = "ws.opened"
+	HijackWSClosed      HijackEventType = "ws.closed"
 )
 
 // CapturedRequest describes an intercepted HTTP request.
@@ -47,18 +47,18 @@ type CapturedResponse struct {
 
 // WebSocketFrame describes an intercepted WebSocket message.
 type WebSocketFrame struct {
-	RequestID string  `json:"request_id"`
-	URL       string  `json:"url"`
-	Direction string  `json:"direction"` // "sent" or "received"
-	Opcode    float64 `json:"opcode"`
-	Payload   string  `json:"payload"`
-	Masked    bool    `json:"masked"`
+	RequestID string    `json:"request_id"`
+	URL       string    `json:"url"`
+	Direction string    `json:"direction"` // "sent" or "received"
+	Opcode    float64   `json:"opcode"`
+	Payload   string    `json:"payload"`
+	Masked    bool      `json:"masked"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
 // HijackEvent is a discriminated union of intercepted network events.
 type HijackEvent struct {
-	Type     HijackEventType  `json:"type"`
+	Type     HijackEventType   `json:"type"`
 	Request  *CapturedRequest  `json:"request,omitempty"`
 	Response *CapturedResponse `json:"response,omitempty"`
 	Frame    *WebSocketFrame   `json:"frame,omitempty"`

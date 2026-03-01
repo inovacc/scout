@@ -26,16 +26,16 @@ const (
 
 // AsyncJob represents a long-running operation such as batch scraping or crawling.
 type AsyncJob struct {
-	ID        string         `json:"id"`
-	Type      string         `json:"type"`
-	Status    AsyncJobStatus `json:"status"`
-	CreatedAt time.Time      `json:"created_at"`
-	StartedAt *time.Time     `json:"started_at,omitempty"`
-	EndedAt   *time.Time     `json:"ended_at,omitempty"`
+	ID        string           `json:"id"`
+	Type      string           `json:"type"`
+	Status    AsyncJobStatus   `json:"status"`
+	CreatedAt time.Time        `json:"created_at"`
+	StartedAt *time.Time       `json:"started_at,omitempty"`
+	EndedAt   *time.Time       `json:"ended_at,omitempty"`
 	Progress  AsyncJobProgress `json:"progress"`
-	Error     string         `json:"error,omitempty"`
-	Result    any            `json:"result,omitempty"`
-	Config    any            `json:"config,omitempty"`
+	Error     string           `json:"error,omitempty"`
+	Result    any              `json:"result,omitempty"`
+	Config    any              `json:"config,omitempty"`
 }
 
 // AsyncJobProgress tracks completion of a job's units of work.

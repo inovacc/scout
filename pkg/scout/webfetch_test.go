@@ -333,7 +333,7 @@ func TestWebFetchBatch_ErrorIsolation(t *testing.T) {
 
 	urls := []string{
 		"http://127.0.0.1:1/nonexistent", // bad URL
-		ts.URL + "/webfetch-minimal",      // good URL
+		ts.URL + "/webfetch-minimal",     // good URL
 	}
 
 	results := b.WebFetchBatch(urls)

@@ -172,7 +172,9 @@ func WithAIModel(model string) AIRecipeOption { return runbook.WithAIModel(model
 func WithGenerateType(t string) GenerateOption { return runbook.WithGenerateType(t) }
 
 // Deprecated: Use runbook.WithGenerateFields instead.
-func WithGenerateFields(fields ...string) GenerateOption { return runbook.WithGenerateFields(fields...) }
+func WithGenerateFields(fields ...string) GenerateOption {
+	return runbook.WithGenerateFields(fields...)
+}
 
 // Deprecated: Use runbook.WithGenerateMaxPages instead.
 func WithGenerateMaxPages(n int) GenerateOption { return runbook.WithGenerateMaxPages(n) }

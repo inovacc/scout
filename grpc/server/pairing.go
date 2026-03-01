@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
-	"github.com/inovacc/scout/pkg/identity"
+	identity2 "github.com/inovacc/scout/pkg/scout/identity"
 )
 
 // PairingServer implements the PairingService gRPC service.
@@ -15,15 +15,15 @@ import (
 type PairingServer struct {
 	pb.UnimplementedPairingServiceServer
 
-	id         *identity.Identity
-	trustStore *identity.TrustStore
+	id         *identity2.Identity
+	trustStore *identity2.TrustStore
 
 	// OnPaired is called after a successful pairing. Can be nil.
 	OnPaired func(deviceID string)
 }
 
 // NewPairingServer creates a new PairingServer.
-func NewPairingServer(id *identity.Identity, ts *identity.TrustStore) *PairingServer {
+func NewPairingServer(id *identity2.Identity, ts *identity2.TrustStore) *PairingServer {
 	return &PairingServer{
 		id:         id,
 		trustStore: ts,
@@ -48,10 +48,10 @@ func (s *PairingServer) Pair(_ context.Context, req *pb.PairRequest) (*pb.PairRe
 		return nil, fmt.Errorf("scout: pair: parse client cert: %w", err)
 	}
 
-	derivedID := identity.DeviceIDFromCert(cert)
+	derivedID := identity2.DeviceIDFromCert(cert)
 	if derivedID != req.GetDeviceId() {
 		return nil, fmt.Errorf("scout: pair: device ID mismatch (claimed %s, derived %s)",
-			identity.ShortID(req.GetDeviceId()), identity.ShortID(derivedID))
+			identity2.ShortID(req.GetDeviceId()), identity2.ShortID(derivedID))
 	}
 
 	// Store the client's certificate in our trust store.

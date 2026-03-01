@@ -152,8 +152,10 @@ type ConfluenceMode struct {
 	provider confluenceProvider
 }
 
-func (m *ConfluenceMode) Name() string        { return "confluence" }
-func (m *ConfluenceMode) Description() string { return "Scrape Confluence spaces, pages, comments, attachments, and users" }
+func (m *ConfluenceMode) Name() string { return "confluence" }
+func (m *ConfluenceMode) Description() string {
+	return "Scrape Confluence spaces, pages, comments, attachments, and users"
+}
 func (m *ConfluenceMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, navigates to Confluence,
@@ -313,21 +315,21 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 // Confluence API response structures for REST v1.
 
 type spaceResponse struct {
-	Size  int           `json:"size"`
-	Start int           `json:"start"`
-	Limit int           `json:"limit"`
+	Size  int               `json:"size"`
+	Start int               `json:"start"`
+	Limit int               `json:"limit"`
 	Space []confluenceSpace `json:"results"`
 }
 
 type confluenceSpace struct {
-	ID             int    `json:"id"`
-	Key            string `json:"key"`
-	Name           string `json:"name"`
-	Description    confluenceDescription `json:"description"`
-	CreatedDate    time.Time `json:"createdDate"`
-	Homepage       confluenceLink `json:"homepage"`
-	Icon           confluenceLink `json:"icon"`
-	Type           string `json:"type"`
+	ID          int                   `json:"id"`
+	Key         string                `json:"key"`
+	Name        string                `json:"name"`
+	Description confluenceDescription `json:"description"`
+	CreatedDate time.Time             `json:"createdDate"`
+	Homepage    confluenceLink        `json:"homepage"`
+	Icon        confluenceLink        `json:"icon"`
+	Type        string                `json:"type"`
 }
 
 type confluenceDescription struct {
@@ -340,9 +342,9 @@ type confluenceValue struct {
 }
 
 type confluenceLink struct {
-	ID     string `json:"id,omitempty"`
-	Title  string `json:"title,omitempty"`
-	Links  confluenceLinkRel `json:"_links,omitempty"`
+	ID    string            `json:"id,omitempty"`
+	Title string            `json:"title,omitempty"`
+	Links confluenceLinkRel `json:"_links,omitempty"`
 }
 
 type confluenceLinkRel struct {
@@ -371,9 +373,9 @@ func parseSpaces(body string, targetSet map[string]struct{}) []scraper.Result {
 			Timestamp: space.CreatedDate,
 			Content:   space.Description.Plain.Value,
 			Metadata: map[string]any{
-				"name":        space.Name,
-				"space_id":    space.ID,
-				"space_type":  space.Type,
+				"name":       space.Name,
+				"space_id":   space.ID,
+				"space_type": space.Type,
 			},
 			Raw: space,
 		})
@@ -389,15 +391,15 @@ type contentResponse struct {
 }
 
 type confluencePage struct {
-	ID      string             `json:"id"`
-	Type    string             `json:"type"`
-	Title   string             `json:"title"`
-	Space   confluenceSpace    `json:"space"`
-	Body    confluenceBody     `json:"body"`
-	Created time.Time          `json:"created"`
-	Updated time.Time          `json:"updated"`
-	Version confluenceVersion  `json:"version"`
-	Links   confluenceLinkRel  `json:"_links"`
+	ID      string            `json:"id"`
+	Type    string            `json:"type"`
+	Title   string            `json:"title"`
+	Space   confluenceSpace   `json:"space"`
+	Body    confluenceBody    `json:"body"`
+	Created time.Time         `json:"created"`
+	Updated time.Time         `json:"updated"`
+	Version confluenceVersion `json:"version"`
+	Links   confluenceLinkRel `json:"_links"`
 }
 
 type confluenceBody struct {
@@ -410,16 +412,16 @@ type confluenceContent struct {
 }
 
 type confluenceVersion struct {
-	Number int       `json:"number"`
-	When   time.Time `json:"when"`
+	Number int            `json:"number"`
+	When   time.Time      `json:"when"`
 	By     confluenceUser `json:"by"`
 }
 
 type confluenceUser struct {
-	Username      string `json:"username"`
-	UserKey       string `json:"userKey"`
-	DisplayName   string `json:"displayName"`
-	Email         string `json:"email,omitempty"`
+	Username    string `json:"username"`
+	UserKey     string `json:"userKey"`
+	DisplayName string `json:"displayName"`
+	Email       string `json:"email,omitempty"`
 }
 
 func parsePages(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -463,26 +465,26 @@ func parsePages(body string, targetSet map[string]struct{}) []scraper.Result {
 // Confluence API v2 structures.
 
 type pageV2Response struct {
-	Results []pageV2 `json:"results"`
+	Results []pageV2          `json:"results"`
 	Links   map[string]string `json:"_links"`
 }
 
 type pageV2 struct {
-	ID        string        `json:"id"`
-	Type      string        `json:"type"`
-	Title     string        `json:"title"`
-	SpaceID   string        `json:"spaceId"`
-	CreatedAt time.Time     `json:"createdAt"`
-	UpdatedAt time.Time     `json:"updatedAt"`
-	CreatedBy pageV2Author  `json:"createdBy"`
-	UpdatedBy pageV2Author  `json:"updatedBy"`
-	Body      pageV2Body    `json:"body"`
+	ID        string            `json:"id"`
+	Type      string            `json:"type"`
+	Title     string            `json:"title"`
+	SpaceID   string            `json:"spaceId"`
+	CreatedAt time.Time         `json:"createdAt"`
+	UpdatedAt time.Time         `json:"updatedAt"`
+	CreatedBy pageV2Author      `json:"createdBy"`
+	UpdatedBy pageV2Author      `json:"updatedBy"`
+	Body      pageV2Body        `json:"body"`
 	Links     map[string]string `json:"_links"`
 }
 
 type pageV2Author struct {
-	AccountID string `json:"accountId"`
-	Email     string `json:"email"`
+	AccountID   string `json:"accountId"`
+	Email       string `json:"email"`
 	DisplayName string `json:"displayName"`
 }
 
@@ -492,7 +494,7 @@ type pageV2Body struct {
 }
 
 type pageV2Content struct {
-	Value      string `json:"value"`
+	Value          string `json:"value"`
 	Representation string `json:"representation"`
 }
 
@@ -513,10 +515,10 @@ func parsePagesV2(body string, targetSet map[string]struct{}) []scraper.Result {
 			Content:   page.Body.Storage.Value,
 			URL:       page.Links["webui"],
 			Metadata: map[string]any{
-				"title":       page.Title,
-				"space_id":    page.SpaceID,
-				"page_type":   page.Type,
-				"updated_at":  page.UpdatedAt,
+				"title":      page.Title,
+				"space_id":   page.SpaceID,
+				"page_type":  page.Type,
+				"updated_at": page.UpdatedAt,
 			},
 			Raw: page,
 		})
@@ -525,19 +527,19 @@ func parsePagesV2(body string, targetSet map[string]struct{}) []scraper.Result {
 }
 
 type commentResponse struct {
-	Size    int                `json:"size"`
-	Start   int                `json:"start"`
-	Limit   int                `json:"limit"`
+	Size    int                 `json:"size"`
+	Start   int                 `json:"start"`
+	Limit   int                 `json:"limit"`
 	Results []confluenceComment `json:"results"`
 }
 
 type confluenceComment struct {
-	ID       string             `json:"id"`
-	Type     string             `json:"type"`
-	Body     confluenceBody     `json:"body"`
-	Created  time.Time          `json:"created"`
-	Updated  time.Time          `json:"updated"`
-	Version  confluenceVersion  `json:"version"`
+	ID        string            `json:"id"`
+	Type      string            `json:"type"`
+	Body      confluenceBody    `json:"body"`
+	Created   time.Time         `json:"created"`
+	Updated   time.Time         `json:"updated"`
+	Version   confluenceVersion `json:"version"`
 	Container confluencePage    `json:"container"`
 }
 
@@ -569,19 +571,19 @@ func parseComments(body string) []scraper.Result {
 }
 
 type usersResponse struct {
-	Size    int                `json:"size"`
-	Start   int                `json:"start"`
-	Limit   int                `json:"limit"`
+	Size    int                    `json:"size"`
+	Start   int                    `json:"start"`
+	Limit   int                    `json:"limit"`
 	Results []confluenceUserDetail `json:"results"`
 }
 
 type confluenceUserDetail struct {
-	Username      string `json:"username"`
-	UserKey       string `json:"userKey"`
-	DisplayName   string `json:"displayName"`
-	Email         string `json:"email"`
-	Active        bool   `json:"active"`
-	Created       time.Time `json:"created"`
+	Username    string    `json:"username"`
+	UserKey     string    `json:"userKey"`
+	DisplayName string    `json:"displayName"`
+	Email       string    `json:"email"`
+	Active      bool      `json:"active"`
+	Created     time.Time `json:"created"`
 }
 
 func parseUsers(body string) []scraper.Result {
@@ -593,10 +595,10 @@ func parseUsers(body string) []scraper.Result {
 	var results []scraper.Result
 	for _, user := range resp.Results {
 		results = append(results, scraper.Result{
-			Type:   scraper.ResultUser,
-			Source: "confluence",
-			ID:     user.UserKey,
-			Author: user.DisplayName,
+			Type:      scraper.ResultUser,
+			Source:    "confluence",
+			ID:        user.UserKey,
+			Author:    user.DisplayName,
 			Timestamp: user.Created,
 			Metadata: map[string]any{
 				"username": user.Username,
@@ -611,7 +613,7 @@ func parseUsers(body string) []scraper.Result {
 
 // GraphQL response parsing for Confluence mutations/queries.
 type graphQLResponse struct {
-	Data   map[string]any `json:"data,omitempty"`
+	Data   map[string]any   `json:"data,omitempty"`
 	Errors []map[string]any `json:"errors,omitempty"`
 }
 

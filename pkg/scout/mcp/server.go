@@ -120,7 +120,9 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		Description: "Navigate the browser to a URL",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"url":{"type":"string","description":"URL to navigate to"}},"required":["url"]}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		var args struct{ URL string `json:"url"` }
+		var args struct {
+			URL string `json:"url"`
+		}
 		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
 			return errResult(err.Error())
 		}
@@ -146,7 +148,9 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		Description: "Click an element by CSS selector",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector"}},"required":["selector"]}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		var args struct{ Selector string `json:"selector"` }
+		var args struct {
+			Selector string `json:"selector"`
+		}
 		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
 			return errResult(err.Error())
 		}
@@ -203,7 +207,9 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		Description: "Take a screenshot of the current page",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"fullPage":{"type":"boolean","description":"capture full page"}}}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		var args struct{ FullPage bool `json:"fullPage"` }
+		var args struct {
+			FullPage bool `json:"fullPage"`
+		}
 		_ = json.Unmarshal(req.Params.Arguments, &args)
 
 		page, err := state.ensurePage(ctx)
@@ -234,7 +240,9 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		Description: "Get the accessibility tree of the current page",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"interactableOnly":{"type":"boolean","description":"only include interactable elements"}}}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		var args struct{ InteractableOnly bool `json:"interactableOnly"` }
+		var args struct {
+			InteractableOnly bool `json:"interactableOnly"`
+		}
 		_ = json.Unmarshal(req.Params.Arguments, &args)
 
 		page, err := state.ensurePage(ctx)
@@ -260,7 +268,9 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		Description: "Extract text from an element by CSS selector",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector"}},"required":["selector"]}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		var args struct{ Selector string `json:"selector"` }
+		var args struct {
+			Selector string `json:"selector"`
+		}
 		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
 			return errResult(err.Error())
 		}
@@ -288,7 +298,9 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		Description: "Evaluate JavaScript in the page",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"expression":{"type":"string","description":"JavaScript expression"}},"required":["expression"]}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		var args struct{ Expression string `json:"expression"` }
+		var args struct {
+			Expression string `json:"expression"`
+		}
 		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
 			return errResult(err.Error())
 		}
@@ -345,7 +357,9 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		Description: "Wait for a page condition (load, selector)",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector to wait for"}}}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		var args struct{ Selector string `json:"selector"` }
+		var args struct {
+			Selector string `json:"selector"`
+		}
 		_ = json.Unmarshal(req.Params.Arguments, &args)
 
 		page, err := state.ensurePage(ctx)

@@ -9,7 +9,7 @@ import (
 type FrameworkInfo struct {
 	Name    string `json:"name"`              // e.g. "React", "Vue", "Angular", "Svelte", "Next.js"
 	Version string `json:"version,omitempty"` // version string if detectable
-	SPA     bool   `json:"spa"`              // true if the page appears to be a single-page application
+	SPA     bool   `json:"spa"`               // true if the page appears to be a single-page application
 }
 
 // detectFrameworkJS is the JavaScript that probes for framework-specific globals and DOM markers.
@@ -149,7 +149,7 @@ func (p *Page) DetectFrameworks() ([]FrameworkInfo, error) {
 
 	var parsed struct {
 		Frameworks []FrameworkInfo `json:"frameworks"`
-		SPA        bool           `json:"spa"`
+		SPA        bool            `json:"spa"`
 	}
 
 	if err := json.Unmarshal([]byte(result.String()), &parsed); err != nil {
@@ -195,11 +195,11 @@ func (p *Page) DetectFramework() (*FrameworkInfo, error) {
 // TechStack describes the full technology stack detected on a page.
 type TechStack struct {
 	Frameworks   []FrameworkInfo `json:"frameworks,omitempty"`
-	CSSFramework string         `json:"css_framework,omitempty"`
-	BuildTool    string         `json:"build_tool,omitempty"`
-	CMS          string         `json:"cms,omitempty"`
-	Analytics    []string       `json:"analytics,omitempty"`
-	CDN          string         `json:"cdn,omitempty"`
+	CSSFramework string          `json:"css_framework,omitempty"`
+	BuildTool    string          `json:"build_tool,omitempty"`
+	CMS          string          `json:"cms,omitempty"`
+	Analytics    []string        `json:"analytics,omitempty"`
+	CDN          string          `json:"cdn,omitempty"`
 }
 
 // detectTechStackJS probes the page DOM for CSS frameworks, build tools, CMS, analytics, and CDN.
@@ -355,10 +355,10 @@ func (p *Page) DetectTechStack() (*TechStack, error) {
 type RenderMode string
 
 const (
-	RenderCSR     RenderMode = "CSR"     // Client-Side Rendering
-	RenderSSR     RenderMode = "SSR"     // Server-Side Rendering
-	RenderSSG     RenderMode = "SSG"     // Static Site Generation
-	RenderISR     RenderMode = "ISR"     // Incremental Static Regeneration
+	RenderCSR     RenderMode = "CSR" // Client-Side Rendering
+	RenderSSR     RenderMode = "SSR" // Server-Side Rendering
+	RenderSSG     RenderMode = "SSG" // Static Site Generation
+	RenderISR     RenderMode = "ISR" // Incremental Static Regeneration
 	RenderUnknown RenderMode = "unknown"
 )
 

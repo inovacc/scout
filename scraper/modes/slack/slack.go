@@ -146,8 +146,10 @@ type SlackMode struct {
 	provider slackProvider
 }
 
-func (m *SlackMode) Name() string        { return "slack" }
-func (m *SlackMode) Description() string  { return "Scrape Slack workspace channels, messages, users, and files" }
+func (m *SlackMode) Name() string { return "slack" }
+func (m *SlackMode) Description() string {
+	return "Scrape Slack workspace channels, messages, users, and files"
+}
 func (m *SlackMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, navigates to the workspace,
@@ -358,14 +360,14 @@ type historyResponse struct {
 }
 
 type slackMessage struct {
-	Type      string           `json:"type"`
-	User      string           `json:"user"`
-	Text      string           `json:"text"`
-	TS        string           `json:"ts"`
-	ThreadTS  string           `json:"thread_ts,omitempty"`
-	Reactions []slackReaction  `json:"reactions,omitempty"`
-	Files     []slackFile      `json:"files,omitempty"`
-	Channel   string           `json:"channel,omitempty"`
+	Type      string          `json:"type"`
+	User      string          `json:"user"`
+	Text      string          `json:"text"`
+	TS        string          `json:"ts"`
+	ThreadTS  string          `json:"thread_ts,omitempty"`
+	Reactions []slackReaction `json:"reactions,omitempty"`
+	Files     []slackFile     `json:"files,omitempty"`
+	Channel   string          `json:"channel,omitempty"`
 }
 
 type slackReaction struct {
@@ -375,13 +377,13 @@ type slackReaction struct {
 }
 
 type slackFile struct {
-	ID                 string `json:"id"`
-	Name               string `json:"name"`
-	Title              string `json:"title"`
-	Mimetype           string `json:"mimetype"`
-	Size               int64  `json:"size"`
-	URLPrivateDownload string `json:"url_private_download"`
-	User               string `json:"user"`
+	ID                 string      `json:"id"`
+	Name               string      `json:"name"`
+	Title              string      `json:"title"`
+	Mimetype           string      `json:"mimetype"`
+	Size               int64       `json:"size"`
+	URLPrivateDownload string      `json:"url_private_download"`
+	User               string      `json:"user"`
 	Timestamp          json.Number `json:"timestamp"`
 }
 
@@ -446,11 +448,11 @@ type usersListResponse struct {
 }
 
 type slackUser struct {
-	ID       string          `json:"id"`
-	Name     string          `json:"name"`
-	RealName string          `json:"real_name"`
-	Deleted  bool            `json:"deleted"`
-	IsBot    bool            `json:"is_bot"`
+	ID       string           `json:"id"`
+	Name     string           `json:"name"`
+	RealName string           `json:"real_name"`
+	Deleted  bool             `json:"deleted"`
+	IsBot    bool             `json:"is_bot"`
 	Profile  slackUserProfile `json:"profile"`
 }
 

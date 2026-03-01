@@ -11,7 +11,7 @@ import (
 	"github.com/inovacc/scout/pkg/rod/lib/launcher"
 	"github.com/inovacc/scout/pkg/rod/lib/launcher/flags"
 	"github.com/inovacc/scout/pkg/rod/lib/proto"
-	"github.com/inovacc/scout/pkg/stealth"
+	"github.com/inovacc/scout/pkg/scout/stealth"
 )
 
 // Browser wraps a rod browser instance with a simplified API.

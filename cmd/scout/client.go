@@ -11,7 +11,7 @@ import (
 	"time"
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
-	"github.com/inovacc/scout/pkg/discovery"
+	"github.com/inovacc/scout/pkg/scout/discovery"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )

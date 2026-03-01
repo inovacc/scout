@@ -11,21 +11,21 @@ import (
 type DetectionCategory string
 
 const (
-	CatWebDriver    DetectionCategory = "webdriver"
-	CatNavigator    DetectionCategory = "navigator"
-	CatCanvas       DetectionCategory = "canvas"
-	CatWebGL        DetectionCategory = "webgl"
-	CatAudio        DetectionCategory = "audio"
-	CatFonts        DetectionCategory = "fonts"
-	CatPlugins      DetectionCategory = "plugins"
-	CatScreen       DetectionCategory = "screen"
-	CatTiming       DetectionCategory = "timing"
-	CatWebRTC       DetectionCategory = "webrtc"
-	CatPermissions  DetectionCategory = "permissions"
-	CatDOM          DetectionCategory = "dom"
-	CatBehavior     DetectionCategory = "behavior"
-	CatHTTP         DetectionCategory = "http"
-	CatFingerprint  DetectionCategory = "fingerprint"
+	CatWebDriver   DetectionCategory = "webdriver"
+	CatNavigator   DetectionCategory = "navigator"
+	CatCanvas      DetectionCategory = "canvas"
+	CatWebGL       DetectionCategory = "webgl"
+	CatAudio       DetectionCategory = "audio"
+	CatFonts       DetectionCategory = "fonts"
+	CatPlugins     DetectionCategory = "plugins"
+	CatScreen      DetectionCategory = "screen"
+	CatTiming      DetectionCategory = "timing"
+	CatWebRTC      DetectionCategory = "webrtc"
+	CatPermissions DetectionCategory = "permissions"
+	CatDOM         DetectionCategory = "dom"
+	CatBehavior    DetectionCategory = "behavior"
+	CatHTTP        DetectionCategory = "http"
+	CatFingerprint DetectionCategory = "fingerprint"
 )
 
 // ProbeResult holds the outcome of a single detection probe.
@@ -40,12 +40,12 @@ type ProbeResult struct {
 
 // ProbeReport is the full output from probing a page.
 type ProbeReport struct {
-	URL          string        `json:"url"`
-	Stealth      bool          `json:"stealth"`
-	TotalProbes  int           `json:"total_probes"`
-	Detected     int           `json:"detected"`
-	Passed       int           `json:"passed"`
-	Results      []ProbeResult `json:"results"`
+	URL         string        `json:"url"`
+	Stealth     bool          `json:"stealth"`
+	TotalProbes int           `json:"total_probes"`
+	Detected    int           `json:"detected"`
+	Passed      int           `json:"passed"`
+	Results     []ProbeResult `json:"results"`
 }
 
 // probeJS is the comprehensive JavaScript that checks every known bot detection signal.

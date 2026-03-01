@@ -12,11 +12,11 @@ import (
 // HijackRecorder collects HijackEvents and exports them as a HAR 1.2 log.
 // Attach it to a SessionHijacker to build a HAR archive from live traffic.
 type HijackRecorder struct {
-	mu       sync.Mutex
-	requests map[string]*CapturedRequest  // requestID -> request
+	mu        sync.Mutex
+	requests  map[string]*CapturedRequest  // requestID -> request
 	responses map[string]*CapturedResponse // requestID -> response
-	bodies   map[string]string             // requestID -> body (from body-capture events)
-	order    []string                       // requestIDs in order of first appearance
+	bodies    map[string]string            // requestID -> body (from body-capture events)
+	order     []string                     // requestIDs in order of first appearance
 }
 
 // NewHijackRecorder creates a recorder that can be fed HijackEvents.

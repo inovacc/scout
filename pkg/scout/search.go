@@ -41,11 +41,11 @@ type SearchResults struct {
 type SearchOption func(*searchOptions)
 
 type searchOptions struct {
-	engine   SearchEngine
-	maxPages int
-	language string
-	region   string
-	delay    time.Duration
+	engine         SearchEngine
+	maxPages       int
+	language       string
+	region         string
+	delay          time.Duration
 	ddgType        string // DuckDuckGo search type: "web", "news", "images"
 	recentDuration time.Duration
 }

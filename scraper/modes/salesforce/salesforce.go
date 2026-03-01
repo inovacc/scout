@@ -169,8 +169,10 @@ type SalesforceMode struct {
 	provider salesforceProvider
 }
 
-func (m *SalesforceMode) Name() string        { return "salesforce" }
-func (m *SalesforceMode) Description() string  { return "Scrape Salesforce leads, contacts, opportunities, accounts, reports, and activities" }
+func (m *SalesforceMode) Name() string { return "salesforce" }
+func (m *SalesforceMode) Description() string {
+	return "Scrape Salesforce leads, contacts, opportunities, accounts, reports, and activities"
+}
 func (m *SalesforceMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 
 // Scrape creates a browser session, restores cookies, navigates to Salesforce,
@@ -330,10 +332,10 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 
 // salesforceAPIResponse is the common envelope for Salesforce REST API responses.
 type salesforceAPIResponse struct {
-	Records     []json.RawMessage `json:"records"`
-	TotalSize   int               `json:"totalSize"`
-	Done        bool              `json:"done"`
-	NextRecordsURL string         `json:"nextRecordsUrl"`
+	Records        []json.RawMessage `json:"records"`
+	TotalSize      int               `json:"totalSize"`
+	Done           bool              `json:"done"`
+	NextRecordsURL string            `json:"nextRecordsUrl"`
 }
 
 // leadRecord represents a Lead object from Salesforce.
@@ -456,16 +458,16 @@ func parseContactsResponse(body string, targetSet map[string]struct{}) []scraper
 
 // opportunityRecord represents an Opportunity object from Salesforce.
 type opportunityRecord struct {
-	ID              string `json:"Id"`
-	Name            string `json:"Name"`
-	StageName       string `json:"StageName"`
-	Amount          float64 `json:"Amount"`
-	CloseDate       string `json:"CloseDate"`
-	CreatedDate     string `json:"CreatedDate"`
-	AccountID       string `json:"AccountId"`
-	Description     string `json:"Description"`
-	Probability     int    `json:"Probability"`
-	ForecastCategory string `json:"ForecastCategory"`
+	ID               string  `json:"Id"`
+	Name             string  `json:"Name"`
+	StageName        string  `json:"StageName"`
+	Amount           float64 `json:"Amount"`
+	CloseDate        string  `json:"CloseDate"`
+	CreatedDate      string  `json:"CreatedDate"`
+	AccountID        string  `json:"AccountId"`
+	Description      string  `json:"Description"`
+	Probability      int     `json:"Probability"`
+	ForecastCategory string  `json:"ForecastCategory"`
 }
 
 func parseOpportunitiesResponse(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -500,12 +502,12 @@ func parseOpportunitiesResponse(body string, targetSet map[string]struct{}) []sc
 			Author:    opp.Name,
 			Content:   opp.Description,
 			Metadata: map[string]any{
-				"stage":                opp.StageName,
-				"amount":               opp.Amount,
-				"close_date":           opp.CloseDate,
-				"account_id":           opp.AccountID,
-				"probability":          opp.Probability,
-				"forecast_category":    opp.ForecastCategory,
+				"stage":             opp.StageName,
+				"amount":            opp.Amount,
+				"close_date":        opp.CloseDate,
+				"account_id":        opp.AccountID,
+				"probability":       opp.Probability,
+				"forecast_category": opp.ForecastCategory,
 			},
 			Raw: opp,
 		})
@@ -515,16 +517,16 @@ func parseOpportunitiesResponse(body string, targetSet map[string]struct{}) []sc
 
 // accountRecord represents an Account object from Salesforce.
 type accountRecord struct {
-	ID             string `json:"Id"`
-	Name           string `json:"Name"`
-	Industry       string `json:"Industry"`
-	AnnualRevenue  float64 `json:"AnnualRevenue"`
-	NumberOfEmployees int `json:"NumberOfEmployees"`
-	Phone          string `json:"Phone"`
-	Website        string `json:"Website"`
-	CreatedDate    string `json:"CreatedDate"`
-	BillingCity    string `json:"BillingCity"`
-	BillingCountry string `json:"BillingCountry"`
+	ID                string  `json:"Id"`
+	Name              string  `json:"Name"`
+	Industry          string  `json:"Industry"`
+	AnnualRevenue     float64 `json:"AnnualRevenue"`
+	NumberOfEmployees int     `json:"NumberOfEmployees"`
+	Phone             string  `json:"Phone"`
+	Website           string  `json:"Website"`
+	CreatedDate       string  `json:"CreatedDate"`
+	BillingCity       string  `json:"BillingCity"`
+	BillingCountry    string  `json:"BillingCountry"`
 }
 
 func parseAccountsResponse(body string, targetSet map[string]struct{}) []scraper.Result {
@@ -559,12 +561,12 @@ func parseAccountsResponse(body string, targetSet map[string]struct{}) []scraper
 			Author:    account.Name,
 			Content:   account.Industry,
 			Metadata: map[string]any{
-				"annual_revenue":   account.AnnualRevenue,
-				"num_employees":    account.NumberOfEmployees,
-				"phone":            account.Phone,
-				"website":          account.Website,
-				"billing_city":     account.BillingCity,
-				"billing_country":  account.BillingCountry,
+				"annual_revenue":  account.AnnualRevenue,
+				"num_employees":   account.NumberOfEmployees,
+				"phone":           account.Phone,
+				"website":         account.Website,
+				"billing_city":    account.BillingCity,
+				"billing_country": account.BillingCountry,
 			},
 			Raw: account,
 		})
@@ -610,9 +612,9 @@ func parseReportsResponse(body string, targetSet map[string]struct{}) []scraper.
 			Author:    report.Owner,
 			Content:   report.Name,
 			Metadata: map[string]any{
-				"description":  report.Description,
-				"report_type":  report.ReportType,
-				"last_run":     report.LastRunDate,
+				"description": report.Description,
+				"report_type": report.ReportType,
+				"last_run":    report.LastRunDate,
 			},
 			Raw: report,
 		})
@@ -622,16 +624,16 @@ func parseReportsResponse(body string, targetSet map[string]struct{}) []scraper.
 
 // taskRecord represents a Task or Activity from Salesforce.
 type taskRecord struct {
-	ID          string `json:"Id"`
-	Subject     string `json:"Subject"`
-	Description string `json:"Description"`
-	Status      string `json:"Status"`
-	Priority    string `json:"Priority"`
-	CreatedDate string `json:"CreatedDate"`
-	DueDate     string `json:"DueDate"`
-	WhoID       string `json:"WhoId"`
-	WhatID      string `json:"WhatId"`
-	Owner       string `json:"Owner"`
+	ID           string `json:"Id"`
+	Subject      string `json:"Subject"`
+	Description  string `json:"Description"`
+	Status       string `json:"Status"`
+	Priority     string `json:"Priority"`
+	CreatedDate  string `json:"CreatedDate"`
+	DueDate      string `json:"DueDate"`
+	WhoID        string `json:"WhoId"`
+	WhatID       string `json:"WhatId"`
+	Owner        string `json:"Owner"`
 	ActivityType string `json:"Type"`
 }
 
@@ -683,10 +685,10 @@ func parseTasksResponse(body string, targetSet map[string]struct{}) []scraper.Re
 
 // uiAPIRecord represents a generic UI API response item.
 type uiAPIRecord struct {
-	ID          string          `json:"Id"`
-	ApiName     string          `json:"ApiName"`
-	DisplayName string          `json:"DisplayName"`
-	Fields      map[string]any  `json:"fields"`
+	ID          string         `json:"Id"`
+	ApiName     string         `json:"ApiName"`
+	DisplayName string         `json:"DisplayName"`
+	Fields      map[string]any `json:"fields"`
 }
 
 func parseUIAPIResponse(body string, targetSet map[string]struct{}) []scraper.Result {

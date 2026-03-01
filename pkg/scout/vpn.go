@@ -24,7 +24,7 @@ type VPNProvider interface {
 // VPNServer represents a VPN server location.
 type VPNServer struct {
 	Host        string   `json:"host"`
-	Country     string   `json:"country"`      // ISO 2-letter code
+	Country     string   `json:"country"` // ISO 2-letter code
 	CountryName string   `json:"country_name"`
 	City        string   `json:"city"`
 	Load        int      `json:"load"` // server load percentage 0-100

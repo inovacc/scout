@@ -5,14 +5,14 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"github.com/inovacc/scout/pkg/identity"
+	identity2 "github.com/inovacc/scout/pkg/scout/identity"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
 // NewTLSServer creates a gRPC server with mTLS authentication using the given identity and trust store.
 // Peers must present a certificate whose device ID is in the trust store.
-func NewTLSServer(id *identity.Identity, trustStore *identity.TrustStore, opts ...grpc.ServerOption) (*grpc.Server, *ScoutServer, error) {
+func NewTLSServer(id *identity2.Identity, trustStore *identity2.TrustStore, opts ...grpc.ServerOption) (*grpc.Server, *ScoutServer, error) {
 	tlsCfg := &tls.Config{
 		Certificates: []tls.Certificate{id.Certificate},
 		ClientAuth:   tls.RequireAnyClientCert,
@@ -25,9 +25,9 @@ func NewTLSServer(id *identity.Identity, trustStore *identity.TrustStore, opts .
 			if err != nil {
 				return fmt.Errorf("parse client cert: %w", err)
 			}
-			deviceID := identity.DeviceIDFromCert(cert)
+			deviceID := identity2.DeviceIDFromCert(cert)
 			if !trustStore.IsTrusted(deviceID) {
-				return fmt.Errorf("device %s not trusted", identity.ShortID(deviceID))
+				return fmt.Errorf("device %s not trusted", identity2.ShortID(deviceID))
 			}
 			return nil
 		},
@@ -42,7 +42,7 @@ func NewTLSServer(id *identity.Identity, trustStore *identity.TrustStore, opts .
 }
 
 // ClientTLSCredentials creates gRPC transport credentials for a client using mTLS.
-func ClientTLSCredentials(id *identity.Identity) credentials.TransportCredentials {
+func ClientTLSCredentials(id *identity2.Identity) credentials.TransportCredentials {
 	tlsCfg := &tls.Config{
 		Certificates:       []tls.Certificate{id.Certificate},
 		InsecureSkipVerify: true, //nolint:gosec // self-signed certs; we verify via device ID

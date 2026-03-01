@@ -33,33 +33,33 @@ type PDFOptions struct {
 
 // PageInfo holds browser environment information collected via the bridge extension.
 type PageInfo struct {
-	URL                 string            `json:"url"`
-	Title               string            `json:"title"`
-	UserAgent           string            `json:"userAgent"`
-	Platform            string            `json:"platform"`
-	Language            string            `json:"language"`
-	Languages           []string          `json:"languages"`
-	CookieEnabled       bool              `json:"cookieEnabled"`
-	DoNotTrack          *string           `json:"doNotTrack"`
-	HardwareConcurrency int               `json:"hardwareConcurrency"`
-	DeviceMemory        float64           `json:"deviceMemory"`
-	MaxTouchPoints      int               `json:"maxTouchPoints"`
-	Vendor              string            `json:"vendor"`
-	Screen              PageScreenInfo    `json:"screen"`
-	Viewport            PageViewportInfo  `json:"viewport"`
-	Connection          *PageConnInfo     `json:"connection"`
-	Timing              *PageTimingInfo   `json:"timing"`
-	BrowserVersion      string            `json:"browserVersion"`
+	URL                 string           `json:"url"`
+	Title               string           `json:"title"`
+	UserAgent           string           `json:"userAgent"`
+	Platform            string           `json:"platform"`
+	Language            string           `json:"language"`
+	Languages           []string         `json:"languages"`
+	CookieEnabled       bool             `json:"cookieEnabled"`
+	DoNotTrack          *string          `json:"doNotTrack"`
+	HardwareConcurrency int              `json:"hardwareConcurrency"`
+	DeviceMemory        float64          `json:"deviceMemory"`
+	MaxTouchPoints      int              `json:"maxTouchPoints"`
+	Vendor              string           `json:"vendor"`
+	Screen              PageScreenInfo   `json:"screen"`
+	Viewport            PageViewportInfo `json:"viewport"`
+	Connection          *PageConnInfo    `json:"connection"`
+	Timing              *PageTimingInfo  `json:"timing"`
+	BrowserVersion      string           `json:"browserVersion"`
 }
 
 // PageScreenInfo holds screen dimensions.
 type PageScreenInfo struct {
-	Width      int `json:"width"`
-	Height     int `json:"height"`
-	AvailWidth int `json:"availWidth"`
+	Width       int `json:"width"`
+	Height      int `json:"height"`
+	AvailWidth  int `json:"availWidth"`
 	AvailHeight int `json:"availHeight"`
-	ColorDepth int `json:"colorDepth"`
-	PixelDepth int `json:"pixelDepth"`
+	ColorDepth  int `json:"colorDepth"`
+	PixelDepth  int `json:"pixelDepth"`
 }
 
 // PageViewportInfo holds viewport dimensions.

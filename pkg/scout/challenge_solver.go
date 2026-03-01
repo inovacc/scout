@@ -40,9 +40,9 @@ func WithSolverService(svc CaptchaSolverService) SolverOption {
 
 // ChallengeSolver detects and attempts to bypass bot protection challenges.
 type ChallengeSolver struct {
-	browser  *Browser
-	opts     *solverOptions
-	solvers  map[ChallengeType]SolveFunc
+	browser *Browser
+	opts    *solverOptions
+	solvers map[ChallengeType]SolveFunc
 }
 
 // NewChallengeSolver creates a new solver with built-in handlers for common challenge types.
