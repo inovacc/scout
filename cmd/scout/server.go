@@ -14,6 +14,8 @@ import (
 	"github.com/inovacc/scout/pkg/identity"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -108,6 +110,11 @@ var serverCmd = &cobra.Command{
 		if enableReflection {
 			reflection.Register(grpcServer)
 		}
+
+		// Register standard gRPC health service.
+		healthSrv := health.NewServer()
+		healthSrv.SetServingStatus("scout.ScoutService", healthpb.HealthCheckResponse_SERVING)
+		healthpb.RegisterHealthServer(grpcServer, healthSrv)
 
 		// Start pairing listener on port+1 when mTLS is enabled.
 		var pairingGRPC *grpc.Server

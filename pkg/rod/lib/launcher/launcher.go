@@ -60,8 +60,8 @@ func New() *Launcher {
 		// use random port by default
 		flags.RemoteDebuggingPort: {defaults.Port},
 
-		// enable headless by default
-		flags.Headless: nil,
+		// enable headless=new by default (Chrome 112+)
+		flags.Headless: {"new"},
 
 		// to disable the init blank window
 		"no-first-run":      nil,
