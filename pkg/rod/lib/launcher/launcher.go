@@ -4,7 +4,6 @@ package launcher
 import (
 	"context"
 	"crypto"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,7 +16,6 @@ import (
 	"github.com/inovacc/scout/pkg/rod/lib/defaults"
 	"github.com/inovacc/scout/pkg/rod/lib/launcher/flags"
 	"github.com/inovacc/scout/pkg/rod/lib/utils"
-	"github.com/ysmood/leakless"
 )
 
 // DefaultUserDataDirPrefix ...
@@ -45,7 +43,6 @@ type Launcher struct {
 
 // New returns the default arguments to start browser.
 // Headless will be enabled by default.
-// Leakless will be enabled by default.
 // UserDataDir will use OS tmp dir by default, this folder will usually be cleaned up by the OS after reboot.
 // It will auto download the browser binary according to the current platform,
 // check [Launcher.Bin] and [Launcher.Revision] for more info.
@@ -56,8 +53,7 @@ func New() *Launcher {
 	}
 
 	defaultFlags := map[flags.Flag][]string{
-		flags.Bin:      {defaults.Bin},
-		flags.Leakless: nil,
+		flags.Bin: {defaults.Bin},
 
 		flags.UserDataDir: {dir},
 
@@ -267,15 +263,6 @@ func (l *Launcher) AlwaysOpenPDFExternally() *Launcher {
 	return l.Set(flags.Preferences, `{"plugins":{"always_open_pdf_externally": true}}`)
 }
 
-// Leakless switch. If enabled, the browser will be force killed after the Go process exits.
-// The doc of leakless: https://github.com/ysmood/leakless.
-func (l *Launcher) Leakless(enable bool) *Launcher {
-	if enable {
-		return l.Set(flags.Leakless)
-	}
-	return l.Delete(flags.Leakless)
-}
-
 // Devtools switch to auto open devtools for each tab.
 func (l *Launcher) Devtools(autoOpenForTabs bool) *Launcher {
 	if autoOpenForTabs {
@@ -326,7 +313,7 @@ func (l *Launcher) ProfileDir(dir string) *Launcher {
 }
 
 // RemoteDebuggingPort to launch the browser. Zero for a random port. Zero is the default value.
-// If it's not zero and the Launcher.Leakless is disabled, the launcher will try to reconnect to it first,
+// If it's not zero, the launcher will try to reconnect to it first,
 // if the reconnection fails it will launch a new browser.
 func (l *Launcher) RemoteDebuggingPort(port int) *Launcher {
 	return l.Set(flags.RemoteDebuggingPort, fmt.Sprintf("%d", port))
@@ -431,22 +418,14 @@ func (l *Launcher) Launch() (string, error) {
 
 	l.setupUserPreferences()
 
-	var ll *leakless.Launcher
-	var cmd *exec.Cmd
-
 	args := l.FormatArgs()
 
-	if l.Has(flags.Leakless) && leakless.Support() {
-		ll = leakless.New()
-		cmd = ll.Command(bin, args...)
-	} else {
-		port := l.Get(flags.RemoteDebuggingPort)
-		u, err := ResolveURL(port)
-		if err == nil {
-			return u, nil
-		}
-		cmd = exec.Command(bin, args...)
+	port := l.Get(flags.RemoteDebuggingPort)
+	if u, resolveErr := ResolveURL(port); resolveErr == nil {
+		return u, nil
 	}
+
+	cmd := exec.Command(bin, args...)
 
 	l.setupCmd(cmd)
 
@@ -455,14 +434,7 @@ func (l *Launcher) Launch() (string, error) {
 		return "", err
 	}
 
-	if ll == nil {
-		l.pid = cmd.Process.Pid
-	} else {
-		l.pid = <-ll.Pid()
-		if ll.Err() != "" {
-			return "", errors.New(ll.Err())
-		}
-	}
+	l.pid = cmd.Process.Pid
 
 	go func() {
 		_ = cmd.Wait()
