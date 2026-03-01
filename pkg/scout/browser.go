@@ -192,7 +192,7 @@ func New(opts ...Option) (*Browser, error) {
 
 // launchLocal starts a local browser process and returns the CDP WebSocket URL and launcher.
 func launchLocal(o *options) (string, *launcher.Launcher, error) {
-	l := launcher.New().Headless(o.headless)
+	l := launcher.New().HeadlessNew(o.headless)
 
 	if o.execPath != "" {
 		l = l.Bin(o.execPath)

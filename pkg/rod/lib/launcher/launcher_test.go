@@ -15,6 +15,9 @@ func TestNewDefaults(t *testing.T) {
 	if !l.Has(flags.Headless) {
 		t.Fatal("expected headless enabled by default")
 	}
+	if got := l.Get(flags.Headless); got != "new" {
+		t.Fatalf("expected headless=new by default, got %q", got)
+	}
 	if l.Get(flags.Bin) == "" {
 		// Bin defaults to empty string from defaults.Bin
 	}

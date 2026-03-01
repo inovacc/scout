@@ -25,15 +25,15 @@
 |------|----------|--------|-------|
 | ARM64 Linux browser download | P2 | Medium | Playwright host fallback for arm64; validate in CI |
 | Chrome protocol version tracking | P2 | Medium | Script to diff upstream rod CDP bindings and flag breaking changes |
-| Headless=new migration | P2 | Quick | Default to `--headless=new` (Chrome 112+), deprecate old headless |
+| ~~Headless=new migration~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0)~~ |
 
 ### Features
 
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
 | Proxy chain support | P2 | Medium | Route through multiple proxies (SOCKS5 → HTTP) for layered anonymity |
-| HAR export | P2 | Medium | Export session hijack captures to HAR 1.2 format |
-| Cookie jar persistence | P2 | Quick | Save/load cookies to file for session resumption across runs |
+| ~~HAR export~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.27.0) — HijackRecorder with ExportHAR()~~ |
+| ~~Cookie jar persistence~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — SaveCookiesToFile/LoadCookiesFromFile~~ |
 | Multi-tab orchestration | P3 | Large | Coordinate actions across tabs with shared state and sync primitives |
 | PDF form filling | P3 | Medium | Fill interactive PDF forms via browser rendering |
 | Visual regression testing | P3 | Large | Screenshot comparison with diff threshold for page change detection |
@@ -43,8 +43,8 @@
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
 | MCP server SSE transport | P2 | Medium | Add HTTP+SSE transport alongside stdio for remote MCP access |
-| gRPC reflection + health service | P2 | Quick | Enable gRPC server reflection and standard health checks |
-| CLI shell completions | P2 | Quick | Generate bash/zsh/fish completions for scout CLI |
+| ~~gRPC reflection + health service~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — health.NewServer() registered~~ |
+| ~~CLI shell completions~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — scout completion bash/zsh/fish/powershell~~ |
 | OpenTelemetry tracing | P3 | Large | Instrument core operations with span context propagation |
 | Plugin system | P3 | XL | Dynamic loading of scraper modes and extractors |
 
