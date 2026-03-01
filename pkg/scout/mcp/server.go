@@ -614,6 +614,7 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 	registerDiagTools(server, state)
 	registerContentTools(server, state)
 	registerNetworkTools(server, state)
+	registerFormTools(server, state)
 
 	// --- Resources ---
 
