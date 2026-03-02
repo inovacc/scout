@@ -86,7 +86,7 @@ var websearchCmd = &cobra.Command{
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
 
-			return enc.Encode(result)
+			return enc.Encode(result) //nolint:musttag
 		}
 
 		// Text output

@@ -201,7 +201,7 @@ func TestVisualDiff_GenerateDiffImage(t *testing.T) {
 	}
 
 	// Unchanged pixel should be dimmed (not bright white).
-	r2, _, _, _ := diffImg.At(0, 0).RGBA()
+	r2, _, _, _ := diffImg.At(0, 0).RGBA() //nolint:dogsled
 	if r2>>8 > 200 {
 		t.Errorf("unchanged pixel brightness %d, expected dimmed", r2>>8)
 	}

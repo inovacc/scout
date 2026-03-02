@@ -13,7 +13,7 @@ func lookupBrowser(bt BrowserType) (string, error) {
 	programFiles := os.Getenv("ProgramFiles")
 	programFilesX86 := os.Getenv("ProgramFiles(x86)")
 
-	switch bt {
+	switch bt { //nolint:exhaustive
 	case BrowserBrave:
 		paths := []string{
 			filepath.Join(localAppData, `BraveSoftware\Brave-Browser\Application\brave.exe`),

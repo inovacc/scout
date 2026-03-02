@@ -181,23 +181,23 @@ func (m *SlackMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 
 	page, err := browser.NewPage(slackSession.URL)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("slack: scrape: new page: %w", err)
 	}
 
 	if err := page.SetCookies(slackSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("slack: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("slack: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("slack: scrape: wait load: %w", err)
 	}
 
@@ -206,7 +206,7 @@ func (m *SlackMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		scout.WithHijackBodyCapture(),
 	)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("slack: scrape: create hijacker: %w", err)
 	}
 

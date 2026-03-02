@@ -68,7 +68,7 @@ func NewImgProcessor(format proto.PageCaptureScreenshotFormat) (ImgProcessor, er
 	switch format {
 	case proto.PageCaptureScreenshotFormatJpeg:
 		return &jpegProcessor{}, nil
-	case "", proto.PageCaptureScreenshotFormatPng:
+	case "", proto.PageCaptureScreenshotFormatPng, proto.PageCaptureScreenshotFormatWebp:
 		return &pngProcessor{}, nil
 	default:
 		return nil, fmt.Errorf("not support format: %v", format)

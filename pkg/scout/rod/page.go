@@ -48,7 +48,7 @@ type Page struct {
 
 	e eFunc
 
-	ctx context.Context
+	ctx context.Context //nolint:containedctx // internalized rod pattern
 
 	// Used to abort all ongoing actions when a page closes.
 	sessionCancel func()

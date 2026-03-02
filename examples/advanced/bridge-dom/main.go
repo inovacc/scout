@@ -49,7 +49,7 @@ func main() {
 	}
 
 	// Also write a full result as JSON for inspection.
-	data, _ := json.MarshalIndent(result, "", "  ")
+	data, _ := json.MarshalIndent(result, "", "  ") //nolint:errchkjson
 	_ = os.WriteFile("output/full-result.json", data, 0o644)
 
 	fmt.Println("\nDone. Files in output/")

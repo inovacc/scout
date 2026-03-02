@@ -15,6 +15,22 @@ linters:
           - forbidigo
           - gocritic
 
+      # scraper packages call scout's public API which manages context internally
+      - path: "pkg/scout/scraper/"
+        linters:
+          - contextcheck
+
+      # grpc server and capture call scout's public API which manages context internally
+      - path: "grpc/"
+        linters:
+          - contextcheck
+      - path: "pkg/scout/capture.go"
+        linters:
+          - contextcheck
+      - path: "pkg/scout/recipes/"
+        linters:
+          - staticcheck
+
   disable:
     - tagliatelle
     - gochecknoglobals

@@ -257,7 +257,7 @@ func (s *CapSolverService) pollTask(ctx context.Context, taskID string) (string,
 		"clientKey": s.APIKey,
 		"taskId":    taskID,
 	}
-	bodyJSON, _ := json.Marshal(body)
+	bodyJSON, _ := json.Marshal(body) //nolint:errchkjson
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, s.BaseURL+"/getTaskResult",
 		strings.NewReader(string(bodyJSON)))

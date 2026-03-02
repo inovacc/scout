@@ -27,16 +27,16 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 		switch step.Action {
 		case "navigate":
 			if page == nil {
-				page, err = browser.NewPage(step.URL)
+				page, err = browser.NewPage(step.URL) //nolint:contextcheck
 				if err != nil {
 					return result, fmt.Errorf("runbook: step %d navigate: %w", i, err)
 				}
 
-				err = page.WaitLoad()
+				err = page.WaitLoad() //nolint:contextcheck
 			} else {
-				err = page.Navigate(step.URL)
+				err = page.Navigate(step.URL) //nolint:contextcheck
 				if err == nil {
-					err = page.WaitLoad()
+					err = page.WaitLoad() //nolint:contextcheck
 				}
 			}
 
@@ -45,11 +45,11 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 				return result, fmt.Errorf("runbook: step %d click: no page open", i)
 			}
 
-			el, findErr := page.Element(step.Selector)
+			el, findErr := page.Element(step.Selector) //nolint:contextcheck
 			if findErr != nil {
 				err = findErr
 			} else {
-				err = el.Click()
+				err = el.Click() //nolint:contextcheck
 			}
 
 		case "type":
@@ -57,11 +57,11 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 				return result, fmt.Errorf("runbook: step %d type: no page open", i)
 			}
 
-			el, findErr := page.Element(step.Selector)
+			el, findErr := page.Element(step.Selector) //nolint:contextcheck
 			if findErr != nil {
 				err = findErr
 			} else {
-				err = el.Input(step.Text)
+				err = el.Input(step.Text) //nolint:contextcheck
 			}
 
 		case "wait":
@@ -69,7 +69,7 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 				return result, fmt.Errorf("runbook: step %d wait: no page open", i)
 			}
 
-			_, err = page.Element(step.Selector)
+			_, err = page.Element(step.Selector) //nolint:contextcheck
 
 		case "screenshot":
 			if page == nil {
@@ -78,9 +78,9 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 
 			var data []byte
 			if step.FullPage {
-				data, err = page.FullScreenshot()
+				data, err = page.FullScreenshot() //nolint:contextcheck
 			} else {
-				data, err = page.Screenshot()
+				data, err = page.Screenshot() //nolint:contextcheck
 			}
 
 			if err == nil {
@@ -97,14 +97,14 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 				return result, fmt.Errorf("runbook: step %d extract: no page open", i)
 			}
 
-			elements, findErr := page.Elements(step.Selector)
+			elements, findErr := page.Elements(step.Selector) //nolint:contextcheck
 			if findErr != nil {
 				err = findErr
 			} else {
 				var texts []string
 
 				for _, el := range elements {
-					text, textErr := el.Text()
+					text, textErr := el.Text() //nolint:contextcheck
 					if textErr == nil {
 						texts = append(texts, text)
 					}
@@ -120,7 +120,7 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 				return result, fmt.Errorf("runbook: step %d eval: no page open", i)
 			}
 
-			evalResult, evalErr := page.Eval(step.Script)
+			evalResult, evalErr := page.Eval(step.Script) //nolint:contextcheck
 			if evalErr != nil {
 				err = evalErr
 			} else if step.As != "" {
@@ -133,7 +133,7 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 			}
 
 			key := mapKeyName(step.Text)
-			err = page.KeyPress(key)
+			err = page.KeyPress(key) //nolint:contextcheck
 
 		default:
 			return result, fmt.Errorf("runbook: step %d unknown action %q", i, step.Action)

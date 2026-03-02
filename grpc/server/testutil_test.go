@@ -117,7 +117,7 @@ func registerFixtureRoutes(mux *http.ServeMux) {
 		}
 
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<!DOCTYPE html>
+		_, _ = fmt.Fprint(w, `<!DOCTYPE html>
 <html><head><title>Test Page</title></head>
 <body>
 <h1>Hello World</h1>
@@ -138,7 +138,7 @@ func registerFixtureRoutes(mux *http.ServeMux) {
 	// Second page
 	mux.HandleFunc("/page2", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<!DOCTYPE html>
+		_, _ = fmt.Fprint(w, `<!DOCTYPE html>
 <html><head><title>Page Two</title></head>
 <body><h1>Page 2</h1><a href="/">Back</a></body></html>`)
 	})
@@ -146,7 +146,7 @@ func registerFixtureRoutes(mux *http.ServeMux) {
 	// Form page
 	mux.HandleFunc("/form", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<!DOCTYPE html>
+		_, _ = fmt.Fprint(w, `<!DOCTYPE html>
 <html><head><title>Form Page</title></head>
 <body>
 <form id="myform" action="/submit" method="post">
@@ -167,7 +167,7 @@ func registerFixtureRoutes(mux *http.ServeMux) {
 		_ = r.ParseForm()
 
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, `<!DOCTYPE html>
+		_, _ = fmt.Fprintf(w, `<!DOCTYPE html>
 <html><head><title>Submitted</title></head>
 <body><p id="result">fname=%s lname=%s</p></body></html>`,
 			r.FormValue("fname"), r.FormValue("lname"))
@@ -176,7 +176,7 @@ func registerFixtureRoutes(mux *http.ServeMux) {
 	// Click target page
 	mux.HandleFunc("/click-target", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprint(w, `<!DOCTYPE html>
+		_, _ = fmt.Fprint(w, `<!DOCTYPE html>
 <html><head><title>Click Target</title></head>
 <body>
 <button id="btn" onclick="document.getElementById('output').textContent='clicked'">Click</button>
@@ -196,7 +196,7 @@ func registerFixtureRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/recorder-page", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		// Use the same host for the fetch so it goes through the test server
-		fmt.Fprintf(w, `<!DOCTYPE html>
+		_, _ = fmt.Fprintf(w, `<!DOCTYPE html>
 <html><head><title>Recorder</title></head>
 <body>
 <script>fetch('%s/recorder-asset')</script>

@@ -219,20 +219,20 @@ const perfTimingJS = `(() => {
 })()`
 
 func summarizePings(pings []pingResult) *pingSummary {
-	var min, max, sum float64
+	var minVal, maxVal, sum float64
 	for i, p := range pings {
-		if i == 0 || p.TotalMS < min {
-			min = p.TotalMS
+		if i == 0 || p.TotalMS < minVal {
+			minVal = p.TotalMS
 		}
 
-		if p.TotalMS > max {
-			max = p.TotalMS
+		if p.TotalMS > maxVal {
+			maxVal = p.TotalMS
 		}
 
 		sum += p.TotalMS
 	}
 
-	return &pingSummary{MinMS: min, MaxMS: max, AvgMS: sum / float64(len(pings))}
+	return &pingSummary{MinMS: minVal, MaxMS: maxVal, AvgMS: sum / float64(len(pings))}
 }
 
 func pingRaw(ctx context.Context, rawURL string, count int) (*mcp.CallToolResult, error) {
@@ -351,7 +351,7 @@ func pingViaBrowser(ctx context.Context, state *mcpState, rawURL string, count i
 	for i := range count {
 		start := time.Now()
 
-		if err := page.Navigate(rawURL); err != nil {
+		if err := page.Navigate(rawURL); err != nil { //nolint:contextcheck
 			resp.Error = err.Error()
 
 			pings = append(pings, pingResult{Seq: i + 1, TotalMS: ms(time.Since(start))})
@@ -359,12 +359,12 @@ func pingViaBrowser(ctx context.Context, state *mcpState, rawURL string, count i
 			continue
 		}
 
-		_ = page.WaitLoad()
+		_ = page.WaitLoad() //nolint:contextcheck
 		total := time.Since(start)
 		pings = append(pings, pingResult{Seq: i + 1, TotalMS: ms(total)})
 	}
 
-	if result, err := page.Eval(perfTimingJS); err == nil {
+	if result, err := page.Eval(perfTimingJS); err == nil { //nolint:contextcheck
 		s := result.String()
 		if s != "" && s != "null" {
 			var perf curlTiming
@@ -541,19 +541,19 @@ func curlViaBrowser(ctx context.Context, state *mcpState, rawURL string) (*mcp.C
 
 	start := time.Now()
 
-	if err := page.Navigate(rawURL); err != nil {
+	if err := page.Navigate(rawURL); err != nil { //nolint:contextcheck
 		return errResult(err.Error())
 	}
 
-	_ = page.WaitLoad()
+	_ = page.WaitLoad() //nolint:contextcheck
 	total := time.Since(start)
 
-	u, _ := page.URL()
-	title, _ := page.Title()
+	u, _ := page.URL()       //nolint:contextcheck
+	title, _ := page.Title() //nolint:contextcheck
 
 	// Get page content as text.
 	bodyText := ""
-	if result, err := page.Eval(`document.documentElement.outerHTML`); err == nil {
+	if result, err := page.Eval(`document.documentElement.outerHTML`); err == nil { //nolint:contextcheck
 		bodyText = result.String()
 		if len(bodyText) > maxBodySize {
 			bodyText = bodyText[:maxBodySize]
@@ -570,7 +570,7 @@ func curlViaBrowser(ctx context.Context, state *mcpState, rawURL string) (*mcp.C
 		Size:          &curlSize{Body: len(bodyText)},
 	}
 
-	if result, err := page.Eval(perfTimingJS); err == nil {
+	if result, err := page.Eval(perfTimingJS); err == nil { //nolint:contextcheck
 		s := result.String()
 		if s != "" && s != "null" {
 			var perf curlTiming

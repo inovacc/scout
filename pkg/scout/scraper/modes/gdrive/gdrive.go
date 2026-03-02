@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -200,8 +201,7 @@ func (m *GDriveMode) Scrape(ctx context.Context, session scraper.SessionData, op
 		return nil, fmt.Errorf("gdrive: scrape: wait load: %w", err)
 	}
 
-	hijacker, err := page.NewSessionHijacker(
-		scout.WithHijackURLFilter("*drive.google.com*", "*clients6.google.com*", "*content.googleapis.com*"),
+	hijacker, err := page.NewSessionHijacker(scout.WithHijackURLFilter("*drive.google.com*", "*clients6.google.com*", "*content.googleapis.com*"),
 		scout.WithHijackBodyCapture(),
 	)
 	if err != nil {
@@ -418,7 +418,7 @@ func parseFolderList(body string, targetSet map[string]struct{}) []scraper.Resul
 		return nil
 	}
 
-	folders := append(resp.TeamDrives, resp.Drives...)
+	folders := slices.Concat(resp.TeamDrives, resp.Drives)
 	results := make([]scraper.Result, 0, len(folders))
 
 	for _, f := range folders {

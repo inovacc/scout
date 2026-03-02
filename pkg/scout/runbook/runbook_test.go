@@ -22,7 +22,7 @@ func newTestBrowser(t *testing.T) *scout.Browser {
 		t.Skipf("browser unavailable: %v", err)
 	}
 
-	t.Cleanup(func() { b.Close() })
+	t.Cleanup(func() { _ = b.Close() })
 
 	return b
 }

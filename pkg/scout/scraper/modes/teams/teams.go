@@ -180,7 +180,7 @@ func (m *TeamsMode) run(ctx context.Context, session *auth.Session, opts scraper
 	if err != nil {
 		return fmt.Errorf("teams: create browser: %w", err)
 	}
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage("about:blank")
 	if err != nil {

@@ -57,6 +57,7 @@ func makeDDGSearchFunc() func(cmd *cobra.Command, args []string) error {
 		searchType, _ := cmd.Flags().GetString("type")
 
 		var extraOpts []scout.SearchOption
+
 		switch searchType {
 		case "news":
 			extraOpts = append(extraOpts, scout.WithDDGSearchType("news"))

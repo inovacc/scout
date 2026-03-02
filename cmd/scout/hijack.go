@@ -102,7 +102,7 @@ var hijackWatchCmd = &cobra.Command{
 				}
 
 				if wsOnly {
-					switch ev.Type {
+					switch ev.Type { //nolint:exhaustive
 					case scout.HijackWSSent, scout.HijackWSReceived, scout.HijackWSOpened, scout.HijackWSClosed:
 						// pass
 					default:

@@ -40,7 +40,7 @@ type BrowserInfo struct {
 // The returned CapturedCredentials can be saved with SaveCredentials.
 func CaptureCredentials(ctx context.Context, url string, opts ...Option) (*CapturedCredentials, error) {
 	// Force headed mode for manual interaction.
-	captureOpts := []Option{
+	captureOpts := []Option{ //nolint:prealloc // complex init with conditional appends
 		WithHeadless(false),
 		WithNoSandbox(),
 	}

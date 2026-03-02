@@ -582,7 +582,7 @@ func findUnresolvedRunbookVars(r *runbook.Runbook) []string {
 		scan(step.Text)
 	}
 
-	var names []string
+	names := make([]string, 0, len(seen))
 	for name := range seen {
 		names = append(names, name)
 	}

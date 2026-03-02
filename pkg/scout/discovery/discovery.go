@@ -1,4 +1,3 @@
-// Package discovery provides mDNS-based service discovery for scout instances.
 package discovery
 
 import (

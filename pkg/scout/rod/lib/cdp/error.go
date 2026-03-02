@@ -17,9 +17,9 @@ func (e *Error) Error() string {
 }
 
 // Is stdlib interface.
-func (e Error) Is(target error) bool {
+func (e *Error) Is(target error) bool {
 	err, ok := target.(*Error)
-	return ok && e == *err
+	return ok && *e == *err
 }
 
 // ErrCtxNotFound type.

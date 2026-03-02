@@ -186,7 +186,7 @@ type AccessibilityAXValue struct {
 	Type AccessibilityAXValueType `json:"type"`
 
 	// Value (optional) The computed value of this property.
-	Value gson.JSON `json:"value,omitempty"`
+	Value gson.JSON `json:"value,omitempty"` //nolint:modernize // internalized rod generated code
 
 	// RelatedNodes (optional) One or more related nodes, if applicable.
 	RelatedNodes []*AccessibilityAXRelatedNode `json:"relatedNodes,omitempty"`

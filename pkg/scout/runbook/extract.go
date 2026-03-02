@@ -11,7 +11,7 @@ import (
 
 // runExtract executes an extraction runbook.
 func runExtract(ctx context.Context, browser *scout.Browser, r *Runbook) (*Result, error) {
-	page, err := browser.NewPage(r.URL)
+	page, err := browser.NewPage(r.URL) //nolint:contextcheck
 	if err != nil {
 		return nil, fmt.Errorf("runbook: navigate: %w", err)
 	}
@@ -40,7 +40,7 @@ func runExtract(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resul
 			return result, ctx.Err()
 		}
 
-		items, err := extractPage(page, r.Items)
+		items, err := extractPage(page, r.Items) //nolint:contextcheck
 		if err != nil {
 			return result, fmt.Errorf("runbook: extract page %d: %w", pageNum+1, err)
 		}
@@ -67,14 +67,14 @@ func runExtract(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resul
 			time.Sleep(time.Duration(r.Pagination.DelayMs) * time.Millisecond)
 		}
 
-		if !advancePage(page, r.Pagination) {
+		if !advancePage(page, r.Pagination) { //nolint:contextcheck
 			break
 		}
 
 		// Wait for content to settle after pagination
 		_ = page.WaitLoad()
 		if r.WaitFor != "" {
-			if has, _ := page.Has(r.WaitFor); has {
+			if has, _ := page.Has(r.WaitFor); has { //nolint:contextcheck
 				_, _ = page.Element(r.WaitFor)
 			}
 		}

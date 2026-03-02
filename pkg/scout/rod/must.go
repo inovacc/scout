@@ -558,7 +558,7 @@ func (p *Page) MustObjectToJSON(obj *proto.RuntimeRemoteObject) gson.JSON {
 
 // MustObjectsToJSON is similar to [Page.ObjectsToJSON].
 func (p *Page) MustObjectsToJSON(list []*proto.RuntimeRemoteObject) gson.JSON {
-	arr := []any{}
+	arr := make([]any, 0, len(list))
 
 	for _, obj := range list {
 		j, err := p.ObjectToJSON(obj)

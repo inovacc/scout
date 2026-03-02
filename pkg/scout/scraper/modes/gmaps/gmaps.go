@@ -123,8 +123,7 @@ func (m *GMapsMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		timeout = 10 * time.Minute
 	}
 
-	browser, err := scout.New(
-		scout.WithHeadless(opts.Headless),
+	browser, err := scout.New(scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
 	if err != nil {
@@ -162,8 +161,7 @@ func (m *GMapsMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		return nil, fmt.Errorf("gmaps: scrape: wait load: %w", err)
 	}
 
-	hijacker, err := page.NewSessionHijacker(
-		scout.WithHijackURLFilter("*google.com/maps/preview/*"),
+	hijacker, err := page.NewSessionHijacker(scout.WithHijackURLFilter("*google.com/maps/preview/*"),
 		scout.WithHijackURLFilter("*google.com/maps/rpc/*"),
 		scout.WithHijackBodyCapture(),
 	)

@@ -3,6 +3,7 @@ package scout
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 )
 
 // BridgeFallback provides CDP-based equivalents for bridge operations when the
@@ -48,13 +49,7 @@ func (f *BridgeFallback) bridgeConnected() bool {
 		return false
 	}
 
-	for _, c := range f.bridge.Clients() {
-		if c == f.pageID {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(f.bridge.Clients(), f.pageID)
 }
 
 // Query queries DOM elements, falling back to CDP page.Eval if bridge is unavailable.

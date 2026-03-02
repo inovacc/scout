@@ -22,7 +22,7 @@ type URLParser struct {
 	Buffer string // buffer for the browser stdout
 
 	lock *sync.Mutex
-	ctx  context.Context
+	ctx  context.Context //nolint:containedctx // internalized rod pattern
 	done bool
 }
 

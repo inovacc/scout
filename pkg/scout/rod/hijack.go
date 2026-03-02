@@ -79,7 +79,7 @@ func (r *HijackRouter) initEvents() *HijackRouter { //nolint: gocognit
 				if ctx.continueRequest != nil {
 					ctx.continueRequest.RequestID = e.RequestID
 
-					err := ctx.continueRequest.Call(r.client)
+					err := ctx.continueRequest.Call(r.client) //nolint:contextcheck // internalized rod pattern
 					if err != nil {
 						ctx.OnError(err)
 					}
@@ -92,7 +92,7 @@ func (r *HijackRouter) initEvents() *HijackRouter { //nolint: gocognit
 				}
 
 				if ctx.Response.fail.ErrorReason != "" {
-					err := ctx.Response.fail.Call(r.client)
+					err := ctx.Response.fail.Call(r.client) //nolint:contextcheck // internalized rod pattern
 					if err != nil {
 						ctx.OnError(err)
 					}
@@ -100,7 +100,7 @@ func (r *HijackRouter) initEvents() *HijackRouter { //nolint: gocognit
 					return
 				}
 
-				err := ctx.Response.payload.Call(r.client)
+				err := ctx.Response.payload.Call(r.client) //nolint:contextcheck // internalized rod pattern
 				if err != nil {
 					ctx.OnError(err)
 					return

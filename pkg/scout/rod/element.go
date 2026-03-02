@@ -29,7 +29,7 @@ type Element struct {
 
 	e eFunc
 
-	ctx context.Context
+	ctx context.Context //nolint:containedctx // internalized rod pattern
 
 	sleeper func() utils.Sleeper
 

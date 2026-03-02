@@ -33,7 +33,7 @@ func (r *HijackRecorder) Record(ev HijackEvent) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	switch ev.Type {
+	switch ev.Type { //nolint:exhaustive
 	case HijackEventRequest:
 		if ev.Request != nil {
 			id := ev.Request.RequestID

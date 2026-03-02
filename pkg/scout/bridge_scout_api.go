@@ -133,7 +133,7 @@ func (s *BridgeServer) ListFrames(pageID string) ([]map[string]any, error) {
 	return out, nil
 }
 
-// AutoFillFormViaScout fills a form using the window.__scout API as a fallback path.
+// AutoFillForm fills a form using the window.__scout API as a fallback path.
 // It evaluates JavaScript directly via CDP to fill form fields by name/id.
 func (f *BridgeFallback) AutoFillForm(selector string, data map[string]string) error {
 	if f == nil || f.page == nil {
@@ -183,7 +183,7 @@ func (f *BridgeFallback) AutoFillForm(selector string, data map[string]string) e
 	return nil
 }
 
-// FetchFileViaScout downloads a file using the window.__scout API as a fallback path.
+// FetchFile downloads a file using the window.__scout API as a fallback path.
 // It evaluates JavaScript directly via CDP using XMLHttpRequest to fetch the URL.
 func (f *BridgeFallback) FetchFile(url string) ([]byte, error) {
 	if f == nil || f.page == nil {

@@ -117,7 +117,7 @@ func Mkdir(path string) error {
 
 // AbsolutePaths returns absolute paths of files in current working directory.
 func AbsolutePaths(paths []string) []string {
-	absPaths := []string{}
+	absPaths := make([]string, 0, len(paths))
 
 	for _, p := range paths {
 		absPath, err := filepath.Abs(p)
@@ -258,7 +258,7 @@ func Pause() {
 
 // Dump values for debugging.
 func Dump(list ...any) string {
-	out := []string{}
+	out := make([]string, 0, len(list))
 	for _, el := range list {
 		out = append(out, gson.New(el).JSON("", "  "))
 	}

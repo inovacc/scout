@@ -188,7 +188,7 @@ func pickTimezoneLocale(cfg *fingerprintConfig, rng *mrand.Rand) timezoneLocale 
 // properties to match this fingerprint. Designed to be injected via
 // EvalOnNewDocument before page scripts run.
 func (fp *Fingerprint) ToJS() string {
-	langsJSON, _ := json.Marshal(fp.Languages)
+	langsJSON, _ := json.Marshal(fp.Languages) //nolint:errchkjson
 
 	return fmt.Sprintf(`(function() {
   // Navigator overrides

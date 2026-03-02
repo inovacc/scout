@@ -98,8 +98,8 @@ func VisualDiff(baseline, current []byte, opts ...VisualDiffOption) (*VisualDiff
 	threshold := cfg.colorThreshold
 	diffCount := outsideDiffs
 
-	for y := 0; y < maxY; y++ {
-		for x := 0; x < maxX; x++ {
+	for y := range maxY {
+		for x := range maxX {
 			r1, g1, b1a, a1 := img1.At(x, y).RGBA()
 			r2, g2, b2a, a2 := img2.At(x, y).RGBA()
 

@@ -1,3 +1,4 @@
+//nolint:staticcheck // recipe package is intentional compat alias for runbook
 package main
 
 import (
@@ -598,7 +599,7 @@ func findUnresolvedVars(r *recipe.Recipe) []string {
 		scan(step.Text)
 	}
 
-	var names []string
+	names := make([]string, 0, len(seen))
 	for name := range seen {
 		names = append(names, name)
 	}

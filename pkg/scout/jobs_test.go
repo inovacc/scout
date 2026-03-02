@@ -348,5 +348,5 @@ func TestBatchWithJobManager(t *testing.T) {
 		}
 	}
 
-	fmt.Printf("Job %s completed with %d/%d failed\n", out.JobID, j.Progress.Failed, j.Progress.Completed)
+	t.Logf("Job %s completed with %d/%d failed", out.JobID, j.Progress.Failed, j.Progress.Completed)
 }

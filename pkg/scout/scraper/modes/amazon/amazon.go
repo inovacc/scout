@@ -323,12 +323,10 @@ func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.
 	}
 
 	titleText, _ := titleElem.Text()
-
 	// Extract price.
 	priceElem, err := page.Element("span.a-price-whole, span[data-a-color='price']")
 	if err == nil {
-		priceText, _ := priceElem.Text()
-		priceText = strings.TrimSpace(priceText)
+		priceText, _ := priceElem.Text()		priceText = strings.TrimSpace(priceText)
 
 		product := scraper.Result{
 			Type:      scraper.ResultPost,
@@ -346,8 +344,7 @@ func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.
 		// Extract rating if available.
 		ratingElem, err := page.Element("div.a-icon-star span")
 		if err == nil {
-			ratingText, _ := ratingElem.Text()
-			if ratingText != "" {
+			ratingText, _ := ratingElem.Text()			if ratingText != "" {
 				product.Metadata["rating"] = ratingText
 			}
 		}
@@ -372,16 +369,13 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 	}
 
 	// Extract ASIN from data-asin attribute.
-	asinAttr, ok, err := elem.Attribute("data-asin")
-	if err != nil || !ok || asinAttr == "" {
+	asinAttr, ok, err := elem.Attribute("data-asin")	if err != nil || !ok || asinAttr == "" {
 		return nil, fmt.Errorf("amazon: extract asin attribute: %w", err)
 	}
 
 	// Extract title.
-	titleElem, err := elem.Element("h2 a span")
-	if err != nil {
-		titleElem, _ = elem.Element("a.a-link-normal span")
-	}
+	titleElem, err := elem.Element("h2 a span")	if err != nil {
+		titleElem, _ = elem.Element("a.a-link-normal span")	}
 
 	var title string
 	if titleElem != nil {
@@ -391,8 +385,7 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 	title = strings.TrimSpace(title)
 
 	// Extract price.
-	priceElem, err := elem.Element("span[data-a-color='price']")
-	if err != nil {
+	priceElem, err := elem.Element("span[data-a-color='price']")	if err != nil {
 		priceElem, _ = elem.Element("span.a-price-whole")
 	}
 
@@ -430,8 +423,7 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 	var productURL string
 
 	if linkElem != nil {
-		href, _, _ := linkElem.Attribute("href")
-		if href != "" {
+		href, _, _ := linkElem.Attribute("href")		if href != "" {
 			if strings.HasPrefix(href, "/") {
 				productURL = "https://www.amazon.com" + href
 			} else {
@@ -514,7 +506,6 @@ func extractSellerInfo(ctx context.Context, page *scout.Page, asin string) *scra
 
 	// Extract seller link.
 	sellerLink, _, _ := sellerElem.Attribute("href")
-
 	return &scraper.Result{
 		Type:      scraper.ResultProfile,
 		Source:    "amazon",

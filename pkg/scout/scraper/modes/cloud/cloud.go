@@ -27,8 +27,7 @@ func (p *cloudProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 		return false, fmt.Errorf("cloud: detect auth: nil page")
 	}
 
-	result, err := page.Eval(`() => window.location.href`)
-	if err != nil {
+	result, err := page.Eval(`() => window.location.href`)	if err != nil {
 		return false, fmt.Errorf("cloud: detect auth: eval url: %w", err)
 	}
 
@@ -52,13 +51,11 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 		return nil, fmt.Errorf("cloud: capture session: nil page")
 	}
 
-	cookies, err := page.GetCookies()
-	if err != nil {
+	cookies, err := page.GetCookies()	if err != nil {
 		return nil, fmt.Errorf("cloud: capture session: get cookies: %w", err)
 	}
 
-	result, err := page.Eval(`() => window.location.href`)
-	if err != nil {
+	result, err := page.Eval(`() => window.location.href`)	if err != nil {
 		return nil, fmt.Errorf("cloud: capture session: eval url: %w", err)
 	}
 
@@ -71,8 +68,7 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	// Extract AWS-specific tokens and data.
 	if strings.Contains(currentURL, "console.aws.amazon.com") {
 		// Try to extract aws-userInfo from localStorage or window object.
-		awsUserResult, err := page.Eval(`() => {
-			try {
+		awsUserResult, err := page.Eval(`() => {			try {
 				const userInfo = localStorage.getItem('aws-userInfo');
 				if (userInfo) return userInfo;
 				if (window.__AWS_USERDATA) return JSON.stringify(window.__AWS_USERDATA);
@@ -281,22 +277,19 @@ func (m *CloudMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		timeout = 10 * time.Minute
 	}
 
-	browser, err := scout.New(
-		scout.WithHeadless(opts.Headless),
+	browser, err := scout.New(		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("cloud: scrape: create browser: %w", err)
 	}
 
-	page, err := browser.NewPage(cloudSession.URL)
-	if err != nil {
+	page, err := browser.NewPage(cloudSession.URL)	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("cloud: scrape: new page: %w", err)
 	}
 
-	if err := page.SetCookies(cloudSession.Cookies...); err != nil {
-		browser.Close()
+	if err := page.SetCookies(cloudSession.Cookies...); err != nil {		browser.Close()
 		return nil, fmt.Errorf("cloud: scrape: set cookies: %w", err)
 	}
 
@@ -306,13 +299,11 @@ func (m *CloudMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		return nil, fmt.Errorf("cloud: scrape: reload: %w", err)
 	}
 
-	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+	if err := page.WaitLoad(); err != nil {		browser.Close()
 		return nil, fmt.Errorf("cloud: scrape: wait load: %w", err)
 	}
 
-	hijacker, err := page.NewSessionHijacker(
-		scout.WithHijackURLFilter("*"),
+	hijacker, err := page.NewSessionHijacker(		scout.WithHijackURLFilter("*"),
 		scout.WithHijackBodyCapture(),
 	)
 	if err != nil {
@@ -628,7 +619,7 @@ func parseAWSPricing(body string, targetSet map[string]struct{}) []scraper.Resul
 		return nil
 	}
 
-	var results []scraper.Result
+	results := make([]scraper.Result, 0, 1)
 
 	// Extract pricing data as a message result.
 	results = append(results, scraper.Result{

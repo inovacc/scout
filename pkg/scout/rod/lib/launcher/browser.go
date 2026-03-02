@@ -78,7 +78,7 @@ var DefaultBrowserDir = filepath.Join(map[string]string{
 
 // Browser is a helper to download browser smartly.
 type Browser struct {
-	Context context.Context
+	Context context.Context //nolint:containedctx // internalized rod pattern
 
 	// Hosts are the candidates to download the browser.
 	// Such as [HostGoogle] or [HostNPM].
@@ -148,7 +148,7 @@ func (lc *Browser) Download() error {
 }
 
 func (lc *Browser) tryDownload(revision int) error {
-	us := []string{}
+	us := make([]string, 0, len(lc.Hosts))
 	for _, host := range lc.Hosts {
 		us = append(us, host(revision))
 	}
@@ -344,7 +344,7 @@ func lockPort(port int) func() {
 }
 
 func expandWindowsExePaths(list ...string) []string {
-	newList := []string{}
+	newList := make([]string, 0, 3*len(list))
 	for _, p := range list {
 		newList = append(
 			newList,

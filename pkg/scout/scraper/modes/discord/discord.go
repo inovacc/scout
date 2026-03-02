@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -248,7 +249,6 @@ func (m *DiscordMode) processEvents(
 	defer close(results)
 	defer hijacker.Stop()
 	defer func() { _ = browser.Close() }()
-
 	count := 0
 
 	for {
@@ -576,13 +576,7 @@ func authorName(a discordAuthor) string {
 
 // containsSegment checks if any path segment equals the given value.
 func containsSegment(parts []string, segment string) bool {
-	for _, p := range parts {
-		if p == segment {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(parts, segment)
 }
 
 // endsWith checks if the path ends with the given segments.
