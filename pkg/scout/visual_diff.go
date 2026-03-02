@@ -177,7 +177,7 @@ func channelDiff(a, b uint32) int {
 }
 
 // drawRect draws a rectangle outline on the diff image (unused but available for future region highlighting).
-func drawRect(img *image.RGBA, r image.Rectangle, c color.RGBA) {
+func drawRect(img *image.RGBA, r image.Rectangle, c color.RGBA) { //nolint:unused
 	draw.Draw(img, image.Rect(r.Min.X, r.Min.Y, r.Max.X, r.Min.Y+1), &image.Uniform{c}, image.Point{}, draw.Src)
 	draw.Draw(img, image.Rect(r.Min.X, r.Max.Y-1, r.Max.X, r.Max.Y), &image.Uniform{c}, image.Point{}, draw.Src)
 	draw.Draw(img, image.Rect(r.Min.X, r.Min.Y, r.Min.X+1, r.Max.Y), &image.Uniform{c}, image.Point{}, draw.Src)

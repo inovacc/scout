@@ -176,7 +176,7 @@ func (p *Page) WaitFrameworkReady() error {
 
 		if stableErr := p.WaitDOMStable(300*time.Millisecond, 0.1); stableErr != nil {
 			// DOM stable can timeout on simple pages; not fatal
-			return nil
+			return nil //nolint:nilerr
 		}
 
 		return nil
@@ -187,7 +187,7 @@ func (p *Page) WaitFrameworkReady() error {
 	if err != nil {
 		// JS wait failed — fall back to standard wait
 		_ = p.WaitLoad()
-		return nil
+		return nil //nolint:nilerr
 	}
 
 	return nil

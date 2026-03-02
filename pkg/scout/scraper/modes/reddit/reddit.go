@@ -240,6 +240,7 @@ func (m *RedditMode) scrapeSubreddit(ctx context.Context, browser *scout.Browser
 	if err != nil {
 		return 0, fmt.Errorf("reddit: new page: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	// Restore session cookies if available.

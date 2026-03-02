@@ -249,6 +249,7 @@ func (m *DiscordMode) processEvents(
 	defer close(results)
 	defer hijacker.Stop()
 	defer func() { _ = browser.Close() }()
+
 	count := 0
 
 	for {

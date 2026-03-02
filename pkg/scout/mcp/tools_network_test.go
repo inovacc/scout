@@ -37,7 +37,7 @@ func TestCookieToolGetEmpty(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("cookie get error: %s", text)
 	}
 }
@@ -61,7 +61,7 @@ func TestHeaderTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("header error: %s", text)
 	}
 }
@@ -85,7 +85,7 @@ func TestBlockTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("block error: %s", text)
 	}
 }

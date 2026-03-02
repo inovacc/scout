@@ -88,7 +88,7 @@ func solveTurnstile(page *Page, _ ChallengeInfo) error {
 
 // persistClearanceCookies extracts cf_clearance and related Cloudflare cookies
 // from the page for reuse in subsequent sessions.
-func persistClearanceCookies(page *Page) ([]map[string]string, error) {
+func persistClearanceCookies(page *Page) ([]map[string]string, error) { //nolint:unused
 	if page == nil || page.page == nil {
 		return nil, fmt.Errorf("scout: challenge: persist cookies: nil page")
 	}

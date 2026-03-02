@@ -40,7 +40,7 @@ func (s *mcpState) touch() {
 	}
 }
 
-func (s *mcpState) ensureBrowser(_ context.Context) (*scout.Browser, error) { //nolint:unparam
+func (s *mcpState) ensureBrowser(_ context.Context) (*scout.Browser, error) {
 	s.touch()
 	s.mu.Lock()
 	defer s.mu.Unlock()

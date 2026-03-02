@@ -143,7 +143,7 @@ func (ra *ResearchAgent) Research(ctx context.Context, query string) (*ResearchR
 		searchOpts = append(searchOpts, WithWebSearchMainContent())
 	}
 
-	searchResult, err := ra.browser.WebSearch(query, searchOpts...)
+	searchResult, err := ra.browser.WebSearch(query, searchOpts...) //nolint:contextcheck
 	if err != nil {
 		return nil, fmt.Errorf("scout: research: search: %w", err)
 	}
@@ -422,7 +422,7 @@ func buildFinalSynthesisPrompt(query string, summaries []string, sources []Resea
 
 // fetchSourcesConcurrent fetches sources concurrently with a semaphore.
 // This is kept as a utility but the main flow uses WebSearch with built-in fetch.
-func (ra *ResearchAgent) fetchSourcesConcurrent(urls []string) []ResearchSource {
+func (ra *ResearchAgent) fetchSourcesConcurrent(urls []string) []ResearchSource { //nolint:unused
 	results := make([]ResearchSource, len(urls))
 
 	var wg sync.WaitGroup

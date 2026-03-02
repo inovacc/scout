@@ -397,7 +397,7 @@ type slackFile struct {
 	Timestamp          json.Number `json:"timestamp"`
 }
 
-func parseConversationHistory(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseConversationHistory(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp historyResponse
 	if err := json.Unmarshal([]byte(body), &resp); err != nil || !resp.OK {
 		return nil

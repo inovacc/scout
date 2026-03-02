@@ -16,12 +16,12 @@ func runExtract(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resul
 		return nil, fmt.Errorf("runbook: navigate: %w", err)
 	}
 
-	if err := page.WaitLoad(); err != nil {
+	if err := page.WaitLoad(); err != nil { //nolint:contextcheck
 		return nil, fmt.Errorf("runbook: wait load: %w", err)
 	}
 
 	if r.WaitFor != "" {
-		if _, err := page.Element(r.WaitFor); err != nil {
+		if _, err := page.Element(r.WaitFor); err != nil { //nolint:contextcheck
 			return nil, fmt.Errorf("runbook: wait for %q: %w", r.WaitFor, err)
 		}
 	}
@@ -72,10 +72,10 @@ func runExtract(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resul
 		}
 
 		// Wait for content to settle after pagination
-		_ = page.WaitLoad()
+		_ = page.WaitLoad() //nolint:contextcheck
 		if r.WaitFor != "" {
 			if has, _ := page.Has(r.WaitFor); has { //nolint:contextcheck
-				_, _ = page.Element(r.WaitFor)
+				_, _ = page.Element(r.WaitFor) //nolint:contextcheck
 			}
 		}
 	}

@@ -479,7 +479,7 @@ func parseDashboardDetail(body string, targetSet map[string]struct{}) []scraper.
 	return results
 }
 
-type datasourcesListResponse struct {
+type datasourcesListResponse struct { //nolint:unused
 	grafanaAPIResponse
 }
 

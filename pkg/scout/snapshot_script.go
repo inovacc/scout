@@ -151,7 +151,7 @@ const snapshotJS = `(function(config) {
 	return lines.join('\n');
 })`
 
-// elementByRefJS finds an element by its data-scout-ref attribute.
+//nolint:unused // elementByRefJS finds an element by its data-scout-ref attribute.
 const elementByRefJS = `(function(ref) {
 	var el = document.querySelector('[data-scout-ref="' + ref + '"]');
 	return el ? true : null;
