@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Core library complete through Phase 38 (v0.22.0+).** All 38 phases delivered. See git history for details.
+**Core library complete through Phase 40 (v0.27.0+).** All 40 phases delivered. See git history for details.
 
 ### Completed Phases (Summary)
 
@@ -27,7 +27,7 @@
 | 22–23 | WebFetch/WebSearch (retry, redirects, multi-engine RRF) | Done |
 | 24 | Rod Fork Patches (nil-guard, WaitSafe, zombie cleanup) | Done |
 | 25 | Accessibility Snapshot (ARIA, iframes, LLM integration) | Done |
-| 26 | MCP Server (15 tools, 3 resources, stdio transport) | Done |
+| 26 | MCP Server (33 tools, 3 resources, stdio + SSE transport) | Done |
 | 27 | AutoFree & Request Blocking Presets | Done |
 | 28 | Page Intelligence (framework, PWA, tech stack, render mode) | Done |
 | 29 | Credential Capture & Replay | Done |
@@ -41,6 +41,7 @@
 | 37 | Scraper Modes Batch 3 (Twitter/X, YouTube, Notion, Google Drive, SharePoint) | Done |
 | 38 | Scraper Modes Batch 4 (Amazon, Google Maps, Salesforce, Grafana, Cloud Consoles) | Done |
 | 39 | Runbook rename, MCP SSE, test coverage, GoDoc examples | Done |
+| 40 | Multi-tab orchestration (TabGroup), MCP expanded to 33 tools, ping/curl diagnostics | Done |
 
 ### Remaining Work
 

@@ -30,7 +30,7 @@ pkg/discovery/      mDNS service discovery
 pkg/browser/        Browser detection, download, cache management
 pkg/scout/runbook/  Runbook system (extract + automate + analyze + Plan/Apply)
 pkg/scout/recipe/   Deprecated compat aliases → runbook package
-pkg/scout/mcp/      MCP server (stdio transport)
+pkg/scout/mcp/      MCP server (33 tools, 3 resources, stdio + SSE transport)
 runbooks/           Embedded preset runbooks (26 JSON files)
 extensions/         Embedded Chrome extensions (scout-bridge)
 cmd/scout/          Unified Cobra CLI (50+ subcommands)

@@ -55,6 +55,11 @@ flowchart TB
         ExtPkg["Extensions\n(extensions/)"]
     end
 
+    subgraph MCP["MCP Server (pkg/scout/mcp/)"]
+        MCPServer["MCP Server\n(33 tools, 3 resources)"]
+        MCPTransport["stdio / SSE\n(server.go)"]
+    end
+
     subgraph Commands["Unified CLI (cmd/scout/)"]
         CLI["scout CLI\n(Cobra)"]
         Daemon["Daemon\n(auto-start gRPC)"]
@@ -94,6 +99,11 @@ flowchart TB
     Discovery -->|finds peers| Server
     StealthPkg -->|patches| Page
     ExtPkg -->|embeds| Bridge
+
+    MCPServer -->|uses| Browser
+    MCPServer -->|uses| Page
+    MCPTransport -->|serves| MCPServer
+    CLI -->|starts| MCPServer
 
     Rod -->|CDP protocol| Chrome
     Browser -->|wraps| Rod

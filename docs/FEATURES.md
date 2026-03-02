@@ -154,6 +154,16 @@
 - **Status:** Completed
 - **Description:** Automatically analyze a target website and generate a ready-to-run recipe JSON file. `AnalyzeSite()` navigates, inspects DOM, classifies page type (listing/form/article/table), detects containers, fields, forms, pagination, and interactable elements. `GenerateRecipe()` produces extract or automate recipes from analysis. CLI `scout recipe create <url>`. Implemented in `pkg/scout/recipe/analyze.go`, `pkg/scout/recipe/generate.go`.
 
+### MCP Server (33 Tools)
+
+- **Status:** Completed
+- **Description:** Model Context Protocol server exposing Scout browser automation as 33 LLM-callable tools across 7 categories: Browser (navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open), Content (markdown, table, meta, pdf, search, fetch), Network (cookie, header, block, ping, curl), Forms (form_detect, form_fill, form_submit), Analysis (crawl, detect), Inspection (storage, hijack, har, swagger), Session (session_list, session_reset). 3 resources: scout://page/markdown, scout://page/url, scout://page/title. Supports stdio and HTTP+SSE transport. CLI `scout mcp`, `scout mcp --install`, `scout mcp screenshot`, `scout mcp open`. Implemented in `pkg/scout/mcp/`.
+
+### Multi-Tab Orchestration
+
+- **Status:** Completed
+- **Description:** TabGroup struct for coordinating actions across multiple browser pages. `Do()` for sequential, `DoAll()`/`DoParallel()` for concurrent execution, `Broadcast()` for same action on all tabs, `Navigate()`, `Wait()`, `Collect()` for data gathering. Implemented in `pkg/scout/tabgroup.go`.
+
 ## Proposed Features
 
 ### Screen Recorder

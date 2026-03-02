@@ -16,7 +16,7 @@
 |------|----------|--------|-------|
 | ~~Integration test suite for scraper modes~~ | ~~P2~~ | ~~Large~~ | ~~Done (v0.28.0) — mock Mode/Session/AuthProvider, registry, progress, cancellation tests~~ |
 | ~~Test coverage for gRPC streaming RPCs~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — StreamHijack, double-start/stop, invalid session tests~~ |
-| Benchmark suite for core operations | P3 | Medium | Page creation, extraction, pagination, snapshot throughput |
+| ~~Benchmark suite for core operations~~ | ~~P3~~ | ~~Medium~~ | ~~Done — BenchmarkPageCreation, BenchmarkExtract, BenchmarkPagination, BenchmarkSnapshot~~ |
 | ~~Fuzz testing for recipe parser~~ | ~~P3~~ | ~~Medium~~ | ~~Done (v0.28.0) — FuzzParse + FuzzResolveSelector with 12 seed corpus entries~~ |
 
 ### Platform & Compatibility
