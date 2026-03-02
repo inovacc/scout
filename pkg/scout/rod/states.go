@@ -3,7 +3,7 @@ package rod
 import (
 	"reflect"
 
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 )
 
 type stateKey struct {

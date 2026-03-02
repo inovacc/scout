@@ -17,9 +17,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod/lib/cdp"
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/cdp"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
 // CDPClient is usually used to make rod side-effect free. Such as proxy all IO of rod.

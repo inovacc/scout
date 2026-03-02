@@ -7,8 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/inovacc/scout/pkg/rod/lib/defaults"
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/defaults"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
 // Request to send to browser.

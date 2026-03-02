@@ -9,9 +9,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/inovacc/scout/pkg/rod/lib/cdp"
-	"github.com/inovacc/scout/pkg/rod/lib/launcher/flags"
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/cdp"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher/flags"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
 const (

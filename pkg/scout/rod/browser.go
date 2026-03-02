@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod/lib/cdp"
-	"github.com/inovacc/scout/pkg/rod/lib/defaults"
-	"github.com/inovacc/scout/pkg/rod/lib/devices"
-	"github.com/inovacc/scout/pkg/rod/lib/launcher"
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/cdp"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/defaults"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/devices"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 	"github.com/ysmood/goob"
 )
 

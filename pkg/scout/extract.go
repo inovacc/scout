@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/inovacc/scout/pkg/rod"
+	"github.com/inovacc/scout/pkg/scout/rod"
 )
 
 // ExtractOption configures extraction behavior.

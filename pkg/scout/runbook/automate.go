@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/inovacc/scout/pkg/rod/lib/input"
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
 )
 
 // runAutomate executes an automation runbook step by step.

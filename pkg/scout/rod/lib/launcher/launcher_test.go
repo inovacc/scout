@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/inovacc/scout/pkg/rod/lib/launcher/flags"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher/flags"
 )
 
 func TestNewDefaults(t *testing.T) {

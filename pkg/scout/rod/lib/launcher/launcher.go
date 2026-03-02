@@ -13,9 +13,9 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/inovacc/scout/pkg/rod/lib/defaults"
-	"github.com/inovacc/scout/pkg/rod/lib/launcher/flags"
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/defaults"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher/flags"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
 // DefaultUserDataDirPrefix ...

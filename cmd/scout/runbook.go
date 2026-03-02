@@ -10,7 +10,7 @@ import (
 
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/runbook"
-	"github.com/inovacc/scout/runbooks"
+	"github.com/inovacc/scout/pkg/scout/runbooks"
 	"github.com/spf13/cobra"
 )
 

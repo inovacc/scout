@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/extensions"
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 )
 
 // BridgeHandler processes an event received from the browser.

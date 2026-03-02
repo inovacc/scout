@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/inovacc/scout/pkg/rod/lib/launcher"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher"
 )
 
 func TestSetHeaders(t *testing.T) {

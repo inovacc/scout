@@ -1,6 +1,6 @@
 package input
 
-import "github.com/inovacc/scout/pkg/rod/lib/proto"
+import "github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 
 // MouseKeys is the map for mouse keys.
 var MouseKeys = map[proto.InputMouseButton]int{

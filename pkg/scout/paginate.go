@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod"
+	"github.com/inovacc/scout/pkg/scout/rod"
 )
 
 // PaginateOption configures pagination behavior.

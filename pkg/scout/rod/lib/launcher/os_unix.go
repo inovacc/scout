@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod/lib/launcher/flags"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher/flags"
 )
 
 func killGroup(pid int) {

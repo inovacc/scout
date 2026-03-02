@@ -17,10 +17,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod/lib/devices"
-	"github.com/inovacc/scout/pkg/rod/lib/input"
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/devices"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 	"github.com/ysmood/gson"
 )
 
