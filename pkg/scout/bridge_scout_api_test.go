@@ -103,7 +103,6 @@ func TestBridgeFallback_Query(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/")
 	if err != nil {
@@ -140,7 +139,6 @@ func TestBridgeFallback_Click(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/form")
 	if err != nil {

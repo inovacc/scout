@@ -28,7 +28,7 @@ func (m *mockProvider) Complete(_ context.Context, sys, user string) (string, er
 func TestExtractWithLLM(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
@@ -63,7 +63,7 @@ func TestExtractWithLLM(t *testing.T) {
 func TestExtractWithLLMJSON(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
@@ -100,7 +100,7 @@ func TestExtractWithLLMJSON(t *testing.T) {
 func TestExtractWithLLMSchemaValidation(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
@@ -125,7 +125,7 @@ func TestExtractWithLLMSchemaValidation(t *testing.T) {
 func TestExtractWithLLMNoProvider(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
@@ -144,7 +144,7 @@ func TestExtractWithLLMNoProvider(t *testing.T) {
 func TestExtractWithLLMProviderError(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
