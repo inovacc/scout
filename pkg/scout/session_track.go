@@ -5,9 +5,34 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
+
+// SessionsDir returns the base directory for session data: ~/.scout/sessions.
+// This is cross-platform: it uses os.UserHomeDir which resolves to
+// %USERPROFILE% on Windows, $HOME on Unix/macOS.
+func SessionsDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		// Fallback to temp dir if home is unavailable.
+		return filepath.Join(os.TempDir(), "scout", "sessions")
+	}
+	return filepath.Join(home, ".scout", "sessions")
+}
+
+// SessionUserDataDir returns the user-data subdirectory under SessionsDir.
+func SessionUserDataDir() string {
+	return filepath.Join(SessionsDir(), "user-data")
+}
+
+// SessionPIDDir returns the pids subdirectory under SessionsDir.
+func SessionPIDDir() string {
+	return filepath.Join(SessionsDir(), "pids")
+}
 
 // SessionEntry represents a tracked browser session.
 type SessionEntry struct {
@@ -30,7 +55,7 @@ type SessionTracker struct {
 
 // defaultTrackPath returns the default path for track.json.
 func defaultTrackPath() string {
-	return filepath.Join(os.TempDir(), "scout", "track.json")
+	return filepath.Join(SessionsDir(), "track.json")
 }
 
 // LoadTracker reads or creates the session tracker from the default track.json location.
@@ -161,4 +186,83 @@ func (t *SessionTracker) Prune() (int, error) {
 	}
 
 	return pruned, nil
+}
+
+// Scan discovers UUID v7 directories in the user-data dir that are not yet
+// tracked and adds them to the tracker. It also reads the PID file if present.
+func (t *SessionTracker) Scan() (int, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	userDataDir := SessionUserDataDir()
+	entries, err := os.ReadDir(userDataDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("scout: scan user-data: %w", err)
+	}
+
+	// Build set of already-tracked IDs.
+	tracked := make(map[string]struct{}, len(t.Sessions))
+	for _, s := range t.Sessions {
+		tracked[s.ID] = struct{}{}
+	}
+
+	added := 0
+	pidDir := SessionPIDDir()
+
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		name := e.Name()
+
+		// Validate it's a UUID.
+		if _, err := uuid.Parse(name); err != nil {
+			continue
+		}
+
+		if _, exists := tracked[name]; exists {
+			continue
+		}
+
+		dataDir := filepath.Join(userDataDir, name)
+		info, _ := e.Info()
+		created := time.Now()
+		if info != nil {
+			created = info.ModTime()
+		}
+
+		entry := SessionEntry{
+			ID:        name,
+			DataDir:   dataDir,
+			CreatedAt: created,
+			LastUsed:  created,
+			Browser:   "chrome",
+			Headless:  true,
+		}
+
+		// Read PID if available.
+		if pidData, err := os.ReadFile(filepath.Join(pidDir, name)); err == nil {
+			if pid, err := strconv.Atoi(string(pidData)); err == nil {
+				// Check if process is still running.
+				if p, err := os.FindProcess(pid); err == nil {
+					_ = p
+					entry.Reusable = false
+				}
+			}
+		}
+
+		t.Sessions = append(t.Sessions, entry)
+		added++
+	}
+
+	if added > 0 {
+		if err := t.save(); err != nil {
+			return added, err
+		}
+	}
+
+	return added, nil
 }
