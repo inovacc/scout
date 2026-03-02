@@ -3,6 +3,7 @@ package scout
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -589,7 +590,12 @@ func (b *Browser) Close() error {
 			b.browser = nil
 		}
 
-		// 6. Kill process tree and clean up temp user-data-dir.
+		// 6. Remove PID file.
+		if b.sessionID != "" {
+			_ = os.Remove(filepath.Join(os.TempDir(), "scout", "pids", b.sessionID))
+		}
+
+		// 7. Kill process tree and clean up temp user-data-dir.
 		if b.launcher != nil {
 			b.launcher.Kill()
 
@@ -667,6 +673,14 @@ func (b *Browser) registerSession() {
 		})
 		b.sessionTracker = tracker
 		b.sessionID = existing.ID
+
+		// Write PID file for reused session.
+		if pid := b.launcher.PID(); pid != 0 {
+			pidDir := filepath.Join(os.TempDir(), "scout", "pids")
+			if err := os.MkdirAll(pidDir, 0o755); err == nil {
+				_ = os.WriteFile(filepath.Join(pidDir, existing.ID), []byte(strconv.Itoa(pid)), 0o644)
+			}
+		}
 		return
 	}
 
@@ -683,6 +697,14 @@ func (b *Browser) registerSession() {
 	_ = tracker.Register(entry)
 	b.sessionTracker = tracker
 	b.sessionID = sessionID
+
+	// Write PID file to temp/scout/pids/<uuid>.
+	if pid := b.launcher.PID(); pid != 0 {
+		pidDir := filepath.Join(os.TempDir(), "scout", "pids")
+		if err := os.MkdirAll(pidDir, 0o755); err == nil {
+			_ = os.WriteFile(filepath.Join(pidDir, sessionID), []byte(strconv.Itoa(pid)), 0o644)
+		}
+	}
 }
 
 // SessionID returns the UUID v7 session identifier for this browser instance.
