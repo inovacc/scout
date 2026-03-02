@@ -17,6 +17,8 @@ const (
 	BrowserBrave BrowserType = "brave"
 	// BrowserEdge selects Microsoft Edge.
 	BrowserEdge BrowserType = "edge"
+	// BrowserElectron selects Electron runtime for app automation.
+	BrowserElectron BrowserType = "electron"
 )
 
 // Option configures a Browser instance.
@@ -68,6 +70,9 @@ type options struct {
 	proxyChain         *ProxyChain
 	hijack             bool
 	hijackFilter       *HijackFilter
+	electronApp        string // path to Electron app dir or packaged binary
+	electronVersion    string // Electron version to download (e.g. "v33.2.0")
+	electronCDP        string // CDP endpoint of running Electron app
 }
 
 func defaults() *options {
@@ -367,4 +372,21 @@ func WithLaunchFlag(name string, values ...string) Option {
 
 		o.launchFlags[name] = values
 	}
+}
+
+// WithElectronApp sets the path to an Electron app directory or packaged binary.
+// The Electron runtime will be used instead of Chrome/Chromium.
+func WithElectronApp(path string) Option {
+	return func(o *options) { o.electronApp = path }
+}
+
+// WithElectronVersion sets the Electron version to download (e.g. "v33.2.0").
+// If the version is not cached locally, it will be downloaded from GitHub releases.
+func WithElectronVersion(version string) Option {
+	return func(o *options) { o.electronVersion = version }
+}
+
+// WithElectronCDP connects to an already-running Electron app via its CDP endpoint.
+func WithElectronCDP(endpoint string) Option {
+	return func(o *options) { o.electronCDP = endpoint }
 }

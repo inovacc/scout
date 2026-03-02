@@ -408,3 +408,27 @@ func TestOptionChaining(t *testing.T) {
 		t.Error("incognito should be true")
 	}
 }
+
+func TestWithElectronApp(t *testing.T) {
+	o := defaults()
+	WithElectronApp("/path/to/app")(o)
+	if o.electronApp != "/path/to/app" {
+		t.Errorf("got %q", o.electronApp)
+	}
+}
+
+func TestWithElectronVersion(t *testing.T) {
+	o := defaults()
+	WithElectronVersion("v33.2.0")(o)
+	if o.electronVersion != "v33.2.0" {
+		t.Errorf("got %q", o.electronVersion)
+	}
+}
+
+func TestWithElectronCDP(t *testing.T) {
+	o := defaults()
+	WithElectronCDP("ws://127.0.0.1:9222")(o)
+	if o.electronCDP != "ws://127.0.0.1:9222" {
+		t.Errorf("got %q", o.electronCDP)
+	}
+}
