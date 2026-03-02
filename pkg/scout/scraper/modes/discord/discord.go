@@ -32,7 +32,6 @@ func (p *discordProvider) DetectAuth(_ context.Context, page *scout.Page) (bool,
 	}
 
 	url, err := page.URL()
-
 	if err != nil {
 		return false, fmt.Errorf("discord: detect auth: %w", err)
 	}
@@ -46,14 +45,12 @@ func (p *discordProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("discord: capture session: cookies: %w", err)
 	}
 
 	// Extract localStorage values via Eval
 	localStorageResult, err := page.Eval("() => { try { return Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)])) } catch(e) { return {} } }")
-
 	if err != nil {
 		return nil, fmt.Errorf("discord: capture session: local storage: %w", err)
 	}
@@ -70,7 +67,6 @@ func (p *discordProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 
 	// Extract sessionStorage values via Eval
 	sessionStorageResult, err := page.Eval("() => { try { return Object.fromEntries(Object.keys(sessionStorage).map(k => [k, sessionStorage.getItem(k)])) } catch(e) { return {} } }")
-
 	if err != nil {
 		return nil, fmt.Errorf("discord: capture session: session storage: %w", err)
 	}
@@ -86,7 +82,6 @@ func (p *discordProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	url, err := page.URL()
-
 	if err != nil {
 		return nil, fmt.Errorf("discord: capture session: url: %w", err)
 	}
@@ -170,21 +165,18 @@ func (m *DiscordMode) Scrape(ctx context.Context, session scraper.SessionData, o
 	}
 
 	browser, err := scout.New(browserOpts...)
-
 	if err != nil {
 		return nil, fmt.Errorf("discord: scrape: browser: %w", err)
 	}
 
 	// Restore cookies on the Discord domain.
 	page, err := browser.NewPage("about:blank")
-
 	if err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("discord: scrape: new page: %w", err)
 	}
 
 	if len(authSession.Cookies) > 0 {
-
 		if err := page.SetCookies(authSession.Cookies...); err != nil {
 			_ = browser.Close()
 			return nil, fmt.Errorf("discord: scrape: set cookies: %w", err)
@@ -211,7 +203,6 @@ func (m *DiscordMode) Scrape(ctx context.Context, session scraper.SessionData, o
 	}
 
 	hijacker, err := page.NewSessionHijacker(hijackOpts...)
-
 	if err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("discord: scrape: hijacker: %w", err)

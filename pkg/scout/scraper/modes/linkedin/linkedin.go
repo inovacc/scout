@@ -29,7 +29,6 @@ func (p *linkedinProvider) DetectAuth(ctx context.Context, page *scout.Page) (bo
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("linkedin: detect auth: eval url: %w", err)
 	}
@@ -42,7 +41,6 @@ func (p *linkedinProvider) DetectAuth(ctx context.Context, page *scout.Page) (bo
 
 	// Check for global-nav element which indicates logged-in state.
 	_, err = page.Element(".global-nav")
-
 	if err == nil {
 		return true, nil
 	}
@@ -56,13 +54,11 @@ func (p *linkedinProvider) CaptureSession(ctx context.Context, page *scout.Page)
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("linkedin: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return nil, fmt.Errorf("linkedin: capture session: eval url: %w", err)
 	}
@@ -80,7 +76,6 @@ func (p *linkedinProvider) CaptureSession(ctx context.Context, page *scout.Page)
 		} catch(e) {}
 		return '';
 	}`)
-
 	if err == nil {
 		tok := tokenResult.String()
 		if tok != "" {
@@ -99,7 +94,6 @@ func (p *linkedinProvider) CaptureSession(ctx context.Context, page *scout.Page)
 		} catch(e) {}
 		return '';
 	}`)
-
 	if err == nil {
 		val := sessionResult.String()
 		if val != "" {
@@ -123,7 +117,6 @@ func (p *linkedinProvider) CaptureSession(ctx context.Context, page *scout.Page)
 		} catch(e) {}
 		return '{}';
 	}`)
-
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -195,13 +188,11 @@ func (m *LinkedInMode) Scrape(ctx context.Context, session scraper.SessionData, 
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("linkedin: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(linkedinSession.URL)
-
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("linkedin: scrape: new page: %w", err)
@@ -227,7 +218,6 @@ func (m *LinkedInMode) Scrape(ctx context.Context, session scraper.SessionData, 
 		scout.WithHijackURLFilter("*linkedin.com/voyager/api/*"),
 		scout.WithHijackBodyCapture(),
 	)
-
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("linkedin: scrape: create hijacker: %w", err)
@@ -366,7 +356,7 @@ func parseProfileResponse(body string, targetSet map[string]struct{}) []scraper.
 		return nil
 	}
 
-	if resp.Data == nil || len(resp.Data) == 0 {
+	if len(resp.Data) == 0 {
 		return nil
 	}
 
@@ -419,7 +409,7 @@ type postResponse struct {
 	ReactionCount int    `json:"reactionCount"`
 }
 
-func parseFeedResponse(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseFeedResponse(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp linkedinAPIResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -474,7 +464,7 @@ type connectionResponse struct {
 	CreatedTime       int64  `json:"createdTime"`
 }
 
-func parseConnectionsResponse(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseConnectionsResponse(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp linkedinAPIResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -529,7 +519,7 @@ type jobResponse struct {
 	ExperienceLevel string `json:"experienceLevel"`
 }
 
-func parseJobsResponse(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseJobsResponse(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp linkedinAPIResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -588,7 +578,7 @@ type messageResponse struct {
 	} `json:"messages"`
 }
 
-func parseMessagingResponse(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseMessagingResponse(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp linkedinAPIResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {

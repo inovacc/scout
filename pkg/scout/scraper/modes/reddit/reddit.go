@@ -30,7 +30,6 @@ func (p *redditProvider) LoginURL() string { return "https://www.reddit.com/logi
 // DetectAuth checks whether the current page reflects a logged-in Reddit session.
 func (p *redditProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool, error) {
 	pageURL, err := page.URL()
-
 	if err != nil {
 		return false, fmt.Errorf("reddit: detect auth: %w", err)
 	}
@@ -45,7 +44,6 @@ func (p *redditProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool
 		const btn = document.querySelector('#USER_DROPDOWN_ID, [id*="email-collection"], button[aria-label="Open user menu"]');
 		return btn !== null;
 	}`)
-
 	if err != nil {
 		return false, fmt.Errorf("reddit: detect auth eval: %w", err)
 	}
@@ -56,13 +54,11 @@ func (p *redditProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool
 // CaptureSession extracts cookies and localStorage from an authenticated Reddit page.
 func (p *redditProvider) CaptureSession(ctx context.Context, page *scout.Page) (*auth.Session, error) {
 	cookies, err := page.GetCookies("https://www.reddit.com")
-
 	if err != nil {
 		return nil, fmt.Errorf("reddit: capture cookies: %w", err)
 	}
 
 	pageURL, err := page.URL()
-
 	if err != nil {
 		return nil, fmt.Errorf("reddit: capture url: %w", err)
 	}
@@ -187,7 +183,6 @@ func (m *RedditMode) Scrape(ctx context.Context, session scraper.SessionData, op
 	}
 
 	browser, err := scout.New(browserOpts...)
-
 	if err != nil {
 		close(results)
 		return nil, fmt.Errorf("reddit: create browser: %w", err)
@@ -222,7 +217,6 @@ func (m *RedditMode) scrapeTargets(ctx context.Context, browser *scout.Browser, 
 		}
 
 		n, err := m.scrapeSubreddit(ctx, browser, session, target, opts, results, opts.Limit-emitted)
-
 		if err != nil {
 			m.emitProgress(opts.Progress, "error", fmt.Sprintf("failed to scrape r/%s: %v", target, err))
 			continue
@@ -243,7 +237,6 @@ func (m *RedditMode) scrapeSubreddit(ctx context.Context, browser *scout.Browser
 	}
 
 	page, err := browser.NewPage(url)
-
 	if err != nil {
 		return 0, fmt.Errorf("reddit: new page: %w", err)
 	}
@@ -252,7 +245,6 @@ func (m *RedditMode) scrapeSubreddit(ctx context.Context, browser *scout.Browser
 
 	// Restore session cookies if available.
 	if session != nil && len(session.Cookies) > 0 {
-
 		if err := page.SetCookies(session.Cookies...); err != nil {
 			return 0, fmt.Errorf("reddit: set cookies: %w", err)
 		}
@@ -277,10 +269,10 @@ func (m *RedditMode) scrapeSubreddit(ctx context.Context, browser *scout.Browser
 			),
 			scout.WithHijackBodyCapture(),
 		)
-
 		if err != nil {
 			return 0, fmt.Errorf("reddit: create hijacker: %w", err)
 		}
+
 		defer hijacker.Stop()
 
 		// Drain hijack events in background; could be used for richer extraction.
@@ -358,7 +350,6 @@ func (m *RedditMode) extractPosts(ctx context.Context, page *scout.Page, source 
 	}`
 
 	result, err := page.Eval(postsJS)
-
 	if err != nil {
 		return 0, fmt.Errorf("reddit: extract posts: %w", err)
 	}
@@ -388,7 +379,7 @@ func (m *RedditMode) extractPosts(ctx context.Context, page *scout.Page, source 
 
 	for _, p := range posts {
 		if ctx.Err() != nil {
-			return emitted, nil
+			return emitted, nil //nolint:nilerr
 		}
 
 		if limit > 0 && emitted >= limit {
@@ -434,7 +425,6 @@ func (m *RedditMode) emitSubredditInfo(ctx context.Context, page *scout.Page, su
 	}`
 
 	result, err := page.Eval(infoJS)
-
 	if err != nil {
 		return
 	}
@@ -499,7 +489,6 @@ func parseScore(s string) (int, error) {
 	}
 
 	f, err := strconv.ParseFloat(s, 64)
-
 	if err != nil {
 		return 0, fmt.Errorf("reddit: parse score %q: %w", s, err)
 	}

@@ -84,7 +84,7 @@ var fetchCmd = &cobra.Command{
 
 		outFile, _ := cmd.Flags().GetString("output")
 		if outFile != "" {
-			data, _ := json.MarshalIndent(result, "", "  ") //nolint:errchkjson
+			data, _ := json.MarshalIndent(result, "", "  ") //nolint:errchkjson,musttag
 
 			dest, writeErr := writeOutput(cmd, data, "fetch.json")
 			if writeErr != nil {

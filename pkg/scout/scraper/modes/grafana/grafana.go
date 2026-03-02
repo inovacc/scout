@@ -28,7 +28,6 @@ func (p *grafanaProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("grafana: detect auth: eval url: %w", err)
 	}
@@ -40,7 +39,6 @@ func (p *grafanaProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 
 	// Check for Grafana dashboard container element.
 	_, err = page.Element(".dashboard-container")
-
 	if err == nil {
 		return true, nil
 	}
@@ -54,13 +52,11 @@ func (p *grafanaProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("grafana: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return nil, fmt.Errorf("grafana: capture session: eval url: %w", err)
 	}
@@ -78,7 +74,6 @@ func (p *grafanaProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return '';
 	}`)
-
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" {
@@ -98,7 +93,6 @@ func (p *grafanaProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return '';
 	}`)
-
 	if err == nil {
 		tok := tokenResult.String()
 		if tok != "" {
@@ -205,31 +199,29 @@ func (m *GrafanaMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("grafana: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(grafanaSession.URL)
-
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("grafana: scrape: new page: %w", err)
 	}
 
 	if err := page.SetCookies(grafanaSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("grafana: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("grafana: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("grafana: scrape: wait load: %w", err)
 	}
 
@@ -237,9 +229,8 @@ func (m *GrafanaMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHijackURLFilter("*/api/*"),
 		scout.WithHijackBodyCapture(),
 	)
-
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("grafana: scrape: create hijacker: %w", err)
 	}
 
@@ -505,7 +496,7 @@ type grafanaDatasource struct {
 	User      string `json:"user,omitempty"`
 }
 
-func parseDatasourcesList(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseDatasourcesList(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp []grafanaDatasource
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -554,7 +545,7 @@ type grafanaAlert struct {
 	Updated      int64  `json:"updated"`
 }
 
-func parseAlertsList(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseAlertsList(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp alertsListResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -663,7 +654,7 @@ type grafanaQueryResult struct {
 	Status    int            `json:"status,omitempty"`
 }
 
-func parsePanelQuery(body string, targetSet map[string]struct{}) []scraper.Result {
+func parsePanelQuery(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp panelQueryResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -707,7 +698,7 @@ type grafanaAnnotation struct {
 	Tags        []string `json:"tags,omitempty"`
 }
 
-func parseAnnotations(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseAnnotations(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp annotationsResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {

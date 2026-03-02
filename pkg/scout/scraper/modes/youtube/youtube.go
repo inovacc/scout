@@ -29,7 +29,6 @@ func (p *youtubeProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("youtube: detect auth: eval url: %w", err)
 	}
@@ -38,14 +37,12 @@ func (p *youtubeProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 	if strings.Contains(url, "youtube.com") {
 		// Check for avatar button indicating logged-in state.
 		_, err = page.Element("#avatar-btn")
-
 		if err == nil {
 			return true, nil
 		}
 
 		// Alternative: check for account button.
 		_, err = page.Element("button[aria-label='Account']")
-
 		if err == nil {
 			return true, nil
 		}
@@ -60,13 +57,11 @@ func (p *youtubeProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("youtube: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return nil, fmt.Errorf("youtube: capture session: eval url: %w", err)
 	}
@@ -90,7 +85,6 @@ func (p *youtubeProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return '{}';
 	}`)
-
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -121,7 +115,6 @@ func (p *youtubeProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return JSON.stringify(tokens);
 	}`)
-
 	if err == nil {
 		raw := tokenResult.String()
 		if raw != "" && raw != "{}" {
@@ -200,31 +193,29 @@ func (m *YouTubeMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("youtube: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage("https://www.youtube.com")
-
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("youtube: scrape: new page: %w", err)
 	}
 
 	if err := page.SetCookies(youtubeSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("youtube: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("youtube: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("youtube: scrape: wait load: %w", err)
 	}
 
@@ -232,9 +223,8 @@ func (m *YouTubeMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHijackURLFilter("*/youtube.com/youtubei/*", "*/youtube.com/api/*"),
 		scout.WithHijackBodyCapture(),
 	)
-
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("youtube: scrape: create hijacker: %w", err)
 	}
 
@@ -425,7 +415,7 @@ type playlistRenderer struct {
 	} `json:"subtitle"`
 }
 
-func parseSearchResults(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseSearchResults(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp searchResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -463,7 +453,7 @@ func parseSearchResults(body string, targetSet map[string]struct{}) []scraper.Re
 	return results
 }
 
-func parseBrowseResults(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseBrowseResults(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp browseResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -501,7 +491,7 @@ func parseBrowseResults(body string, targetSet map[string]struct{}) []scraper.Re
 	return results
 }
 
-func parseVideoPageResults(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseVideoPageResults(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	// The /next endpoint returns comments and related videos.
 	// This is a simplified parser; a full implementation would extract more metadata.
 	var resp struct {
@@ -572,7 +562,7 @@ func parsePlayerResults(body string, targetSet map[string]struct{}) []scraper.Re
 
 func videoRendererToResult(v *videoRenderer) scraper.Result {
 	title := ""
-	if v.Title.Runs != nil && len(v.Title.Runs) > 0 {
+	if len(v.Title.Runs) > 0 {
 		title = v.Title.Runs[0].Text
 	}
 

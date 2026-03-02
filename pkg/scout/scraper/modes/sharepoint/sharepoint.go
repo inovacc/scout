@@ -28,7 +28,6 @@ func (p *sharepointProvider) DetectAuth(ctx context.Context, page *scout.Page) (
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("sharepoint: detect auth: eval url: %w", err)
 	}
@@ -37,14 +36,12 @@ func (p *sharepointProvider) DetectAuth(ctx context.Context, page *scout.Page) (
 	if strings.Contains(url, ".sharepoint.com") {
 		// Check for SharePoint header element that indicates logged-in state.
 		_, err := page.Element("[data-automationid=\"SiteHeader\"]")
-
 		if err == nil {
 			return true, nil
 		}
 
 		// Fallback: check for the nav menu which is present on authenticated pages.
 		_, err = page.Element("#O365_MainLink_NavMenu")
-
 		if err == nil {
 			return true, nil
 		}
@@ -62,13 +59,11 @@ func (p *sharepointProvider) CaptureSession(ctx context.Context, page *scout.Pag
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("sharepoint: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return nil, fmt.Errorf("sharepoint: capture session: eval url: %w", err)
 	}
@@ -91,7 +86,6 @@ func (p *sharepointProvider) CaptureSession(ctx context.Context, page *scout.Pag
 		} catch(e) {}
 		return '{}';
 	}`)
-
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -120,7 +114,6 @@ func (p *sharepointProvider) CaptureSession(ctx context.Context, page *scout.Pag
 		} catch(e) {}
 		return '{}';
 	}`)
-
 	if err == nil {
 		raw := ssResult.String()
 		if raw != "" && raw != "{}" {
@@ -207,13 +200,11 @@ func (m *SharePointMode) Scrape(ctx context.Context, session scraper.SessionData
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("sharepoint: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(spSession.URL)
-
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("sharepoint: scrape: new page: %w", err)
@@ -241,7 +232,6 @@ func (m *SharePointMode) Scrape(ctx context.Context, session scraper.SessionData
 		scout.WithHijackURLFilter("*graph.microsoft.com*"),
 		scout.WithHijackBodyCapture(),
 	)
-
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("sharepoint: scrape: create hijacker: %w", err)
@@ -413,7 +403,7 @@ type spFileResponse struct {
 	} `json:"ModifiedBy"`
 }
 
-func parseFileResponse(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseFileResponse(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp spFileResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -468,7 +458,7 @@ type spListItem struct {
 	Modified string `json:"Modified"`
 }
 
-func parseListItemsResponse(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseListItemsResponse(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp spListItemsResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -520,7 +510,7 @@ type spPage struct {
 	} `json:"createdBy"`
 }
 
-func parsePagesResponse(body string, targetSet map[string]struct{}) []scraper.Result {
+func parsePagesResponse(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp spPagesResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {

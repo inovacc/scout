@@ -33,7 +33,6 @@ func (p *outlookProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("outlook: detect auth: eval url: %w", err)
 	}
@@ -46,7 +45,6 @@ func (p *outlookProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 
 	// Fallback: check for the main Outlook app container element.
 	_, err = page.Element(`[data-app="mail"]`)
-
 	if err == nil {
 		return true, nil
 	}
@@ -61,7 +59,6 @@ func (p *outlookProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("outlook: capture session: cookies: %w", err)
 	}
@@ -80,7 +77,6 @@ func (p *outlookProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 
 	for _, key := range tokenKeys {
 		result, err := page.Eval(fmt.Sprintf(`() => localStorage.getItem(%q)`, key))
-
 		if err != nil {
 			continue
 		}
@@ -107,7 +103,6 @@ func (p *outlookProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 
 	for _, key := range sessionStorageKeys {
 		result, err := page.Eval(fmt.Sprintf(`() => sessionStorage.getItem(%q)`, key))
-
 		if err != nil {
 			continue
 		}
@@ -225,21 +220,19 @@ func (m *OutlookMode) run(ctx context.Context, session *auth.Session, opts scrap
 	}
 
 	b, err := scout.New(browserOpts...)
-
 	if err != nil {
 		return fmt.Errorf("outlook: create browser: %w", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage("about:blank")
-
 	if err != nil {
 		return fmt.Errorf("outlook: new page: %w", err)
 	}
 
 	// Restore session cookies.
 	if len(session.Cookies) > 0 {
-
 		if err := page.SetCookies(session.Cookies...); err != nil {
 			return fmt.Errorf("outlook: restore cookies: %w", err)
 		}
@@ -276,10 +269,10 @@ func (m *OutlookMode) run(ctx context.Context, session *auth.Session, opts scrap
 	}
 
 	hijacker, err := page.NewSessionHijacker(hijackOpts...)
-
 	if err != nil {
 		return fmt.Errorf("outlook: create hijacker: %w", err)
 	}
+
 	defer hijacker.Stop()
 
 	// Navigate to Outlook mail.

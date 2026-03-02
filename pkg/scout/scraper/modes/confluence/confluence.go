@@ -30,7 +30,6 @@ func (p *confluenceProvider) DetectAuth(ctx context.Context, page *scout.Page) (
 
 	// Check if URL contains /wiki/ path (Confluence Cloud).
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("confluence: detect auth: eval url: %w", err)
 	}
@@ -42,7 +41,6 @@ func (p *confluenceProvider) DetectAuth(ctx context.Context, page *scout.Page) (
 
 	// Fallback: check for Confluence app navigation element.
 	_, err = page.Element(`[data-testid="app-navigation"]`)
-
 	if err == nil {
 		return true, nil
 	}
@@ -57,13 +55,11 @@ func (p *confluenceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("confluence: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return nil, fmt.Errorf("confluence: capture session: eval url: %w", err)
 	}
@@ -95,7 +91,6 @@ func (p *confluenceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 		lsResult, err := page.Eval(fmt.Sprintf(`() => {
 			try { return localStorage.getItem(%q); } catch(e) { return ''; }
 		}`, key))
-
 		if err == nil {
 			val := lsResult.String()
 			if val != "" {
@@ -188,13 +183,11 @@ func (m *ConfluenceMode) Scrape(ctx context.Context, session scraper.SessionData
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("confluence: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(confluenceSession.URL)
-
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("confluence: scrape: new page: %w", err)
@@ -223,7 +216,6 @@ func (m *ConfluenceMode) Scrape(ctx context.Context, session scraper.SessionData
 		scout.WithHijackURLFilter("*graphql*"),
 		scout.WithHijackBodyCapture(),
 	)
-
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("confluence: scrape: create hijacker: %w", err)
@@ -349,7 +341,7 @@ type confluenceSpace struct {
 	Type        string                `json:"type"`
 }
 
-type confluenceDescription struct { //nolint:modernize
+type confluenceDescription struct {
 	Plain confluenceValue `json:"plain"`
 	View  confluenceValue `json:"view"`
 }
@@ -361,7 +353,7 @@ type confluenceValue struct {
 type confluenceLink struct {
 	ID    string            `json:"id,omitempty"`
 	Title string            `json:"title,omitempty"`
-	Links confluenceLinkRel `json:"_links,omitempty"`
+	Links confluenceLinkRel `json:"_links,omitzero"`
 }
 
 type confluenceLinkRel struct {
@@ -521,7 +513,7 @@ type pageV2Content struct {
 	Representation string `json:"representation"`
 }
 
-func parsePagesV2(body string, targetSet map[string]struct{}) []scraper.Result {
+func parsePagesV2(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp pageV2Response
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {

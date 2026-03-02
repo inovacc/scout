@@ -48,7 +48,7 @@ var browserListCmd = &cobra.Command{
 
 			fmt.Println() //nolint:forbidigo
 		} else {
-			fmt.Println("Detected browsers (local install):")
+			fmt.Println("Detected browsers (local install):") //nolint:forbidigo
 
 			for _, bt := range []scout.BrowserType{scout.BrowserChrome, scout.BrowserBrave, scout.BrowserEdge} {
 				path, err := scout.LookupBrowserPublic(bt)
@@ -57,14 +57,14 @@ var browserListCmd = &cobra.Command{
 				} else if path == "" {
 					fmt.Printf("  %-8s  auto-detect (rod)\n", bt) //nolint:forbidigo
 				} else {
-					fmt.Printf("  %-8s  %s\n", bt, path)
+					fmt.Printf("  %-8s  %s\n", bt, path) //nolint:forbidigo
 				}
 			}
 
-			fmt.Println()
+			fmt.Println() //nolint:forbidigo
 		}
 
-		fmt.Println("Downloaded browsers (~/.scout/browsers/):")
+		fmt.Println("Downloaded browsers (~/.scout/browsers/):") //nolint:forbidigo
 
 		browsers, err := scout.ListDownloadedBrowsers()
 		if err != nil {
@@ -72,10 +72,10 @@ var browserListCmd = &cobra.Command{
 		}
 
 		if len(browsers) == 0 {
-			fmt.Println("  (none)")
+			fmt.Println("  (none)") //nolint:forbidigo
 		} else {
 			for _, b := range browsers {
-				fmt.Printf("  %s\n", b)
+				fmt.Printf("  %s\n", b) //nolint:forbidigo
 			}
 		}
 
@@ -92,7 +92,7 @@ var browserDownloadCmd = &cobra.Command{
 		name := strings.ToLower(args[0])
 		switch name {
 		case "brave":
-			fmt.Println("Downloading Brave browser...")
+			fmt.Println("Downloading Brave browser...") //nolint:forbidigo
 
 			ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Minute)
 			defer cancel()
@@ -102,7 +102,7 @@ var browserDownloadCmd = &cobra.Command{
 				return fmt.Errorf("download brave: %w", err)
 			}
 
-			fmt.Printf("Brave downloaded to: %s\n", path)
+			fmt.Printf("Brave downloaded to: %s\n", path) //nolint:forbidigo
 
 			return nil
 		default:
