@@ -15,10 +15,12 @@ import (
 )
 
 // ServerConfig holds configuration for the MCP server.
+// ServerConfig holds configuration for the MCP server.
 type ServerConfig struct {
-	Headless bool
-	Stealth  bool
-	Logger   *slog.Logger
+	Headless   bool
+	Stealth    bool
+	BrowserBin string
+	Logger     *slog.Logger
 }
 
 // mcpState holds the lazy-initialized browser and current page.
@@ -40,6 +42,9 @@ func (s *mcpState) ensureBrowser(ctx context.Context) (*scout.Browser, error) {
 	opts := []scout.Option{
 		scout.WithHeadless(s.config.Headless),
 		scout.WithNoSandbox(),
+	}
+	if s.config.BrowserBin != "" {
+		opts = append(opts, scout.WithExecPath(s.config.BrowserBin))
 	}
 	if s.config.Stealth {
 		opts = append(opts, scout.WithStealth())
@@ -720,11 +725,12 @@ func sanitizeMCPName(s string) string {
 }
 
 // Serve starts the MCP server on stdio. Blocks until context is cancelled.
-func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool) error {
+func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool, browserBin string) error {
 	cfg := ServerConfig{
-		Headless: headless,
-		Stealth:  stealth,
-		Logger:   logger,
+		Headless:   headless,
+		Stealth:    stealth,
+		BrowserBin: browserBin,
+		Logger:     logger,
 	}
 
 	server := NewServer(cfg)
@@ -733,11 +739,12 @@ func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool) err
 
 // ServeSSE starts the MCP server with HTTP+SSE transport on the given address.
 // Blocks until the context is cancelled.
-func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, stealth bool) error {
+func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, stealth bool, browserBin string) error {
 	cfg := ServerConfig{
-		Headless: headless,
-		Stealth:  stealth,
-		Logger:   logger,
+		Headless:   headless,
+		Stealth:    stealth,
+		BrowserBin: browserBin,
+		Logger:     logger,
 	}
 
 	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {

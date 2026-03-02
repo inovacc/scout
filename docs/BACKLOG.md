@@ -24,6 +24,7 @@
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
 | ARM64 Linux browser download | P2 | Medium | Playwright host fallback for arm64; validate in CI |
+| browser.json revision manifest | P1 | Medium | Replace hardcoded `RevisionDefault` with a `browser.json` config file in launcher; supports per-platform revisions, zip names, and download hosts; `LAST_CHANGE` fallback already added |
 | ~~Chrome protocol version tracking~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — .scripts/rod-upstream-diff.sh with --check/--full modes~~ |
 | ~~Headless=new migration~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0)~~ |
 
@@ -45,6 +46,7 @@
 | ~~MCP server SSE transport~~ | ~~P2~~ | ~~Medium~~ | ~~Done — ServeSSE() with --sse/--addr CLI flags~~ |
 | ~~gRPC reflection + health service~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — health.NewServer() registered~~ |
 | ~~CLI shell completions~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — scout completion bash/zsh/fish/powershell~~ |
+| ~~Rebrand rod references to scout~~ | ~~P2~~ | ~~Medium~~ | ~~Done — `-rod` → `-scout`, `DISABLE_ROD_FLAG` → `DISABLE_SCOUT_FLAG`, `rod-*` flags → `scout-*`, cache dir `rod/` → `scout/`, error links → github.com/inovacc/scout~~ |
 | OpenTelemetry tracing | P3 | Large | Instrument core operations with span context propagation |
 | Plugin system | P3 | XL | Dynamic loading of scraper modes and extractors |
 

@@ -67,13 +67,13 @@ func HostPlaywright(revision int) string {
 	)
 }
 
-// DefaultBrowserDir for downloaded browser. For unix is "$HOME/.cache/rod/browser",
-// for Windows it's "%APPDATA%\rod\browser".
+// DefaultBrowserDir for downloaded browser. For unix is "$HOME/.cache/scout/browser",
+// for Windows it's "%APPDATA%\scout\browser".
 var DefaultBrowserDir = filepath.Join(map[string]string{
 	"windows": os.Getenv("APPDATA"),
 	"darwin":  filepath.Join(os.Getenv("HOME"), ".cache"),
 	"linux":   filepath.Join(os.Getenv("HOME"), ".cache"),
-}[runtime.GOOS], "rod", "browser")
+}[runtime.GOOS], "scout", "browser")
 
 // Browser is a helper to download browser smartly.
 type Browser struct {
@@ -129,10 +129,27 @@ func (lc *Browser) BinPath() string {
 
 // Download browser from the fastest host.
 // It will race downloading a TCP packet from each host and use the fastest host.
+// If the hardcoded revision is unavailable, it queries LAST_CHANGE for the latest.
 func (lc *Browser) Download() error {
+	if err := lc.tryDownload(lc.Revision); err == nil {
+		return nil
+	}
+
+	// Fallback: fetch latest revision from Google's LAST_CHANGE endpoint.
+	if rev, ok := latestRevision(lc.Context, lc.HTTPClient); ok && rev != lc.Revision {
+		lc.Revision = rev
+		if err := lc.tryDownload(rev); err == nil {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("can't find a browser binary for your OS, the doc might help https://github.com/inovacc/scout#installation") //nolint: lll
+}
+
+func (lc *Browser) tryDownload(revision int) error {
 	us := []string{}
 	for _, host := range lc.Hosts {
-		us = append(us, host(lc.Revision))
+		us = append(us, host(revision))
 	}
 
 	dir := lc.Dir()
@@ -144,12 +161,47 @@ func (lc *Browser) Download() error {
 		fu.HttpClient = lc.HTTPClient
 	}
 
-	err := fu.Fetch()
-	if err != nil {
-		return fmt.Errorf("can't find a browser binary for your OS, the doc might help https://go-rod.github.io/#/compatibility?id=os : %w", err) //nolint: lll
+	if err := fu.Fetch(); err != nil {
+		return err
 	}
 
 	return fetchup.StripFirstDir(dir)
+}
+
+// latestRevision queries the LAST_CHANGE endpoint for the newest available snapshot.
+func latestRevision(ctx context.Context, client *http.Client) (int, bool) {
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	url := fmt.Sprintf(
+		"https://storage.googleapis.com/chromium-browser-snapshots/%s/LAST_CHANGE",
+		hostConf.urlPrefix,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return 0, false
+	}
+
+	resp, err := client.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		if resp != nil {
+			_ = resp.Body.Close()
+		}
+		return 0, false
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var buf [20]byte
+	n, _ := resp.Body.Read(buf[:])
+	body := strings.TrimSpace(string(buf[:n]))
+
+	var rev int
+	if _, err := fmt.Sscanf(body, "%d", &rev); err != nil {
+		return 0, false
+	}
+	return rev, true
 }
 
 // Get is a smart helper to get the browser executable path.

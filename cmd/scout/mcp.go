@@ -96,11 +96,12 @@ Subcommands:
 		stealth, _ := cmd.Flags().GetBool("stealth")
 		useSSE, _ := cmd.Flags().GetBool("sse")
 		addr, _ := cmd.Flags().GetString("addr")
+		bin, _ := cmd.Flags().GetString("bin")
 
 		if useSSE {
-			return scoutmcp.ServeSSE(context.Background(), logger, addr, headless, stealth)
+			return scoutmcp.ServeSSE(context.Background(), logger, addr, headless, stealth, bin)
 		}
-		return scoutmcp.Serve(context.Background(), logger, headless, stealth)
+		return scoutmcp.Serve(context.Background(), logger, headless, stealth, bin)
 	},
 }
 
@@ -110,4 +111,5 @@ func init() {
 	mcpCmd.Flags().BoolP("global", "g", false, "Write to ~/.claude/mcp.json (use with --install)")
 	mcpCmd.Flags().Bool("sse", false, "Use HTTP+SSE transport instead of stdio")
 	mcpCmd.Flags().String("addr", "localhost:8080", "Listen address for SSE transport")
+	mcpCmd.Flags().String("bin", "", "Path to browser executable")
 }
