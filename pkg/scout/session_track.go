@@ -201,6 +201,51 @@ func CleanOrphans() (int, error) {
 	return killed, nil
 }
 
+// ResetSession removes an entire session directory (all browser data + scout.pid).
+// If the session's browser process is still running, it is killed first.
+func ResetSession(id string) error {
+	dir := SessionDir(id)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return fmt.Errorf("scout: session %s not found", id)
+	}
+
+	// Kill browser process if still alive.
+	if info, err := ReadSessionInfo(id); err == nil && info.BrowserPID != 0 {
+		if processAlive(info.BrowserPID) {
+			if p, err := os.FindProcess(info.BrowserPID); err == nil {
+				_ = p.Kill()
+			}
+		}
+	}
+
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("scout: reset session %s: %w", id, err)
+	}
+
+	return nil
+}
+
+// ResetAllSessions removes all session directories under SessionsDir.
+// Returns the number of sessions removed.
+func ResetAllSessions() (int, error) {
+	sessions, err := ListSessions()
+	if err != nil {
+		return 0, err
+	}
+
+	removed := 0
+
+	for _, s := range sessions {
+		if err := ResetSession(s.ID); err != nil {
+			continue
+		}
+
+		removed++
+	}
+
+	return removed, nil
+}
+
 // DefaultOrphanCheckInterval is the default interval for periodic orphan checks.
 const DefaultOrphanCheckInterval = 2 * time.Minute
 

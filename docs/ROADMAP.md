@@ -44,15 +44,17 @@
 | 40 | Multi-tab orchestration (TabGroup), MCP expanded to 33 tools, ping/curl diagnostics | Done |
 | 41 | Electron Support (runtime download, CDP connection, CLI flags) | Done |
 | 42 | Command Logging (internal/flags, internal/logger, scout logger subcommand, PersistentPreRun capture) | Done |
+| 43 | Launcher `browser.json` manifest (per-platform revisions, zip names, download hosts, auto-update via LAST_CHANGE) | Planned |
+| 44 | Session Reuse & Reset — `WithReusableSession()`, `WithTargetURL()`, domain-hash routing, `scout session reset [id|--all]`, orphan watchdog | Done |
+| 45 | Site Health Checker — `scout test-site <url>` crawls site, detects broken links, console errors, JS exceptions, network failures; structured report (JSON/table) | Done |
+| 46 | REPL Mode — `scout repl [url]` interactive local browser shell with 20 commands (navigate, eval, click, type, extract, screenshot, markdown, health, tabs, etc.) | Done |
 
 ### Next Phase
 
 | Phase | Feature | Status |
 |-------|---------|--------|
-| 43 | Launcher `browser.json` manifest (per-platform revisions, zip names, download hosts, auto-update via LAST_CHANGE) | Planned |
-| 44 | Session Reuse & Reset — `WithReusableSession()` persists browser data dir across runs (cookies, localStorage, service workers); `WithTargetURL()` routes sessions by domain hash; `scout session reset [id]` wipes session data cleanly; `scout session reset --all` clears everything; essential for React/Vue/Angular dev flows with HMR/auto-refresh; orphan watchdog auto-cleans dead sessions | Planned |
-| 45 | Site Health Checker — `scout test-site <url>` crawls entire site following links and clicking interactive elements; detects broken links (404s), console errors, JS exceptions, network failures; session reuse for iterative dev testing; generates structured report (JSON/table) with severity levels and source locations | Planned |
-| 46 | REPL Mode & Cloud Upload — `scout repl` interactive browser shell with tab-completion, history, live page context (eval, navigate, extract, screenshot inline); auto-upload scraper/runbook results to Google Drive or OneDrive via API; configurable output sinks | Planned |
+| 47 | Page Gather — `scout gather <url>` one-shot page intelligence: DOM state, HAR, links, screenshots, cookies, metadata, console log, frameworks, accessibility snapshot | Done |
+| 48 | Cloud Upload — `scout upload` with OAuth2 auth for Google Drive and OneDrive; `scout upload auth`, `scout upload file`, `scout upload status`; config persisted to `~/.scout/upload.json` | Done |
 
 ### Remaining Work
 
