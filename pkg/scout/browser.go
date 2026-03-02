@@ -88,7 +88,21 @@ func New(opts ...Option) (*Browser, error) {
 		l *launcher.Launcher
 	)
 
-	if o.remoteCDP != "" {
+	if o.electronCDP != "" {
+		// Connect to running Electron app via CDP.
+		var resolveErr error
+		u, resolveErr = lookupElectronCDP(o.electronCDP)
+		if resolveErr != nil {
+			return nil, fmt.Errorf("scout: resolve electron CDP: %w", resolveErr)
+		}
+	} else if o.electronApp != "" {
+		// Launch Electron app with CDP debugging.
+		var err error
+		u, l, err = launchElectron(o)
+		if err != nil {
+			return nil, err
+		}
+	} else if o.remoteCDP != "" {
 		// Remote CDP endpoint — skip launcher entirely.
 		// If URL already contains a full path (e.g., /devtools/browser/UUID), use as-is.
 		// Otherwise resolve via /json/version to get the full WebSocket URL.
