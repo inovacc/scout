@@ -29,7 +29,6 @@ func (p *amazonProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("amazon: detect auth: eval url: %w", err)
 	}
@@ -43,7 +42,6 @@ func (p *amazonProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool
 
 	// Check for account list element (nav-link-accountList) indicating authenticated state.
 	_, err = page.Element("a.nav-link-accountList")
-
 	if err == nil {
 		return true, nil
 	}
@@ -62,13 +60,11 @@ func (p *amazonProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("amazon: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return nil, fmt.Errorf("amazon: capture session: eval url: %w", err)
 	}
@@ -134,31 +130,29 @@ func (m *AmazonMode) Scrape(ctx context.Context, session scraper.SessionData, op
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("amazon: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(amazonSession.URL)
-
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("amazon: scrape: new page: %w", err)
 	}
 
 	if err := page.SetCookies(amazonSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("amazon: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("amazon: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("amazon: scrape: wait load: %w", err)
 	}
 
@@ -181,7 +175,6 @@ func (m *AmazonMode) Scrape(ctx context.Context, session scraper.SessionData, op
 				}
 
 				items, err := scrapeTarget(ctx, page, target)
-
 				if err != nil {
 					continue
 				}
@@ -210,7 +203,6 @@ func (m *AmazonMode) Scrape(ctx context.Context, session scraper.SessionData, op
 		} else {
 			// No targets: stay on current page and extract visible products.
 			items, err := extractProductsFromPage(ctx, page)
-
 			if err == nil {
 				for _, item := range items {
 					select {
@@ -241,7 +233,7 @@ func (m *AmazonMode) Scrape(ctx context.Context, session scraper.SessionData, op
 
 // buildTargetSet creates a lookup set from ASINs and search queries.
 // An empty set means no filtering.
-func buildTargetSet(targets []string) map[string]struct{} {
+func buildTargetSet(targets []string) map[string]struct{} { //nolint:unused
 	if len(targets) == 0 {
 		return nil
 	}
@@ -291,11 +283,9 @@ func extractProductsFromPage(ctx context.Context, page *scout.Page) ([]scraper.R
 
 	// Extract product containers. Adjust selector based on page layout.
 	elements, err := page.Element("[data-component-type='s-search-result']")
-
 	if err != nil {
 		// Try alternative selector for product listings.
 		elements, err = page.Element("div[data-asin]")
-
 		if err != nil {
 			// If no search results found, try single product page.
 			return extractSingleProductPage(ctx, page)
@@ -317,13 +307,12 @@ func extractProductsFromPage(ctx context.Context, page *scout.Page) ([]scraper.R
 }
 
 // extractSingleProductPage extracts product details from a single product detail page (dp/).
-func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.Result, error) {
+func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.Result, error) { //nolint:unparam
 	// Extract ASIN from URL or page data.
 	asinResult, err := page.Eval(`() => {
 		const params = new URLSearchParams(window.location.search);
 		return params.get('dp') || (window.location.pathname.match(/\/dp\/([A-Z0-9]+)/) || []).pop() || '';
 	}`)
-
 	if err != nil {
 		return nil, fmt.Errorf("amazon: extract asin: %w", err)
 	}
@@ -332,7 +321,6 @@ func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.
 
 	// Extract title.
 	titleElem, err := page.Element("h1 span")
-
 	if err != nil {
 		return nil, fmt.Errorf("amazon: extract title: %w", err)
 	}
@@ -340,7 +328,6 @@ func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.
 	titleText, _ := titleElem.Text()
 	// Extract price.
 	priceElem, err := page.Element("span.a-price-whole, span[data-a-color='price']")
-
 	if err == nil {
 		priceText, _ := priceElem.Text()
 		priceText = strings.TrimSpace(priceText)
@@ -360,7 +347,6 @@ func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.
 
 		// Extract rating if available.
 		ratingElem, err := page.Element("div.a-icon-star span")
-
 		if err == nil {
 			ratingText, _ := ratingElem.Text()
 			if ratingText != "" {
@@ -370,7 +356,6 @@ func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.
 
 		// Extract review count if available.
 		reviewElem, err := page.Element("span[data-hook='total-review-count']")
-
 		if err == nil {
 			reviewText, _ := reviewElem.Text()
 			product.Metadata["review_count"] = reviewText
@@ -383,7 +368,7 @@ func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.
 }
 
 // extractProductFromElement extracts product data from a product container element.
-func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scraper.Result, error) {
+func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scraper.Result, error) { //nolint:unparam
 	if elem == nil {
 		return nil, fmt.Errorf("amazon: extract product: nil element")
 	}
@@ -397,7 +382,6 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 
 	// Extract title.
 	titleElem, err := elem.Element("h2 a span")
-
 	if err != nil {
 		titleElem, _ = elem.Element("a.a-link-normal span")
 	}
@@ -411,7 +395,6 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 
 	// Extract price.
 	priceElem, err := elem.Element("span[data-a-color='price']")
-
 	if err != nil {
 		priceElem, _ = elem.Element("span.a-price-whole")
 	}
@@ -425,7 +408,6 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 
 	// Extract rating.
 	ratingElem, err := elem.Element("span.a-icon-star span")
-
 	if err != nil {
 		ratingElem, _ = elem.Element("div.a-icon-star span")
 	}
@@ -438,7 +420,7 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 	rating = strings.TrimSpace(rating)
 
 	// Extract review count.
-	reviewElem, err := elem.Element("span[aria-label*='rating']")
+	reviewElem, _ := elem.Element("span[aria-label*='rating']")
 
 	var reviewCount string
 	if reviewElem != nil {
@@ -446,7 +428,7 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 	}
 
 	// Extract product URL.
-	linkElem, err := elem.Element("h2 a, a.a-link-normal")
+	linkElem, _ := elem.Element("h2 a, a.a-link-normal")
 
 	var productURL string
 
@@ -494,7 +476,7 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 }
 
 // extractReviewsFromPage extracts product reviews as ResultComment items.
-func extractReviewsFromPage(ctx context.Context, page *scout.Page, asin string) []scraper.Result {
+func extractReviewsFromPage(ctx context.Context, page *scout.Page, asin string) []scraper.Result { //nolint:unused,unparam
 	var results []scraper.Result
 
 	// Navigate to reviews page if not already there.
@@ -520,10 +502,9 @@ func extractReviewsFromPage(ctx context.Context, page *scout.Page, asin string) 
 }
 
 // extractSellerInfo extracts seller information from a product detail page.
-func extractSellerInfo(ctx context.Context, page *scout.Page, asin string) *scraper.Result {
+func extractSellerInfo(ctx context.Context, page *scout.Page, asin string) *scraper.Result { //nolint:unused,unparam
 	// Extract seller name from "Ships from and sold by" section.
 	sellerElem, err := page.Element("a.a-link-normal.a-text-bold")
-
 	if err != nil {
 		return nil
 	}
@@ -554,7 +535,7 @@ func extractSellerInfo(ctx context.Context, page *scout.Page, asin string) *scra
 }
 
 // parsePrice extracts the numeric price from a price string like "$19.99" or "₹1,299.00".
-func parsePrice(priceStr string) float64 {
+func parsePrice(priceStr string) float64 { //nolint:unused
 	// Remove currency symbols and whitespace.
 	priceStr = strings.TrimSpace(priceStr)
 	priceStr = strings.Map(func(r rune) rune {

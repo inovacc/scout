@@ -28,7 +28,6 @@ func (p *gmapsProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("gmaps: detect auth: eval url: %w", err)
 	}
@@ -37,7 +36,6 @@ func (p *gmapsProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 	if strings.Contains(url, "google.com/maps") {
 		// Check for search box element indicating loaded maps page.
 		_, err := page.Element("#searchboxinput")
-
 		if err == nil {
 			return true, nil
 		}
@@ -52,13 +50,11 @@ func (p *gmapsProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("gmaps: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return nil, fmt.Errorf("gmaps: capture session: eval url: %w", err)
 	}
@@ -130,7 +126,6 @@ func (m *GMapsMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 	browser, err := scout.New(scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("gmaps: scrape: create browser: %w", err)
 	}
@@ -143,14 +138,12 @@ func (m *GMapsMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 	}
 
 	page, err := browser.NewPage(startURL)
-
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("gmaps: scrape: new page: %w", err)
 	}
 
 	if gmapsSession != nil && len(gmapsSession.Cookies) > 0 {
-
 		if err := page.SetCookies(gmapsSession.Cookies...); err != nil {
 			browser.Close()
 			return nil, fmt.Errorf("gmaps: scrape: set cookies: %w", err)
@@ -172,7 +165,6 @@ func (m *GMapsMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		scout.WithHijackURLFilter("*google.com/maps/rpc/*"),
 		scout.WithHijackBodyCapture(),
 	)
-
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("gmaps: scrape: create hijacker: %w", err)
@@ -296,7 +288,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 }
 
 // parseMapsPLACES parses Google Maps RPC responses for business listings and reviews.
-func parseMapsPLACES(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseMapsPLACES(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	// Google Maps RPC responses are complex and often JSON-in-JSON nested.
 	// This is a simplified parser for common response structures.
 	var results []scraper.Result

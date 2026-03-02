@@ -28,7 +28,6 @@ func (p *gmailProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("gmail: detect auth: eval url: %w", err)
 	}
@@ -40,7 +39,6 @@ func (p *gmailProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 
 	// Check for Gmail navigation element.
 	_, err = page.Element(`div[role="navigation"]`)
-
 	if err == nil {
 		return true, nil
 	}
@@ -54,13 +52,11 @@ func (p *gmailProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("gmail: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return nil, fmt.Errorf("gmail: capture session: eval url: %w", err)
 	}
@@ -88,7 +84,6 @@ func (p *gmailProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 		} catch(e) {}
 		return {};
 	}`)
-
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -110,7 +105,6 @@ func (p *gmailProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 		} catch(e) {}
 		return '';
 	}`)
-
 	if err == nil {
 		tok := tokenResult.String()
 		if tok != "" {
@@ -179,15 +173,13 @@ func (m *GmailMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("gmail: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage("https://mail.google.com")
-
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("gmail: scrape: new page: %w", err)
 	}
 
@@ -212,7 +204,6 @@ func (m *GmailMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		scout.WithHijackURLFilter("*gmail.com*"),
 		scout.WithHijackBodyCapture(),
 	)
-
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("gmail: scrape: create hijacker: %w", err)
@@ -397,7 +388,7 @@ func parseEmailList(body string, targetSet map[string]struct{}) []scraper.Result
 	return results
 }
 
-func parseEmailThread(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseEmailThread(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp gmailAPIResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {

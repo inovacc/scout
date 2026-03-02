@@ -135,8 +135,8 @@ func (p *AnthropicProvider) Complete(ctx context.Context, systemPrompt, userProm
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-api-key", p.apiKey)                    //nolint:canonicalheader
-	req.Header.Set("anthropic-version", AnthropicAPIVersion) //nolint:canonicalheader
+	req.Header.Set("x-api-key", p.apiKey)
+	req.Header.Set("anthropic-version", AnthropicAPIVersion)
 
 	resp, err := p.client.Do(req)
 	if err != nil {

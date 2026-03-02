@@ -28,7 +28,6 @@ func (p *cloudProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("cloud: detect auth: eval url: %w", err)
 	}
@@ -54,13 +53,11 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("cloud: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return nil, fmt.Errorf("cloud: capture session: eval url: %w", err)
 	}
@@ -81,7 +78,6 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
-
 		if err == nil {
 			userInfo := awsUserResult.String()
 			if userInfo != "" {
@@ -102,7 +98,6 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
-
 		if err == nil {
 			sessionData := sessionTokenResult.String()
 			if sessionData != "" {
@@ -124,7 +119,6 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
-
 		if err == nil {
 			osid := gcpOsidResult.String()
 			if osid != "" {
@@ -140,7 +134,6 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
-
 		if err == nil {
 			gcpData := gcpDataResult.String()
 			if gcpData != "" {
@@ -162,7 +155,6 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
-
 		if err == nil {
 			azureToken := azureTokenResult.String()
 			if azureToken != "" {
@@ -181,7 +173,6 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
-
 		if err == nil {
 			azureSub := azureSubResult.String()
 			if azureSub != "" {
@@ -292,13 +283,11 @@ func (m *CloudMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 	browser, err := scout.New(scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("cloud: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(cloudSession.URL)
-
 	if err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("cloud: scrape: new page: %w", err)
@@ -323,7 +312,6 @@ func (m *CloudMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 	hijacker, err := page.NewSessionHijacker(scout.WithHijackURLFilter("*"),
 		scout.WithHijackBodyCapture(),
 	)
-
 	if err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("cloud: scrape: create hijacker: %w", err)
@@ -335,7 +323,7 @@ func (m *CloudMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 	go func() {
 		defer close(results)
 		defer hijacker.Stop()
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
@@ -634,7 +622,7 @@ func parseAWSIAM(body string, targetSet map[string]struct{}) []scraper.Result {
 }
 
 // parseAWSPricing extracts pricing information from AWS pricing API.
-func parseAWSPricing(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseAWSPricing(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp map[string]any
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {

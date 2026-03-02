@@ -29,7 +29,6 @@ func (p *jiraProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool, 
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return false, fmt.Errorf("jira: detect auth: eval url: %w", err)
 	}
@@ -41,7 +40,6 @@ func (p *jiraProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool, 
 
 	// Check for Jira global navigation element (present on authenticated pages).
 	_, err = page.Element("[data-testid=\"global-navigation\"]")
-
 	if err == nil {
 		return true, nil
 	}
@@ -55,13 +53,11 @@ func (p *jiraProvider) CaptureSession(ctx context.Context, page *scout.Page) (*a
 	}
 
 	cookies, err := page.GetCookies()
-
 	if err != nil {
 		return nil, fmt.Errorf("jira: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
-
 	if err != nil {
 		return nil, fmt.Errorf("jira: capture session: eval url: %w", err)
 	}
@@ -99,7 +95,6 @@ func (p *jiraProvider) CaptureSession(ctx context.Context, page *scout.Page) (*a
 		} catch(e) {}
 		return {};
 	}`)
-
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -126,7 +121,6 @@ func (p *jiraProvider) CaptureSession(ctx context.Context, page *scout.Page) (*a
 		} catch(e) {}
 		return {};
 	}`)
-
 	if err == nil {
 		raw := ssResult.String()
 		if raw != "" && raw != "{}" {
@@ -204,13 +198,11 @@ func (m *JiraMode) Scrape(ctx context.Context, session scraper.SessionData, opts
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("jira: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(jiraSession.URL)
-
 	if err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("jira: scrape: new page: %w", err)
@@ -239,7 +231,6 @@ func (m *JiraMode) Scrape(ctx context.Context, session scraper.SessionData, opts
 		scout.WithHijackURLFilter("*graphql*"),
 		scout.WithHijackBodyCapture(),
 	)
-
 	if err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("jira: scrape: create hijacker: %w", err)
@@ -251,7 +242,7 @@ func (m *JiraMode) Scrape(ctx context.Context, session scraper.SessionData, opts
 	go func() {
 		defer close(results)
 		defer hijacker.Stop()
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
@@ -662,7 +653,7 @@ type jiraSprint struct {
 	Self        string  `json:"self"`
 }
 
-func parseSprints(body string, targetSet map[string]struct{}) []scraper.Result {
+func parseSprints(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp sprintsResponse
 
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
@@ -799,21 +790,18 @@ func parseJiraTimestamp(ts string) time.Time {
 	// Jira typically uses ISO8601 format: "2023-01-15T10:30:45.123-0500"
 	// Try parsing with timezone.
 	t, err := time.Parse(time.RFC3339, ts)
-
 	if err == nil {
 		return t
 	}
 
 	// Try without timezone offset.
 	t, err = time.Parse("2006-01-02T15:04:05.000", ts)
-
 	if err == nil {
 		return t
 	}
 
 	// Try basic ISO format.
 	t, err = time.Parse("2006-01-02T15:04:05", ts)
-
 	if err == nil {
 		return t
 	}
