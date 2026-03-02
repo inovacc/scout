@@ -165,5 +165,5 @@ func init() {
 	loggerCmd.Flags().StringP("path", "p", "", "Path to the log directory")
 	loggerCmd.Flags().BoolP("disable", "d", false, "Disable logging")
 	loggerCmd.Flags().BoolP("status", "s", false, "Show current logging status")
-	loggerCmd.Flags().BoolP("viewer", "v", false, "View all log files sorted by time")
+	loggerCmd.Flags().BoolP("viewer", "w", false, "View all log files sorted by time")
 }

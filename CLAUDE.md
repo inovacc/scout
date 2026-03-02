@@ -31,9 +31,11 @@ pkg/browser/        Browser detection, download, cache management
 pkg/scout/runbook/  Runbook system (extract + automate + analyze + Plan/Apply)
 pkg/scout/recipe/   Deprecated compat aliases → runbook package
 pkg/scout/mcp/      MCP server (33 tools, 3 resources, stdio + SSE transport)
+internal/flags/     Feature flag persistence (~/.cache/scout/)
+internal/logger/    Command logging (KSUID log files, stdout/stderr capture)
 runbooks/           Embedded preset runbooks (26 JSON files)
 extensions/         Embedded Chrome extensions (scout-bridge)
-cmd/scout/          Unified Cobra CLI (50+ subcommands)
+cmd/scout/          Unified Cobra CLI (50+ subcommands, logger)
 grpc/               gRPC service (proto, server, mTLS, pairing)
 scraper/            Scraper framework + AES-256-GCM auth
 examples/           18 runnable examples (simple/ and advanced/)
@@ -66,6 +68,8 @@ Import: `github.com/inovacc/scout/pkg/scout`. Core does NOT import gRPC or Cobra
 - **Research presets**: `WithResearchPreset(ResearchShallow|Medium|Deep)`. `ResearchCache` with TTL. `WithResearchPrior(result)` for incremental research.
 - **Stealth evasions**: 17 evasions in `pkg/stealth/stealth_extra.go` including languages, plugins/mimeTypes, timezone, canvas/audio noise, WebGL, WebRTC, fonts, screen, battery, hasFocus, outer dimensions, toString integrity.
 - **Session hijacking**: `Page.NewSessionHijacker(opts...)` captures real-time HTTP + WebSocket traffic via CDP events. `HijackEvent` discriminated union with `CapturedRequest`/`CapturedResponse`/`WebSocketFrame`. Auto-attach via `WithSessionHijack()`. Channel-based: `hijacker.Events()` returns `<-chan HijackEvent`. Filter with `WithHijackURLFilter()`, capture bodies with `WithHijackBodyCapture()`. gRPC: `StartHijack`/`StopHijack`/`StreamHijack` RPCs. CLI: `scout hijack watch <url>`.
+- **Electron support**: `WithElectronApp(path)`, `WithElectronVersion(ver)`, `WithElectronCDP(endpoint)`. Auto-downloads Electron runtime to `~/.cache/scout/electron/`. CLI: `--electron-app`, `--electron-version`, `--electron-cdp` flags.
+- **Command logging**: `scout logger --path <dir>` enables KSUID-based log files with stdout/stderr capture. `internal/flags/` persists feature flags in `~/.cache/scout/`. `internal/logger/` writes structured JSON logs via `slog`. Root `PersistentPreRunE` auto-captures all command output.
 
 ## Dependencies
 
@@ -73,6 +77,7 @@ Core: `go-rod/rod`, `ysmood/gson`, `x/time/rate`, `x/net/html`, `ollama/ollama`,
 Stealth: internalized `go-rod/stealth` + `extract-stealth-evasions` v2.7.3.
 Identity: `x/crypto`, `grandcat/zeroconf`.
 gRPC/CLI: `google.golang.org/grpc`, `google.golang.org/protobuf`, `google/uuid`, `spf13/cobra`.
+Logger: `segmentio/ksuid`.
 
 ## CI
 
