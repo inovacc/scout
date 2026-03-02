@@ -17,3 +17,4 @@ forensic_*.har
 .tmp/
 /.scripts/
 extract/
+.worktrees/
