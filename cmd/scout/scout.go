@@ -30,6 +30,9 @@ func init() {
 	rootCmd.PersistentFlags().Bool("devtools", false, "open Chrome DevTools automatically")
 	rootCmd.PersistentFlags().Bool("stealth", false, "enable anti-bot-detection stealth mode")
 	rootCmd.PersistentFlags().Bool("insecure", false, "disable mTLS for client connections")
+	rootCmd.PersistentFlags().String("electron-app", "", "path to Electron app directory or binary")
+	rootCmd.PersistentFlags().String("electron-version", "", "Electron version to download (e.g. v33.2.0)")
+	rootCmd.PersistentFlags().String("electron-cdp", "", "CDP endpoint of running Electron app")
 }
 
 func main() {

@@ -112,6 +112,17 @@ func baseOpts(cmd *cobra.Command) []scout.Option {
 		browserOpt(cmd),
 	}
 	opts = append(opts, stealthOpts(cmd)...)
+
+	if v, _ := cmd.Flags().GetString("electron-app"); v != "" {
+		opts = append(opts, scout.WithElectronApp(v))
+	}
+	if v, _ := cmd.Flags().GetString("electron-version"); v != "" {
+		opts = append(opts, scout.WithElectronVersion(v))
+	}
+	if v, _ := cmd.Flags().GetString("electron-cdp"); v != "" {
+		opts = append(opts, scout.WithElectronCDP(v))
+	}
+
 	return opts
 }
 
