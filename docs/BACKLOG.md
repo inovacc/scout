@@ -45,6 +45,7 @@
 | ~~MCP server SSE transport~~ | ~~P2~~ | ~~Medium~~ | ~~Done — ServeSSE() with --sse/--addr CLI flags~~ |
 | ~~gRPC reflection + health service~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — health.NewServer() registered~~ |
 | ~~CLI shell completions~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — scout completion bash/zsh/fish/powershell~~ |
+| ~~Rebrand rod references to scout~~ | ~~P2~~ | ~~Medium~~ | ~~Done — `-rod` → `-scout`, `DISABLE_ROD_FLAG` → `DISABLE_SCOUT_FLAG`, `rod-*` flags → `scout-*`, cache dir `rod/` → `scout/`, error links → github.com/inovacc/scout~~ |
 | OpenTelemetry tracing | P3 | Large | Instrument core operations with span context propagation |
 | Plugin system | P3 | XL | Dynamic loading of scraper modes and extractors |
 
