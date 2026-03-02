@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	pb "github.com/inovacc/scout/grpc/scoutpb"
+	"github.com/inovacc/scout/internal/idle"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/identity"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
@@ -106,6 +107,15 @@ type ScoutServer struct {
 	// OnStatsChange is called when stats or events change.
 	OnStatsChange func()
 
+	// IdleTimeout is the duration of inactivity before auto-shutdown.
+	IdleTimeout time.Duration
+
+	// OnIdleShutdown is called when idle timeout fires. Set by the CLI to
+	// trigger graceful server stop.
+	OnIdleShutdown func()
+
+	idle *idle.Timer
+
 	stats struct {
 		sync.Mutex
 		totalSessions int64
@@ -117,6 +127,42 @@ type ScoutServer struct {
 // New creates a new ScoutServer.
 func New() *ScoutServer {
 	return &ScoutServer{}
+}
+
+// StartIdleTimer initializes the idle timer if IdleTimeout > 0.
+// Call after setting IdleTimeout and OnIdleShutdown.
+func (s *ScoutServer) StartIdleTimer() {
+	if s.IdleTimeout <= 0 {
+		return
+	}
+	s.idle = idle.New(s.IdleTimeout, func() {
+		// Destroy all sessions.
+		s.sessions.Range(func(key, value any) bool {
+			sess := value.(*session)
+			if sess.recorder != nil {
+				sess.recorder.Stop()
+			}
+			_ = sess.browser.Close()
+			s.sessions.Delete(key)
+			return true
+		})
+		if s.OnIdleShutdown != nil {
+			s.OnIdleShutdown()
+		}
+	})
+}
+
+// StopIdleTimer permanently disables the idle timer.
+func (s *ScoutServer) StopIdleTimer() {
+	if s.idle != nil {
+		s.idle.Stop()
+	}
+}
+
+func (s *ScoutServer) touchIdle() {
+	if s.idle != nil {
+		s.idle.Reset()
+	}
 }
 
 // Stats returns cumulative session/request counts.
@@ -271,6 +317,7 @@ func (s *ScoutServer) getSession(id string) (*session, error) {
 // ════════════════════════ Session Lifecycle ════════════════════════
 
 func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.CreateSessionResponse, error) {
+	s.touchIdle()
 	opts := platformSessionDefaults()
 	// Disable per-page timeout for server sessions. Rod's Page.Timeout() creates
 	// a one-shot context that expires permanently after the duration, making the
@@ -376,6 +423,7 @@ func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) 
 // ════════════════════════ Navigation ════════════════════════
 
 func (s *ScoutServer) Navigate(_ context.Context, req *pb.NavigateRequest) (*pb.NavigateResponse, error) {
+	s.touchIdle()
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -442,6 +490,7 @@ func (s *ScoutServer) GoForward(_ context.Context, req *pb.SessionRequest) (*pb.
 // ════════════════════════ Element Interaction ════════════════════════
 
 func (s *ScoutServer) Click(_ context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
+	s.touchIdle()
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -514,6 +563,7 @@ func (s *ScoutServer) Hover(_ context.Context, req *pb.ElementRequest) (*pb.Empt
 }
 
 func (s *ScoutServer) Type(_ context.Context, req *pb.TypeRequest) (*pb.Empty, error) {
+	s.touchIdle()
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -570,6 +620,7 @@ func (s *ScoutServer) PressKey(_ context.Context, req *pb.KeyRequest) (*pb.Empty
 // ════════════════════════ Query ════════════════════════
 
 func (s *ScoutServer) GetText(_ context.Context, req *pb.ElementRequest) (*pb.TextResponse, error) {
+	s.touchIdle()
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -636,6 +687,7 @@ func (s *ScoutServer) GetURL(_ context.Context, req *pb.SessionRequest) (*pb.Tex
 }
 
 func (s *ScoutServer) Eval(_ context.Context, req *pb.EvalRequest) (*pb.EvalResponse, error) {
+	s.touchIdle()
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -715,6 +767,7 @@ func (s *ScoutServer) ElementExists(_ context.Context, req *pb.ElementRequest) (
 // ════════════════════════ Capture ════════════════════════
 
 func (s *ScoutServer) Screenshot(_ context.Context, req *pb.ScreenshotRequest) (*pb.ScreenshotResponse, error) {
+	s.touchIdle()
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err

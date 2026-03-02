@@ -25,6 +25,7 @@ func init() {
 	serverCmd.Flags().Int("port", 9551, "gRPC server port")
 	serverCmd.Flags().Bool("reflection", true, "enable gRPC reflection")
 	serverCmd.Flags().Bool("insecure", false, "disable mTLS (no authentication)")
+	// --idle-timeout inherited from root persistent flags
 }
 
 var serverCmd = &cobra.Command{
@@ -140,6 +141,19 @@ var serverCmd = &cobra.Command{
 				_ = pairingGRPC.Serve(pairingLis)
 			}()
 		}
+
+		// Wire idle timeout.
+		idleTimeout, _ := cmd.Flags().GetDuration("idle-timeout")
+		scoutServer.IdleTimeout = idleTimeout
+		scoutServer.OnIdleShutdown = func() {
+			_, _ = fmt.Fprintln(os.Stdout, "\nidle timeout reached, shutting down gRPC server...")
+			if pairingGRPC != nil {
+				pairingGRPC.GracefulStop()
+			}
+			grpcServer.GracefulStop()
+		}
+		scoutServer.StartIdleTimer()
+		defer scoutServer.StopIdleTimer()
 
 		printTable(nil)
 
