@@ -9,18 +9,20 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
+	"github.com/inovacc/scout/internal/idle"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // ServerConfig holds configuration for the MCP server.
-// ServerConfig holds configuration for the MCP server.
 type ServerConfig struct {
-	Headless   bool
-	Stealth    bool
-	BrowserBin string
-	Logger     *slog.Logger
+	Headless    bool
+	Stealth     bool
+	BrowserBin  string
+	Logger      *slog.Logger
+	IdleTimeout time.Duration // auto-shutdown after inactivity (0 disables)
 }
 
 // mcpState holds the lazy-initialized browser and current page.
@@ -29,9 +31,18 @@ type mcpState struct {
 	browser *scout.Browser
 	page    *scout.Page
 	config  ServerConfig
+	idle    *idle.Timer
+}
+
+// touch resets the idle timer on activity.
+func (s *mcpState) touch() {
+	if s.idle != nil {
+		s.idle.Reset()
+	}
 }
 
 func (s *mcpState) ensureBrowser(ctx context.Context) (*scout.Browser, error) {
+	s.touch()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -105,8 +116,21 @@ func textResult(msg string) (*mcp.CallToolResult, error) {
 }
 
 // NewServer creates an MCP server with Scout tools and resources.
-func NewServer(cfg ServerConfig) *mcp.Server {
+// If cancelOnIdle is non-nil and cfg.IdleTimeout > 0, the idle timer will
+// call cancelOnIdle when the timeout expires.
+func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 	state := &mcpState{config: cfg}
+
+	if cfg.IdleTimeout > 0 && len(cancelOnIdle) > 0 && cancelOnIdle[0] != nil {
+		cb := cancelOnIdle[0]
+		state.idle = idle.New(cfg.IdleTimeout, func() {
+			if cfg.Logger != nil {
+				cfg.Logger.Warn("idle timeout reached, shutting down", "timeout", cfg.IdleTimeout)
+			}
+			state.reset()
+			cb()
+		})
+	}
 
 	logger := cfg.Logger
 	if logger == nil {
@@ -551,6 +575,7 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		Description: "List current session info (URL, title of current page)",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		state.touch()
 		state.mu.Lock()
 		hasPage := state.page != nil
 		state.mu.Unlock()
@@ -581,6 +606,7 @@ func NewServer(cfg ServerConfig) *mcp.Server {
 		Description: "Close the current browser and page, forcing re-initialization on next use",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		state.touch()
 		state.reset()
 		return textResult("Session reset")
 	})
@@ -724,31 +750,40 @@ func sanitizeMCPName(s string) string {
 	return string(b)
 }
 
-// Serve starts the MCP server on stdio. Blocks until context is cancelled.
-func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool, browserBin string) error {
+// Serve starts the MCP server on stdio. Blocks until context is cancelled or
+// idle timeout expires.
+func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool, browserBin string, idleTimeout time.Duration) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	cfg := ServerConfig{
-		Headless:   headless,
-		Stealth:    stealth,
-		BrowserBin: browserBin,
-		Logger:     logger,
+		Headless:    headless,
+		Stealth:     stealth,
+		BrowserBin:  browserBin,
+		Logger:      logger,
+		IdleTimeout: idleTimeout,
 	}
 
-	server := NewServer(cfg)
+	server := NewServer(cfg, cancel)
 	return server.Run(ctx, &mcp.StdioTransport{})
 }
 
 // ServeSSE starts the MCP server with HTTP+SSE transport on the given address.
-// Blocks until the context is cancelled.
-func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, stealth bool, browserBin string) error {
+// Blocks until the context is cancelled or idle timeout expires.
+func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, stealth bool, browserBin string, idleTimeout time.Duration) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	cfg := ServerConfig{
-		Headless:   headless,
-		Stealth:    stealth,
-		BrowserBin: browserBin,
-		Logger:     logger,
+		Headless:    headless,
+		Stealth:     stealth,
+		BrowserBin:  browserBin,
+		Logger:      logger,
+		IdleTimeout: idleTimeout,
 	}
 
 	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
-		return NewServer(cfg)
+		return NewServer(cfg, cancel)
 	}, nil)
 
 	srv := &http.Server{
