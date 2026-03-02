@@ -43,6 +43,12 @@
 | 39 | Runbook rename, MCP SSE, test coverage, GoDoc examples | Done |
 | 40 | Multi-tab orchestration (TabGroup), MCP expanded to 33 tools, ping/curl diagnostics | Done |
 
+### Next Phase
+
+| Phase | Feature | Status |
+|-------|---------|--------|
+| 41 | Launcher `browser.json` manifest (per-platform revisions, zip names, download hosts, auto-update via LAST_CHANGE) | Planned |
+
 ### Remaining Work
 
-All planned phases delivered. See [BACKLOG.md](BACKLOG.md) for future work.
+See [BACKLOG.md](BACKLOG.md) for future work.
