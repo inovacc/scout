@@ -2,7 +2,7 @@
 // To debug just add "debugger" keyword to the line you want to pause, then run something like:
 //
 //     go run ./lib/js/generate/main.go
-//     go test -run ^TestClick$ -- -scout=show,devtools
+//     go test -run ^TestClick$ -- -rod=show,devtools
 
 const functions = {
     element(selector) {

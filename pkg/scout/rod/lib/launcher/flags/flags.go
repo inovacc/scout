@@ -34,25 +34,25 @@ const (
 	WindowPosition Flag = "window-position"
 
 	// WorkingDir flag.
-	WorkingDir Flag = "scout-working-dir"
+	WorkingDir Flag = "rod-working-dir"
 
 	// Env flag.
-	Env Flag = "scout-env"
+	Env Flag = "rod-env"
 
 	// XVFB flag.
-	XVFB Flag = "scout-xvfb"
+	XVFB Flag = "rod-xvfb"
 
 	// ProfileDir flag.
 	ProfileDir = "profile-directory"
 
 	// Preferences flag.
-	Preferences Flag = "scout-preferences"
+	Preferences Flag = "rod-preferences"
 
 	// Bin is the browser executable file path. If it's empty, launcher will automatically search or download the bin.
-	Bin Flag = "scout-bin"
+	Bin Flag = "rod-bin"
 
 	// KeepUserDataDir flag.
-	KeepUserDataDir Flag = "scout-keep-user-data-dir"
+	KeepUserDataDir Flag = "rod-keep-user-data-dir"
 
 	// Arguments for the command. Such as
 	//     chrome-bin http://a.com http://b.com

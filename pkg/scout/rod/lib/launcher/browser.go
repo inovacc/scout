@@ -67,13 +67,13 @@ func HostPlaywright(revision int) string {
 	)
 }
 
-// DefaultBrowserDir for downloaded browser. For unix is "$HOME/.cache/scout/browser",
-// for Windows it's "%APPDATA%\scout\browser".
+// DefaultBrowserDir for downloaded browser. For unix is "$HOME/.cache/rod/browser",
+// for Windows it's "%APPDATA%\rod\browser".
 var DefaultBrowserDir = filepath.Join(map[string]string{
 	"windows": os.Getenv("APPDATA"),
 	"darwin":  filepath.Join(os.Getenv("HOME"), ".cache"),
 	"linux":   filepath.Join(os.Getenv("HOME"), ".cache"),
-}[runtime.GOOS], "scout", "browser")
+}[runtime.GOOS], "rod", "browser")
 
 // Browser is a helper to download browser smartly.
 type Browser struct {
@@ -146,7 +146,7 @@ func (lc *Browser) Download() error {
 
 	err := fu.Fetch()
 	if err != nil {
-		return fmt.Errorf("can't find a browser binary for your OS, the doc might help https://github.com/inovacc/scout#installation : %w", err) //nolint: lll
+		return fmt.Errorf("can't find a browser binary for your OS, the doc might help https://go-rod.github.io/#/compatibility?id=os : %w", err) //nolint: lll
 	}
 
 	return fetchup.StripFirstDir(dir)

@@ -56,7 +56,7 @@ go get github.com/inovacc/scout/pkg/scout
 go install github.com/inovacc/scout/cmd/scout@latest
 ```
 
-Requires Go 1.25+ and a Chromium-based browser available on the system (auto-downloaded by rod if not present).
+Requires Go 1.25+ and a Chromium-based browser available on the system (auto-downloaded if not present).
 
 ## Quick Start
 
