@@ -66,6 +66,7 @@ func (p *gdriveProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 	if err != nil {
 		return nil, fmt.Errorf("gdrive: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -102,6 +103,7 @@ func (p *gdriveProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "gdrive",
 		Version:      "1",
@@ -122,10 +124,12 @@ func (p *gdriveProvider) ValidateSession(_ context.Context, session *auth.Sessio
 	// Check for essential Google Drive authentication cookies.
 	foundSID := false
 	foundSSID := false
+
 	for _, cookie := range session.Cookies {
 		if cookie.Name == "SID" {
 			foundSID = true
 		}
+
 		if cookie.Name == "SSID" {
 			foundSSID = true
 		}
@@ -217,6 +221,7 @@ func (m *GDriveMode) Scrape(ctx context.Context, session scraper.SessionData, op
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -240,6 +245,7 @@ func (m *GDriveMode) Scrape(ctx context.Context, session scraper.SessionData, op
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -263,10 +269,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToLower(t)] = struct{}{}
 	}
+
 	return set
 }
 
@@ -277,6 +285,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -312,18 +321,21 @@ func parseFilesList(body string, targetSet map[string]struct{}) []scraper.Result
 		// Filter by parent folder if targets specified.
 		if targetSet != nil && len(f.Parents) > 0 {
 			found := false
+
 			for _, parent := range f.Parents {
 				if _, ok := targetSet[strings.ToLower(parent)]; ok {
 					found = true
 					break
 				}
 			}
+
 			if !found {
 				continue
 			}
 		}
 
 		ts := parseGoogleTimestamp(f.CreatedTime)
+
 		var size int64
 		if f.Size != "" {
 			fmt.Sscanf(f.Size, "%d", &size)
@@ -348,8 +360,10 @@ func parseFilesList(body string, targetSet map[string]struct{}) []scraper.Result
 		if len(f.Owners) > 0 {
 			result.Author = f.Owners[0]
 		}
+
 		results = append(results, result)
 	}
+
 	return results
 }
 
@@ -365,6 +379,7 @@ func parseFileGet(body string) []scraper.Result {
 	}
 
 	ts := parseGoogleTimestamp(f.CreatedTime)
+
 	var size int64
 	if f.Size != "" {
 		fmt.Sscanf(f.Size, "%d", &size)
@@ -389,6 +404,7 @@ func parseFileGet(body string) []scraper.Result {
 	if len(f.Owners) > 0 {
 		result.Author = f.Owners[0]
 	}
+
 	return []scraper.Result{result}
 }
 
@@ -426,6 +442,7 @@ func parseFolderList(body string, targetSet map[string]struct{}) []scraper.Resul
 			Raw: f,
 		})
 	}
+
 	return results
 }
 
@@ -457,6 +474,7 @@ func parsePermissions(body string) []scraper.Result {
 			Raw: p,
 		})
 	}
+
 	return results
 }
 
@@ -472,6 +490,7 @@ func parseComments(body string) []scraper.Result {
 	results := make([]scraper.Result, 0, len(resp.Comments))
 	for _, c := range resp.Comments {
 		ts := parseGoogleTimestamp(c.CreatedTime)
+
 		result := scraper.Result{
 			Type:      scraper.ResultComment,
 			Source:    "gdrive",
@@ -492,8 +511,10 @@ func parseComments(body string) []scraper.Result {
 		} else if c.Author.EmailAddress != "" {
 			result.Author = c.Author.EmailAddress
 		}
+
 		results = append(results, result)
 	}
+
 	return results
 }
 
@@ -551,6 +572,7 @@ func parseGoogleTimestamp(ts string) time.Time {
 	if err != nil {
 		return time.Time{}
 	}
+
 	return t
 }
 

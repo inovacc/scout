@@ -28,6 +28,7 @@ func NewWebMCPRegistry() *WebMCPRegistry {
 func (r *WebMCPRegistry) Register(origin string, tools []WebMCPTool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	for _, t := range tools {
 		key := origin + "/" + t.Name
 		r.tools[key] = t
@@ -38,10 +39,12 @@ func (r *WebMCPRegistry) Register(origin string, tools []WebMCPTool) {
 func (r *WebMCPRegistry) All() []WebMCPTool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
 	result := make([]WebMCPTool, 0, len(r.tools))
 	for _, t := range r.tools {
 		result = append(result, t)
 	}
+
 	return result
 }
 
@@ -49,10 +52,12 @@ func (r *WebMCPRegistry) All() []WebMCPTool {
 func (r *WebMCPRegistry) Get(key string) (*WebMCPTool, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
 	t, ok := r.tools[key]
 	if !ok {
 		return nil, false
 	}
+
 	return &t, true
 }
 
@@ -60,6 +65,7 @@ func (r *WebMCPRegistry) Get(key string) (*WebMCPTool, bool) {
 func (r *WebMCPRegistry) Clear() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	r.tools = make(map[string]WebMCPTool)
 }
 
@@ -139,6 +145,7 @@ func (p *Page) DiscoverWebMCPTools() ([]WebMCPTool, error) {
 	// Process meta server tag — fetch tool list from server URL.
 	if disc.MetaServer != "" {
 		serverURL := resolveMCPURL(origin, disc.MetaServer)
+
 		fetched, fetchErr := fetchMCPToolsJSON(serverURL)
 		if fetchErr == nil {
 			for i := range fetched {
@@ -147,6 +154,7 @@ func (p *Page) DiscoverWebMCPTools() ([]WebMCPTool, error) {
 					fetched[i].ServerURL = serverURL
 				}
 			}
+
 			tools = append(tools, fetched...)
 		}
 	}
@@ -158,6 +166,7 @@ func (p *Page) DiscoverWebMCPTools() ([]WebMCPTool, error) {
 			for i := range metaTools {
 				metaTools[i].Source = "meta"
 			}
+
 			tools = append(tools, metaTools...)
 		}
 	}
@@ -167,12 +176,15 @@ func (p *Page) DiscoverWebMCPTools() ([]WebMCPTool, error) {
 		if href == "" {
 			continue
 		}
+
 		linkURL := resolveMCPURL(origin, href)
+
 		fetched, fetchErr := fetchMCPToolsJSON(linkURL)
 		if fetchErr == nil {
 			for i := range fetched {
 				fetched[i].Source = "link"
 			}
+
 			tools = append(tools, fetched...)
 		}
 	}
@@ -182,11 +194,13 @@ func (p *Page) DiscoverWebMCPTools() ([]WebMCPTool, error) {
 		if scriptContent == "" {
 			continue
 		}
+
 		var scriptTools []WebMCPTool
 		if err := json.Unmarshal([]byte(strings.TrimSpace(scriptContent)), &scriptTools); err == nil {
 			for i := range scriptTools {
 				scriptTools[i].Source = "script"
 			}
+
 			tools = append(tools, scriptTools...)
 		}
 	}
@@ -194,22 +208,26 @@ func (p *Page) DiscoverWebMCPTools() ([]WebMCPTool, error) {
 	// 2. Try /.well-known/mcp endpoint.
 	if origin != "" {
 		wellKnownURL := origin + "/.well-known/mcp"
+
 		fetched, fetchErr := fetchMCPToolsJSON(wellKnownURL)
 		if fetchErr == nil {
 			for i := range fetched {
 				fetched[i].Source = "well-known"
 			}
+
 			tools = append(tools, fetched...)
 		}
 	}
 
 	// Deduplicate by name (first wins).
 	seen := make(map[string]struct{})
+
 	deduped := make([]WebMCPTool, 0, len(tools))
 	for _, t := range tools {
 		if _, ok := seen[t.Name]; ok {
 			continue
 		}
+
 		seen[t.Name] = struct{}{}
 		deduped = append(deduped, t)
 	}
@@ -232,12 +250,14 @@ func (p *Page) CallWebMCPTool(name string, params map[string]any) (*WebMCPToolRe
 	}
 
 	var tool *WebMCPTool
+
 	for i := range tools {
 		if tools[i].Name == name {
 			tool = &tools[i]
 			break
 		}
 	}
+
 	if tool == nil {
 		return nil, fmt.Errorf("scout: webmcp: tool %q not found", name)
 	}
@@ -269,10 +289,12 @@ func callToolViaHTTP(serverURL, toolName string, params map[string]any) (*WebMCP
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
+
 	resp, err := client.Post(serverURL, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("scout: webmcp: http call: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
@@ -308,6 +330,7 @@ func callToolViaHTTP(serverURL, toolName string, params map[string]any) (*WebMCP
 		if content != "" {
 			content += "\n"
 		}
+
 		content += c.Text
 	}
 
@@ -355,10 +378,12 @@ func (p *Page) callToolViaJS(name string, params map[string]any) (*WebMCPToolRes
 // fetchMCPToolsJSON fetches a JSON endpoint and parses it as a list of WebMCPTool.
 func fetchMCPToolsJSON(rawURL string) ([]WebMCPTool, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
+
 	resp, err := client.Get(rawURL)
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -384,9 +409,11 @@ func extractOrigin(rawURL string) string {
 	if err != nil {
 		return ""
 	}
+
 	if parsed.Scheme == "" || parsed.Host == "" {
 		return ""
 	}
+
 	return parsed.Scheme + "://" + parsed.Host
 }
 
@@ -395,5 +422,6 @@ func resolveMCPURL(origin, ref string) string {
 	if strings.HasPrefix(ref, "http://") || strings.HasPrefix(ref, "https://") {
 		return ref
 	}
+
 	return strings.TrimRight(origin, "/") + "/" + strings.TrimLeft(ref, "/")
 }

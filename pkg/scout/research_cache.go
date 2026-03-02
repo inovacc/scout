@@ -66,10 +66,12 @@ func (c *ResearchCache) Get(query string) (*ResearchResult, bool) {
 	defer c.mu.RUnlock()
 
 	key := cacheKey(query)
+
 	entry, ok := c.entries[key]
 	if !ok || time.Since(entry.created) > c.ttl {
 		return nil, false
 	}
+
 	return entry.result, true
 }
 
@@ -88,6 +90,7 @@ func (c *ResearchCache) Put(query string, result *ResearchResult) {
 func (c *ResearchCache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	c.entries = make(map[string]*cacheEntry)
 }
 
@@ -97,12 +100,15 @@ func (c *ResearchCache) Evict() int {
 	defer c.mu.Unlock()
 
 	count := 0
+
 	for k, v := range c.entries {
 		if time.Since(v.created) > c.ttl {
 			delete(c.entries, k)
+
 			count++
 		}
 	}
+
 	return count
 }
 
@@ -110,6 +116,7 @@ func (c *ResearchCache) Evict() int {
 func (c *ResearchCache) Size() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+
 	return len(c.entries)
 }
 

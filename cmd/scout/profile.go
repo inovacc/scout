@@ -46,6 +46,7 @@ The output file can be used with 'scout profile load' to restore the identity.`,
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = b.Close() }()
 
 		page, err := b.NewPage(args[0])
@@ -117,6 +118,7 @@ Optionally navigates to a URL after restoring.`,
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = b.Close() }()
 
 		targetURL := ""
@@ -171,6 +173,7 @@ var profileShowCmd = &cobra.Command{
 			}
 
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
+
 			return nil
 		}
 
@@ -263,6 +266,7 @@ var profileMergeCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Merged profile saved to: %s\n", outFile)
+
 		return nil
 	},
 }
@@ -290,7 +294,9 @@ var profileDiffCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("scout: profile: diff: marshal: %w", err)
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
+
 			return nil
 		}
 
@@ -306,6 +312,7 @@ var profileDiffCmd = &cobra.Command{
 		_, _ = fmt.Fprintf(w, "Headers changed:        %d\n", diff.HeadersChanged)
 		_, _ = fmt.Fprintf(w, "Extensions added:       %d\n", diff.ExtensionsAdded)
 		_, _ = fmt.Fprintf(w, "Extensions removed:     %d\n", diff.ExtensionsRemoved)
+
 		return nil
 	},
 }
@@ -318,9 +325,11 @@ var profileSessionCaptureCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -364,6 +373,7 @@ var profileSessionCaptureCmd = &cobra.Command{
 			}
 
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Profile saved (encrypted): %s\n", outFile)
+
 			return nil
 		}
 
@@ -372,7 +382,9 @@ var profileSessionCaptureCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("scout: profile: session-capture: marshal: %w", err)
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
+
 			return nil
 		}
 
@@ -381,6 +393,7 @@ var profileSessionCaptureCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Profile saved: %s\n", outFile)
+
 		return nil
 	},
 }
@@ -393,9 +406,11 @@ var profileSessionLoadCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -405,6 +420,7 @@ var profileSessionLoadCmd = &cobra.Command{
 		decrypt, _ := cmd.Flags().GetBool("decrypt")
 
 		var prof *scout.UserProfile
+
 		if decrypt {
 			passphrase, _ := cmd.Flags().GetString("passphrase")
 			if passphrase == "" {
@@ -413,6 +429,7 @@ var profileSessionLoadCmd = &cobra.Command{
 					return err
 				}
 			}
+
 			prof, err = scout.LoadProfileEncrypted(filePath, passphrase)
 		} else {
 			prof, err = scout.LoadProfile(filePath)
@@ -444,6 +461,7 @@ var profileSessionLoadCmd = &cobra.Command{
 		_, _ = fmt.Fprintf(w, "  Name:    %s\n", prof.Name)
 		_, _ = fmt.Fprintf(w, "  Cookies: %d\n", len(prof.Cookies))
 		_, _ = fmt.Fprintf(w, "  Storage: %d origin(s)\n", len(prof.Storage))
+
 		return nil
 	},
 }

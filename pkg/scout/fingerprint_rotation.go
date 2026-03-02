@@ -46,6 +46,7 @@ func newFingerprintRotator(config FingerprintRotationConfig) *fingerprintRotator
 	}
 	// Generate initial fingerprint.
 	r.current = r.generate()
+
 	return r
 }
 
@@ -67,8 +68,10 @@ func (r *fingerprintRotator) forPage(domain string) *Fingerprint {
 		if fp, ok := r.domainMap[domain]; ok {
 			return fp
 		}
+
 		fp := r.generate()
 		r.domainMap[domain] = fp
+
 		return fp
 
 	case FingerprintRotateInterval:
@@ -76,6 +79,7 @@ func (r *fingerprintRotator) forPage(domain string) *Fingerprint {
 			r.current = r.generate()
 			r.lastRotate = time.Now()
 		}
+
 		return r.current
 
 	default: // PerSession
@@ -89,10 +93,12 @@ func domainFromURL(rawURL string) string {
 	if rawURL == "" {
 		return ""
 	}
+
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return ""
 	}
+
 	return u.Hostname()
 }
 
@@ -101,7 +107,9 @@ func (r *fingerprintRotator) generate() *Fingerprint {
 	if len(r.config.Pool) > 0 {
 		fp := r.config.Pool[r.poolIndex%len(r.config.Pool)]
 		r.poolIndex++
+
 		return fp
 	}
+
 	return GenerateFingerprint(r.config.Options...)
 }

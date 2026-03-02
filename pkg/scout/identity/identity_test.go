@@ -27,6 +27,7 @@ func TestGenerateIdentity(t *testing.T) {
 	if len(parts) != 8 {
 		t.Fatalf("expected 8 dash-separated groups, got %d: %s", len(parts), id.DeviceID)
 	}
+
 	for i, p := range parts {
 		if len(p) != 7 {
 			t.Fatalf("group %d has length %d, want 7: %q", i, len(p), p)
@@ -69,6 +70,7 @@ func TestValidateDeviceID(t *testing.T) {
 	} else {
 		bad[0] = 'A'
 	}
+
 	if ValidateDeviceID(string(bad)) {
 		t.Fatal("corrupted device ID accepted")
 	}
@@ -110,6 +112,7 @@ func TestSaveLoadIdentity(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "cert.pem")); err != nil {
 		t.Fatal("cert.pem not created")
 	}
+
 	if _, err := os.Stat(filepath.Join(dir, "key.pem")); err != nil {
 		t.Fatal("key.pem not created")
 	}
@@ -156,6 +159,7 @@ func TestLuhnRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("luhnify: %v", err)
 	}
+
 	if len(luhnified) != 56 {
 		t.Fatalf("luhnified length %d, want 56", len(luhnified))
 	}
@@ -164,6 +168,7 @@ func TestLuhnRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unluhnify: %v", err)
 	}
+
 	if back != input {
 		t.Fatalf("round-trip failed: %q != %q", back, input)
 	}
@@ -171,6 +176,7 @@ func TestLuhnRoundTrip(t *testing.T) {
 
 func TestTrustStore(t *testing.T) {
 	dir := t.TempDir()
+
 	ts, err := NewTrustStore(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -197,9 +203,11 @@ func TestTrustStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
+
 	if len(devices) != 1 {
 		t.Fatalf("expected 1 trusted device, got %d", len(devices))
 	}
+
 	if devices[0].DeviceID != id.DeviceID {
 		t.Fatalf("wrong device ID: %s", devices[0].DeviceID)
 	}
@@ -208,6 +216,7 @@ func TestTrustStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CertPool: %v", err)
 	}
+
 	if pool == nil {
 		t.Fatal("cert pool is nil")
 	}

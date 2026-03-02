@@ -25,9 +25,11 @@ var screenshotCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -48,12 +50,14 @@ var screenshotCmd = &cobra.Command{
 		}
 
 		defaultName := fmt.Sprintf("screenshot_%d.%s", time.Now().Unix(), imgFormat)
+
 		filename, err := writeOutput(cmd, resp.GetData(), defaultName)
 		if err != nil {
 			return err
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "saved to %s (%d bytes)\n", filename, len(resp.GetData()))
+
 		return nil
 	},
 }
@@ -66,9 +70,11 @@ var pdfCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -80,12 +86,14 @@ var pdfCmd = &cobra.Command{
 		}
 
 		defaultName := fmt.Sprintf("page_%d.pdf", time.Now().Unix())
+
 		filename, err := writeOutput(cmd, resp.GetData(), defaultName)
 		if err != nil {
 			return err
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "saved to %s (%d bytes)\n", filename, len(resp.GetData()))
+
 		return nil
 	},
 }

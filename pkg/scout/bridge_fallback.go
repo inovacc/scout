@@ -38,6 +38,7 @@ func (f *BridgeFallback) SetPageID(id string) {
 	if f == nil {
 		return
 	}
+
 	f.pageID = id
 }
 
@@ -46,11 +47,13 @@ func (f *BridgeFallback) bridgeConnected() bool {
 	if f == nil || f.bridge == nil || f.pageID == "" {
 		return false
 	}
+
 	for _, c := range f.bridge.Clients() {
 		if c == f.pageID {
 			return true
 		}
 	}
+
 	return false
 }
 

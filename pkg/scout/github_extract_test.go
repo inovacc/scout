@@ -158,6 +158,7 @@ func TestGitHubExtractRepoInfo(t *testing.T) {
 			if repo.Owner != "myowner" {
 				t.Errorf("Owner = %q, want %q", repo.Owner, "myowner")
 			}
+
 			if repo.Name != "myrepo" {
 				t.Errorf("Name = %q, want %q", repo.Name, "myrepo")
 			}
@@ -299,6 +300,7 @@ func TestGitHubExtractOptions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			opts := githubExtractDefaults()
 			tt.opt(opts)
+
 			if !tt.checkFn(opts) {
 				t.Errorf("option %s did not set expected value", tt.name)
 			}

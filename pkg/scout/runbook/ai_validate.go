@@ -52,6 +52,7 @@ func ValidateWithLLM(provider scout.LLMProvider, r *Runbook, sampleItems []map[s
 	}
 
 	var userParts []string
+
 	userParts = append(userParts, fmt.Sprintf("Runbook to review:\n%s", string(runbookJSON)))
 
 	if len(sampleItems) > 0 {
@@ -60,6 +61,7 @@ func ValidateWithLLM(provider scout.LLMProvider, r *Runbook, sampleItems []map[s
 		if len(items) > 5 {
 			items = items[:5]
 		}
+
 		sampleJSON, _ := json.MarshalIndent(items, "", "  ")
 		userParts = append(userParts, fmt.Sprintf("\n\nSample extracted items (%d shown):\n%s", len(items), string(sampleJSON)))
 	}

@@ -27,6 +27,7 @@ func NewTrustStore(dir string) (*TrustStore, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("identity: create trust dir: %w", err)
 	}
+
 	return &TrustStore{dir: dir}, nil
 }
 
@@ -34,6 +35,7 @@ func NewTrustStore(dir string) (*TrustStore, error) {
 func (ts *TrustStore) Trust(deviceID string, certDER []byte) error {
 	pemData := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
 	path := filepath.Join(ts.dir, deviceID+".pem")
+
 	return os.WriteFile(path, pemData, 0o644)
 }
 
@@ -41,6 +43,7 @@ func (ts *TrustStore) Trust(deviceID string, certDER []byte) error {
 func (ts *TrustStore) IsTrusted(deviceID string) bool {
 	path := filepath.Join(ts.dir, deviceID+".pem")
 	_, err := os.Stat(path)
+
 	return err == nil
 }
 
@@ -50,6 +53,7 @@ func (ts *TrustStore) Remove(deviceID string) error {
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("identity: remove trust: %w", err)
 	}
+
 	return nil
 }
 
@@ -60,26 +64,32 @@ func (ts *TrustStore) List() ([]TrustedDevice, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
+
 		return nil, fmt.Errorf("identity: list trusted: %w", err)
 	}
 
 	var devices []TrustedDevice
+
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".pem") {
 			continue
 		}
+
 		deviceID := strings.TrimSuffix(e.Name(), ".pem")
 		info, _ := e.Info()
+
 		var trustedAt time.Time
 		if info != nil {
 			trustedAt = info.ModTime()
 		}
+
 		devices = append(devices, TrustedDevice{
 			DeviceID:  deviceID,
 			ShortID:   ShortID(deviceID),
 			TrustedAt: trustedAt,
 		})
 	}
+
 	return devices, nil
 }
 
@@ -92,6 +102,7 @@ func (ts *TrustStore) CertPool() (*x509.CertPool, error) {
 		if os.IsNotExist(err) {
 			return pool, nil
 		}
+
 		return nil, fmt.Errorf("identity: read trust dir: %w", err)
 	}
 
@@ -99,10 +110,12 @@ func (ts *TrustStore) CertPool() (*x509.CertPool, error) {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".pem") {
 			continue
 		}
+
 		data, err := os.ReadFile(filepath.Join(ts.dir, e.Name()))
 		if err != nil {
 			continue
 		}
+
 		pool.AppendCertsFromPEM(data)
 	}
 

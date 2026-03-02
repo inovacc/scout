@@ -26,10 +26,12 @@ Examples:
 		output, _ := cmd.Flags().GetString("output")
 
 		opts := baseOpts(cmd)
+
 		browser, err := scout.New(opts...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(url)
@@ -45,6 +47,7 @@ Examples:
 		} else {
 			data, err = page.Screenshot()
 		}
+
 		if err != nil {
 			return fmt.Errorf("scout: screenshot: %w", err)
 		}
@@ -55,6 +58,7 @@ Examples:
 		}
 
 		_, _ = fmt.Fprintf(os.Stderr, "Screenshot saved to %s (%d bytes)\n", dest, len(data))
+
 		return nil
 	},
 }

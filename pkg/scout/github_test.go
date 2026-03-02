@@ -114,6 +114,7 @@ func init() {
 		// Issues page 1 with pagination-aware route
 		mux.HandleFunc("/ghpaged/owner/repo/issues", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/html")
+
 			page := r.URL.Query().Get("page")
 			if page == "2" {
 				_, _ = fmt.Fprint(w, `<!DOCTYPE html>
@@ -126,8 +127,10 @@ func init() {
   <relative-time datetime="2025-05-01T10:00:00Z">May 1</relative-time>
 </div>
 </body></html>`)
+
 				return
 			}
+
 			_, _ = fmt.Fprint(w, `<!DOCTYPE html>
 <html><head><title>Issues</title></head>
 <body>
@@ -191,6 +194,7 @@ func TestGitHubRepo(t *testing.T) {
 
 	// Test nil browser
 	var nilBrowser *Browser
+
 	_, err := nilBrowser.GitHubRepo("owner", "repo")
 	if err == nil {
 		t.Fatal("expected error for nil browser")
@@ -205,9 +209,11 @@ func TestGitHubRepo(t *testing.T) {
 	if !cfg.includeBody {
 		t.Error("WithGitHubBody did not set includeBody")
 	}
+
 	if cfg.maxItems != 10 {
 		t.Error("WithGitHubMaxItems did not set maxItems")
 	}
+
 	if cfg.state != "closed" {
 		t.Error("WithGitHubState did not set state")
 	}
@@ -217,6 +223,7 @@ func TestGitHubRepo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -247,6 +254,7 @@ func TestGitHubIssuesMock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -277,6 +285,7 @@ func TestGitHubPRsMock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -309,6 +318,7 @@ func TestGitHubUserMock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -327,7 +337,7 @@ func TestGitHubUserMock(t *testing.T) {
 		t.Fatalf("eval: %v", err)
 	}
 
-	m, ok := result.Value.(map[string]interface{})
+	m, ok := result.Value.(map[string]any)
 	if !ok {
 		t.Fatal("expected map result")
 	}
@@ -335,6 +345,7 @@ func TestGitHubUserMock(t *testing.T) {
 	if m["name"] != "Test User" {
 		t.Errorf("expected name 'Test User', got %v", m["name"])
 	}
+
 	if m["bio"] != "I build things" {
 		t.Errorf("expected bio 'I build things', got %v", m["bio"])
 	}
@@ -350,6 +361,7 @@ func TestGitHubReleasesMock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -410,12 +422,15 @@ func TestGitHubOptionDefaults(t *testing.T) {
 	if cfg.maxItems != 30 {
 		t.Errorf("expected default maxItems 30, got %d", cfg.maxItems)
 	}
+
 	if cfg.state != "open" {
 		t.Errorf("expected default state 'open', got %s", cfg.state)
 	}
+
 	if cfg.includeBody {
 		t.Error("expected default includeBody false")
 	}
+
 	if cfg.maxPages != 1 {
 		t.Errorf("expected default maxPages 1, got %d", cfg.maxPages)
 	}
@@ -439,9 +454,11 @@ func TestGitHubSearchCode(t *testing.T) {
 	if results[0].Repo != "octocat/hello-world" {
 		t.Errorf("expected repo 'octocat/hello-world', got %q", results[0].Repo)
 	}
+
 	if results[0].FilePath != "src/main.go" {
 		t.Errorf("expected file_path 'src/main.go', got %q", results[0].FilePath)
 	}
+
 	if results[0].Snippet == "" {
 		t.Error("expected non-empty snippet")
 	}
@@ -454,6 +471,7 @@ func TestGitHubSearchCode_WithRepo(t *testing.T) {
 	if cfg.repoOwner != "myorg" {
 		t.Errorf("expected repoOwner 'myorg', got %q", cfg.repoOwner)
 	}
+
 	if cfg.repoName != "myrepo" {
 		t.Errorf("expected repoName 'myrepo', got %q", cfg.repoName)
 	}
@@ -461,6 +479,7 @@ func TestGitHubSearchCode_WithRepo(t *testing.T) {
 
 func TestGitHubSearchCode_NilBrowser(t *testing.T) {
 	var b *Browser
+
 	_, err := b.GitHubSearchCode("test")
 	if err == nil {
 		t.Error("expected error for nil browser")
@@ -499,6 +518,7 @@ func TestGitHubIssues_Pagination(t *testing.T) {
 func TestGitHubMaxPages_Option(t *testing.T) {
 	cfg := githubDefaults()
 	WithGitHubMaxPages(5)(cfg)
+
 	if cfg.maxPages != 5 {
 		t.Errorf("expected maxPages 5, got %d", cfg.maxPages)
 	}
@@ -506,6 +526,7 @@ func TestGitHubMaxPages_Option(t *testing.T) {
 	// Zero should not change default
 	cfg2 := githubDefaults()
 	WithGitHubMaxPages(0)(cfg2)
+
 	if cfg2.maxPages != 1 {
 		t.Errorf("expected maxPages to remain 1, got %d", cfg2.maxPages)
 	}

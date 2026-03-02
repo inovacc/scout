@@ -27,6 +27,7 @@ func runExtract(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resul
 	}
 
 	result := &Result{}
+
 	maxPages := 1
 	if r.Pagination != nil && r.Pagination.MaxPages > 0 {
 		maxPages = r.Pagination.MaxPages
@@ -50,8 +51,10 @@ func runExtract(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resul
 				if seen[key] {
 					continue
 				}
+
 				seen[key] = true
 			}
+
 			result.Items = append(result.Items, item)
 		}
 
@@ -88,16 +91,20 @@ func extractPage(page *scout.Page, spec *ItemSpec) ([]map[string]string, error) 
 	}
 
 	var items []map[string]string
+
 	for _, el := range elements {
 		item := make(map[string]string)
+
 		for name, sel := range spec.Fields {
 			val, err := extractField(el, page, sel)
 			if err != nil {
 				// Non-fatal: field may not exist for every item
 				continue
 			}
+
 			item[name] = val
 		}
+
 		if len(item) > 0 {
 			items = append(items, item)
 		}
@@ -121,8 +128,10 @@ func extractField(el *scout.Element, page *scout.Page, sel string) (string, erro
 		sel = sel[:idx]
 	}
 
-	var target *scout.Element
-	var err error
+	var (
+		target *scout.Element
+		err    error
+	)
 
 	if sibling {
 		// Search from page level for sibling content
@@ -141,9 +150,11 @@ func extractField(el *scout.Element, page *scout.Page, sel string) (string, erro
 		if err != nil {
 			return "", err
 		}
+
 		if !found {
 			return "", fmt.Errorf("attribute %q not found", attrName)
 		}
+
 		return val, nil
 	}
 
@@ -157,17 +168,21 @@ func advancePage(page *scout.Page, p *Pagination) bool {
 		if p.NextSelector == "" {
 			return false
 		}
+
 		has, _ := page.Has(p.NextSelector)
 		if !has {
 			return false
 		}
+
 		el, err := page.Element(p.NextSelector)
 		if err != nil {
 			return false
 		}
+
 		if err := el.Click(); err != nil {
 			return false
 		}
+
 		return true
 
 	case "scroll":

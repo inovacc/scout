@@ -66,6 +66,7 @@ func (p *notionProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 	if err != nil {
 		return nil, fmt.Errorf("notion: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -76,6 +77,7 @@ func (p *notionProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 		if cookie.Name == "token_v2" {
 			tokens["token_v2"] = cookie.Value
 		}
+
 		if cookie.Name == "notion_user_id" {
 			tokens["notion_user_id"] = cookie.Value
 		}
@@ -129,6 +131,7 @@ func (p *notionProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "notion",
 		Version:      "1",
@@ -150,6 +153,7 @@ func (p *notionProvider) ValidateSession(_ context.Context, session *auth.Sessio
 	if tok, ok := session.Tokens["token_v2"]; ok && tok != "" {
 		return nil
 	}
+
 	if tok, ok := session.Tokens["token_v2_ls"]; ok && tok != "" {
 		return nil
 	}
@@ -244,6 +248,7 @@ func (m *NotionMode) Scrape(ctx context.Context, session scraper.SessionData, op
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -267,6 +272,7 @@ func (m *NotionMode) Scrape(ctx context.Context, session scraper.SessionData, op
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -290,10 +296,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToLower(strings.TrimSpace(t))] = struct{}{}
 	}
+
 	return set
 }
 
@@ -304,6 +312,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -336,6 +345,7 @@ type getPageAsNestedResponse struct {
 
 type queryCollectionResponse struct {
 	notionAPIResponse
+
 	BlockIDs    []string `json:"blockIds,omitempty"`
 	Total       int      `json:"total,omitempty"`
 	Aggregators []any    `json:"aggregators,omitempty"`
@@ -366,6 +376,7 @@ func parseGetPageAsNested(body string, targetSet map[string]struct{}) []scraper.
 	}
 
 	var results []scraper.Result
+
 	for recordType, records := range resp.RecordMap {
 		if recordType != "block" {
 			continue
@@ -405,6 +416,7 @@ func parseQueryCollection(body string, targetSet map[string]struct{}) []scraper.
 	}
 
 	var results []scraper.Result
+
 	for recordType, records := range resp.RecordMap {
 		if recordType != "block" {
 			continue
@@ -440,6 +452,7 @@ func parseGetRecordValues(body string, targetSet map[string]struct{}) []scraper.
 	}
 
 	var results []scraper.Result
+
 	for _, item := range resp.Results {
 		if blockData, ok := item["block"].(map[string]any); ok {
 			for blockID, block := range blockData {
@@ -479,6 +492,7 @@ func parseLoadPageChunk(body string, targetSet map[string]struct{}) []scraper.Re
 	}
 
 	var results []scraper.Result
+
 	for recordType, records := range resp.RecordMap {
 		if recordType != "block" {
 			continue
@@ -514,6 +528,7 @@ func parseQueryCollectionPages(body string, targetSet map[string]struct{}) []scr
 	}
 
 	var results []scraper.Result
+
 	for _, item := range resp.Results {
 		if blockID, ok := item["id"].(string); ok {
 			if targetSet != nil {
@@ -544,8 +559,10 @@ func blockToResult(blockID string, blockData any) *scraper.Result {
 	}
 
 	// Extract common properties.
-	var title, blockType string
-	var timestamp time.Time
+	var (
+		title, blockType string
+		timestamp        time.Time
+	)
 
 	if properties, ok := value["properties"].(map[string]any); ok {
 		if titleArray, ok := properties["title"].([]any); ok && len(titleArray) > 0 {
@@ -565,6 +582,7 @@ func blockToResult(blockID string, blockData any) *scraper.Result {
 
 	// Determine result type based on block type.
 	resultType := scraper.ResultMessage
+
 	switch blockType {
 	case "page":
 		resultType = scraper.ResultPost

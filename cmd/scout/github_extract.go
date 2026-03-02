@@ -43,6 +43,7 @@ var githubExtractRepoCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.GitHubExtractOption
@@ -59,22 +60,27 @@ var githubExtractRepoCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(repo)
 		}
 
 		w := cmd.OutOrStdout()
 		_, _ = fmt.Fprintf(w, "%s/%s\n", repo.Owner, repo.Name)
 		_, _ = fmt.Fprintf(w, "  %s\n", repo.Description)
+
 		_, _ = fmt.Fprintf(w, "  Language: %s  Stars: %d  Forks: %d\n", repo.Language, repo.Stars, repo.Forks)
 		if repo.License != "" {
 			_, _ = fmt.Fprintf(w, "  License: %s\n", repo.License)
 		}
+
 		if len(repo.Topics) > 0 {
 			_, _ = fmt.Fprintf(w, "  Topics: %s\n", strings.Join(repo.Topics, ", "))
 		}
+
 		if repo.LastUpdated != "" {
 			_, _ = fmt.Fprintf(w, "  Last updated: %s\n", repo.LastUpdated)
 		}
+
 		if repo.ReadmeHTML != "" {
 			_, _ = fmt.Fprintf(w, "\n--- README ---\n%s\n", repo.ReadmeHTML)
 		}
@@ -97,15 +103,18 @@ var githubExtractIssuesCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.GitHubExtractOption
 		if state, _ := cmd.Flags().GetString("state"); state != "" {
 			opts = append(opts, scout.WithGitHubExtractState(state))
 		}
+
 		if limit, _ := cmd.Flags().GetInt("limit"); limit > 0 {
 			opts = append(opts, scout.WithGitHubExtractMaxItems(limit))
 		}
+
 		if body, _ := cmd.Flags().GetBool("body"); body {
 			opts = append(opts, scout.WithGitHubExtractBody())
 		}
@@ -119,15 +128,18 @@ var githubExtractIssuesCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(issues)
 		}
 
 		w := cmd.OutOrStdout()
+
 		for _, issue := range issues {
 			labels := ""
 			if len(issue.Labels) > 0 {
 				labels = " [" + strings.Join(issue.Labels, ", ") + "]"
 			}
+
 			_, _ = fmt.Fprintf(w, "#%d %s (%s) by %s%s  comments:%d  %s\n",
 				issue.Number, issue.Title, issue.State, issue.Author, labels, issue.Comments, issue.CreatedAt)
 			if issue.Body != "" {
@@ -153,15 +165,18 @@ var githubExtractPRsCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.GitHubExtractOption
 		if state, _ := cmd.Flags().GetString("state"); state != "" {
 			opts = append(opts, scout.WithGitHubExtractState(state))
 		}
+
 		if limit, _ := cmd.Flags().GetInt("limit"); limit > 0 {
 			opts = append(opts, scout.WithGitHubExtractMaxItems(limit))
 		}
+
 		if body, _ := cmd.Flags().GetBool("body"); body {
 			opts = append(opts, scout.WithGitHubExtractBody())
 		}
@@ -175,15 +190,18 @@ var githubExtractPRsCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(prs)
 		}
 
 		w := cmd.OutOrStdout()
+
 		for _, pr := range prs {
 			labels := ""
 			if len(pr.Labels) > 0 {
 				labels = " [" + strings.Join(pr.Labels, ", ") + "]"
 			}
+
 			_, _ = fmt.Fprintf(w, "#%d %s (%s) by %s%s  comments:%d  %s\n",
 				pr.Number, pr.Title, pr.State, pr.Author, labels, pr.Comments, pr.CreatedAt)
 			if pr.Body != "" {
@@ -209,12 +227,14 @@ var githubExtractReleasesCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.GitHubExtractOption
 		if limit, _ := cmd.Flags().GetInt("limit"); limit > 0 {
 			opts = append(opts, scout.WithGitHubExtractMaxItems(limit))
 		}
+
 		if body, _ := cmd.Flags().GetBool("body"); body {
 			opts = append(opts, scout.WithGitHubExtractBody())
 		}
@@ -228,15 +248,18 @@ var githubExtractReleasesCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(releases)
 		}
 
 		w := cmd.OutOrStdout()
+
 		for _, rel := range releases {
 			assets := ""
 			if len(rel.Assets) > 0 {
 				assets = fmt.Sprintf("  assets: %s", strings.Join(rel.Assets, ", "))
 			}
+
 			_, _ = fmt.Fprintf(w, "%s  %s  by %s  %s%s\n", rel.Tag, rel.Name, rel.Author, rel.PublishedAt, assets)
 			if rel.Body != "" {
 				_, _ = fmt.Fprintf(w, "  %s\n", truncate(rel.Body, 200))
@@ -248,19 +271,23 @@ var githubExtractReleasesCmd = &cobra.Command{
 }
 
 // writeOutputIfSet writes JSON to --output file if the flag is set.
-func writeOutputIfSet(cmd *cobra.Command, v interface{}, defaultName string) error {
+func writeOutputIfSet(cmd *cobra.Command, v any, defaultName string) error {
 	outFile, _ := cmd.Flags().GetString("output")
 	if outFile == "" {
 		return nil
 	}
+
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Errorf("scout: marshal json: %w", err)
 	}
+
 	dest, writeErr := writeOutput(cmd, data, defaultName)
 	if writeErr != nil {
 		return writeErr
 	}
+
 	_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Written to %s\n", dest)
+
 	return nil
 }

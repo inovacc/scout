@@ -93,6 +93,7 @@ var bridgeStatusCmd = &cobra.Command{
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "bridge: disconnected (browser unavailable)")
 			return nil
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage("about:blank")
@@ -100,6 +101,7 @@ var bridgeStatusCmd = &cobra.Command{
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "bridge: disconnected (page error)")
 			return nil
 		}
+
 		defer func() { _ = page.Close() }()
 
 		// Give the content script a moment to load.
@@ -137,6 +139,7 @@ var bridgeSendCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge send: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		target := "about:blank"
@@ -148,6 +151,7 @@ var bridgeSendCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge send: %w", err)
 		}
+
 		defer func() { _ = page.Close() }()
 
 		if err := page.WaitLoad(); err != nil {
@@ -160,7 +164,9 @@ var bridgeSendCmd = &cobra.Command{
 		}
 
 		eventType := args[0]
+
 		var data any
+
 		if len(args) > 1 {
 			var parsed json.RawMessage
 			if err := json.Unmarshal([]byte(args[1]), &parsed); err != nil {
@@ -196,12 +202,14 @@ var bridgeListenCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge listen: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage("about:blank")
 		if err != nil {
 			return fmt.Errorf("scout: bridge listen: %w", err)
 		}
+
 		defer func() { _ = page.Close() }()
 
 		bridge, err := page.Bridge()
@@ -261,6 +269,7 @@ var bridgeObserveCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge observe: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		target := "about:blank"
@@ -272,6 +281,7 @@ var bridgeObserveCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge observe: %w", err)
 		}
+
 		defer func() { _ = page.Close() }()
 
 		if err := page.WaitLoad(); err != nil {
@@ -323,6 +333,7 @@ var bridgeEventsCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge events: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -357,24 +368,28 @@ var bridgeEventsCmd = &cobra.Command{
 		}
 
 		<-sigCh
+
 		return nil
 	},
 }
 
 func waitForBridgeClient(bs *scout.BridgeServer, pageID string) (string, error) {
 	deadline := time.After(30 * time.Second)
+
 	for {
 		clients := bs.Clients()
 		if len(clients) > 0 {
 			if pageID == "" {
 				return clients[0], nil
 			}
+
 			for _, c := range clients {
 				if c == pageID {
 					return c, nil
 				}
 			}
 		}
+
 		select {
 		case <-deadline:
 			return "", fmt.Errorf("no clients connected after 30s")
@@ -402,6 +417,7 @@ var bridgeQueryCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge query: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -421,6 +437,7 @@ var bridgeQueryCmd = &cobra.Command{
 
 		data, _ := json.MarshalIndent(results, "", "  ")
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
+
 		return nil
 	},
 }
@@ -443,6 +460,7 @@ var bridgeClickCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge click: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -460,6 +478,7 @@ var bridgeClickCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "clicked: %s\n", args[0])
+
 		return nil
 	},
 }
@@ -482,6 +501,7 @@ var bridgeTypeCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge type: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -499,6 +519,7 @@ var bridgeTypeCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "typed into: %s\n", args[0])
+
 		return nil
 	},
 }
@@ -527,6 +548,7 @@ var bridgeDOMInsertCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge dom insert: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -544,6 +566,7 @@ var bridgeDOMInsertCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "inserted HTML at %s of %s\n", position, args[0])
+
 		return nil
 	},
 }
@@ -566,6 +589,7 @@ var bridgeDOMRemoveCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge dom remove: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -583,6 +607,7 @@ var bridgeDOMRemoveCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "removed: %s\n", args[0])
+
 		return nil
 	},
 }
@@ -603,6 +628,7 @@ var bridgeTabsCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge tabs: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -621,6 +647,7 @@ var bridgeTabsCmd = &cobra.Command{
 
 		data, _ := json.MarshalIndent(tabs, "", "  ")
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
+
 		return nil
 	},
 }
@@ -648,6 +675,7 @@ var bridgeClipboardCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge clipboard: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -664,7 +692,9 @@ var bridgeClipboardCmd = &cobra.Command{
 			if err := bs.SetClipboard(pid, writeText); err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "clipboard: written")
+
 			return nil
 		}
 
@@ -672,7 +702,9 @@ var bridgeClipboardCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", text)
+
 		return nil
 	},
 }
@@ -696,6 +728,7 @@ var bridgeWSSendCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge ws-send: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -708,14 +741,17 @@ var bridgeWSSendCmd = &cobra.Command{
 		// Wait for a client to connect.
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "waiting for client connection...")
 		deadline := time.After(30 * time.Second)
+
 		for {
 			clients := bs.Clients()
 			if len(clients) > 0 {
 				if pageID == "" {
 					pageID = clients[0]
 				}
+
 				break
 			}
+
 			select {
 			case <-deadline:
 				return fmt.Errorf("scout: bridge ws-send: no clients connected after 30s")
@@ -724,6 +760,7 @@ var bridgeWSSendCmd = &cobra.Command{
 		}
 
 		var params any
+
 		if paramsStr != "{}" && paramsStr != "" {
 			var parsed json.RawMessage
 			if err := json.Unmarshal([]byte(paramsStr), &parsed); err != nil {
@@ -734,6 +771,7 @@ var bridgeWSSendCmd = &cobra.Command{
 		}
 
 		method := args[0]
+
 		resp, err := bs.Send(pageID, method, params)
 		if err != nil {
 			return err
@@ -765,6 +803,7 @@ var bridgeCallExposedCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge call-exposed: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -790,6 +829,7 @@ var bridgeCallExposedCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(result))
+
 		return nil
 	},
 }
@@ -813,6 +853,7 @@ var bridgeEmitCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge emit: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -837,6 +878,7 @@ var bridgeEmitCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "emitted: %s\n", args[0])
+
 		return nil
 	},
 }
@@ -858,6 +900,7 @@ var bridgeFramesCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge frames: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -877,6 +920,7 @@ var bridgeFramesCmd = &cobra.Command{
 
 		data, _ := json.MarshalIndent(frames, "", "  ")
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
+
 		return nil
 	},
 }
@@ -900,6 +944,7 @@ var bridgeRecordCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: bridge record: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		bs := browser.BridgeServer()
@@ -908,6 +953,7 @@ var bridgeRecordCmd = &cobra.Command{
 		}
 
 		url := args[0]
+
 		_, err = browser.NewPage(url)
 		if err != nil {
 			return fmt.Errorf("scout: bridge record: %w", err)
@@ -936,6 +982,7 @@ var bridgeRecordCmd = &cobra.Command{
 			if err := os.WriteFile(output, data, 0o644); err != nil {
 				return fmt.Errorf("scout: bridge record: write: %w", err)
 			}
+
 			_, _ = fmt.Fprintf(os.Stderr, "runbook written to %s\n", output)
 		} else {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))

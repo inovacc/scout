@@ -43,6 +43,7 @@ var websearchCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.WebSearchOption
@@ -63,12 +64,15 @@ var websearchCmd = &cobra.Command{
 		if fetchMode != "" {
 			opts = append(opts, scout.WithWebSearchFetch(fetchMode))
 		}
+
 		if mainOnly {
 			opts = append(opts, scout.WithWebSearchMainContent())
 		}
+
 		if language != "" {
 			opts = append(opts, scout.WithWebSearchLanguage(language))
 		}
+
 		if region != "" {
 			opts = append(opts, scout.WithWebSearchRegion(region))
 		}
@@ -81,6 +85,7 @@ var websearchCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(result)
 		}
 
@@ -90,16 +95,19 @@ var websearchCmd = &cobra.Command{
 			if item.Content != nil && item.Content.Markdown != "" {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "   --- content ---\n%s\n", item.Content.Markdown)
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout())
 		}
 
 		outFile, _ := cmd.Flags().GetString("output")
 		if outFile != "" {
 			data, _ := json.MarshalIndent(result, "", "  ")
+
 			dest, writeErr := writeOutput(cmd, data, "websearch.json")
 			if writeErr != nil {
 				return writeErr
 			}
+
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Written to %s\n", dest)
 		}
 

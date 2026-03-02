@@ -22,6 +22,7 @@ var vpnStatusCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		st, err := provider.Status(context.Background())
 		if err != nil {
 			return err
@@ -33,19 +34,23 @@ var vpnStatusCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(w)
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(st)
 		}
 
 		_, _ = fmt.Fprintf(w, "Provider:  %s\n", provider.Name())
+
 		_, _ = fmt.Fprintf(w, "Connected: %v\n", st.Connected)
 		if st.Connection != nil {
 			_, _ = fmt.Fprintf(w, "Server:    %s\n", st.Connection.Server.Host)
 			_, _ = fmt.Fprintf(w, "Protocol:  %s\n", st.Connection.Protocol)
 			_, _ = fmt.Fprintf(w, "Port:      %d\n", st.Connection.Port)
 		}
+
 		if st.PublicIP != "" {
 			_, _ = fmt.Fprintf(w, "Public IP: %s\n", st.PublicIP)
 		}
+
 		return nil
 	},
 }
@@ -58,7 +63,9 @@ var vpnConnectCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		country, _ := cmd.Flags().GetString("country")
+
 		conn, err := provider.Connect(context.Background(), country)
 		if err != nil {
 			return err
@@ -66,6 +73,7 @@ var vpnConnectCmd = &cobra.Command{
 
 		w := cmd.OutOrStdout()
 		_, _ = fmt.Fprintf(w, "Connected to %s via %s:%d\n", conn.Server.Host, conn.Protocol, conn.Port)
+
 		return nil
 	},
 }
@@ -78,10 +86,13 @@ var vpnDisconnectCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		if err := provider.Disconnect(context.Background()); err != nil {
 			return err
 		}
+
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Disconnected")
+
 		return nil
 	},
 }
@@ -94,6 +105,7 @@ var vpnServersCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		servers, err := provider.Servers(context.Background())
 		if err != nil {
 			return err
@@ -104,6 +116,7 @@ var vpnServersCmd = &cobra.Command{
 		w := cmd.OutOrStdout()
 
 		var filtered []scout.VPNServer
+
 		for _, s := range servers {
 			if country == "" || s.Country == country {
 				filtered = append(filtered, s)
@@ -113,15 +126,18 @@ var vpnServersCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(w)
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(filtered)
 		}
 
 		for _, s := range filtered {
 			_, _ = fmt.Fprintf(w, "%-30s  %s  %s  load=%d%%\n", s.Host, s.Country, s.City, s.Load)
 		}
+
 		if len(filtered) == 0 {
 			_, _ = fmt.Fprintln(w, "No servers found")
 		}
+
 		return nil
 	},
 }
@@ -146,6 +162,7 @@ func vpnProviderFromFlags(cmd *cobra.Command) (scout.VPNProvider, error) {
 	if host == "" {
 		return nil, fmt.Errorf("scout: vpn: --proxy-host is required")
 	}
+
 	port, _ := cmd.Flags().GetInt("proxy-port")
 	scheme, _ := cmd.Flags().GetString("proxy-scheme")
 	user, _ := cmd.Flags().GetString("proxy-user")
@@ -155,6 +172,7 @@ func vpnProviderFromFlags(cmd *cobra.Command) (scout.VPNProvider, error) {
 	if scheme != "" {
 		opts = append(opts, scout.WithDirectProxyScheme(scheme))
 	}
+
 	if user != "" {
 		opts = append(opts, scout.WithDirectProxyAuth(user, pass))
 	}

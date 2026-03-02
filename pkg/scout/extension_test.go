@@ -34,10 +34,12 @@ func TestExtensionLaunchFlags(t *testing.T) {
 	// Verify the extensions are stored and would produce the correct joined string.
 	expected := "/ext/a,/ext/b"
 	got := ""
+
 	for i, p := range o.extensions {
 		if i > 0 {
 			got += ","
 		}
+
 		got += p
 	}
 

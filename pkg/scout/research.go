@@ -102,6 +102,7 @@ func NewResearchAgent(browser *Browser, provider LLMProvider, opts ...ResearchOp
 	for _, fn := range opts {
 		fn(o)
 	}
+
 	return &ResearchAgent{
 		browser:  browser,
 		provider: provider,
@@ -114,6 +115,7 @@ func (ra *ResearchAgent) Research(ctx context.Context, query string) (*ResearchR
 	if ra.browser == nil {
 		return nil, fmt.Errorf("scout: research: browser is nil")
 	}
+
 	if ra.provider == nil {
 		return nil, fmt.Errorf("scout: research: LLM provider is nil")
 	}
@@ -181,6 +183,7 @@ func (ra *ResearchAgent) DeepResearch(ctx context.Context, query string) (*Resea
 	if ra.browser == nil {
 		return nil, fmt.Errorf("scout: research: browser is nil")
 	}
+
 	if ra.provider == nil {
 		return nil, fmt.Errorf("scout: research: LLM provider is nil")
 	}
@@ -210,12 +213,10 @@ func (ra *ResearchAgent) DeepResearch(ctx context.Context, query string) (*Resea
 		}
 
 		// Research each follow-up (limit to 2 per depth to stay within time budget)
-		limit := 2
-		if limit > len(followUps) {
-			limit = len(followUps)
-		}
+		limit := min(2, len(followUps))
 
 		var nextFollowUps []string
+
 		for i := 0; i < limit; i++ {
 			select {
 			case <-ctx.Done():
@@ -276,20 +277,24 @@ func (ra *ResearchAgent) DeepResearch(ctx context.Context, query string) (*Resea
 	}
 
 	result.Duration = time.Since(start)
+
 	return result, nil
 }
 
 // buildSources extracts ResearchSource entries from search results.
 func (ra *ResearchAgent) buildSources(searchResult *WebSearchResult) []ResearchSource {
 	var sources []ResearchSource
+
 	for _, item := range searchResult.Results {
 		content := item.Snippet
 		if item.Content != nil && item.Content.Markdown != "" {
 			content = item.Content.Markdown
 		}
+
 		if content == "" {
 			continue
 		}
+
 		sources = append(sources, ResearchSource{
 			URL:       item.URL,
 			Title:     item.Title,
@@ -300,12 +305,14 @@ func (ra *ResearchAgent) buildSources(searchResult *WebSearchResult) []ResearchS
 			break
 		}
 	}
+
 	return sources
 }
 
 // buildPrompt constructs the user prompt for the LLM with query and source content.
 func (ra *ResearchAgent) buildPrompt(query string, sources []ResearchSource) string {
 	var b strings.Builder
+
 	_, _ = fmt.Fprintf(&b, "Research query: %s\n\n", query)
 	_, _ = fmt.Fprintf(&b, "Sources (%d):\n\n", len(sources))
 
@@ -319,6 +326,7 @@ func (ra *ResearchAgent) buildPrompt(query string, sources []ResearchSource) str
 		if len(content) > 8000 {
 			content = content[:8000] + "\n[... truncated]"
 		}
+
 		_, _ = fmt.Fprintf(&b, "%s\n\n", content)
 	}
 
@@ -366,6 +374,7 @@ func (ra *ResearchAgent) parseResponse(query, llmResp string, sources []Research
 		for _, sr := range parsed.SourceRelevance {
 			relMap[sr.URL] = sr.Relevance
 		}
+
 		for i := range result.Sources {
 			if r, ok := relMap[result.Sources[i].URL]; ok {
 				result.Sources[i].Relevance = r
@@ -382,28 +391,36 @@ func (ra *ResearchAgent) parseResponse(query, llmResp string, sources []Research
 // deduplicateSources removes duplicate sources by URL, keeping the first occurrence.
 func deduplicateSources(sources []ResearchSource) []ResearchSource {
 	seen := make(map[string]struct{})
+
 	var out []ResearchSource
+
 	for _, s := range sources {
 		if _, ok := seen[s.URL]; ok {
 			continue
 		}
+
 		seen[s.URL] = struct{}{}
 		out = append(out, s)
 	}
+
 	return out
 }
 
 func buildFinalSynthesisPrompt(query string, summaries []string, sources []ResearchSource) string {
 	var b strings.Builder
+
 	_, _ = fmt.Fprintf(&b, "Original query: %s\n\n", query)
+
 	_, _ = fmt.Fprintf(&b, "Research findings from %d rounds:\n\n", len(summaries))
 	for i, s := range summaries {
 		_, _ = fmt.Fprintf(&b, "--- Round %d ---\n%s\n\n", i+1, s)
 	}
+
 	_, _ = fmt.Fprintf(&b, "All sources (%d):\n", len(sources))
 	for i, src := range sources {
 		_, _ = fmt.Fprintf(&b, "%d. %s (%s)\n", i+1, src.Title, src.URL)
 	}
+
 	return b.String()
 }
 
@@ -411,17 +428,23 @@ func buildFinalSynthesisPrompt(query string, summaries []string, sources []Resea
 // This is kept as a utility but the main flow uses WebSearch with built-in fetch.
 func (ra *ResearchAgent) fetchSourcesConcurrent(urls []string) []ResearchSource {
 	results := make([]ResearchSource, len(urls))
+
 	var wg sync.WaitGroup
+
 	sem := make(chan struct{}, ra.opts.concurrency)
 
 	for i, u := range urls {
 		wg.Add(1)
+
 		go func(idx int, url string) {
 			defer wg.Done()
+
 			sem <- struct{}{}
+
 			defer func() { <-sem }()
 
 			var fetchOpts []WebFetchOption
+
 			fetchOpts = append(fetchOpts, WithFetchMode(ra.opts.fetchMode))
 			if ra.opts.mainOnly {
 				fetchOpts = append(fetchOpts, WithFetchMainContent())
@@ -431,6 +454,7 @@ func (ra *ResearchAgent) fetchSourcesConcurrent(urls []string) []ResearchSource 
 			if err != nil {
 				return
 			}
+
 			results[idx] = ResearchSource{
 				URL:     fr.URL,
 				Title:   fr.Title,
@@ -438,13 +462,16 @@ func (ra *ResearchAgent) fetchSourcesConcurrent(urls []string) []ResearchSource 
 			}
 		}(i, u)
 	}
+
 	wg.Wait()
 
 	var out []ResearchSource
+
 	for _, r := range results {
 		if r.URL != "" {
 			out = append(out, r)
 		}
 	}
+
 	return out
 }

@@ -61,6 +61,7 @@ func NewManager(opts ...ManagerOption) *Manager {
 	for _, o := range opts {
 		o(m)
 	}
+
 	return m
 }
 
@@ -70,6 +71,7 @@ func (m *Manager) ensureCacheDir() (string, error) {
 		if err := os.MkdirAll(m.cacheDir, 0o755); err != nil {
 			return "", fmt.Errorf("browser: create cache dir: %w", err)
 		}
+
 		return m.cacheDir, nil
 	}
 
@@ -84,6 +86,7 @@ func (m *Manager) ensureCacheDir() (string, error) {
 	}
 
 	m.cacheDir = dir
+
 	return dir, nil
 }
 
@@ -129,6 +132,7 @@ func (m *Manager) Resolve(browserType string) (string, error) {
 
 	// Not found locally — try download.
 	m.logger.Info("browser not found locally, downloading", "type", browserType)
+
 	return m.Download(browserType)
 }
 
@@ -151,6 +155,7 @@ func (m *Manager) List() ([]BrowserInfo, error) {
 		if os.IsNotExist(err) {
 			return detected, nil
 		}
+
 		return nil, fmt.Errorf("browser: read cache dir: %w", err)
 	}
 
@@ -166,7 +171,9 @@ func (m *Manager) List() ([]BrowserInfo, error) {
 		}
 
 		name := entry.Name()
+
 		var browserType, friendlyName string
+
 		switch {
 		case len(name) >= 5 && name[:5] == "brave":
 			browserType = TypeBrave
@@ -215,6 +222,7 @@ func (m *Manager) Clean() error {
 		if os.IsNotExist(err) {
 			return nil
 		}
+
 		return fmt.Errorf("browser: read cache dir: %w", err)
 	}
 
@@ -222,6 +230,7 @@ func (m *Manager) Clean() error {
 		if !entry.IsDir() {
 			continue
 		}
+
 		path := filepath.Join(cacheDir, entry.Name())
 		if err := os.RemoveAll(path); err != nil {
 			return fmt.Errorf("browser: remove %s: %w", entry.Name(), err)
@@ -234,6 +243,7 @@ func (m *Manager) Clean() error {
 // guessCachedBinPath returns the expected binary path for a cached browser entry.
 func guessCachedBinPath(cacheDir, dirName, browserType string) string {
 	base := filepath.Join(cacheDir, dirName)
+
 	switch browserType {
 	case TypeBrave:
 		return filepath.Join(base, braveBinPath())

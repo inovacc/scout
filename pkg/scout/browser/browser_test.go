@@ -13,6 +13,7 @@ func TestNewManager(t *testing.T) {
 	if m == nil {
 		t.Fatal("NewManager returned nil")
 	}
+
 	if m.logger == nil {
 		t.Error("default logger should not be nil")
 	}
@@ -27,6 +28,7 @@ func TestManagerOptions(t *testing.T) {
 	if m.cacheDir != dir {
 		t.Errorf("cacheDir = %q, want %q", m.cacheDir, dir)
 	}
+
 	if m.logger != logger {
 		t.Error("logger was not set correctly")
 	}
@@ -44,9 +46,11 @@ func TestBrowserInfo(t *testing.T) {
 	if info.Name != "Google Chrome" {
 		t.Errorf("Name = %q", info.Name)
 	}
+
 	if info.Type != TypeChrome {
 		t.Errorf("Type = %q", info.Type)
 	}
+
 	if info.Downloaded {
 		t.Error("Downloaded should be false")
 	}
@@ -79,6 +83,7 @@ func TestManagerClean_EmptyDir(t *testing.T) {
 
 func TestManagerClean_WithContent(t *testing.T) {
 	dir := t.TempDir()
+
 	subdir := filepath.Join(dir, "brave-1.0.0")
 	if err := os.MkdirAll(subdir, 0o755); err != nil {
 		t.Fatal(err)
@@ -113,6 +118,7 @@ func TestResolve_Unknown(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unknown browser type")
 	}
+
 	if !errors.Is(err, ErrUnknownType) {
 		t.Errorf("expected ErrUnknownType, got: %v", err)
 	}
@@ -125,6 +131,7 @@ func TestDownload_Unknown(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unknown browser type")
 	}
+
 	if !errors.Is(err, ErrUnknownType) {
 		t.Errorf("expected ErrUnknownType, got: %v", err)
 	}
@@ -166,6 +173,7 @@ func TestBest(t *testing.T) {
 		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("unexpected error type: %v", err)
 		}
+
 		return
 	}
 

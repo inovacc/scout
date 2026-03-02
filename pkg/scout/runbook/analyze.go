@@ -3,6 +3,7 @@ package runbook
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -97,6 +98,7 @@ func AnalyzeSite(ctx context.Context, browser *scout.Browser, url string, opts .
 	if err != nil {
 		return nil, fmt.Errorf("runbook: analyze: navigate: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -115,6 +117,7 @@ func AnalyzeSite(ctx context.Context, browser *scout.Browser, url string, opts .
 			analysis.Metadata["wait_strategy"] = "spa: use WaitStable or WaitSelector before extraction"
 		}
 	}
+
 	if ri, err := page.DetectRenderMode(); err == nil {
 		analysis.RenderMode = ri
 		if ri.Mode == scout.RenderCSR {
@@ -128,12 +131,12 @@ func AnalyzeSite(ctx context.Context, browser *scout.Browser, url string, opts .
 		if meta.Title != "" {
 			analysis.Metadata["title"] = meta.Title
 		}
+
 		if meta.Description != "" {
 			analysis.Metadata["description"] = meta.Description
 		}
-		for k, v := range meta.OG {
-			analysis.Metadata[k] = v
-		}
+
+		maps.Copy(analysis.Metadata, meta.OG)
 	}
 
 	// Detect containers
@@ -265,11 +268,13 @@ func discoverFields(el *scout.Element) []FieldCandidate {
 	}
 
 	var fields []FieldCandidate
+
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
+
 		fields = append(fields, FieldCandidate{
 			Name:     fmt.Sprintf("%v", m["name"]),
 			Selector: fmt.Sprintf("%v", m["selector"]),
@@ -288,6 +293,7 @@ func detectForms(page *scout.Page) []FormCandidate {
 	}
 
 	var candidates []FormCandidate
+
 	for i, f := range forms {
 		fc := FormCandidate{
 			Selector: fmt.Sprintf("form:nth-of-type(%d)", i+1),
@@ -307,6 +313,7 @@ func detectForms(page *scout.Page) []FormCandidate {
 			} else if field.Name != "" {
 				ffc.Selector = fmt.Sprintf("[name=%q]", field.Name)
 			}
+
 			fc.Fields = append(fc.Fields, ffc)
 		}
 
@@ -364,11 +371,13 @@ func detectInteractables(page *scout.Page) []InteractableElement {
 	}
 
 	var results []InteractableElement
+
 	for _, s := range selectors {
 		elements, err := page.Elements(s.sel)
 		if err != nil {
 			continue
 		}
+
 		for _, el := range elements {
 			text, _ := el.Text()
 			results = append(results, InteractableElement{

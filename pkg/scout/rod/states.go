@@ -20,10 +20,11 @@ func (b *Browser) key(sessionID proto.TargetSessionID, methodName string) stateK
 	}
 }
 
-func (b *Browser) set(sessionID proto.TargetSessionID, methodName string, params interface{}) {
+func (b *Browser) set(sessionID proto.TargetSessionID, methodName string, params any) {
 	b.states.Store(b.key(sessionID, methodName), params)
 
 	key := ""
+
 	switch methodName {
 	case (proto.EmulationClearDeviceMetricsOverride{}).ProtoReq():
 		key = (proto.EmulationSetDeviceMetricsOverride{}).ProtoReq()
@@ -35,6 +36,7 @@ func (b *Browser) set(sessionID proto.TargetSessionID, methodName string, params
 			key = domain + ".enable"
 		}
 	}
+
 	if key != "" {
 		b.states.Delete(b.key(sessionID, key))
 	}
@@ -48,11 +50,12 @@ func (b *Browser) LoadState(sessionID proto.TargetSessionID, method proto.Reques
 			reflect.Indirect(reflect.ValueOf(data)),
 		)
 	}
+
 	return
 }
 
 // RemoveState a state.
-func (b *Browser) RemoveState(key interface{}) {
+func (b *Browser) RemoveState(key any) {
 	b.states.Delete(key)
 }
 
@@ -96,6 +99,7 @@ func (b *Browser) loadCachedPage(id proto.TargetTargetID) *Page {
 	if cache, ok := b.states.Load(id); ok {
 		return cache.(*Page) //nolint: forcetypeassert
 	}
+
 	return nil
 }
 

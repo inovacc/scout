@@ -17,9 +17,11 @@ func EncodeMouseButton(buttons []proto.InputMouseButton) (proto.InputMouseButton
 	for _, btn := range buttons {
 		flag |= MouseKeys[btn]
 	}
+
 	btn := proto.InputMouseButton("none")
 	if len(buttons) > 0 {
 		btn = buttons[0]
 	}
+
 	return btn, flag
 }

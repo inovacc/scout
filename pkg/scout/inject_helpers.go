@@ -145,6 +145,7 @@ func InjectHelper(page *Page, helper string) error {
 	if _, err := page.Eval(helper); err != nil {
 		return fmt.Errorf("scout: inject: helper: %w", err)
 	}
+
 	return nil
 }
 
@@ -156,5 +157,6 @@ func InjectAllHelpers(page *Page) error {
 			return err
 		}
 	}
+
 	return nil
 }

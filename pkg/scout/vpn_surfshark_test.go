@@ -20,15 +20,19 @@ func TestSurfsharkProvider_NewProvider(t *testing.T) {
 	if p == nil {
 		t.Fatal("NewSurfsharkProvider returned nil")
 	}
+
 	if p.email != "a@b.com" {
 		t.Errorf("email = %q, want %q", p.email, "a@b.com")
 	}
+
 	if p.password != "secret" {
 		t.Errorf("password = %q, want %q", p.password, "secret")
 	}
+
 	if p.httpClient == nil {
 		t.Error("httpClient is nil")
 	}
+
 	if p.apiBase != surfsharkAPIBase {
 		t.Errorf("apiBase = %q, want %q", p.apiBase, surfsharkAPIBase)
 	}
@@ -45,6 +49,7 @@ func TestSurfsharkProvider_ParseServers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseSurfsharkClusters() error: %v", err)
 	}
+
 	if len(servers) != 3 {
 		t.Fatalf("got %d servers, want 3", len(servers))
 	}
@@ -66,12 +71,15 @@ func TestSurfsharkProvider_ParseServers(t *testing.T) {
 		if s.Host != tt.host {
 			t.Errorf("[%d] Host = %q, want %q", tt.idx, s.Host, tt.host)
 		}
+
 		if s.Country != tt.country {
 			t.Errorf("[%d] Country = %q, want %q", tt.idx, s.Country, tt.country)
 		}
+
 		if s.City != tt.city {
 			t.Errorf("[%d] City = %q, want %q", tt.idx, s.City, tt.city)
 		}
+
 		if s.Load != tt.load {
 			t.Errorf("[%d] Load = %d, want %d", tt.idx, s.Load, tt.load)
 		}
@@ -128,6 +136,7 @@ func TestSurfsharkProvider_Authenticate(t *testing.T) {
 		if req.Email != "test@example.com" || req.Password != "hunter2" {
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(`{"message":"invalid credentials"}`))
+
 			return
 		}
 
@@ -142,9 +151,11 @@ func TestSurfsharkProvider_Authenticate(t *testing.T) {
 	if err := p.authenticate(context.Background()); err != nil {
 		t.Fatalf("authenticate() error: %v", err)
 	}
+
 	if p.token != "jwt-token-123" {
 		t.Errorf("token = %q, want %q", p.token, "jwt-token-123")
 	}
+
 	if p.renewToken != "renew-456" {
 		t.Errorf("renewToken = %q, want %q", p.renewToken, "renew-456")
 	}
@@ -171,6 +182,7 @@ func TestSurfsharkProvider_FetchCredentials(t *testing.T) {
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
+
 		if r.Header.Get("Authorization") != "Bearer test-token" {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
@@ -188,9 +200,11 @@ func TestSurfsharkProvider_FetchCredentials(t *testing.T) {
 	if err := p.fetchProxyCredentials(context.Background()); err != nil {
 		t.Fatalf("fetchProxyCredentials() error: %v", err)
 	}
+
 	if p.proxyUser != "proxy-user" {
 		t.Errorf("proxyUser = %q, want %q", p.proxyUser, "proxy-user")
 	}
+
 	if p.proxyPass != "proxy-pass" {
 		t.Errorf("proxyPass = %q, want %q", p.proxyPass, "proxy-pass")
 	}
@@ -212,6 +226,7 @@ func TestSurfsharkProvider_FetchServers(t *testing.T) {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
+
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`[
 				{"connectionName":"us-nyc.prod.surfshark.com","country":"US","location":"New York","load":30,"tags":["p2p"]},
@@ -230,9 +245,11 @@ func TestSurfsharkProvider_FetchServers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Servers() error: %v", err)
 	}
+
 	if len(servers) != 2 {
 		t.Fatalf("got %d servers, want 2", len(servers))
 	}
+
 	if servers[0].Host != "us-nyc.prod.surfshark.com" {
 		t.Errorf("servers[0].Host = %q", servers[0].Host)
 	}
@@ -242,6 +259,7 @@ func TestSurfsharkProvider_FetchServers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cached Servers() error: %v", err)
 	}
+
 	if len(servers2) != 2 {
 		t.Errorf("cached servers count = %d, want 2", len(servers2))
 	}
@@ -279,12 +297,15 @@ func TestSurfsharkProvider_ConnectFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect() error: %v", err)
 	}
+
 	if conn.Server.Host != "us-lax.prod.surfshark.com" {
 		t.Errorf("connected to %q, want us-lax (lowest load)", conn.Server.Host)
 	}
+
 	if conn.Protocol != "https" {
 		t.Errorf("Protocol = %q, want %q", conn.Protocol, "https")
 	}
+
 	if conn.Port != 443 {
 		t.Errorf("Port = %d, want 443", conn.Port)
 	}
@@ -300,6 +321,7 @@ func TestSurfsharkProvider_ConnectFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Status() error: %v", err)
 	}
+
 	if !status.Connected {
 		t.Error("Status().Connected = false, want true")
 	}
@@ -313,6 +335,7 @@ func TestSurfsharkProvider_ConnectFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Status() after disconnect error: %v", err)
 	}
+
 	if status.Connected {
 		t.Error("Status().Connected = true after disconnect, want false")
 	}
@@ -351,12 +374,15 @@ func TestSurfsharkProvider_NilSafety(t *testing.T) {
 	if _, err := p.Servers(context.Background()); err == nil {
 		t.Error("expected error from nil Servers()")
 	}
+
 	if _, err := p.Connect(context.Background(), "us"); err == nil {
 		t.Error("expected error from nil Connect()")
 	}
+
 	if err := p.Disconnect(context.Background()); err == nil {
 		t.Error("expected error from nil Disconnect()")
 	}
+
 	if _, err := p.Status(context.Background()); err == nil {
 		t.Error("expected error from nil Status()")
 	}
@@ -364,12 +390,14 @@ func TestSurfsharkProvider_NilSafety(t *testing.T) {
 
 func TestBrowser_VPNStatus_NilSafety(t *testing.T) {
 	var b *Browser
+
 	status := b.VPNStatus()
 	if status.Connected {
 		t.Error("nil browser should return not connected")
 	}
 
 	b = &Browser{}
+
 	status = b.VPNStatus()
 	if status.Connected {
 		t.Error("browser with no vpn state should return not connected")

@@ -11,25 +11,28 @@ import (
 // makePNG creates a solid-color PNG of the given size.
 func makePNG(w, h int, c color.Color) []byte {
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
+	for y := range h {
+		for x := range w {
 			img.Set(x, y, c)
 		}
 	}
 
 	var buf bytes.Buffer
+
 	_ = png.Encode(&buf, img)
+
 	return buf.Bytes()
 }
 
 // makePNGWithBlock creates a PNG with a colored block at the given position.
 func makePNGWithBlock(w, h int, bg, block color.Color, bx, by, bw, bh int) []byte {
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
+	for y := range h {
+		for x := range w {
 			img.Set(x, y, bg)
 		}
 	}
+
 	for y := by; y < by+bh && y < h; y++ {
 		for x := bx; x < bx+bw && x < w; x++ {
 			img.Set(x, y, block)
@@ -37,12 +40,15 @@ func makePNGWithBlock(w, h int, bg, block color.Color, bx, by, bw, bh int) []byt
 	}
 
 	var buf bytes.Buffer
+
 	_ = png.Encode(&buf, img)
+
 	return buf.Bytes()
 }
 
 func TestVisualDiff_IdenticalImages(t *testing.T) {
 	img := makePNG(100, 100, color.White)
+
 	result, err := VisualDiff(img, img)
 	if err != nil {
 		t.Fatalf("VisualDiff: %v", err)
@@ -51,9 +57,11 @@ func TestVisualDiff_IdenticalImages(t *testing.T) {
 	if result.DiffPixels != 0 {
 		t.Errorf("DiffPixels = %d, want 0", result.DiffPixels)
 	}
+
 	if result.DiffPercent != 0 {
 		t.Errorf("DiffPercent = %f, want 0", result.DiffPercent)
 	}
+
 	if !result.Match {
 		t.Error("expected Match=true for identical images")
 	}
@@ -71,9 +79,11 @@ func TestVisualDiff_CompletelyDifferent(t *testing.T) {
 	if result.DiffPixels != 10000 {
 		t.Errorf("DiffPixels = %d, want 10000", result.DiffPixels)
 	}
+
 	if result.DiffPercent != 100.0 {
 		t.Errorf("DiffPercent = %f, want 100", result.DiffPercent)
 	}
+
 	if result.Match {
 		t.Error("expected Match=false")
 	}
@@ -92,6 +102,7 @@ func TestVisualDiff_PartialDifference(t *testing.T) {
 	if result.DiffPixels != 100 {
 		t.Errorf("DiffPixels = %d, want 100", result.DiffPixels)
 	}
+
 	if result.DiffPercent != 1.0 {
 		t.Errorf("DiffPercent = %f, want 1.0", result.DiffPercent)
 	}
@@ -158,6 +169,7 @@ func TestVisualDiff_DifferentSizes(t *testing.T) {
 	if result.TotalPixels != 10000 {
 		t.Errorf("TotalPixels = %d, want 10000", result.TotalPixels)
 	}
+
 	if result.DiffPixels != 7500 {
 		t.Errorf("DiffPixels = %d, want 7500", result.DiffPixels)
 	}

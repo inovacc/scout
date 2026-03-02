@@ -66,13 +66,16 @@ func NewOllamaProvider(opts ...OllamaOption) (*OllamaProvider, error) {
 		if err != nil {
 			return nil, fmt.Errorf("scout: ollama: parse host: %w", err)
 		}
+
 		httpC := http.DefaultClient
 		if o.httpClient != nil {
 			httpC = o.httpClient
 		}
+
 		client = api.NewClient(base, httpC)
 	} else {
 		var err error
+
 		client, err = api.ClientFromEnvironment()
 		if err != nil {
 			return nil, fmt.Errorf("scout: ollama: create client: %w", err)
@@ -99,6 +102,7 @@ func (o *OllamaProvider) Complete(ctx context.Context, systemPrompt, userPrompt 
 	}
 
 	var result strings.Builder
+
 	err := o.client.Generate(ctx, req, func(resp api.GenerateResponse) error {
 		result.WriteString(resp.Response)
 		return nil
@@ -137,6 +141,7 @@ func (o *OllamaProvider) PullModel(ctx context.Context, model string, progress f
 		if progress != nil {
 			progress(resp.Status, resp.Completed, resp.Total)
 		}
+
 		return nil
 	})
 }

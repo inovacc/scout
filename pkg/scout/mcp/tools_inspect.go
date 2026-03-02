@@ -14,6 +14,7 @@ func storageKind(sessionStorage bool) string {
 	if sessionStorage {
 		return "sessionStorage"
 	}
+
 	return "localStorage"
 }
 
@@ -43,29 +44,35 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 			if args.Key == "" {
 				return errResult("key is required for get action")
 			}
+
 			var val string
 			if args.SessionStorage {
 				val, err = page.SessionStorageGet(args.Key)
 			} else {
 				val, err = page.LocalStorageGet(args.Key)
 			}
+
 			if err != nil {
 				return errResult(err.Error())
 			}
+
 			return textResult(val)
 
 		case "set":
 			if args.Key == "" {
 				return errResult("key is required for set action")
 			}
+
 			if args.SessionStorage {
 				err = page.SessionStorageSet(args.Key, args.Value)
 			} else {
 				err = page.LocalStorageSet(args.Key, args.Value)
 			}
+
 			if err != nil {
 				return errResult(err.Error())
 			}
+
 			return textResult(fmt.Sprintf("%s[%q] set", storageKind(args.SessionStorage), args.Key))
 
 		case "list":
@@ -75,9 +82,11 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 			} else {
 				items, err = page.LocalStorageGetAll()
 			}
+
 			if err != nil {
 				return errResult(err.Error())
 			}
+
 			return jsonResult(items)
 
 		case "clear":
@@ -86,9 +95,11 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 			} else {
 				err = page.LocalStorageClear()
 			}
+
 			if err != nil {
 				return errResult(err.Error())
 			}
+
 			return textResult(fmt.Sprintf("%s cleared", storageKind(args.SessionStorage)))
 
 		default:
@@ -106,11 +117,13 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 			CaptureBody bool   `json:"captureBody"`
 			Duration    int    `json:"duration"`
 		}
+
 		_ = json.Unmarshal(req.Params.Arguments, &args)
 
 		if args.Duration <= 0 {
 			args.Duration = 10
 		}
+
 		if args.Duration > 30 {
 			args.Duration = 30
 		}
@@ -124,6 +137,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 		if args.CaptureBody {
 			opts = append(opts, scout.WithHijackBodyCapture())
 		}
+
 		if args.URLFilter != "" {
 			opts = append(opts, scout.WithHijackURLFilter(args.URLFilter))
 		}
@@ -134,6 +148,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 		}
 
 		var events []scout.HijackEvent
+
 		timeout := time.After(time.Duration(args.Duration) * time.Second)
 		ch := hijacker.Events()
 
@@ -144,6 +159,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 				if !ok {
 					break collect
 				}
+
 				events = append(events, ev)
 			case <-timeout:
 				break collect
@@ -153,6 +169,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 		}
 
 		hijacker.Stop()
+
 		return jsonResult(events)
 	})
 
@@ -188,6 +205,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) {
 			// Return raw string if parse fails.
 			return textResult(result.String())
 		}
+
 		return jsonResult(entries)
 	})
 

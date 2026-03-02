@@ -688,6 +688,7 @@ func ExampleBrowser_Close() { //nolint:testableexamples // requires browser
 
 	// Also safe on a nil *Browser.
 	var nilBrowser *scout.Browser
+
 	_ = nilBrowser.Close()
 }
 

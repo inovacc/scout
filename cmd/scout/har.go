@@ -29,9 +29,11 @@ var harStartCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -48,6 +50,7 @@ var harStartCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "recording started")
+
 		return nil
 	},
 }
@@ -60,9 +63,11 @@ var harStopCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -74,6 +79,7 @@ var harStopCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "recording stopped")
+
 		return nil
 	},
 }
@@ -86,9 +92,11 @@ var harExportCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -100,12 +108,14 @@ var harExportCmd = &cobra.Command{
 		}
 
 		defaultName := fmt.Sprintf("capture_%d.har", time.Now().Unix())
+
 		filename, err := writeOutput(cmd, resp.GetData(), defaultName)
 		if err != nil {
 			return err
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "HAR exported: %s (%d entries)\n", filename, resp.GetEntryCount())
+
 		return nil
 	},
 }

@@ -47,6 +47,7 @@ func TestWithInjectCode(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/inject-test")
@@ -78,6 +79,7 @@ func TestWithInjectJS(t *testing.T) {
 	defer ts.Close()
 
 	dir := t.TempDir()
+
 	jsFile := filepath.Join(dir, "helper.js")
 	if err := os.WriteFile(jsFile, []byte("window.__fromFile = 'yes'"), 0o644); err != nil {
 		t.Fatalf("WriteFile: %v", err)
@@ -91,6 +93,7 @@ func TestWithInjectJS(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/inject-test")
@@ -125,6 +128,7 @@ func TestWithInjectDir(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "01_first.js"), []byte("window.__dir1 = 'a'"), 0o644); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
+
 	if err := os.WriteFile(filepath.Join(dir, "02_second.js"), []byte("window.__dir2 = 'b'"), 0o644); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
@@ -137,6 +141,7 @@ func TestWithInjectDir(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/inject-test")
@@ -186,6 +191,7 @@ func TestWithInjectCode_Empty(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	// Should work normally with no scripts injected.

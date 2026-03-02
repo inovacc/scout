@@ -25,6 +25,7 @@ func (b *Browser) startAutoFree(cfg AutoFreeConfig) {
 				if cfg.OnRecycle != nil {
 					cfg.OnRecycle()
 				}
+
 				if err := b.recycleBrowser(); err != nil {
 					// Best-effort: recycle failure is non-fatal.
 					_ = err
@@ -56,21 +57,25 @@ func (b *Browser) recycleBrowser() error {
 	}
 
 	var states []pageState
+
 	for _, rp := range pages {
 		info, err := rp.Info()
 		if err != nil {
 			continue
 		}
+
 		u := info.URL
 		if u == "" || u == "about:blank" {
 			continue
 		}
 
 		p := &Page{page: rp, browser: b}
+
 		cookies, err := p.GetCookies(u)
 		if err != nil {
 			cookies = nil
 		}
+
 		states = append(states, pageState{url: u, cookies: cookies})
 	}
 
@@ -80,6 +85,7 @@ func (b *Browser) recycleBrowser() error {
 		b.launcher.Kill()
 		b.launcher = nil
 	}
+
 	b.browser = nil
 
 	// Re-launch with the same options.
@@ -97,6 +103,7 @@ func (b *Browser) recycleBrowser() error {
 		if err != nil {
 			continue
 		}
+
 		if len(s.cookies) > 0 {
 			_ = p.SetCookies(s.cookies...)
 		}

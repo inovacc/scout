@@ -91,6 +91,7 @@ func planExtract(browser *scout.Browser, r *Runbook, plan *ExecutionPlan) (*Exec
 	// Check wait_for selector.
 	if r.WaitFor != "" {
 		check := checkSelector(page, "wait_for", r.WaitFor)
+
 		plan.Selectors = append(plan.Selectors, check)
 		if check.Status == PlanMissing {
 			plan.Valid = false
@@ -102,6 +103,7 @@ func planExtract(browser *scout.Browser, r *Runbook, plan *ExecutionPlan) (*Exec
 	if r.Items != nil && r.Items.Container != "" {
 		check := checkSelector(page, "container", r.Items.Container)
 		plan.Selectors = append(plan.Selectors, check)
+
 		plan.SampleCount = check.Count
 		if check.Status == PlanMissing {
 			plan.Valid = false
@@ -111,6 +113,7 @@ func planExtract(browser *scout.Browser, r *Runbook, plan *ExecutionPlan) (*Exec
 		// Check field selectors.
 		for name, sel := range r.Items.Fields {
 			check := checkSelector(page, "field:"+name, sel)
+
 			plan.Selectors = append(plan.Selectors, check)
 			if check.Status == PlanMissing {
 				plan.Valid = false
@@ -122,6 +125,7 @@ func planExtract(browser *scout.Browser, r *Runbook, plan *ExecutionPlan) (*Exec
 	// Check pagination selector.
 	if r.Pagination != nil && r.Pagination.NextSelector != "" {
 		check := checkSelector(page, "pagination:next", r.Pagination.NextSelector)
+
 		plan.Selectors = append(plan.Selectors, check)
 		if check.Status == PlanMissing {
 			plan.Warnings = append(plan.Warnings, fmt.Sprintf("pagination next selector %q not found (may appear on later pages)", r.Pagination.NextSelector))
@@ -214,6 +218,7 @@ func checkSelector(page *scout.Page, name, sel string) SelectorCheck {
 	if css == "" {
 		check.Status = PlanSkipped
 		check.Error = "empty selector"
+
 		return check
 	}
 
@@ -222,6 +227,7 @@ func checkSelector(page *scout.Page, name, sel string) SelectorCheck {
 		check.Status = PlanMissing
 		check.Count = 0
 		check.Error = err.Error()
+
 		return check
 	}
 
@@ -245,8 +251,10 @@ func (p *ExecutionPlan) String() string {
 
 	if len(p.Selectors) > 0 {
 		b.WriteString("Selectors:\n")
+
 		for _, s := range p.Selectors {
 			icon := "+"
+
 			switch s.Status {
 			case PlanOK:
 				icon = "+"
@@ -255,27 +263,34 @@ func (p *ExecutionPlan) String() string {
 			case PlanSkipped:
 				icon = "~"
 			}
+
 			fmt.Fprintf(&b, "  %s %-18s %-30s %3d found  (%s, %.2f)\n",
 				icon, s.Name, fmt.Sprintf("%q", s.Selector), s.Count, s.Score.Tier, s.Score.Score)
 		}
+
 		b.WriteString("\n")
 	}
 
 	if len(p.Steps) > 0 {
 		b.WriteString("Steps:\n")
+
 		for _, s := range p.Steps {
 			icon := "+"
-			if s.Status == PlanMissing {
+			switch s.Status {
+			case PlanMissing:
 				icon = "-"
-			} else if s.Status == PlanSkipped {
+			case PlanSkipped:
 				icon = "~"
 			}
+
 			detail := s.Selector
 			if detail == "" {
 				detail = s.Action
 			}
+
 			fmt.Fprintf(&b, "  %s [%d] %-12s %s\n", icon, s.Index, s.Action, detail)
 		}
+
 		b.WriteString("\n")
 	}
 
@@ -291,6 +306,7 @@ func (p *ExecutionPlan) String() string {
 	if errCount > 0 {
 		fmt.Fprintf(&b, ", %d error(s)", errCount)
 	}
+
 	if warnCount > 0 {
 		fmt.Fprintf(&b, ", %d warning(s)", warnCount)
 	}
@@ -300,6 +316,7 @@ func (p *ExecutionPlan) String() string {
 	for _, e := range p.Errors {
 		fmt.Fprintf(&b, "  Error: %s\n", e)
 	}
+
 	for _, w := range p.Warnings {
 		fmt.Fprintf(&b, "  Warning: %s\n", w)
 	}

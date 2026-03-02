@@ -57,6 +57,7 @@ func TestExtraJS_ValidJavaScript(t *testing.T) {
 		{"starts_with_IIFE", func(s string) bool { return strings.Contains(s, "(function()") }},
 		{"balanced_braces", func(s string) bool {
 			count := 0
+
 			for _, c := range s {
 				switch c {
 				case '{':
@@ -64,14 +65,17 @@ func TestExtraJS_ValidJavaScript(t *testing.T) {
 				case '}':
 					count--
 				}
+
 				if count < 0 {
 					return false
 				}
 			}
+
 			return count == 0
 		}},
 		{"balanced_parens", func(s string) bool {
 			count := 0
+
 			for _, c := range s {
 				switch c {
 				case '(':
@@ -79,10 +83,12 @@ func TestExtraJS_ValidJavaScript(t *testing.T) {
 				case ')':
 					count--
 				}
+
 				if count < 0 {
 					return false
 				}
 			}
+
 			return count == 0
 		}},
 		{"no_syntax_errors_obvious", func(s string) bool {
@@ -104,6 +110,7 @@ func TestExtraJS_WebGLSpoofValues(t *testing.T) {
 	if !strings.Contains(ExtraJS, "'Intel Inc.'") {
 		t.Error("ExtraJS should spoof WebGL vendor to 'Intel Inc.'")
 	}
+
 	if !strings.Contains(ExtraJS, "'Intel Iris OpenGL Engine'") {
 		t.Error("ExtraJS should spoof WebGL renderer to 'Intel Iris OpenGL Engine'")
 	}
@@ -132,6 +139,7 @@ func TestExtraJS_BatteryValues(t *testing.T) {
 	if !strings.Contains(ExtraJS, "charging: true") {
 		t.Error("ExtraJS should set battery charging to true")
 	}
+
 	if !strings.Contains(ExtraJS, "level: 1.0") {
 		t.Error("ExtraJS should set battery level to 1.0")
 	}
@@ -180,9 +188,11 @@ func TestExtraJS_WebRTCLocalIPPattern(t *testing.T) {
 	if !strings.Contains(ExtraJS, `192\.168`) {
 		t.Error("ExtraJS should contain local IP pattern for 192.168")
 	}
+
 	if !strings.Contains(ExtraJS, "172") {
 		t.Error("ExtraJS should contain local IP pattern for 172.x")
 	}
+
 	if !strings.Contains(ExtraJS, "localIPPattern") {
 		t.Error("ExtraJS should define localIPPattern")
 	}

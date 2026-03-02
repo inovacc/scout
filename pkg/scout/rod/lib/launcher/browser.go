@@ -58,9 +58,10 @@ func HostNPM(revision int) string {
 // HostPlaywright to download browser.
 func HostPlaywright(revision int) string {
 	rev := RevisionPlaywright
-	if !(runtime.GOOS == "linux" && runtime.GOARCH == "arm64") {
+	if runtime.GOOS != "linux" || runtime.GOARCH != "arm64" {
 		rev = revision
 	}
+
 	return fmt.Sprintf(
 		"https://playwright.azureedge.net/builds/chromium/%d/chromium-linux-arm64.zip",
 		rev,
@@ -156,6 +157,7 @@ func (lc *Browser) tryDownload(revision int) error {
 
 	fu := fetchup.New(dir, us...)
 	fu.Ctx = lc.Context
+
 	fu.Logger = lc.Logger
 	if lc.HTTPClient != nil {
 		fu.HttpClient = lc.HTTPClient
@@ -189,11 +191,14 @@ func latestRevision(ctx context.Context, client *http.Client) (int, bool) {
 		if resp != nil {
 			_ = resp.Body.Close()
 		}
+
 		return 0, false
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	var buf [20]byte
+
 	n, _ := resp.Body.Read(buf[:])
 	body := strings.TrimSpace(string(buf[:n]))
 
@@ -201,6 +206,7 @@ func latestRevision(ctx context.Context, client *http.Client) (int, bool) {
 	if _, err := fmt.Sscanf(body, "%d", &rev); err != nil {
 		return 0, false
 	}
+
 	return rev, true
 }
 
@@ -223,6 +229,7 @@ func (lc *Browser) Get() (string, error) {
 func (lc *Browser) MustGet() string {
 	p, err := lc.Get()
 	utils.E(err)
+
 	return p
 }
 
@@ -237,6 +244,7 @@ func (lc *Browser) Validate() error {
 	cmd := exec.Command(lc.BinPath(), "--headless", "--no-sandbox",
 		"--use-mock-keychain", "--disable-dev-shm-usage",
 		"--disable-gpu", "--dump-dom", "about:blank")
+
 	b, err := cmd.CombinedOutput()
 	if err != nil {
 		if strings.Contains(string(b), "error while loading shared libraries") {
@@ -246,6 +254,7 @@ func (lc *Browser) Validate() error {
 
 		return fmt.Errorf("failed to run the browser: %w\n%s", err, b)
 	}
+
 	if !bytes.Contains(b, []byte(`<html><head></head><body></body></html>`)) {
 		return errors.New("the browser executable doesn't support headless mode")
 	}
@@ -294,14 +303,16 @@ func LookPath() (found string, has bool) {
 
 	for _, path := range list {
 		var err error
+
 		found, err = exec.LookPath(path)
+
 		has = err == nil
 		if has {
 			break
 		}
 	}
 
-	return
+	return found, has
 }
 
 // interface for testing.
@@ -327,6 +338,7 @@ func lockPort(port int) func() {
 		if err == nil {
 			return func() { _ = ln.Close() }
 		}
+
 		time.Sleep(500 * time.Millisecond)
 	}
 }

@@ -53,9 +53,11 @@ func TestCookieJarRoundTrip(t *testing.T) {
 	if len(loaded) != 2 {
 		t.Fatalf("expected 2 cookies, got %d", len(loaded))
 	}
+
 	if loaded[0].Name != "session" || loaded[0].Value != "abc123" {
 		t.Fatalf("unexpected cookie: %+v", loaded[0])
 	}
+
 	if !loaded[0].Secure {
 		t.Fatal("expected Secure=true")
 	}
@@ -78,6 +80,7 @@ func TestCookieJarFilterSession(t *testing.T) {
 	if len(filtered) != 1 {
 		t.Fatalf("expected 1 non-session cookie, got %d", len(filtered))
 	}
+
 	if filtered[0].Name != "persistent" {
 		t.Fatalf("expected persistent cookie, got %s", filtered[0].Name)
 	}

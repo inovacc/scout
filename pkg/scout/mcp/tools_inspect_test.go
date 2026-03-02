@@ -42,6 +42,7 @@ sessionStorage.setItem("sess_key", "sess_val");
 window.swaggerSpec = {"openapi":"3.0.0","info":{"title":"Test API","version":"1.0.0"},"paths":{"/pets":{"get":{"summary":"List pets"}}}};
 </script></head><body><div id="swagger-ui"></div></body></html>`))
 	})
+
 	return httptest.NewServer(mux)
 }
 
@@ -62,6 +63,7 @@ func TestStorageTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("storage set: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -75,9 +77,11 @@ func TestStorageTool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("storage get: %v", err)
 	}
+
 	if result.IsError {
 		t.Fatalf("storage get error: %s", result.Content[0].(*mcp.TextContent).Text)
 	}
+
 	text := result.Content[0].(*mcp.TextContent).Text
 	if text != "myval" {
 		t.Errorf("expected 'myval', got: %s", text)
@@ -88,9 +92,11 @@ func TestStorageTool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("storage list: %v", err)
 	}
+
 	if result.IsError {
 		t.Fatalf("storage list error: %s", result.Content[0].(*mcp.TextContent).Text)
 	}
+
 	listText := result.Content[0].(*mcp.TextContent).Text
 	if !strings.Contains(listText, "mykey") {
 		t.Errorf("expected 'mykey' in list, got: %s", listText)
@@ -101,9 +107,11 @@ func TestStorageTool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("storage clear: %v", err)
 	}
+
 	if result.IsError {
 		t.Fatalf("storage clear error: %s", result.Content[0].(*mcp.TextContent).Text)
 	}
+
 	if !strings.Contains(result.Content[0].(*mcp.TextContent).Text, "cleared") {
 		t.Errorf("expected 'cleared' confirmation")
 	}
@@ -115,6 +123,7 @@ func TestStorageTool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("session storage set: %v", err)
 	}
+
 	if result.IsError {
 		t.Fatalf("session storage set error: %s", result.Content[0].(*mcp.TextContent).Text)
 	}
@@ -125,9 +134,11 @@ func TestStorageTool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("session storage get: %v", err)
 	}
+
 	if result.IsError {
 		t.Fatalf("session storage get error: %s", result.Content[0].(*mcp.TextContent).Text)
 	}
+
 	text = result.Content[0].(*mcp.TextContent).Text
 	if text != "sval" {
 		t.Errorf("expected 'sval', got: %s", text)
@@ -140,6 +151,7 @@ func TestStorageToolValidation(t *testing.T) {
 
 	ts := newInspectTestServer()
 	defer ts.Close()
+
 	navigateHelper(t, ctx, cs, ts.URL+"/inspect")
 
 	// Get without key should error.
@@ -148,6 +160,7 @@ func TestStorageToolValidation(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("storage get no key: %v", err)
 	}
+
 	if !result.IsError {
 		t.Error("expected error for get without key")
 	}
@@ -158,6 +171,7 @@ func TestStorageToolValidation(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("storage unknown: %v", err)
 	}
+
 	if !result.IsError {
 		t.Error("expected error for unknown action")
 	}
@@ -177,6 +191,7 @@ func TestHarTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("har export: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -185,6 +200,7 @@ func TestHarTool(t *testing.T) {
 
 	// Should be valid JSON array.
 	text := result.Content[0].(*mcp.TextContent).Text
+
 	var entries []any
 	if err := json.Unmarshal([]byte(text), &entries); err != nil {
 		t.Errorf("expected JSON array, got parse error: %v (text: %s)", err, text)
@@ -197,6 +213,7 @@ func TestHarToolBadAction(t *testing.T) {
 
 	ts := newInspectTestServer()
 	defer ts.Close()
+
 	navigateHelper(t, ctx, cs, ts.URL+"/inspect")
 
 	result, err := callTool(ctx, cs, "har", map[string]any{"action": "import"})
@@ -204,6 +221,7 @@ func TestHarToolBadAction(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("har bad action: %v", err)
 	}
+
 	if !result.IsError {
 		t.Error("expected error for unknown har action")
 	}
@@ -223,6 +241,7 @@ func TestSwaggerTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("swagger: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})

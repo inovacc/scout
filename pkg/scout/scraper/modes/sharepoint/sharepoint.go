@@ -67,6 +67,7 @@ func (p *sharepointProvider) CaptureSession(ctx context.Context, page *scout.Pag
 	if err != nil {
 		return nil, fmt.Errorf("sharepoint: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -128,6 +129,7 @@ func (p *sharepointProvider) CaptureSession(ctx context.Context, page *scout.Pag
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "sharepoint",
 		Version:      "1",
@@ -149,6 +151,7 @@ func (p *sharepointProvider) ValidateSession(_ context.Context, session *auth.Se
 	if token, ok := session.Tokens["FedAuth"]; ok && token != "" {
 		return nil
 	}
+
 	if token, ok := session.Tokens["rtFa"]; ok && token != "" {
 		return nil
 	}
@@ -246,6 +249,7 @@ func (m *SharePointMode) Scrape(ctx context.Context, session scraper.SessionData
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -269,6 +273,7 @@ func (m *SharePointMode) Scrape(ctx context.Context, session scraper.SessionData
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -291,10 +296,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToLower(t)] = struct{}{}
 	}
+
 	return set
 }
 
@@ -305,6 +312,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -378,6 +386,7 @@ func parseListsResponse(body string, targetSet map[string]struct{}) []scraper.Re
 			Raw: list,
 		})
 	}
+
 	return results
 }
 
@@ -474,6 +483,7 @@ func parseListItemsResponse(body string, targetSet map[string]struct{}) []scrape
 			Raw: item,
 		})
 	}
+
 	return results
 }
 
@@ -532,6 +542,7 @@ func parsePagesResponse(body string, targetSet map[string]struct{}) []scraper.Re
 			Raw: page,
 		})
 	}
+
 	return results
 }
 
@@ -568,6 +579,7 @@ func parseSiteUsersResponse(body string) []scraper.Result {
 			Raw: user,
 		})
 	}
+
 	return results
 }
 
@@ -606,6 +618,7 @@ func parseGraphSitesResponse(body string) []scraper.Result {
 			Raw: site,
 		})
 	}
+
 	return results
 }
 

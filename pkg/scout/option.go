@@ -73,8 +73,9 @@ type options struct {
 	electronApp        string // path to Electron app dir or packaged binary
 	electronVersion    string // Electron version to download (e.g. "v33.2.0")
 	electronCDP        string // CDP endpoint of running Electron app
-	reusableSession    bool   // enable session reuse via track.json
-	sessionID          string // explicit session ID to reuse from track.json
+	reusableSession    bool   // enable session reuse via scout.pid
+	sessionID          string // explicit session ID to reuse from scout.pid
+	targetURL          string // URL for domain-based session routing
 }
 
 func defaults() *options {
@@ -393,14 +394,21 @@ func WithElectronCDP(endpoint string) Option {
 	return func(o *options) { o.electronCDP = endpoint }
 }
 
-// WithReusableSession enables session reuse via track.json. When enabled,
+// WithReusableSession enables session reuse via scout.pid. When enabled,
 // the browser data directory is preserved after close and can be reused
 // by subsequent browser instances with matching browser type and headless mode.
 func WithReusableSession() Option {
 	return func(o *options) { o.reusableSession = true }
 }
 
-// WithSessionID reuses a specific session by its UUID from track.json.
+// WithTargetURL sets the target URL for domain-based session routing.
+// Sessions are automatically matched by root domain hash, so
+// "https://sub.mysite.com" and "https://admin.mysite.com" share the same session.
+func WithTargetURL(url string) Option {
+	return func(o *options) { o.targetURL = url }
+}
+
+// WithSessionID reuses a specific session by its UUID from scout.pid.
 // The session's data directory will be used and the session is automatically
 // marked as reusable. If the session ID is not found, a new session is created.
 // Use Browser.SessionID() to retrieve the active session ID.

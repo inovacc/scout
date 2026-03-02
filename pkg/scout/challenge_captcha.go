@@ -13,6 +13,7 @@ func solveCaptchaWithLLM(page *Page, provider LLMProvider, challenge ChallengeIn
 	if page == nil || page.page == nil {
 		return fmt.Errorf("scout: challenge: captcha-llm: nil page")
 	}
+
 	if provider == nil {
 		return fmt.Errorf("scout: challenge: captcha-llm: no LLM provider")
 	}
@@ -53,6 +54,7 @@ func solveCaptchaWithLLM(page *Page, provider LLMProvider, challenge ChallengeIn
 			if subErr == nil && submit != nil {
 				_ = submit.Click()
 			}
+
 			return nil
 		}
 	}

@@ -158,6 +158,7 @@ func generateMobile(fp *Fingerprint, rng *mrand.Rand) {
 		fp.WebGLVendor = wgl.Vendor
 		fp.WebGLRenderer = wgl.Renderer
 	}
+
 	res := pick(rng, screenResolutionsMobile)
 	fp.ScreenWidth = res.Width
 	fp.ScreenHeight = res.Height
@@ -179,6 +180,7 @@ func pickTimezoneLocale(cfg *fingerprintConfig, rng *mrand.Rand) timezoneLocale 
 			Langs:    []string{cfg.locale, "en"},
 		}
 	}
+
 	return pick(rng, timezoneLocales)
 }
 
@@ -267,10 +269,12 @@ func (fp *Fingerprint) ToJS() string {
 // ToProfile converts the fingerprint to a UserProfile for persistence.
 func (fp *Fingerprint) ToProfile() *UserProfile {
 	now := time.Now()
+
 	lang := ""
 	if len(fp.Languages) > 0 {
 		lang = fp.Languages[0]
 	}
+
 	return &UserProfile{
 		Version:   1,
 		Name:      "fingerprint-" + now.Format("20060102-150405"),
@@ -294,6 +298,7 @@ func (fp *Fingerprint) JSON() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: fingerprint: marshal: %w", err)
 	}
+
 	return string(data), nil
 }
 
@@ -305,9 +310,11 @@ func newCryptoSeededRand() *mrand.Rand {
 	} else {
 		// Fallback: read 8 bytes directly.
 		var buf [8]byte
+
 		_, _ = rand.Read(buf[:])
 		seed = int64(binary.LittleEndian.Uint64(buf[:]))
 	}
+
 	return mrand.New(mrand.NewSource(seed)) //nolint:gosec
 }
 
@@ -320,6 +327,7 @@ func quotedOrNull(s string) string {
 	if s == "" {
 		return "null"
 	}
+
 	return fmt.Sprintf("%q", s)
 }
 
@@ -327,5 +335,6 @@ func firstOrEmpty(ss []string) string {
 	if len(ss) == 0 {
 		return ""
 	}
+
 	return ss[0]
 }

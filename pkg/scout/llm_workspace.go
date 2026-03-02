@@ -209,17 +209,20 @@ func (w *LLMWorkspace) SetCurrentSession(id string) error {
 	}
 
 	found := false
+
 	for _, s := range idx.Sessions {
 		if s.ID == id {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		return fmt.Errorf("scout: workspace: session %q not found", id)
 	}
 
 	idx.Current = id
+
 	return w.writeJSON(w.sessionsPath(), idx)
 }
 
@@ -285,6 +288,7 @@ func (w *LLMWorkspace) UpdateJob(job *LLMJob) error {
 	if job.ExtractResult != "" {
 		_ = os.WriteFile(filepath.Join(jobDir, "extract.md"), []byte(job.ExtractResult), 0o644)
 	}
+
 	if job.ReviewResult != "" {
 		_ = os.WriteFile(filepath.Join(jobDir, "review.md"), []byte(job.ReviewResult), 0o644)
 	}
@@ -349,6 +353,7 @@ func (w *LLMWorkspace) ListSessionJobs(sessionID string) ([]JobRef, error) {
 	}
 
 	var refs []JobRef
+
 	for _, r := range idx.Jobs {
 		if r.SessionID == sessionID {
 			refs = append(refs, r)
@@ -373,6 +378,7 @@ func (w *LLMWorkspace) readSessionIndex() (*SessionIndex, error) {
 	if err := w.readJSON(w.sessionsPath(), &idx); err != nil {
 		return nil, fmt.Errorf("scout: workspace: read sessions: %w", err)
 	}
+
 	return &idx, nil
 }
 
@@ -381,6 +387,7 @@ func (w *LLMWorkspace) readJobIndex() (*JobIndex, error) {
 	if err := w.readJSON(w.jobsIndexPath(), &idx); err != nil {
 		return nil, fmt.Errorf("scout: workspace: read jobs index: %w", err)
 	}
+
 	return &idx, nil
 }
 
@@ -389,6 +396,7 @@ func (w *LLMWorkspace) readJSON(path string, v any) error {
 	if err != nil {
 		return err
 	}
+
 	return json.Unmarshal(data, v)
 }
 

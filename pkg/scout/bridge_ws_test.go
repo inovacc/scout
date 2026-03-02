@@ -37,9 +37,11 @@ func TestBridgeServerNilSafety(t *testing.T) {
 	if err := s.Stop(); err != nil {
 		t.Fatalf("nil Stop: %v", err)
 	}
+
 	if s.Addr() != "" {
 		t.Fatal("nil Addr should be empty")
 	}
+
 	if s.Clients() != nil {
 		t.Fatal("nil Clients should be nil")
 	}
@@ -69,6 +71,7 @@ func TestBridgeServerNilSafety(t *testing.T) {
 
 func connectTestClient(t *testing.T, addr, pageID string) *websocket.Conn {
 	t.Helper()
+
 	origin := "http://localhost/"
 	wsURL := "ws://" + addr + "/bridge"
 
@@ -97,9 +100,11 @@ func TestBridgeServerSendReceive(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	conn := connectTestClient(t, s.Addr(), "page-1")
+
 	defer func() { _ = conn.Close() }()
 
 	// Verify client registered.
@@ -113,7 +118,9 @@ func TestBridgeServerSendReceive(t *testing.T) {
 		msg *BridgeMessage
 		err error
 	}
+
 	ch := make(chan result, 1)
+
 	go func() {
 		msg, err := s.Send("page-1", "dom.query", map[string]string{"selector": "h1"})
 		ch <- result{msg, err}
@@ -148,6 +155,7 @@ func TestBridgeServerSendReceive(t *testing.T) {
 	if err := json.Unmarshal(r.msg.Result, &data); err != nil {
 		t.Fatalf("unmarshal result: %v", err)
 	}
+
 	if data["found"] != true {
 		t.Fatalf("expected found=true, got %v", data["found"])
 	}
@@ -158,6 +166,7 @@ func TestBridgeServerSendTimeout(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	// Send to non-existent client.
@@ -172,9 +181,11 @@ func TestBridgeServerEventChannel(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	conn := connectTestClient(t, s.Addr(), "page-evt")
+
 	defer func() { _ = conn.Close() }()
 
 	// Client sends an event.
@@ -193,6 +204,7 @@ func TestBridgeServerEventChannel(t *testing.T) {
 		if e.Type != "dom.mutation" {
 			t.Fatalf("expected dom.mutation, got %s", e.Type)
 		}
+
 		if e.PageID != "page-evt" {
 			t.Fatalf("expected page-evt, got %s", e.PageID)
 		}
@@ -206,17 +218,23 @@ func TestBridgeServerSubscribe(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	conn := connectTestClient(t, s.Addr(), "page-sub")
+
 	defer func() { _ = conn.Close() }()
 
-	var mu sync.Mutex
-	var received []BridgeEvent
+	var (
+		mu       sync.Mutex
+		received []BridgeEvent
+	)
 
 	// Subscribe only to user.click events.
+
 	s.Subscribe("user.click", func(e BridgeEvent) {
 		mu.Lock()
+
 		received = append(received, e)
 		mu.Unlock()
 	})
@@ -242,7 +260,7 @@ func TestBridgeServerSubscribe(t *testing.T) {
 	}
 
 	// Drain both events from channel.
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case <-s.Events():
 		case <-time.After(2 * time.Second):
@@ -254,9 +272,11 @@ func TestBridgeServerSubscribe(t *testing.T) {
 
 	mu.Lock()
 	defer mu.Unlock()
+
 	if len(received) != 1 {
 		t.Fatalf("expected 1 subscribed event, got %d", len(received))
 	}
+
 	if received[0].Type != "user.click" {
 		t.Fatalf("expected user.click, got %s", received[0].Type)
 	}
@@ -267,13 +287,16 @@ func TestBridgeServerConcurrentClients(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	const numClients = 5
+
 	conns := make([]*websocket.Conn, numClients)
-	for i := 0; i < numClients; i++ {
+	for i := range numClients {
 		conns[i] = connectTestClient(t, s.Addr(), fmt.Sprintf("page-%d", i))
 	}
+
 	defer func() {
 		for _, c := range conns {
 			_ = c.Close()
@@ -296,6 +319,7 @@ func TestBridgeServerConcurrentClients(t *testing.T) {
 		if err := websocket.JSON.Receive(conn, &msg); err != nil {
 			t.Fatalf("client %d receive: %v", i, err)
 		}
+
 		if msg.Method != "ping" {
 			t.Fatalf("client %d expected ping, got %s", i, msg.Method)
 		}
@@ -307,10 +331,12 @@ func TestBridgeServerBroadcast(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	conn1 := connectTestClient(t, s.Addr(), "p1")
 	conn2 := connectTestClient(t, s.Addr(), "p2")
+
 	defer func() { _ = conn1.Close() }()
 	defer func() { _ = conn2.Close() }()
 
@@ -323,6 +349,7 @@ func TestBridgeServerBroadcast(t *testing.T) {
 		if err := websocket.JSON.Receive(conn, &msg); err != nil {
 			t.Fatalf("receive: %v", err)
 		}
+
 		if msg.Method != "notify" {
 			t.Fatalf("expected notify, got %s", msg.Method)
 		}
@@ -340,9 +367,11 @@ func TestBridgeServerOnMessage(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	conn := connectTestClient(t, s.Addr(), "page-handler")
+
 	defer func() { _ = conn.Close() }()
 
 	// Client sends a request to the server.
@@ -360,9 +389,11 @@ func TestBridgeServerOnMessage(t *testing.T) {
 	if err := websocket.JSON.Receive(conn, &resp); err != nil {
 		t.Fatalf("receive response: %v", err)
 	}
+
 	if resp.ID != "client-req-1" {
 		t.Fatalf("expected id client-req-1, got %s", resp.ID)
 	}
+
 	if resp.Type != "response" {
 		t.Fatalf("expected type response, got %s", resp.Type)
 	}
@@ -371,10 +402,12 @@ func TestBridgeServerOnMessage(t *testing.T) {
 	if err := json.Unmarshal(resp.Result, &result); err != nil {
 		t.Fatalf("unmarshal result: %v", err)
 	}
+
 	tabs, ok := result["tabs"]
 	if !ok {
 		t.Fatal("expected tabs in result")
 	}
+
 	tabList := tabs.([]any)
 	if len(tabList) != 2 {
 		t.Fatalf("expected 2 tabs, got %d", len(tabList))

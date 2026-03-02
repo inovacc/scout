@@ -41,23 +41,23 @@ func Noop() {}
 // Logger interface.
 type Logger interface {
 	// Same as fmt.Printf
-	Println(vs ...interface{})
+	Println(vs ...any)
 }
 
 // Log type for Println.
-type Log func(msg ...interface{})
+type Log func(msg ...any)
 
 // Println interface.
-func (l Log) Println(msg ...interface{}) {
+func (l Log) Println(msg ...any) {
 	l(msg...)
 }
 
 // LoggerQuiet does nothing.
-var LoggerQuiet Logger = Log(func(_ ...interface{}) {})
+var LoggerQuiet Logger = Log(func(_ ...any) {})
 
 // MultiLogger is similar to https://golang.org/pkg/io/#MultiWriter
 func MultiLogger(list ...Logger) Log {
-	return Log(func(msg ...interface{}) {
+	return Log(func(msg ...any) {
 		for _, lg := range list {
 			lg.Println(msg...)
 		}
@@ -65,27 +65,29 @@ func MultiLogger(list ...Logger) Log {
 }
 
 // Panic is the same as the built-in panic.
-var Panic = func(v interface{}) { panic(v) }
+var Panic = func(v any) { panic(v) }
 
 // E if the last arg is error, panic it.
-func E(args ...interface{}) []interface{} {
+func E(args ...any) []any {
 	err, ok := args[len(args)-1].(error)
 	if ok {
 		Panic(err)
 	}
+
 	return args
 }
 
 // S Template render, the params is key-value pairs.
-func S(tpl string, params ...interface{}) string {
+func S(tpl string, params ...any) string {
 	var out bytes.Buffer
 
-	dict := map[string]interface{}{}
+	dict := map[string]any{}
 	fnDict := template.FuncMap{}
 
 	l := len(params)
 	for i := 0; i < l-1; i += 2 {
 		k := params[i].(string) //nolint: forcetypeassert
+
 		v := params[i+1]
 		if reflect.TypeOf(v).Kind() == reflect.Func {
 			fnDict[k] = v
@@ -104,6 +106,7 @@ func S(tpl string, params ...interface{}) string {
 func RandString(l int) string {
 	b := make([]byte, l)
 	_, _ = rand.Read(b)
+
 	return hex.EncodeToString(b)
 }
 
@@ -115,17 +118,20 @@ func Mkdir(path string) error {
 // AbsolutePaths returns absolute paths of files in current working directory.
 func AbsolutePaths(paths []string) []string {
 	absPaths := []string{}
+
 	for _, p := range paths {
 		absPath, err := filepath.Abs(p)
 		E(err)
+
 		absPaths = append(absPaths, absPath)
 	}
+
 	return absPaths
 }
 
 // OutputFile auto creates file if not exists, it will try to detect the data type and
 // auto output binary, string or json.
-func OutputFile(p string, data interface{}) error {
+func OutputFile(p string, data any) error {
 	dir := filepath.Dir(p)
 	_ = Mkdir(dir)
 
@@ -139,6 +145,7 @@ func OutputFile(p string, data interface{}) error {
 	case io.Reader:
 		f, _ := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o664)
 		_, err := io.Copy(f, t)
+
 		return err
 	default:
 		bin = MustToJSONBytes(data)
@@ -161,6 +168,7 @@ func All(actions ...func()) func() {
 
 	runner := func(action func()) {
 		defer wg.Done()
+
 		action()
 	}
 
@@ -209,6 +217,7 @@ func (de *IdleCounter) Done() {
 	if de.job == 0 {
 		de.reset(de.duration)
 	}
+
 	if de.job < 0 {
 		panic("all jobs are already done")
 	}
@@ -236,6 +245,7 @@ func (de *IdleCounter) reset(d time.Duration) {
 		default:
 		}
 	}
+
 	de.tmr.Reset(d)
 }
 
@@ -247,26 +257,29 @@ func Pause() {
 }
 
 // Dump values for debugging.
-func Dump(list ...interface{}) string {
+func Dump(list ...any) string {
 	out := []string{}
 	for _, el := range list {
 		out = append(out, gson.New(el).JSON("", "  "))
 	}
+
 	return strings.Join(out, " ")
 }
 
 // MustToJSONBytes encode data to json bytes.
-func MustToJSONBytes(data interface{}) []byte {
+func MustToJSONBytes(data any) []byte {
 	buf := bytes.NewBuffer(nil)
 	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(false)
 	E(enc.Encode(data))
+
 	b := buf.Bytes()
+
 	return b[:len(b)-1]
 }
 
 // MustToJSON encode data to json string.
-func MustToJSON(data interface{}) string {
+func MustToJSON(data any) string {
 	return string(MustToJSONBytes(data))
 }
 
@@ -318,6 +331,7 @@ func ExecLine(std bool, line string, rest ...string) string {
 		if std {
 			panic(err)
 		}
+
 		panic(fmt.Sprintf("%v\n%v", err, buf.String()))
 	}
 
@@ -333,6 +347,7 @@ func UseNode(std bool) {
 // FormatCLIArgs into one line string.
 func FormatCLIArgs(args []string) string {
 	list := []string{}
+
 	for _, arg := range args {
 		if regSpace.MatchString(arg) {
 			list = append(list, fmt.Sprintf("%#v", arg))
@@ -340,6 +355,7 @@ func FormatCLIArgs(args []string) string {
 			list = append(list, arg)
 		}
 	}
+
 	return strings.Join(list, " ")
 }
 

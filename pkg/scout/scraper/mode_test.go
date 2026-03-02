@@ -40,6 +40,7 @@ func (m *mockMode) Scrape(ctx context.Context, session SessionData, opts ScrapeO
 
 	ch := make(chan Result)
 	close(ch)
+
 	return ch, nil
 }
 
@@ -47,6 +48,7 @@ func TestModeRegistry(t *testing.T) {
 	// Save and restore global registry.
 	original := DefaultModeRegistry
 	DefaultModeRegistry = &ModeRegistry{modes: make(map[string]Mode)}
+
 	defer func() { DefaultModeRegistry = original }()
 
 	m := &mockMode{name: "test", description: "Test mode", provider: &mockAuthProvider{name: "test"}}
@@ -56,9 +58,11 @@ func TestModeRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetMode: %v", err)
 	}
+
 	if got.Name() != "test" {
 		t.Errorf("Name = %q, want %q", got.Name(), "test")
 	}
+
 	if got.Description() != "Test mode" {
 		t.Errorf("Description = %q, want %q", got.Description(), "Test mode")
 	}
@@ -67,6 +71,7 @@ func TestModeRegistry(t *testing.T) {
 func TestModeRegistry_Unknown(t *testing.T) {
 	original := DefaultModeRegistry
 	DefaultModeRegistry = &ModeRegistry{modes: make(map[string]Mode)}
+
 	defer func() { DefaultModeRegistry = original }()
 
 	_, err := GetMode("nonexistent")
@@ -78,6 +83,7 @@ func TestModeRegistry_Unknown(t *testing.T) {
 func TestListModes(t *testing.T) {
 	original := DefaultModeRegistry
 	DefaultModeRegistry = &ModeRegistry{modes: make(map[string]Mode)}
+
 	defer func() { DefaultModeRegistry = original }()
 
 	RegisterMode(&mockMode{name: "bravo", provider: &mockAuthProvider{name: "b"}})
@@ -85,6 +91,7 @@ func TestListModes(t *testing.T) {
 
 	names := ListModes()
 	sort.Strings(names)
+
 	if len(names) != 2 || names[0] != "alpha" || names[1] != "bravo" {
 		t.Fatalf("ListModes = %v, want [alpha bravo]", names)
 	}
@@ -93,6 +100,7 @@ func TestListModes(t *testing.T) {
 func TestModeRegistry_Overwrite(t *testing.T) {
 	original := DefaultModeRegistry
 	DefaultModeRegistry = &ModeRegistry{modes: make(map[string]Mode)}
+
 	defer func() { DefaultModeRegistry = original }()
 
 	RegisterMode(&mockMode{name: "dup", description: "first", provider: &mockAuthProvider{name: "dup"}})
@@ -110,9 +118,11 @@ func TestModeScrape_EmitsResults(t *testing.T) {
 		provider: &mockAuthProvider{name: "emitter"},
 		scrapeFunc: func(ctx context.Context, _ SessionData, opts ScrapeOptions) (<-chan Result, error) {
 			ch := make(chan Result, 3)
+
 			go func() {
 				defer close(ch)
-				for i := 0; i < 3; i++ {
+
+				for i := range 3 {
 					select {
 					case ch <- Result{
 						Type:    ResultPost,
@@ -125,6 +135,7 @@ func TestModeScrape_EmitsResults(t *testing.T) {
 					}
 				}
 			}()
+
 			return ch, nil
 		},
 	}
@@ -141,9 +152,11 @@ func TestModeScrape_EmitsResults(t *testing.T) {
 	for r := range ch {
 		results = append(results, r)
 	}
+
 	if len(results) != 3 {
 		t.Fatalf("got %d results, want 3", len(results))
 	}
+
 	if results[0].Type != ResultPost {
 		t.Errorf("type = %q, want %q", results[0].Type, ResultPost)
 	}
@@ -155,10 +168,11 @@ func TestModeScrape_ContextCancel(t *testing.T) {
 		provider: &mockAuthProvider{name: "slow"},
 		scrapeFunc: func(ctx context.Context, _ SessionData, _ ScrapeOptions) (<-chan Result, error) {
 			ch := make(chan Result)
+
 			go func() {
 				defer close(ch)
 				// Emit results slowly.
-				for i := 0; i < 100; i++ {
+				for range 100 {
 					select {
 					case ch <- Result{Type: ResultMessage, ID: "m"}:
 						time.Sleep(50 * time.Millisecond)
@@ -167,6 +181,7 @@ func TestModeScrape_ContextCancel(t *testing.T) {
 					}
 				}
 			}()
+
 			return ch, nil
 		},
 	}
@@ -191,6 +206,7 @@ func TestModeScrape_ContextCancel(t *testing.T) {
 
 func TestModeScrape_WithProgress(t *testing.T) {
 	var updates []Progress
+
 	opts := DefaultScrapeOptions()
 	opts.Progress = func(p Progress) {
 		updates = append(updates, p)
@@ -205,8 +221,10 @@ func TestModeScrape_WithProgress(t *testing.T) {
 				opts.Progress(Progress{Phase: "scraping", Current: 5, Total: 10, Message: "half done"})
 				opts.Progress(Progress{Phase: "done", Current: 10, Total: 10, Message: "complete"})
 			}
+
 			ch := make(chan Result)
 			close(ch)
+
 			return ch, nil
 		},
 	}
@@ -215,12 +233,14 @@ func TestModeScrape_WithProgress(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Scrape: %v", err)
 	}
+
 	for range ch {
 	}
 
 	if len(updates) != 3 {
 		t.Fatalf("got %d progress updates, want 3", len(updates))
 	}
+
 	if updates[0].Phase != "init" || updates[2].Phase != "done" {
 		t.Errorf("unexpected phases: %v", updates)
 	}
@@ -231,12 +251,15 @@ func TestDefaultScrapeOptions(t *testing.T) {
 	if !opts.Headless {
 		t.Error("expected Headless=true by default")
 	}
+
 	if !opts.Stealth {
 		t.Error("expected Stealth=true by default")
 	}
+
 	if opts.Timeout != 10*time.Minute {
 		t.Errorf("Timeout = %v, want 10m", opts.Timeout)
 	}
+
 	if opts.Limit != 0 {
 		t.Error("expected Limit=0 by default")
 	}
@@ -255,6 +278,7 @@ func TestResultTypes(t *testing.T) {
 		if seen[rt] {
 			t.Errorf("duplicate result type: %s", rt)
 		}
+
 		seen[rt] = true
 		if string(rt) == "" {
 			t.Error("empty result type constant")

@@ -27,6 +27,7 @@ func TestValidateWithLLM_ValidRunbook(t *testing.T) {
 	if !result.Valid {
 		t.Error("expected valid=true")
 	}
+
 	if len(result.Suggestions) != 0 {
 		t.Errorf("expected no suggestions, got %d", len(result.Suggestions))
 	}
@@ -64,12 +65,15 @@ func TestValidateWithLLM_WithSuggestions(t *testing.T) {
 	if result.Valid {
 		t.Error("expected valid=false")
 	}
+
 	if len(result.Suggestions) != 2 {
 		t.Errorf("expected 2 suggestions, got %d", len(result.Suggestions))
 	}
+
 	if len(result.MissingFields) != 2 {
 		t.Errorf("expected 2 missing fields, got %d", len(result.MissingFields))
 	}
+
 	if len(result.FragileSelectors) != 1 {
 		t.Errorf("expected 1 fragile selector, got %d", len(result.FragileSelectors))
 	}
@@ -88,6 +92,7 @@ func TestValidateWithLLM_NilProvider(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil provider")
 	}
+
 	if got := err.Error(); got != "runbook: validate-llm: nil provider" {
 		t.Fatalf("unexpected error: %s", got)
 	}
@@ -115,9 +120,11 @@ func TestValidateWithLLM_InvalidJSON(t *testing.T) {
 	if result.Valid {
 		t.Error("expected valid=false for fallback")
 	}
+
 	if len(result.Suggestions) != 1 {
 		t.Fatalf("expected 1 suggestion from fallback, got %d", len(result.Suggestions))
 	}
+
 	if result.Suggestions[0] != "The runbook looks mostly good but could use pagination." {
 		t.Errorf("unexpected suggestion: %s", result.Suggestions[0])
 	}
@@ -130,6 +137,7 @@ func TestValidateWithLLM_NilRunbook(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil runbook")
 	}
+
 	if got := err.Error(); got != "runbook: validate-llm: nil runbook" {
 		t.Fatalf("unexpected error: %s", got)
 	}

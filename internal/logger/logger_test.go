@@ -16,6 +16,7 @@ func resetGlobal() {
 
 func TestLoggingWriter(t *testing.T) {
 	var buf bytes.Buffer
+
 	lw := NewLoggingWriter(&buf)
 
 	_, err := lw.Write([]byte("hello"))
@@ -38,6 +39,7 @@ func TestLoggingWriter(t *testing.T) {
 
 func TestLoggingWriterTruncation(t *testing.T) {
 	var buf bytes.Buffer
+
 	lw := &LoggingWriter{
 		underlying: &buf,
 		maxSize:    10,
@@ -58,10 +60,12 @@ func TestNewLogger(t *testing.T) {
 	resetGlobal()
 
 	dir := t.TempDir()
+
 	l, err := New(dir, "test-cmd")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() { _ = l.Close() }()
 
 	if !l.IsActive() {
@@ -88,13 +92,16 @@ func TestStartEndExecution(t *testing.T) {
 	resetGlobal()
 
 	dir := t.TempDir()
+
 	l, err := New(dir, "test-cmd")
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() { _ = l.Close() }()
 
 	var stdout, stderr bytes.Buffer
+
 	outW, errW := l.StartExecution("test-cmd", []string{"--flag"}, &stdout, &stderr)
 
 	_, _ = outW.Write([]byte("output data"))

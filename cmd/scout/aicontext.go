@@ -98,6 +98,7 @@ Examples:
 		jsonOut, _ := cmd.Flags().GetBool("json")
 		cat, _ := cmd.Flags().GetString("category")
 		noStruct, _ := cmd.Flags().GetBool("no-structure")
+
 		return runAIContext(cmd.OutOrStdout(), rootCmd, jsonOut, cat, noStruct)
 	},
 }
@@ -202,7 +203,7 @@ func buildContext(root *cobra.Command, filterCat string, noStruct bool) AIContex
 func writeMarkdown(w io.Writer, ctx AIContext) error {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("# %s\n\n%s\n\n", ctx.App, ctx.Desc))
+	fmt.Fprintf(&sb, "# %s\n\n%s\n\n", ctx.App, ctx.Desc)
 
 	// Sort categories for consistent output
 	cats := make([]string, 0, len(ctx.Categories))
@@ -220,17 +221,17 @@ func writeMarkdown(w io.Writer, ctx AIContext) error {
 			name = cat
 		}
 
-		sb.WriteString(fmt.Sprintf("## %s\n\n", name))
+		fmt.Fprintf(&sb, "## %s\n\n", name)
 
 		for _, cmd := range cmds {
-			sb.WriteString(fmt.Sprintf("### %s\n%s\n", cmd.Cmd, cmd.Desc))
+			fmt.Fprintf(&sb, "### %s\n%s\n", cmd.Cmd, cmd.Desc)
 
 			if len(cmd.Flags) > 0 {
-				sb.WriteString(fmt.Sprintf("Flags: `%s`\n", strings.Join(cmd.Flags, "` `")))
+				fmt.Fprintf(&sb, "Flags: `%s`\n", strings.Join(cmd.Flags, "` `"))
 			}
 
 			if len(cmd.Sub) > 0 {
-				sb.WriteString(fmt.Sprintf("Sub: `%s`\n", strings.Join(cmd.Sub, "` `")))
+				fmt.Fprintf(&sb, "Sub: `%s`\n", strings.Join(cmd.Sub, "` `"))
 			}
 
 			sb.WriteString("\n")
@@ -248,7 +249,7 @@ func writeMarkdown(w io.Writer, ctx AIContext) error {
 		sort.Strings(keys)
 
 		for _, k := range keys {
-			sb.WriteString(fmt.Sprintf("- `%s` %s\n", k, ctx.Structure[k]))
+			fmt.Fprintf(&sb, "- `%s` %s\n", k, ctx.Structure[k])
 		}
 	}
 

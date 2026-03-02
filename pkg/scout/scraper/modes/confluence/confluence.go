@@ -63,6 +63,7 @@ func (p *confluenceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 	if err != nil {
 		return nil, fmt.Errorf("confluence: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -73,6 +74,7 @@ func (p *confluenceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 		if cookie.Name == "cloud.session.token" && cookie.Value != "" {
 			tokens["cloud.session.token"] = cookie.Value
 		}
+
 		if cookie.Name == "atlassian.xsrf.token" && cookie.Value != "" {
 			tokens["atlassian.xsrf.token"] = cookie.Value
 		}
@@ -114,6 +116,7 @@ func (p *confluenceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "confluence",
 		Version:      "1",
@@ -229,6 +232,7 @@ func (m *ConfluenceMode) Scrape(ctx context.Context, session scraper.SessionData
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -252,6 +256,7 @@ func (m *ConfluenceMode) Scrape(ctx context.Context, session scraper.SessionData
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -275,10 +280,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToUpper(strings.TrimSpace(t))] = struct{}{}
 	}
+
 	return set
 }
 
@@ -289,6 +296,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -359,6 +367,7 @@ func parseSpaces(body string, targetSet map[string]struct{}) []scraper.Result {
 	}
 
 	var results []scraper.Result
+
 	for _, space := range resp.Space {
 		if targetSet != nil {
 			if _, ok := targetSet[strings.ToUpper(space.Key)]; !ok {
@@ -380,6 +389,7 @@ func parseSpaces(body string, targetSet map[string]struct{}) []scraper.Result {
 			Raw: space,
 		})
 	}
+
 	return results
 }
 
@@ -431,6 +441,7 @@ func parsePages(body string, targetSet map[string]struct{}) []scraper.Result {
 	}
 
 	var results []scraper.Result
+
 	for _, page := range resp.Results {
 		if targetSet != nil {
 			spaceKey := strings.ToUpper(page.Space.Key)
@@ -459,6 +470,7 @@ func parsePages(body string, targetSet map[string]struct{}) []scraper.Result {
 			Raw: page,
 		})
 	}
+
 	return results
 }
 
@@ -523,6 +535,7 @@ func parsePagesV2(body string, targetSet map[string]struct{}) []scraper.Result {
 			Raw: page,
 		})
 	}
+
 	return results
 }
 
@@ -567,6 +580,7 @@ func parseComments(body string) []scraper.Result {
 			Raw: comment,
 		})
 	}
+
 	return results
 }
 
@@ -608,6 +622,7 @@ func parseUsers(body string) []scraper.Result {
 			Raw: user,
 		})
 	}
+
 	return results
 }
 

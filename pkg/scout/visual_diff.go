@@ -77,22 +77,15 @@ func VisualDiff(baseline, current []byte, opts ...VisualDiffOption) (*VisualDiff
 	b2 := img2.Bounds()
 
 	// Use the intersection of both images for comparison.
-	maxX := b1.Max.X
-	if b2.Max.X < maxX {
-		maxX = b2.Max.X
-	}
-	maxY := b1.Max.Y
-	if b2.Max.Y < maxY {
-		maxY = b2.Max.Y
-	}
+	maxX := min(b2.Max.X, b1.Max.X)
+
+	maxY := min(b2.Max.Y, b1.Max.Y)
 
 	// Count pixels outside the intersection as diffs.
 	area1 := b1.Dx() * b1.Dy()
 	area2 := b2.Dx() * b2.Dy()
-	totalPixels := area1
-	if area2 > totalPixels {
-		totalPixels = area2
-	}
+
+	totalPixels := max(area2, area1)
 
 	intersectArea := maxX * maxY
 	outsideDiffs := totalPixels - intersectArea
@@ -117,6 +110,7 @@ func VisualDiff(baseline, current []byte, opts ...VisualDiffOption) (*VisualDiff
 
 			if isDiff {
 				diffCount++
+
 				if diffImg != nil {
 					diffImg.Set(x, y, color.RGBA{R: 255, A: 255})
 				}
@@ -150,6 +144,7 @@ func VisualDiff(baseline, current []byte, opts ...VisualDiffOption) (*VisualDiff
 		if err := png.Encode(&buf, diffImg); err != nil {
 			return nil, fmt.Errorf("scout: visual diff: encode diff image: %w", err)
 		}
+
 		result.DiffImage = buf.Bytes()
 	}
 
@@ -172,10 +167,12 @@ func (p *Page) CompareScreenshots(baseline []byte, opts ...VisualDiffOption) (*V
 func channelDiff(a, b uint32) int {
 	a8 := int(a >> 8)
 	b8 := int(b >> 8)
+
 	d := a8 - b8
 	if d < 0 {
 		return -d
 	}
+
 	return d
 }
 

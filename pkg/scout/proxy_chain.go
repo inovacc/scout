@@ -43,6 +43,7 @@ func WithProxyChain(hops ...ProxyHop) Option {
 		if len(hops) == 0 {
 			return
 		}
+
 		o.proxyChain = &ProxyChain{Hops: hops}
 		// Set the entry proxy for Chrome's --proxy-server flag.
 		o.proxy = hops[0].URL
@@ -76,10 +77,12 @@ func ValidateProxyChain(chain *ProxyChain) error {
 		if err != nil {
 			return fmt.Errorf("scout: proxy chain: hop %d: invalid URL %q: %w", i, hop.URL, err)
 		}
+
 		scheme := strings.ToLower(u.Scheme)
 		if !supportedSchemes[scheme] {
 			return fmt.Errorf("scout: proxy chain: hop %d: unsupported scheme %q (use http, https, socks4, or socks5)", i, scheme)
 		}
+
 		if u.Hostname() == "" {
 			return fmt.Errorf("scout: proxy chain: hop %d: missing host", i)
 		}
@@ -102,9 +105,11 @@ func ProxyChainDescription(chain *ProxyChain) string {
 			parts[i] = hop.URL
 			continue
 		}
+
 		if u.User != nil {
 			u.User = url.User("***")
 		}
+
 		parts[i] = u.String()
 	}
 

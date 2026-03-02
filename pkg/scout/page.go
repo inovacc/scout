@@ -97,6 +97,7 @@ func (p *Page) Hijacker() *SessionHijacker {
 	if p == nil {
 		return nil
 	}
+
 	return p.hijacker
 }
 
@@ -663,6 +664,7 @@ func (p *Page) Info() *PageInfo {
 	if p == nil {
 		return nil
 	}
+
 	return p.info
 }
 
@@ -686,6 +688,7 @@ func (p *Page) CollectInfo() (*PageInfo, error) {
 	}
 
 	p.info = info
+
 	return info, nil
 }
 
@@ -749,6 +752,7 @@ func (p *Page) collectInfoJS() (*PageInfo, error) {
 	if err := json.Unmarshal(raw, &info); err != nil {
 		return nil, err
 	}
+
 	return &info, nil
 }
 

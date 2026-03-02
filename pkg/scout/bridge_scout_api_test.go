@@ -6,6 +6,7 @@ import (
 
 func TestCallExposed_NilServer(t *testing.T) {
 	var s *BridgeServer
+
 	_, err := s.CallExposed("page1", "myFunc")
 	if err == nil {
 		t.Fatal("expected error for nil server")
@@ -14,6 +15,7 @@ func TestCallExposed_NilServer(t *testing.T) {
 
 func TestEmitEvent_NilServer(t *testing.T) {
 	var s *BridgeServer
+
 	err := s.EmitEvent("page1", "myEvent", map[string]any{"key": "value"})
 	if err == nil {
 		t.Fatal("expected error for nil server")
@@ -22,6 +24,7 @@ func TestEmitEvent_NilServer(t *testing.T) {
 
 func TestQueryShadowDOM_NilServer(t *testing.T) {
 	var s *BridgeServer
+
 	_, err := s.QueryShadowDOM("page1", "div")
 	if err == nil {
 		t.Fatal("expected error for nil server")
@@ -30,6 +33,7 @@ func TestQueryShadowDOM_NilServer(t *testing.T) {
 
 func TestListFrames_NilServer(t *testing.T) {
 	var s *BridgeServer
+
 	_, err := s.ListFrames("page1")
 	if err == nil {
 		t.Fatal("expected error for nil server")
@@ -38,6 +42,7 @@ func TestListFrames_NilServer(t *testing.T) {
 
 func TestSendToFrame_NilServer(t *testing.T) {
 	var s *BridgeServer
+
 	_, err := s.SendToFrame("page1", 0, "test", nil)
 	if err == nil {
 		t.Fatal("expected error for nil server")
@@ -49,6 +54,7 @@ func TestQueryShadowDOM_NoClient(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	_, err := s.QueryShadowDOM("nonexistent", "div")
@@ -62,6 +68,7 @@ func TestListFrames_NoClient(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	_, err := s.ListFrames("nonexistent")
@@ -108,6 +115,7 @@ func TestBridgeFallback_Query(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -144,6 +152,7 @@ func TestBridgeFallback_Click(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -174,6 +183,7 @@ func TestBridgeFallback_BridgeConnected(t *testing.T) {
 func TestBridgeFallback_SetPageID(t *testing.T) {
 	f := NewBridgeFallback(nil)
 	f.SetPageID("test-page")
+
 	if f.pageID != "test-page" {
 		t.Errorf("expected pageID test-page, got %s", f.pageID)
 	}

@@ -50,6 +50,7 @@ func CaptureCredentials(ctx context.Context, url string, opts ...Option) (*Captu
 	if err != nil {
 		return nil, fmt.Errorf("scout: capture credentials: launch browser: %w", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(url)

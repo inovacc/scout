@@ -252,6 +252,7 @@ window.next = {version: '14.1.0'};
 func TestDetectFrameworks(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	tests := []struct {
@@ -278,6 +279,7 @@ func TestDetectFrameworks(t *testing.T) {
 			if err != nil {
 				t.Fatalf("NewPage() error: %v", err)
 			}
+
 			defer func() { _ = page.Close() }()
 
 			if err := page.WaitLoad(); err != nil {
@@ -293,6 +295,7 @@ func TestDetectFrameworks(t *testing.T) {
 				if len(frameworks) != 0 {
 					t.Errorf("expected no frameworks, got %v", frameworks)
 				}
+
 				return
 			}
 
@@ -301,18 +304,23 @@ func TestDetectFrameworks(t *testing.T) {
 			}
 
 			found := false
+
 			for _, f := range frameworks {
 				if f.Name == tt.wantName {
 					found = true
+
 					if tt.wantVer != "" && f.Version != tt.wantVer {
 						t.Errorf("version = %q, want %q", f.Version, tt.wantVer)
 					}
+
 					if f.SPA != tt.wantSPA {
 						t.Errorf("spa = %v, want %v", f.SPA, tt.wantSPA)
 					}
+
 					break
 				}
 			}
+
 			if !found {
 				t.Errorf("framework %q not found in %v", tt.wantName, frameworks)
 			}
@@ -323,6 +331,7 @@ func TestDetectFrameworks(t *testing.T) {
 func TestDetectFramework_Primary(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	// Next.js page has both React and Next.js — should return Next.js as primary
@@ -330,6 +339,7 @@ func TestDetectFramework_Primary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -357,12 +367,14 @@ func TestDetectFramework_Primary(t *testing.T) {
 func TestDetectFramework_None(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-none")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -382,6 +394,7 @@ func TestDetectFramework_None(t *testing.T) {
 func TestDetectFramework_GatsbyPrecedence(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	// Gatsby page also has React — Gatsby should take precedence
@@ -389,6 +402,7 @@ func TestDetectFramework_GatsbyPrecedence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -412,12 +426,14 @@ func TestDetectFramework_GatsbyPrecedence(t *testing.T) {
 func TestDetectPWA_WithManifest(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-pwa-full")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -432,21 +448,27 @@ func TestDetectPWA_WithManifest(t *testing.T) {
 	if !info.HasManifest {
 		t.Error("expected HasManifest=true")
 	}
+
 	if info.Manifest == nil {
 		t.Fatal("expected non-nil Manifest")
 	}
+
 	if info.Manifest.Name != "Test PWA App" {
 		t.Errorf("manifest name = %q, want %q", info.Manifest.Name, "Test PWA App")
 	}
+
 	if info.Manifest.ShortName != "TestPWA" {
 		t.Errorf("manifest short_name = %q, want %q", info.Manifest.ShortName, "TestPWA")
 	}
+
 	if info.Manifest.Display != "standalone" {
 		t.Errorf("manifest display = %q, want %q", info.Manifest.Display, "standalone")
 	}
+
 	if info.Manifest.Icons != 2 {
 		t.Errorf("manifest icons = %d, want 2", info.Manifest.Icons)
 	}
+
 	if info.Manifest.ThemeColor != "#ffffff" {
 		t.Errorf("manifest theme_color = %q, want %q", info.Manifest.ThemeColor, "#ffffff")
 	}
@@ -467,12 +489,14 @@ func TestDetectPWA_WithManifest(t *testing.T) {
 func TestDetectPWA_NoManifest(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-pwa-none")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -487,12 +511,15 @@ func TestDetectPWA_NoManifest(t *testing.T) {
 	if info.HasManifest {
 		t.Error("expected HasManifest=false")
 	}
+
 	if info.HasServiceWorker {
 		t.Error("expected HasServiceWorker=false")
 	}
+
 	if info.Manifest != nil {
 		t.Error("expected nil Manifest")
 	}
+
 	if info.Installable {
 		t.Error("expected Installable=false")
 	}
@@ -501,12 +528,14 @@ func TestDetectPWA_NoManifest(t *testing.T) {
 func TestDetectPWA_ManifestOnly(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-pwa-manifest-only")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -521,15 +550,19 @@ func TestDetectPWA_ManifestOnly(t *testing.T) {
 	if !info.HasManifest {
 		t.Error("expected HasManifest=true")
 	}
+
 	if info.HasServiceWorker {
 		t.Error("expected HasServiceWorker=false (no SW registered)")
 	}
+
 	if info.Installable {
 		t.Error("expected Installable=false (no SW)")
 	}
+
 	if info.Manifest == nil {
 		t.Fatal("expected non-nil Manifest")
 	}
+
 	if info.Manifest.StartURL != "/" {
 		t.Errorf("start_url = %q, want %q", info.Manifest.StartURL, "/")
 	}
@@ -537,6 +570,7 @@ func TestDetectPWA_ManifestOnly(t *testing.T) {
 
 func TestDetectPWA_NilPage(t *testing.T) {
 	var p *Page
+
 	_, err := p.DetectPWA()
 	if err == nil {
 		t.Error("expected error for nil page")
@@ -546,12 +580,14 @@ func TestDetectPWA_NilPage(t *testing.T) {
 func TestDetectTechStack_WordPress(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-tech-wordpress")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -566,6 +602,7 @@ func TestDetectTechStack_WordPress(t *testing.T) {
 	if stack.CMS != "WordPress" {
 		t.Errorf("CMS = %q, want WordPress", stack.CMS)
 	}
+
 	if stack.CSSFramework != "Bootstrap" {
 		t.Errorf("CSSFramework = %q, want Bootstrap", stack.CSSFramework)
 	}
@@ -574,12 +611,14 @@ func TestDetectTechStack_WordPress(t *testing.T) {
 func TestDetectTechStack_ReactVite(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-tech-react-vite")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -594,30 +633,35 @@ func TestDetectTechStack_ReactVite(t *testing.T) {
 	if stack.BuildTool != "Vite" {
 		t.Errorf("BuildTool = %q, want Vite", stack.BuildTool)
 	}
+
 	if stack.CSSFramework != "Tailwind" {
 		t.Errorf("CSSFramework = %q, want Tailwind", stack.CSSFramework)
 	}
 
 	// Check frameworks include React
 	foundReact := false
+
 	for _, f := range stack.Frameworks {
 		if f.Name == "React" {
 			foundReact = true
 			break
 		}
 	}
+
 	if !foundReact {
 		t.Errorf("expected React in frameworks, got %v", stack.Frameworks)
 	}
 
 	// Check analytics includes Google Analytics
 	foundGA := false
+
 	for _, a := range stack.Analytics {
 		if a == "Google Analytics" {
 			foundGA = true
 			break
 		}
 	}
+
 	if !foundGA {
 		t.Errorf("expected Google Analytics in analytics, got %v", stack.Analytics)
 	}
@@ -626,12 +670,14 @@ func TestDetectTechStack_ReactVite(t *testing.T) {
 func TestDetectTechStack_Plain(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-tech-plain")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -646,18 +692,23 @@ func TestDetectTechStack_Plain(t *testing.T) {
 	if stack.CSSFramework != "" {
 		t.Errorf("CSSFramework = %q, want empty", stack.CSSFramework)
 	}
+
 	if stack.BuildTool != "" {
 		t.Errorf("BuildTool = %q, want empty", stack.BuildTool)
 	}
+
 	if stack.CMS != "" {
 		t.Errorf("CMS = %q, want empty", stack.CMS)
 	}
+
 	if stack.CDN != "" {
 		t.Errorf("CDN = %q, want empty", stack.CDN)
 	}
+
 	if stack.Analytics != nil {
 		t.Errorf("Analytics = %v, want nil", stack.Analytics)
 	}
+
 	if len(stack.Frameworks) != 0 {
 		t.Errorf("Frameworks = %v, want empty", stack.Frameworks)
 	}
@@ -665,6 +716,7 @@ func TestDetectTechStack_Plain(t *testing.T) {
 
 func TestDetectTechStack_NilPage(t *testing.T) {
 	var p *Page
+
 	_, err := p.DetectTechStack()
 	if err == nil {
 		t.Error("expected error for nil page")
@@ -674,12 +726,14 @@ func TestDetectTechStack_NilPage(t *testing.T) {
 func TestDetectRenderMode_CSR(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-render-csr")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -694,6 +748,7 @@ func TestDetectRenderMode_CSR(t *testing.T) {
 	if info.Mode != RenderCSR {
 		t.Errorf("mode = %q, want %q", info.Mode, RenderCSR)
 	}
+
 	if info.Details == "" {
 		t.Error("expected non-empty details")
 	}
@@ -702,12 +757,14 @@ func TestDetectRenderMode_CSR(t *testing.T) {
 func TestDetectRenderMode_SSR(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-render-ssr")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -722,6 +779,7 @@ func TestDetectRenderMode_SSR(t *testing.T) {
 	if info.Mode != RenderSSR {
 		t.Errorf("mode = %q, want %q", info.Mode, RenderSSR)
 	}
+
 	if info.Details == "" {
 		t.Error("expected non-empty details")
 	}
@@ -730,12 +788,14 @@ func TestDetectRenderMode_SSR(t *testing.T) {
 func TestDetectRenderMode_SSG(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-render-ssg")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -750,6 +810,7 @@ func TestDetectRenderMode_SSG(t *testing.T) {
 	if info.Mode != RenderSSG {
 		t.Errorf("mode = %q, want %q", info.Mode, RenderSSG)
 	}
+
 	if info.Details == "" {
 		t.Error("expected non-empty details")
 	}
@@ -758,12 +819,14 @@ func TestDetectRenderMode_SSG(t *testing.T) {
 func TestDetectRenderMode_NextSSP(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-render-nextjs-ssp")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -778,6 +841,7 @@ func TestDetectRenderMode_NextSSP(t *testing.T) {
 	if info.Mode != RenderSSR {
 		t.Errorf("mode = %q, want %q", info.Mode, RenderSSR)
 	}
+
 	if !info.Hydrated {
 		t.Error("expected hydrated=true for Next.js SSP")
 	}
@@ -785,6 +849,7 @@ func TestDetectRenderMode_NextSSP(t *testing.T) {
 
 func TestDetectRenderMode_NilPage(t *testing.T) {
 	var p *Page
+
 	_, err := p.DetectRenderMode()
 	if err == nil {
 		t.Error("expected error for nil page")
@@ -794,12 +859,14 @@ func TestDetectRenderMode_NilPage(t *testing.T) {
 func TestDetectRenderMode_Plain(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(srv.URL + "/detect-render-plain")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -819,6 +886,7 @@ func TestDetectRenderMode_Plain(t *testing.T) {
 func TestDetectPWA_PushCapable(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	// Chrome supports PushManager, so any page should report push_capable=true
@@ -826,6 +894,7 @@ func TestDetectPWA_PushCapable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {

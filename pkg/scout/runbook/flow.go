@@ -44,6 +44,7 @@ func DetectFlow(browser *scout.Browser, urls []string) ([]FlowStep, error) {
 		if err != nil {
 			return nil, fmt.Errorf("runbook: flow: %s: %w", u, err)
 		}
+
 		steps = append(steps, *step)
 	}
 
@@ -55,6 +56,7 @@ func detectFlowStep(browser *scout.Browser, url string) (*FlowStep, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new page: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -85,6 +87,7 @@ func detectFlowStep(browser *scout.Browser, url string) (*FlowStep, error) {
 				if !ok {
 					continue
 				}
+
 				fi := FormInfo{
 					Selector:    stringVal(m, "selector"),
 					Action:      stringVal(m, "action"),
@@ -99,10 +102,12 @@ func detectFlowStep(browser *scout.Browser, url string) (*FlowStep, error) {
 						}
 					}
 				}
+
 				step.Forms = append(step.Forms, fi)
 				if fi.HasPassword {
 					step.IsLogin = true
 				}
+
 				if fi.HasSearch {
 					step.IsSearch = true
 				}
@@ -136,6 +141,7 @@ func detectFlowStep(browser *scout.Browser, url string) (*FlowStep, error) {
 	}`)
 
 	hasRepeating := false
+
 	if err == nil {
 		if n, ok := countResult.Value.(float64); ok && n >= 3 {
 			hasRepeating = true
@@ -165,6 +171,7 @@ func stringVal(m map[string]any, key string) string {
 			return s
 		}
 	}
+
 	return ""
 }
 
@@ -174,6 +181,7 @@ func boolVal(m map[string]any, key string) bool {
 			return b
 		}
 	}
+
 	return false
 }
 
@@ -216,16 +224,17 @@ func GenerateFlowRunbook(steps []FlowStep, name string) (*Runbook, error) {
 				if !form.HasPassword {
 					continue
 				}
+
 				for _, field := range form.Fields {
 					lower := strings.ToLower(field)
-					switch {
-					case lower == "password" || lower == "passwd":
+					switch lower {
+					case "password", "passwd":
 						runbookSteps = append(runbookSteps, Step{
 							Action:   "type",
 							Selector: fmt.Sprintf("input[name=%q], input[type=password]", field),
 							Text:     "{{password}}",
 						})
-					case lower == "email" || lower == "username" || lower == "user" || lower == "login":
+					case "email", "username", "user", "login":
 						runbookSteps = append(runbookSteps, Step{
 							Action:   "type",
 							Selector: fmt.Sprintf("input[name=%q]", field),
@@ -233,10 +242,12 @@ func GenerateFlowRunbook(steps []FlowStep, name string) (*Runbook, error) {
 						})
 					}
 				}
+
 				runbookSteps = append(runbookSteps, Step{
 					Action:   "click",
 					Selector: form.Selector + " [type=submit], " + form.Selector + " button",
 				})
+
 				break
 			}
 
@@ -245,6 +256,7 @@ func GenerateFlowRunbook(steps []FlowStep, name string) (*Runbook, error) {
 				if !form.HasSearch {
 					continue
 				}
+
 				runbookSteps = append(runbookSteps, Step{
 					Action:   "type",
 					Selector: "input[type=search], input[name=q], input[name=query], input[name=search]",
@@ -254,6 +266,7 @@ func GenerateFlowRunbook(steps []FlowStep, name string) (*Runbook, error) {
 					Action:   "click",
 					Selector: form.Selector + " [type=submit], " + form.Selector + " button",
 				})
+
 				break
 			}
 

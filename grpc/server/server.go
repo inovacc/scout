@@ -118,6 +118,7 @@ type ScoutServer struct {
 
 	stats struct {
 		sync.Mutex
+
 		totalSessions int64
 		totalRequests int64
 		events        []SessionEvent
@@ -135,6 +136,7 @@ func (s *ScoutServer) StartIdleTimer() {
 	if s.IdleTimeout <= 0 {
 		return
 	}
+
 	s.idle = idle.New(s.IdleTimeout, func() {
 		// Destroy all sessions.
 		s.sessions.Range(func(key, value any) bool {
@@ -142,10 +144,14 @@ func (s *ScoutServer) StartIdleTimer() {
 			if sess.recorder != nil {
 				sess.recorder.Stop()
 			}
+
 			_ = sess.browser.Close()
+
 			s.sessions.Delete(key)
+
 			return true
 		})
+
 		if s.OnIdleShutdown != nil {
 			s.OnIdleShutdown()
 		}
@@ -169,6 +175,7 @@ func (s *ScoutServer) touchIdle() {
 func (s *ScoutServer) Stats() (totalSessions, totalRequests int64) {
 	s.stats.Lock()
 	defer s.stats.Unlock()
+
 	return s.stats.totalSessions, s.stats.totalRequests
 }
 
@@ -176,13 +183,16 @@ func (s *ScoutServer) Stats() (totalSessions, totalRequests int64) {
 func (s *ScoutServer) Events() []SessionEvent {
 	s.stats.Lock()
 	defer s.stats.Unlock()
+
 	result := make([]SessionEvent, len(s.stats.events))
 	copy(result, s.stats.events)
+
 	return result
 }
 
 func (s *ScoutServer) recordEvent(typ, sessionID, deviceID, detail string) {
 	s.stats.Lock()
+
 	s.stats.events = append(s.stats.events, SessionEvent{
 		Time:      time.Now(),
 		Type:      typ,
@@ -193,6 +203,7 @@ func (s *ScoutServer) recordEvent(typ, sessionID, deviceID, detail string) {
 	if len(s.stats.events) > maxEvents {
 		s.stats.events = s.stats.events[len(s.stats.events)-maxEvents:]
 	}
+
 	s.stats.totalRequests++
 	s.stats.Unlock()
 
@@ -209,22 +220,28 @@ func sanitizeError(err error) error {
 	if err == nil {
 		return nil
 	}
+
 	msg := err.Error()
+
 	sanitized := pathSanitizer.ReplaceAllString(msg, "[path-redacted]")
 	if sanitized == msg {
 		return err
 	}
+
 	return fmt.Errorf("%s", sanitized)
 }
 
 // Peers returns a snapshot of all connected peers.
 func (s *ScoutServer) Peers() []ConnectedPeer {
 	var result []ConnectedPeer
+
 	s.peers.Range(func(_, v any) bool {
 		p := v.(*ConnectedPeer)
 		result = append(result, *p)
+
 		return true
 	})
+
 	return result
 }
 
@@ -271,11 +288,13 @@ func (s *ScoutServer) untrackPeer(sessionID string) {
 	if !ok {
 		return
 	}
+
 	deviceID := v.(string)
 	shortID := identity.ShortID(deviceID)
 
 	if v, ok := s.peers.Load(deviceID); ok {
 		p := v.(*ConnectedPeer)
+
 		p.Sessions--
 		if p.Sessions <= 0 {
 			s.peers.Delete(deviceID)
@@ -302,6 +321,7 @@ func (s *ScoutServer) peerShortID(sessionID string) string {
 	if !ok {
 		return "unknown"
 	}
+
 	return identity.ShortID(v.(string))
 }
 
@@ -318,6 +338,7 @@ func (s *ScoutServer) getSession(id string) (*session, error) {
 
 func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.CreateSessionResponse, error) {
 	s.touchIdle()
+
 	opts := platformSessionDefaults()
 	// Disable per-page timeout for server sessions. Rod's Page.Timeout() creates
 	// a one-shot context that expires permanently after the duration, making the
@@ -424,6 +445,7 @@ func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) 
 
 func (s *ScoutServer) Navigate(_ context.Context, req *pb.NavigateRequest) (*pb.NavigateResponse, error) {
 	s.touchIdle()
+
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -491,6 +513,7 @@ func (s *ScoutServer) GoForward(_ context.Context, req *pb.SessionRequest) (*pb.
 
 func (s *ScoutServer) Click(_ context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
 	s.touchIdle()
+
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -564,6 +587,7 @@ func (s *ScoutServer) Hover(_ context.Context, req *pb.ElementRequest) (*pb.Empt
 
 func (s *ScoutServer) Type(_ context.Context, req *pb.TypeRequest) (*pb.Empty, error) {
 	s.touchIdle()
+
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -621,6 +645,7 @@ func (s *ScoutServer) PressKey(_ context.Context, req *pb.KeyRequest) (*pb.Empty
 
 func (s *ScoutServer) GetText(_ context.Context, req *pb.ElementRequest) (*pb.TextResponse, error) {
 	s.touchIdle()
+
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -688,6 +713,7 @@ func (s *ScoutServer) GetURL(_ context.Context, req *pb.SessionRequest) (*pb.Tex
 
 func (s *ScoutServer) Eval(_ context.Context, req *pb.EvalRequest) (*pb.EvalResponse, error) {
 	s.touchIdle()
+
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -720,16 +746,19 @@ func (s *ScoutServer) InjectJS(_ context.Context, req *pb.InjectJSRequest) (*pb.
 		if !ok {
 			return &pb.InjectJSResponse{Error: fmt.Sprintf("unknown template %q", tmplName)}, nil
 		}
+
 		var data map[string]any
 		if td := req.GetTemplateData(); td != "" {
 			if err := json.Unmarshal([]byte(td), &data); err != nil {
 				return &pb.InjectJSResponse{Error: fmt.Sprintf("invalid template_data JSON: %v", err)}, nil
 			}
 		}
+
 		rendered, err := scout.RenderTemplate(tmpl, data)
 		if err != nil {
 			return &pb.InjectJSResponse{Error: err.Error()}, nil
 		}
+
 		script = rendered
 	} else {
 		return &pb.InjectJSResponse{Error: "code or template_name required"}, nil
@@ -768,6 +797,7 @@ func (s *ScoutServer) ElementExists(_ context.Context, req *pb.ElementRequest) (
 
 func (s *ScoutServer) Screenshot(_ context.Context, req *pb.ScreenshotRequest) (*pb.ScreenshotResponse, error) {
 	s.touchIdle()
+
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -789,6 +819,7 @@ func (s *ScoutServer) Screenshot(_ context.Context, req *pb.ScreenshotRequest) (
 	if req.GetFullPage() {
 		mode = "fullpage"
 	}
+
 	s.recordEvent("screenshot", req.GetSessionId(), s.peerShortID(req.GetSessionId()), fmt.Sprintf("%s %dKB", mode, len(data)/1024))
 
 	return &pb.ScreenshotResponse{
@@ -895,6 +926,7 @@ func (s *session) subscribeHijack(id string) chan *pb.HijackedEvent {
 
 	ch := make(chan *pb.HijackedEvent, 256)
 	s.hijackSubs[id] = ch
+
 	return ch
 }
 
@@ -922,6 +954,7 @@ func (s *ScoutServer) StartHijack(_ context.Context, req *pb.HijackRequest) (*pb
 	if req.GetCaptureBody() {
 		opts = append(opts, scout.WithHijackBodyCapture())
 	}
+
 	if len(req.GetUrlPatterns()) > 0 {
 		opts = append(opts, scout.WithHijackURLFilter(req.GetUrlPatterns()...))
 	}
@@ -930,6 +963,7 @@ func (s *ScoutServer) StartHijack(_ context.Context, req *pb.HijackRequest) (*pb
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "hijack start failed: %v", sanitizeError(err))
 	}
+
 	sess.hijacker = hijacker
 
 	// Fan-out goroutine: read from hijacker channel and broadcast to gRPC subscribers.
@@ -964,6 +998,7 @@ func (s *ScoutServer) StreamHijack(req *pb.SessionRequest, stream pb.ScoutServic
 	}
 
 	subID := uuid.NewString()
+
 	ch := sess.subscribeHijack(subID)
 	defer sess.unsubscribeHijack(subID)
 
@@ -973,6 +1008,7 @@ func (s *ScoutServer) StreamHijack(req *pb.SessionRequest, stream pb.ScoutServic
 			if !ok {
 				return nil
 			}
+
 			if err := stream.Send(ev); err != nil {
 				return err
 			}

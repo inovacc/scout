@@ -23,6 +23,7 @@ func newTestHTTPServer() *httptest.Server {
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><title>Page Two</title></head><body><h1>Page 2</h1></body></html>`))
 	})
+
 	return httptest.NewServer(mux)
 }
 
@@ -65,6 +66,7 @@ func callTool(ctx context.Context, cs *mcp.ClientSession, name string, args map[
 
 func skipIfNoBrowser(t *testing.T, err error) {
 	t.Helper()
+
 	if err != nil {
 		msg := err.Error()
 		if strings.Contains(msg, "launch browser") ||
@@ -81,11 +83,13 @@ func skipIfNoBrowser(t *testing.T, err error) {
 // navigateHelper navigates to url and skips/fatals on error.
 func navigateHelper(t *testing.T, ctx context.Context, cs *mcp.ClientSession, url string) {
 	t.Helper()
+
 	result, err := callTool(ctx, cs, "navigate", map[string]any{"url": url})
 	if err != nil {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("navigate: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -253,9 +257,11 @@ func TestPDFTool(t *testing.T) {
 	if !ok {
 		t.Fatal("expected ImageContent for PDF result")
 	}
+
 	if img.MIMEType != "application/pdf" {
 		t.Errorf("expected application/pdf, got: %s", img.MIMEType)
 	}
+
 	if len(img.Data) == 0 {
 		t.Error("expected non-empty PDF data")
 	}
@@ -283,6 +289,7 @@ func TestPDFToolWithOptions(t *testing.T) {
 	if !ok {
 		t.Fatal("expected ImageContent")
 	}
+
 	if len(img.Data) == 0 {
 		t.Error("expected non-empty PDF data")
 	}
@@ -503,10 +510,12 @@ func TestServeSSE(t *testing.T) {
 	transport := &mcp.SSEClientTransport{Endpoint: ts.URL}
 
 	ctx := context.Background()
+
 	cs, err := client.Connect(ctx, transport, nil)
 	if err != nil {
 		t.Fatalf("SSE client connect: %v", err)
 	}
+
 	defer func() { _ = cs.Close() }()
 
 	// Verify tools are listed over SSE transport.
@@ -523,6 +532,7 @@ func TestServeSSE(t *testing.T) {
 	if !toolNames["navigate"] {
 		t.Error("expected 'navigate' tool over SSE transport")
 	}
+
 	if !toolNames["screenshot"] {
 		t.Error("expected 'screenshot' tool over SSE transport")
 	}
@@ -530,8 +540,8 @@ func TestServeSSE(t *testing.T) {
 
 func TestServeSSEListenError(t *testing.T) {
 	logger := slog.Default()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+
+	ctx := t.Context()
 
 	// Use an invalid address to trigger a listen error.
 	err := ServeSSE(ctx, logger, "invalid-addr-no-port", true, false, "", 0)

@@ -50,8 +50,10 @@ var batchCmd = &cobra.Command{
 		}
 
 		var jm *scout.AsyncJobManager
+
 		if async {
 			var err error
+
 			jm, err = scout.NewAsyncJobManager(defaultJobsDir())
 			if err != nil {
 				return fmt.Errorf("scout: batch: init job manager: %w", err)
@@ -88,6 +90,7 @@ var batchCmd = &cobra.Command{
 					_ = jm.Fail(jobID, bErr.Error())
 					return
 				}
+
 				defer func() { _ = browser.Close() }()
 
 				_ = jm.Start(jobID)
@@ -99,6 +102,7 @@ var batchCmd = &cobra.Command{
 				completed, failed := 0, 0
 				for _, r := range results {
 					completed++
+
 					if r.Error != nil {
 						failed++
 					}
@@ -115,6 +119,7 @@ var batchCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: batch: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		results := browser.BatchScrape(urls, handler,
@@ -122,8 +127,10 @@ var batchCmd = &cobra.Command{
 		)
 
 		var output []batchOutput
+
 		for _, r := range results {
 			var entry batchOutput
+
 			if r.Data != nil {
 				if bo, ok := r.Data.(*batchOutput); ok {
 					entry = *bo
@@ -142,6 +149,7 @@ var batchCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(output)
 		}
 
@@ -166,6 +174,7 @@ func readURLsFile(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = f.Close() }()
 
 	var urls []string

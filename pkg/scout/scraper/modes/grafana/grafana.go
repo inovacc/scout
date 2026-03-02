@@ -60,6 +60,7 @@ func (p *grafanaProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	if err != nil {
 		return nil, fmt.Errorf("grafana: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -107,7 +108,9 @@ func (p *grafanaProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return '';
 	}`)
+
 	var expiresAt time.Time
+
 	if err == nil {
 		expiryStr := expiryResult.String()
 		if expiryStr != "" {
@@ -125,6 +128,7 @@ func (p *grafanaProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "grafana",
 		Version:      "1",
@@ -147,6 +151,7 @@ func (p *grafanaProvider) ValidateSession(_ context.Context, session *auth.Sessi
 		if _, ok := session.Tokens["grafana_session"]; ok {
 			return nil
 		}
+
 		if _, ok := session.Tokens["api_token"]; ok {
 			return nil
 		}
@@ -241,6 +246,7 @@ func (m *GrafanaMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -264,6 +270,7 @@ func (m *GrafanaMode) Scrape(ctx context.Context, session scraper.SessionData, o
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -287,10 +294,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToLower(strings.TrimSpace(t))] = struct{}{}
 	}
+
 	return set
 }
 
@@ -301,6 +310,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -333,6 +343,7 @@ type grafanaAPIResponse struct {
 
 type dashboardListResponse struct {
 	grafanaAPIResponse
+
 	Results []grafanaDashboard `json:"results,omitempty"`
 }
 
@@ -381,11 +392,13 @@ func parseDashboardsList(body string, targetSet map[string]struct{}) []scraper.R
 			Raw: dash,
 		})
 	}
+
 	return results
 }
 
 type dashboardDetailResponse struct {
 	grafanaAPIResponse
+
 	Dashboard grafanaDashboardDetail `json:"dashboard"`
 }
 
@@ -424,6 +437,7 @@ func parseDashboardDetail(body string, targetSet map[string]struct{}) []scraper.
 	}
 
 	var results []scraper.Result
+
 	ts := time.Now()
 
 	// Emit dashboard as ResultPost.
@@ -507,11 +521,13 @@ func parseDatasourcesList(body string, targetSet map[string]struct{}) []scraper.
 			Raw: ds,
 		})
 	}
+
 	return results
 }
 
 type alertsListResponse struct {
 	grafanaAPIResponse
+
 	Results []grafanaAlert `json:"results,omitempty"`
 }
 
@@ -554,11 +570,13 @@ func parseAlertsList(body string, targetSet map[string]struct{}) []scraper.Resul
 			Raw: alert,
 		})
 	}
+
 	return results
 }
 
 type searchResultsResponse struct {
 	grafanaAPIResponse
+
 	Results []grafanaSearchResult `json:"results,omitempty"`
 }
 
@@ -615,11 +633,13 @@ func parseSearchResults(body string, targetSet map[string]struct{}) []scraper.Re
 			Raw: item,
 		})
 	}
+
 	return results
 }
 
 type panelQueryResponse struct {
 	grafanaAPIResponse
+
 	Results []grafanaQueryResult `json:"results,omitempty"`
 }
 
@@ -652,11 +672,13 @@ func parsePanelQuery(body string, targetSet map[string]struct{}) []scraper.Resul
 			Raw: result,
 		})
 	}
+
 	return results
 }
 
 type annotationsResponse struct {
 	grafanaAPIResponse
+
 	Results []grafanaAnnotation `json:"results,omitempty"`
 }
 
@@ -696,6 +718,7 @@ func parseAnnotations(body string, targetSet map[string]struct{}) []scraper.Resu
 			Raw: ann,
 		})
 	}
+
 	return results
 }
 

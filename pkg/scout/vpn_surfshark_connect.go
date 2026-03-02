@@ -30,6 +30,7 @@ func (b *Browser) ConnectVPN(_ context.Context, conn *VPNConnection, username, p
 	if b == nil || b.browser == nil {
 		return fmt.Errorf("scout: browser is nil")
 	}
+
 	if conn == nil {
 		return fmt.Errorf("scout: vpn: connection is nil")
 	}
@@ -65,6 +66,7 @@ func (b *Browser) DisconnectVPN() error {
 	if b == nil || b.browser == nil {
 		return fmt.Errorf("scout: browser is nil")
 	}
+
 	if b.vpn == nil {
 		return nil
 	}
@@ -79,6 +81,7 @@ func (b *Browser) DisconnectVPN() error {
 
 	b.vpn.conn = nil
 	b.vpn.auth = nil
+
 	return nil
 }
 

@@ -24,6 +24,7 @@ func newDiagTestServer() *httptest.Server {
 		w.Header().Set("X-Method", r.Method)
 		_, _ = w.Write([]byte(`{"method":"` + r.Method + `"}`))
 	})
+
 	return httptest.NewServer(mux)
 }
 
@@ -40,11 +41,13 @@ func TestPingTool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ping call: %v", err)
 	}
+
 	if result.IsError {
 		t.Fatalf("ping error: %v", result.Content)
 	}
 
 	text := result.Content[0].(*mcp.TextContent).Text
+
 	var resp pingResponse
 	if err := json.Unmarshal([]byte(text), &resp); err != nil {
 		t.Fatalf("unmarshal ping response: %v", err)
@@ -53,12 +56,15 @@ func TestPingTool(t *testing.T) {
 	if resp.URL != ts.URL {
 		t.Errorf("url = %q, want %q", resp.URL, ts.URL)
 	}
+
 	if len(resp.Pings) != 2 {
 		t.Errorf("pings count = %d, want 2", len(resp.Pings))
 	}
+
 	if resp.Summary == nil {
 		t.Error("summary is nil")
 	}
+
 	if resp.HTTP == nil {
 		t.Error("http is nil")
 	} else if resp.HTTP.Status != 200 {
@@ -81,6 +87,7 @@ func TestPingToolDefaultCount(t *testing.T) {
 	}
 
 	text := result.Content[0].(*mcp.TextContent).Text
+
 	var resp pingResponse
 	if err := json.Unmarshal([]byte(text), &resp); err != nil {
 		t.Fatalf("unmarshal: %v", err)
@@ -104,11 +111,13 @@ func TestCurlToolGET(t *testing.T) {
 	if err != nil {
 		t.Fatalf("curl call: %v", err)
 	}
+
 	if result.IsError {
 		t.Fatalf("curl error: %v", result.Content)
 	}
 
 	text := result.Content[0].(*mcp.TextContent).Text
+
 	var resp curlResponse
 	if err := json.Unmarshal([]byte(text), &resp); err != nil {
 		t.Fatalf("unmarshal: %v", err)
@@ -117,12 +126,15 @@ func TestCurlToolGET(t *testing.T) {
 	if resp.Status != 200 {
 		t.Errorf("status = %d, want 200", resp.Status)
 	}
+
 	if resp.Timing == nil {
 		t.Error("timing is nil")
 	}
+
 	if resp.Size == nil {
 		t.Error("size is nil")
 	}
+
 	if resp.Headers["x-method"] != "GET" {
 		t.Errorf("x-method = %q, want GET", resp.Headers["x-method"])
 	}
@@ -143,6 +155,7 @@ func TestCurlToolPOST(t *testing.T) {
 	}
 
 	text := result.Content[0].(*mcp.TextContent).Text
+
 	var resp curlResponse
 	if err := json.Unmarshal([]byte(text), &resp); err != nil {
 		t.Fatalf("unmarshal: %v", err)
@@ -151,6 +164,7 @@ func TestCurlToolPOST(t *testing.T) {
 	if resp.Status != 200 {
 		t.Errorf("status = %d, want 200", resp.Status)
 	}
+
 	if resp.Headers["x-method"] != "POST" {
 		t.Errorf("x-method = %q, want POST", resp.Headers["x-method"])
 	}
@@ -171,6 +185,7 @@ func TestCurlToolRedirect(t *testing.T) {
 	}
 
 	text := result.Content[0].(*mcp.TextContent).Text
+
 	var resp curlResponse
 	if err := json.Unmarshal([]byte(text), &resp); err != nil {
 		t.Fatalf("unmarshal: %v", err)
@@ -179,6 +194,7 @@ func TestCurlToolRedirect(t *testing.T) {
 	if resp.Status != 200 {
 		t.Errorf("status = %d, want 200 (after redirect)", resp.Status)
 	}
+
 	if len(resp.Redirects) != 1 {
 		t.Errorf("redirects = %d, want 1", len(resp.Redirects))
 	}
@@ -199,6 +215,7 @@ func TestCurlToolNoRedirect(t *testing.T) {
 	}
 
 	text := result.Content[0].(*mcp.TextContent).Text
+
 	var resp curlResponse
 	if err := json.Unmarshal([]byte(text), &resp); err != nil {
 		t.Fatalf("unmarshal: %v", err)

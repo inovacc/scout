@@ -19,6 +19,7 @@ type (
 func (b *Browser) Context(ctx context.Context) *Browser {
 	newObj := *b
 	newObj.ctx = ctx
+
 	return &newObj
 }
 
@@ -37,6 +38,7 @@ func (b *Browser) Timeout(d time.Duration) *Browser {
 func (b *Browser) CancelTimeout() *Browser {
 	val := b.ctx.Value(timeoutContextKey{}).(*timeoutContextVal) //nolint:forcetypeassert
 	val.cancel()
+
 	return b.Context(val.parent)
 }
 
@@ -50,6 +52,7 @@ func (b *Browser) WithCancel() (*Browser, func()) {
 func (b *Browser) Sleeper(sleeper func() utils.Sleeper) *Browser {
 	newObj := *b
 	newObj.sleeper = sleeper
+
 	return &newObj
 }
 
@@ -58,7 +61,9 @@ func (p *Page) Context(ctx context.Context) *Page {
 	p.helpersLock.Lock()
 	newObj := *p
 	p.helpersLock.Unlock()
+
 	newObj.ctx = ctx
+
 	return &newObj
 }
 
@@ -77,6 +82,7 @@ func (p *Page) Timeout(d time.Duration) *Page {
 func (p *Page) CancelTimeout() *Page {
 	val := p.ctx.Value(timeoutContextKey{}).(*timeoutContextVal) //nolint: forcetypeassert
 	val.cancel()
+
 	return p.Context(val.parent)
 }
 
@@ -90,6 +96,7 @@ func (p *Page) WithCancel() (*Page, func()) {
 func (p *Page) Sleeper(sleeper func() utils.Sleeper) *Page {
 	newObj := *p
 	newObj.sleeper = sleeper
+
 	return &newObj
 }
 
@@ -97,6 +104,7 @@ func (p *Page) Sleeper(sleeper func() utils.Sleeper) *Page {
 func (el *Element) Context(ctx context.Context) *Element {
 	newObj := *el
 	newObj.ctx = ctx
+
 	return &newObj
 }
 
@@ -115,6 +123,7 @@ func (el *Element) Timeout(d time.Duration) *Element {
 func (el *Element) CancelTimeout() *Element {
 	val := el.ctx.Value(timeoutContextKey{}).(*timeoutContextVal) //nolint: forcetypeassert
 	val.cancel()
+
 	return el.Context(val.parent)
 }
 
@@ -128,5 +137,6 @@ func (el *Element) WithCancel() (*Element, func()) {
 func (el *Element) Sleeper(sleeper func() utils.Sleeper) *Element {
 	newObj := *el
 	newObj.sleeper = sleeper
+
 	return &newObj
 }

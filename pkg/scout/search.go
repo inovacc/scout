@@ -250,12 +250,15 @@ var googleParser = serpParser{
 		if opts.language != "" {
 			u += "&hl=" + url.QueryEscape(opts.language)
 		}
+
 		if opts.region != "" {
 			u += "&gl=" + url.QueryEscape(opts.region)
 		}
+
 		if opts.recentDuration > 0 {
 			u += "&tbs=" + url.QueryEscape(googleTBS(opts.recentDuration))
 		}
+
 		return u
 	},
 }
@@ -271,11 +274,13 @@ var bingParser = serpParser{
 		if opts.language != "" {
 			u += "&setlang=" + url.QueryEscape(opts.language)
 		}
+
 		if opts.recentDuration > 0 {
 			if f := bingFreshness(opts.recentDuration); f != "" {
 				u += "&filters=ex1%3a%22ez5_" + url.QueryEscape(f) + "%22"
 			}
 		}
+
 		return u
 	},
 }
@@ -288,6 +293,7 @@ var ddgParser = serpParser{
 	nextSelector:    ".result--more__btn, button#more-results",
 	buildURL: func(query string, opts *searchOptions) string {
 		var u string
+
 		switch opts.ddgType {
 		case "news":
 			u = "https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query) + "&iar=news&ia=news"
@@ -296,12 +302,15 @@ var ddgParser = serpParser{
 		default:
 			u = "https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query)
 		}
+
 		if opts.region != "" {
 			u += "&kl=" + url.QueryEscape(opts.region)
 		}
+
 		if opts.recentDuration > 0 {
 			u += "&df=" + url.QueryEscape(ddgDateFilter(opts.recentDuration))
 		}
+
 		return u
 	},
 }

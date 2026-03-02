@@ -29,6 +29,7 @@ var swaggerCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		spec, err := browser.ExtractSwagger(targetURL,
@@ -48,10 +49,14 @@ var swaggerCmd = &cobra.Command{
 				if _, err := writeOutput(cmd, spec.Raw, output); err != nil {
 					return err
 				}
+
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Saved raw spec to %s\n", output)
+
 				return nil
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(spec.Raw))
+
 			return nil
 		}
 
@@ -59,35 +64,44 @@ var swaggerCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			if output != "" {
 				data, err := json.MarshalIndent(spec, "", "  ")
 				if err != nil {
 					return fmt.Errorf("scout: marshal: %w", err)
 				}
+
 				if _, err := writeOutput(cmd, data, output); err != nil {
 					return err
 				}
+
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Saved spec to %s\n", output)
+
 				return nil
 			}
+
 			return enc.Encode(spec)
 		}
 
 		// Text summary
 		w := cmd.OutOrStdout()
 		_, _ = fmt.Fprintf(w, "API:      %s\n", spec.Info.Title)
+
 		_, _ = fmt.Fprintf(w, "Version:  %s (OpenAPI %s)\n", spec.Info.Version, spec.Version)
 		if spec.Info.Description != "" {
 			_, _ = fmt.Fprintf(w, "Desc:     %s\n", truncate(spec.Info.Description, 80))
 		}
+
 		if spec.SpecURL != "" {
 			_, _ = fmt.Fprintf(w, "Spec URL: %s\n", spec.SpecURL)
 		}
+
 		for _, s := range spec.Servers {
 			_, _ = fmt.Fprintf(w, "Server:   %s", s.URL)
 			if s.Description != "" {
 				_, _ = fmt.Fprintf(w, " (%s)", s.Description)
 			}
+
 			_, _ = fmt.Fprintln(w)
 		}
 
@@ -98,9 +112,11 @@ var swaggerCmd = &cobra.Command{
 				if sec.In != "" {
 					_, _ = fmt.Fprintf(w, " in=%s", sec.In)
 				}
+
 				if sec.Scheme != "" {
 					_, _ = fmt.Fprintf(w, " scheme=%s", sec.Scheme)
 				}
+
 				_, _ = fmt.Fprintln(w)
 			}
 		}
@@ -112,9 +128,11 @@ var swaggerCmd = &cobra.Command{
 				if p.Summary != "" {
 					_, _ = fmt.Fprintf(w, "  — %s", p.Summary)
 				}
+
 				if len(p.Tags) > 0 {
 					_, _ = fmt.Fprintf(w, "  [%s]", strings.Join(p.Tags, ", "))
 				}
+
 				_, _ = fmt.Fprintln(w)
 			}
 		}
@@ -132,9 +150,11 @@ var swaggerCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("scout: marshal: %w", err)
 			}
+
 			if _, err := writeOutput(cmd, data, output); err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(w, "\nSaved to %s\n", output)
 		}
 

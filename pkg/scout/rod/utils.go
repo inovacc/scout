@@ -25,7 +25,7 @@ import (
 // CDPClient is usually used to make rod side-effect free. Such as proxy all IO of rod.
 type CDPClient interface {
 	Event() <-chan *cdp.Event
-	Call(ctx context.Context, sessionID, method string, params interface{}) ([]byte, error)
+	Call(ctx context.Context, sessionID, method string, params any) ([]byte, error)
 }
 
 // Message represents a cdp.Event.
@@ -48,10 +48,12 @@ func (msg *Message) Load(e proto.Event) bool {
 	if eVal.Kind() != reflect.Ptr {
 		return true
 	}
+
 	eVal = reflect.Indirect(eVal)
 
 	msg.lock.Lock()
 	defer msg.lock.Unlock()
+
 	if msg.data == nil {
 		eVal.Set(msg.event)
 		return true
@@ -60,6 +62,7 @@ func (msg *Message) Load(e proto.Event) bool {
 	utils.E(json.Unmarshal(msg.data, e))
 	msg.event = eVal
 	msg.data = nil
+
 	return true
 }
 
@@ -96,9 +99,10 @@ type Pool[T any] chan *T
 // NewPool instance.
 func NewPool[T any](limit int) Pool[T] {
 	p := make(chan *T, limit)
-	for i := 0; i < limit; i++ {
+	for range limit {
 		p <- nil
 	}
+
 	return p
 }
 
@@ -108,6 +112,7 @@ func (p Pool[T]) Get(create func() (*T, error)) (elem *T, err error) {
 	if elem == nil {
 		elem, err = create()
 	}
+
 	return
 }
 
@@ -212,10 +217,13 @@ func genRegMatcher(includes, excludes []string) func(string) bool {
 						goto end
 					}
 				}
+
 				return true
 			}
 		}
+
 	end:
+
 		return false
 	}
 }
@@ -231,8 +239,10 @@ func saveFile(fileType saveFileType, bin []byte, toFile []string) error {
 	if len(toFile) == 0 {
 		return nil
 	}
+
 	if toFile[0] == "" {
 		stamp := fmt.Sprintf("%d", time.Now().UnixNano())
+
 		switch fileType {
 		case saveFileTypeScreenshot:
 			toFile = []string{"tmp", "screenshots", stamp + ".png"}
@@ -240,6 +250,7 @@ func saveFile(fileType saveFileType, bin []byte, toFile []string) error {
 			toFile = []string{"tmp", "pdf", stamp + ".pdf"}
 		}
 	}
+
 	return utils.OutputFile(filepath.Join(toFile...), bin)
 }
 
@@ -248,7 +259,7 @@ func httHTML(w http.ResponseWriter, body string) {
 	_, _ = w.Write([]byte(body))
 }
 
-func mustToJSONForDev(value interface{}) string {
+func mustToJSONForDev(value any) string {
 	buf := new(bytes.Buffer)
 	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(false)
@@ -267,5 +278,6 @@ func parseDataURI(uri string) (string, []byte) {
 	contentType := matches[1]
 
 	bin, _ := base64.StdEncoding.DecodeString(uri[l:])
+
 	return contentType, bin
 }

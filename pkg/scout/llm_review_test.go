@@ -9,12 +9,14 @@ import (
 func TestExtractWithLLMReview(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
+
 	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("wait load: %v", err)
 	}
@@ -33,9 +35,11 @@ func TestExtractWithLLMReview(t *testing.T) {
 	if result.ExtractResult != "extracted content" {
 		t.Errorf("ExtractResult = %q, want %q", result.ExtractResult, "extracted content")
 	}
+
 	if result.ReviewResult != "review: looks good" {
 		t.Errorf("ReviewResult = %q, want %q", result.ReviewResult, "review: looks good")
 	}
+
 	if !result.Reviewed {
 		t.Error("Reviewed should be true")
 	}
@@ -44,12 +48,14 @@ func TestExtractWithLLMReview(t *testing.T) {
 func TestExtractWithLLMReviewNoReviewer(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
+
 	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("wait load: %v", err)
 	}
@@ -66,9 +72,11 @@ func TestExtractWithLLMReviewNoReviewer(t *testing.T) {
 	if result.ExtractResult != "just extraction" {
 		t.Errorf("ExtractResult = %q", result.ExtractResult)
 	}
+
 	if result.Reviewed {
 		t.Error("Reviewed should be false without reviewer")
 	}
+
 	if result.ReviewResult != "" {
 		t.Error("ReviewResult should be empty")
 	}
@@ -77,12 +85,14 @@ func TestExtractWithLLMReviewNoReviewer(t *testing.T) {
 func TestExtractWithLLMReviewWithWorkspace(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
+
 	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("wait load: %v", err)
 	}
@@ -118,18 +128,23 @@ func TestExtractWithLLMReviewWithWorkspace(t *testing.T) {
 	if job.Status != JobStatusCompleted {
 		t.Errorf("job Status = %q, want %q", job.Status, JobStatusCompleted)
 	}
+
 	if job.ExtractResult != "data" {
 		t.Errorf("job ExtractResult = %q", job.ExtractResult)
 	}
+
 	if job.ReviewResult != "confirmed" {
 		t.Errorf("job ReviewResult = %q", job.ReviewResult)
 	}
+
 	if job.ExtractProvider != "extractor" {
 		t.Errorf("job ExtractProvider = %q", job.ExtractProvider)
 	}
+
 	if job.ReviewProvider != "reviewer" {
 		t.Errorf("job ReviewProvider = %q", job.ReviewProvider)
 	}
+
 	if job.Metadata["source"] != "test" {
 		t.Errorf("job Metadata[source] = %q", job.Metadata["source"])
 	}
@@ -138,12 +153,14 @@ func TestExtractWithLLMReviewWithWorkspace(t *testing.T) {
 func TestExtractWithLLMReviewExtractError(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
+
 	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("wait load: %v", err)
 	}
@@ -168,6 +185,7 @@ func TestExtractWithLLMReviewExtractError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CurrentJob: %v", err)
 	}
+
 	if job.Status != JobStatusFailed {
 		t.Errorf("job Status = %q, want %q", job.Status, JobStatusFailed)
 	}
@@ -176,12 +194,14 @@ func TestExtractWithLLMReviewExtractError(t *testing.T) {
 func TestExtractWithLLMReviewReviewError(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
+
 	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("wait load: %v", err)
 	}
@@ -207,6 +227,7 @@ func TestExtractWithLLMReviewReviewError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CurrentJob: %v", err)
 	}
+
 	if job.Status != JobStatusFailed {
 		t.Errorf("job Status = %q, want %q", job.Status, JobStatusFailed)
 	}
@@ -219,12 +240,14 @@ func TestExtractWithLLMReviewReviewError(t *testing.T) {
 func TestExtractWithLLMReviewNoProvider(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
+
 	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("wait load: %v", err)
 	}
@@ -240,27 +263,32 @@ func TestReviewOptions(t *testing.T) {
 
 	mock := &mockProvider{name: "reviewer"}
 	WithLLMReview(mock)(o)
+
 	if o.reviewProvider == nil {
 		t.Error("reviewProvider should be set")
 	}
 
 	WithLLMReviewModel("gpt-4o")(o)
+
 	if o.reviewModel != "gpt-4o" {
 		t.Errorf("reviewModel = %q", o.reviewModel)
 	}
 
 	WithLLMReviewPrompt("custom review")(o)
+
 	if o.reviewPrompt != "custom review" {
 		t.Errorf("reviewPrompt = %q", o.reviewPrompt)
 	}
 
 	WithLLMSessionID("sess-123")(o)
+
 	if o.sessionID != "sess-123" {
 		t.Errorf("sessionID = %q", o.sessionID)
 	}
 
 	WithLLMMetadata("key1", "val1")(o)
 	WithLLMMetadata("key2", "val2")(o)
+
 	if o.metadata["key1"] != "val1" || o.metadata["key2"] != "val2" {
 		t.Errorf("metadata = %v", o.metadata)
 	}
@@ -270,12 +298,14 @@ func TestReviewOptions(t *testing.T) {
 func TestReviewPromptContainsContext(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
+
 	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("wait load: %v", err)
 	}
@@ -306,6 +336,7 @@ func TestReviewPromptContainsContext(t *testing.T) {
 	if !contains(reviewer.lastUser, "My prompt") {
 		t.Error("reviewer prompt missing original prompt")
 	}
+
 	if !contains(reviewer.lastUser, "extracted stuff") {
 		t.Error("reviewer prompt missing extraction result")
 	}
@@ -317,6 +348,7 @@ func containsStr(s, sub string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -327,5 +359,6 @@ type mockReviewCapture struct {
 func (m *mockReviewCapture) Complete(_ context.Context, sys, user string) (string, error) {
 	m.lastSys = sys
 	m.lastUser = user
+
 	return m.response, m.err
 }

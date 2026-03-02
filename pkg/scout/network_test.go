@@ -354,6 +354,7 @@ func TestWithBlockPatterns(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	// Blocked pattern should be set automatically on new pages
@@ -361,6 +362,7 @@ func TestWithBlockPatterns(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	// The page should open fine (root page is not blocked)
@@ -374,12 +376,15 @@ func TestBlockPresetVariables(t *testing.T) {
 	if len(BlockAds) == 0 {
 		t.Error("BlockAds should not be empty")
 	}
+
 	if len(BlockTrackers) == 0 {
 		t.Error("BlockTrackers should not be empty")
 	}
+
 	if len(BlockFonts) == 0 {
 		t.Error("BlockFonts should not be empty")
 	}
+
 	if len(BlockImages) == 0 {
 		t.Error("BlockImages should not be empty")
 	}
@@ -407,6 +412,7 @@ func TestPageBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	// Block should work like SetBlockedURLs
@@ -423,6 +429,7 @@ func TestPageBlock(t *testing.T) {
 func TestWithRemoteCDP(t *testing.T) {
 	// Launch a browser via the launcher to get a WebSocket CDP endpoint
 	l := launcher.New().Headless(true).NoSandbox(true)
+
 	u, err := l.Launch()
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
@@ -434,12 +441,14 @@ func TestWithRemoteCDP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New(WithRemoteCDP) error: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage("about:blank")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	title, err := page.Title()

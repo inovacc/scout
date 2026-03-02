@@ -55,6 +55,7 @@ func TestAutoFreeGoroutineLifecycle(t *testing.T) {
 	if c < 1 {
 		t.Fatalf("expected callback to fire at least once, got %d", c)
 	}
+
 	t.Logf("callback fired %d times", c)
 }
 
@@ -81,6 +82,7 @@ func TestAutoFreeStopsOnClose(t *testing.T) {
 	snapshot := count.Load()
 	// After closing, no more increments should happen.
 	time.Sleep(150 * time.Millisecond)
+
 	final := count.Load()
 
 	// Allow at most 1 extra (race between close and in-flight tick).

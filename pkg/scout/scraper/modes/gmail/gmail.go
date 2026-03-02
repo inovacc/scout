@@ -60,6 +60,7 @@ func (p *gmailProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	if err != nil {
 		return nil, fmt.Errorf("gmail: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -112,6 +113,7 @@ func (p *gmailProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "gmail",
 		Version:      "1",
@@ -219,6 +221,7 @@ func (m *GmailMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -242,6 +245,7 @@ func (m *GmailMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -264,10 +268,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToLower(t)] = struct{}{}
 	}
+
 	return set
 }
 
@@ -278,6 +284,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -338,8 +345,9 @@ func parseEmailList(body string, targetSet map[string]struct{}) []scraper.Result
 		// Attempt to extract fields from nested arrays
 		threadID := fmt.Sprintf("%v", item[0])
 		labels := []string{}
+
 		if len(item) > 4 {
-			if labelList, ok := item[4].([]interface{}); ok {
+			if labelList, ok := item[4].([]any); ok {
 				for _, l := range labelList {
 					if lStr, ok := l.(string); ok {
 						labels = append(labels, lStr)
@@ -351,12 +359,14 @@ func parseEmailList(body string, targetSet map[string]struct{}) []scraper.Result
 		// Filter by target labels if specified
 		if targetSet != nil {
 			found := false
+
 			for _, label := range labels {
 				if _, ok := targetSet[strings.ToLower(label)]; ok {
 					found = true
 					break
 				}
 			}
+
 			if !found {
 				continue
 			}
@@ -394,7 +404,7 @@ func parseEmailThread(body string, targetSet map[string]struct{}) []scraper.Resu
 		threadID := fmt.Sprintf("%v", item[0])
 
 		// Attempt to parse the nested email object
-		if emailData, ok := item[1].(map[string]interface{}); ok {
+		if emailData, ok := item[1].(map[string]any); ok {
 			from := extractStringField(emailData, "from")
 			subject := extractStringField(emailData, "subject")
 			body := extractStringField(emailData, "body")
@@ -490,17 +500,18 @@ func parseContactsList(body string) []scraper.Result {
 }
 
 // extractStringField safely extracts a string value from a map.
-func extractStringField(m map[string]interface{}, key string) string {
+func extractStringField(m map[string]any, key string) string {
 	if v, ok := m[key]; ok {
 		if s, ok := v.(string); ok {
 			return s
 		}
 	}
+
 	return ""
 }
 
 // extractInt64Field safely extracts an int64 value from a map.
-func extractInt64Field(m map[string]interface{}, key string) int64 {
+func extractInt64Field(m map[string]any, key string) int64 {
 	if v, ok := m[key]; ok {
 		switch val := v.(type) {
 		case float64:
@@ -511,6 +522,7 @@ func extractInt64Field(m map[string]interface{}, key string) int64 {
 			return int64(val)
 		}
 	}
+
 	return 0
 }
 

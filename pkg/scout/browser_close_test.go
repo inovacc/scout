@@ -9,14 +9,16 @@ import (
 
 func TestBrowserCloseConcurrent(t *testing.T) {
 	b := newOwnedTestBrowser(t)
+
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range 10 {
+
+		wg.Go(func() {
+
 			_ = b.Close()
-		}()
+		})
 	}
+
 	wg.Wait()
 }
 

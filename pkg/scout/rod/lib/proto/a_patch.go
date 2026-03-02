@@ -19,6 +19,7 @@ func (t TimeSinceEpoch) Time() time.Time {
 	if t == -1 {
 		return time.Time{}
 	}
+
 	return (time.Unix(0, 0)).Add(
 		time.Duration(t * TimeSinceEpoch(time.Second)),
 	)
@@ -83,10 +84,12 @@ func (q DOMQuad) Each(fn func(pt Point, i int)) {
 // Center of the polygon.
 func (q DOMQuad) Center() Point {
 	var x, y float64
+
 	q.Each(func(pt Point, _ int) {
 		x += pt.X
 		y += pt.Y
 	})
+
 	return Point{x / float64(q.Len()), y / float64(q.Len())}
 }
 
@@ -96,9 +99,10 @@ func (q DOMQuad) Area() float64 {
 	area := 0.0
 	l := len(q)/2 - 1 //nolint: mnd
 
-	for i := 0; i < l; i++ {
+	for i := range l {
 		area += q[i*2]*q[i*2+3] - q[i*2+2]*q[i*2+1]
 	}
+
 	area += q[l*2]*q[1] - q[0]*q[l*2+1]
 
 	return area / 2 //nolint: mnd
@@ -140,12 +144,15 @@ func (qs Shape) Box() (box *DOMRect) {
 			if pt.X < left {
 				left = pt.X
 			}
+
 			if pt.Y < top {
 				top = pt.Y
 			}
+
 			if pt.X > right {
 				right = pt.X
 			}
+
 			if pt.Y > bottom {
 				bottom = pt.Y
 			}
@@ -179,5 +186,6 @@ func CookiesToParams(cookies []*NetworkCookie) []*NetworkCookieParam {
 			Priority: c.Priority,
 		})
 	}
+
 	return list
 }

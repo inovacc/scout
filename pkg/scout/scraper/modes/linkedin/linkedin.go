@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -61,6 +62,7 @@ func (p *linkedinProvider) CaptureSession(ctx context.Context, page *scout.Page)
 	if err != nil {
 		return nil, fmt.Errorf("linkedin: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -120,14 +122,13 @@ func (p *linkedinProvider) CaptureSession(ctx context.Context, page *scout.Page)
 		if raw != "" && raw != "{}" {
 			var lsMap map[string]string
 			if json.Unmarshal([]byte(raw), &lsMap) == nil {
-				for k, v := range lsMap {
-					localStorage[k] = v
-				}
+				maps.Copy(localStorage, lsMap)
 			}
 		}
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "linkedin",
 		Version:      "1",
@@ -234,6 +235,7 @@ func (m *LinkedInMode) Scrape(ctx context.Context, session scraper.SessionData, 
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -257,6 +259,7 @@ func (m *LinkedInMode) Scrape(ctx context.Context, session scraper.SessionData, 
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -280,12 +283,14 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		// Normalize by removing trailing slashes and protocol.
 		normalized := strings.ToLower(strings.TrimSuffix(strings.TrimPrefix(t, "https://"), "/"))
 		set[normalized] = struct{}{}
 	}
+
 	return set
 }
 
@@ -296,6 +301,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil

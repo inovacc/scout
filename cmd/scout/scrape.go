@@ -95,6 +95,7 @@ var scrapeAuthCmd = &cobra.Command{
 
 		timeout, _ := cmd.Flags().GetDuration("timeout")
 		savePath, _ := cmd.Flags().GetString("save")
+
 		passphrase, _ := cmd.Flags().GetString("passphrase")
 		if passphrase == "" {
 			passphrase = os.Getenv("SCOUT_PASSPHRASE")
@@ -124,6 +125,7 @@ var scrapeAuthCmd = &cobra.Command{
 		if savePath != "" {
 			if passphrase == "" {
 				var readErr error
+
 				passphrase, readErr = readPassphrase(cmd.ErrOrStderr(), "passphrase: ")
 				if readErr != nil {
 					return fmt.Errorf("scout: scrape auth: %w", readErr)
@@ -158,10 +160,12 @@ var scrapeRunCmd = &cobra.Command{
 		}
 
 		sessionFile, _ := cmd.Flags().GetString("session-file")
+
 		passphrase, _ := cmd.Flags().GetString("passphrase")
 		if passphrase == "" {
 			passphrase = os.Getenv("SCOUT_PASSPHRASE")
 		}
+
 		targets, _ := cmd.Flags().GetStringSlice("target")
 		outputDir, _ := cmd.Flags().GetString("output-dir")
 		limit, _ := cmd.Flags().GetInt("limit")
@@ -169,9 +173,11 @@ var scrapeRunCmd = &cobra.Command{
 		captureBody, _ := cmd.Flags().GetBool("body")
 
 		var session *auth.Session
+
 		if sessionFile != "" {
 			if passphrase == "" {
 				var readErr error
+
 				passphrase, readErr = readPassphrase(cmd.ErrOrStderr(), "passphrase: ")
 				if readErr != nil {
 					return fmt.Errorf("scout: scrape run: %w", readErr)
@@ -204,6 +210,7 @@ var scrapeRunCmd = &cobra.Command{
 		// Handle Ctrl+C
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
 		go func() {
 			<-sigCh
 			signal.Stop(sigCh)

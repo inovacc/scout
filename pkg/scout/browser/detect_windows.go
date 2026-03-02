@@ -21,6 +21,7 @@ func detectBrowserPaths() []browserCandidate {
 		if dir == "" {
 			continue
 		}
+
 		candidates = append(candidates, browserCandidate{
 			Name: "Google Chrome",
 			Type: TypeChrome,
@@ -33,6 +34,7 @@ func detectBrowserPaths() []browserCandidate {
 		if dir == "" {
 			continue
 		}
+
 		candidates = append(candidates, browserCandidate{
 			Name: "Brave Browser",
 			Type: TypeBrave,
@@ -45,6 +47,7 @@ func detectBrowserPaths() []browserCandidate {
 		if dir == "" {
 			continue
 		}
+
 		candidates = append(candidates, browserCandidate{
 			Name: "Microsoft Edge",
 			Type: TypeEdge,
@@ -63,5 +66,6 @@ func probeBrowserVersionPlatform(path string) string {
 	if err != nil {
 		return ""
 	}
+
 	return ParseVersion(strings.TrimSpace(string(out)))
 }

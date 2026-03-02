@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -60,6 +61,7 @@ func (p *jiraProvider) CaptureSession(ctx context.Context, page *scout.Page) (*a
 	if err != nil {
 		return nil, fmt.Errorf("jira: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -71,6 +73,7 @@ func (p *jiraProvider) CaptureSession(ctx context.Context, page *scout.Page) (*a
 		if cookie.Name == "cloud.session.token" && cookie.Value != "" {
 			tokens["cloud.session.token"] = cookie.Value
 		}
+
 		if cookie.Name == "atlassian.xsrf.token" && cookie.Value != "" {
 			tokens["atlassian.xsrf.token"] = cookie.Value
 		}
@@ -97,9 +100,7 @@ func (p *jiraProvider) CaptureSession(ctx context.Context, page *scout.Page) (*a
 		if raw != "" && raw != "{}" {
 			var lsData map[string]string
 			if json.Unmarshal([]byte(raw), &lsData) == nil {
-				for k, v := range lsData {
-					localStorage[k] = v
-				}
+				maps.Copy(localStorage, lsData)
 			}
 		}
 	}
@@ -125,14 +126,13 @@ func (p *jiraProvider) CaptureSession(ctx context.Context, page *scout.Page) (*a
 		if raw != "" && raw != "{}" {
 			var ssData map[string]string
 			if json.Unmarshal([]byte(raw), &ssData) == nil {
-				for k, v := range ssData {
-					sessionStorage[k] = v
-				}
+				maps.Copy(sessionStorage, ssData)
 			}
 		}
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:       "jira",
 		Version:        "1",
@@ -248,6 +248,7 @@ func (m *JiraMode) Scrape(ctx context.Context, session scraper.SessionData, opts
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -271,6 +272,7 @@ func (m *JiraMode) Scrape(ctx context.Context, session scraper.SessionData, opts
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -294,12 +296,14 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		// Normalize to uppercase for project keys, keep as-is for board IDs.
 		set[strings.ToUpper(t)] = struct{}{}
 		set[strings.ToLower(t)] = struct{}{}
 	}
+
 	return set
 }
 
@@ -310,6 +314,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -340,6 +345,7 @@ type jiraAPIResponse struct {
 
 type issuesSearchResponse struct {
 	jiraAPIResponse
+
 	Issues     []jiraIssue `json:"issues"`
 	Total      int         `json:"total"`
 	MaxResults int         `json:"maxResults"`
@@ -430,6 +436,7 @@ func parseIssuesSearch(body string, targetSet map[string]struct{}) []scraper.Res
 		}
 
 		ts := parseJiraTimestamp(issue.Fields.Created)
+
 		author := ""
 		if issue.Fields.Reporter != nil {
 			author = issue.Fields.Reporter.DisplayName
@@ -512,6 +519,7 @@ func parseIssueDetail(body string, targetSet map[string]struct{}) []scraper.Resu
 	}
 
 	ts := parseJiraTimestamp(issue.Fields.Created)
+
 	author := ""
 	if issue.Fields.Reporter != nil {
 		author = issue.Fields.Reporter.DisplayName
@@ -582,6 +590,7 @@ func parseIssueDetail(body string, targetSet map[string]struct{}) []scraper.Resu
 
 type boardsResponse struct {
 	jiraAPIResponse
+
 	Values []jiraBoard `json:"values"`
 	Total  int         `json:"total"`
 }
@@ -626,6 +635,7 @@ func parseBoards(body string, targetSet map[string]struct{}) []scraper.Result {
 
 type sprintsResponse struct {
 	jiraAPIResponse
+
 	Values []jiraSprint `json:"values"`
 	Total  int          `json:"total"`
 }
@@ -665,6 +675,7 @@ func parseSprints(body string, targetSet map[string]struct{}) []scraper.Result {
 		if sprint.StartDate != nil && *sprint.StartDate != "" {
 			result.Metadata["start_date"] = *sprint.StartDate
 		}
+
 		if sprint.EndDate != nil && *sprint.EndDate != "" {
 			result.Metadata["end_date"] = *sprint.EndDate
 		}
@@ -688,6 +699,7 @@ func parseUsers(body string) []scraper.Result {
 		if err := json.Unmarshal([]byte(body), &user); err != nil {
 			return nil
 		}
+
 		users = []jiraUser{user}
 	}
 
@@ -697,6 +709,7 @@ func parseUsers(body string) []scraper.Result {
 		if id == "" {
 			id = u.Key
 		}
+
 		if id == "" {
 			id = u.Name
 		}
@@ -719,6 +732,7 @@ func parseUsers(body string) []scraper.Result {
 
 type projectsResponse struct {
 	jiraAPIResponse
+
 	Values []jiraProject `json:"values,omitempty"`
 }
 
@@ -731,6 +745,7 @@ func parseProjects(body string, targetSet map[string]struct{}) []scraper.Result 
 		if err := json.Unmarshal([]byte(body), &resp); err != nil {
 			return nil
 		}
+
 		projects = resp.Values
 	}
 

@@ -23,17 +23,20 @@ func ScoreSelector(sel string) SelectorScore {
 	}
 
 	score := 0.5 // baseline
+
 	var reasons []string
 
 	// Excellent: data-* attributes
 	if strings.Contains(css, "[data-") {
 		score = 0.95
+
 		reasons = append(reasons, "uses data-* attribute")
 	}
 
 	// Excellent: ID selector
 	if containsIDSelector(css) && score < 0.9 {
 		score = 0.9
+
 		reasons = append(reasons, "uses ID selector")
 	}
 
@@ -41,6 +44,7 @@ func ScoreSelector(sel string) SelectorScore {
 	if strings.Contains(css, "[role=") || strings.Contains(css, "[role=\"") {
 		if score < 0.8 {
 			score = 0.8
+
 			reasons = append(reasons, "uses ARIA role")
 		}
 	}
@@ -48,12 +52,14 @@ func ScoreSelector(sel string) SelectorScore {
 	// Good: semantic HTML tags
 	if containsSemanticTag(css) && score < 0.75 {
 		score = 0.75
+
 		reasons = append(reasons, "uses semantic HTML tag")
 	}
 
 	// Fair: class-based (only if nothing better matched)
 	if strings.Contains(css, ".") && score <= 0.5 {
 		score = 0.6
+
 		reasons = append(reasons, "class-based selector")
 	}
 
@@ -62,11 +68,13 @@ func ScoreSelector(sel string) SelectorScore {
 	if depth >= 3 {
 		penalty := float64(depth-2) * 0.15
 		score -= penalty
+
 		reasons = append(reasons, fmt.Sprintf("deeply nested (%d levels)", depth))
 	}
 
 	if containsPositional(css) {
 		score -= 0.2
+
 		reasons = append(reasons, "uses positional pseudo-class")
 	}
 
@@ -79,11 +87,13 @@ func ScoreSelector(sel string) SelectorScore {
 	if score < 0 {
 		score = 0
 	}
+
 	if score > 1 {
 		score = 1
 	}
 
 	tier := scoreTier(score)
+
 	reason := strings.Join(reasons, "; ")
 	if reason == "" {
 		reason = "generic selector"
@@ -100,10 +110,12 @@ func ScoreSelector(sel string) SelectorScore {
 // ScoreRunbookSelectors scores every selector referenced in a runbook.
 func ScoreRunbookSelectors(r *Runbook) map[string]SelectorScore {
 	sels := collectSelectors(r)
+
 	scores := make(map[string]SelectorScore, len(sels))
 	for name, sel := range sels {
 		scores[name] = ScoreSelector(sel)
 	}
+
 	return scores
 }
 
@@ -131,6 +143,7 @@ func containsIDSelector(sel string) bool {
 			}
 		}
 	}
+
 	return false
 }
 
@@ -164,8 +177,10 @@ func containsSemanticTag(sel string) bool {
 				continue
 			}
 		}
+
 		return true
 	}
+
 	return false
 }
 
@@ -181,8 +196,10 @@ func combinatorDepth(sel string) int {
 			if ch == inQuote {
 				inQuote = 0
 			}
+
 			continue
 		}
+
 		switch ch {
 		case '"', '\'':
 			inQuote = ch
@@ -196,6 +213,7 @@ func combinatorDepth(sel string) int {
 				for i+1 < len(sel) && (sel[i+1] == ' ' || sel[i+1] == '>' || sel[i+1] == '+' || sel[i+1] == '~') {
 					i++
 				}
+
 				depth++
 			}
 		}
@@ -207,6 +225,7 @@ func combinatorDepth(sel string) int {
 // containsPositional checks for nth-child, nth-of-type, etc.
 func containsPositional(sel string) bool {
 	lower := strings.ToLower(sel)
+
 	return strings.Contains(lower, ":nth-child") ||
 		strings.Contains(lower, ":nth-of-type") ||
 		strings.Contains(lower, ":first-child") ||
@@ -226,5 +245,6 @@ func isTagOnly(sel string) bool {
 			return false
 		}
 	}
+
 	return true
 }

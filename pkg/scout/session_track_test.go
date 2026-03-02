@@ -7,109 +7,201 @@ import (
 	"time"
 )
 
-func TestSessionTracker(t *testing.T) {
+func TestWriteReadSessionInfo(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "track.json")
+	origFunc := sessionsDir
+	sessionsDir = func() string { return dir }
 
-	// Load from non-existent file.
-	tracker, err := LoadTrackerFrom(path)
+	defer func() { sessionsDir = origFunc }()
+
+	id := DomainHash("https://example.com")
+
+	info := &SessionInfo{
+		ScoutPID:   1234,
+		BrowserPID: 5678,
+		Reusable:   true,
+		CreatedAt:  time.Now().Truncate(time.Second),
+		LastUsed:   time.Now().Truncate(time.Second),
+		Headless:   true,
+		Browser:    "chrome",
+		DomainHash: id,
+		Domain:     "example.com",
+	}
+
+	if err := WriteSessionInfo(id, info); err != nil {
+		t.Fatalf("WriteSessionInfo: %v", err)
+	}
+
+	// Verify file exists.
+	pidPath := filepath.Join(dir, id, "scout.pid")
+	if _, err := os.Stat(pidPath); err != nil {
+		t.Fatalf("scout.pid not found: %v", err)
+	}
+
+	// Read back.
+	got, err := ReadSessionInfo(id)
 	if err != nil {
-		t.Fatalf("LoadTrackerFrom: %v", err)
-	}
-	if len(tracker.Sessions) != 0 {
-		t.Fatalf("expected 0 sessions, got %d", len(tracker.Sessions))
+		t.Fatalf("ReadSessionInfo: %v", err)
 	}
 
-	// Register a session.
-	entry := SessionEntry{
-		ID:        "test-id-1",
-		DataDir:   filepath.Join(dir, "data1"),
-		CreatedAt: time.Now(),
-		LastUsed:  time.Now(),
-		Browser:   "chrome",
-		Headless:  true,
-		Reusable:  true,
-	}
-	if err := os.MkdirAll(entry.DataDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := tracker.Register(entry); err != nil {
-		t.Fatalf("Register: %v", err)
+	if got.ScoutPID != 1234 || got.BrowserPID != 5678 {
+		t.Fatalf("PIDs mismatch: %+v", got)
 	}
 
-	// Reload and verify persistence.
-	tracker2, err := LoadTrackerFrom(path)
-	if err != nil {
-		t.Fatalf("LoadTrackerFrom reload: %v", err)
-	}
-	if len(tracker2.Sessions) != 1 {
-		t.Fatalf("expected 1 session, got %d", len(tracker2.Sessions))
-	}
-	if tracker2.Sessions[0].ID != "test-id-1" {
-		t.Fatalf("expected id test-id-1, got %s", tracker2.Sessions[0].ID)
+	if !got.Reusable || got.Browser != "chrome" || !got.Headless {
+		t.Fatalf("metadata mismatch: %+v", got)
 	}
 
-	// FindReusable.
-	found := tracker2.FindReusable("chrome", true)
-	if found == nil {
-		t.Fatal("expected to find reusable session")
-	}
-	notFound := tracker2.FindReusable("edge", true)
-	if notFound != nil {
-		t.Fatal("expected no match for edge")
-	}
-
-	// Update.
-	if err := tracker2.Update("test-id-1", func(e *SessionEntry) {
-		e.URLs = []string{"https://example.com"}
-	}); err != nil {
-		t.Fatalf("Update: %v", err)
-	}
-
-	// Prune — data dir exists, so nothing pruned.
-	pruned, err := tracker2.Prune()
-	if err != nil {
-		t.Fatalf("Prune: %v", err)
-	}
-	if pruned != 0 {
-		t.Fatalf("expected 0 pruned, got %d", pruned)
-	}
-
-	// Remove data dir, then prune.
-	if err := os.RemoveAll(entry.DataDir); err != nil {
-		t.Fatal(err)
-	}
-	pruned, err = tracker2.Prune()
-	if err != nil {
-		t.Fatalf("Prune: %v", err)
-	}
-	if pruned != 1 {
-		t.Fatalf("expected 1 pruned, got %d", pruned)
-	}
-	if len(tracker2.Sessions) != 0 {
-		t.Fatalf("expected 0 sessions after prune, got %d", len(tracker2.Sessions))
+	if got.Domain != "example.com" {
+		t.Fatalf("domain mismatch: %s", got.Domain)
 	}
 }
 
-func TestSessionTrackerRemove(t *testing.T) {
+func TestListSessions(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "track.json")
+	origFunc := sessionsDir
+	sessionsDir = func() string { return dir }
 
-	tracker, err := LoadTrackerFrom(path)
+	defer func() { sessionsDir = origFunc }()
+
+	// No sessions yet.
+	sessions, err := ListSessions()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("ListSessions: %v", err)
 	}
 
-	_ = tracker.Register(SessionEntry{ID: "a", DataDir: "/tmp/a", Browser: "chrome"})
-	_ = tracker.Register(SessionEntry{ID: "b", DataDir: "/tmp/b", Browser: "chrome"})
+	if len(sessions) != 0 {
+		t.Fatalf("expected 0, got %d", len(sessions))
+	}
 
-	if err := tracker.Remove("a"); err != nil {
-		t.Fatalf("Remove: %v", err)
+	// Add two sessions using domain hashes.
+	id1 := DomainHash("https://example.com")
+	id2 := DomainHash("https://other.com")
+	now := time.Now()
+
+	_ = WriteSessionInfo(id1, &SessionInfo{Browser: "chrome", CreatedAt: now, LastUsed: now, Reusable: true, Headless: true, DomainHash: id1, Domain: "example.com"})
+	_ = WriteSessionInfo(id2, &SessionInfo{Browser: "edge", CreatedAt: now, LastUsed: now, DomainHash: id2, Domain: "other.com"})
+
+	sessions, err = ListSessions()
+	if err != nil {
+		t.Fatalf("ListSessions: %v", err)
 	}
-	if len(tracker.Sessions) != 1 {
-		t.Fatalf("expected 1 session, got %d", len(tracker.Sessions))
+
+	if len(sessions) != 2 {
+		t.Fatalf("expected 2, got %d", len(sessions))
 	}
-	if tracker.Sessions[0].ID != "b" {
-		t.Fatalf("expected remaining session b, got %s", tracker.Sessions[0].ID)
+
+	// FindReusableSession.
+	found := FindReusableSession("chrome", true)
+	if found == nil {
+		t.Fatal("expected to find reusable session")
+	}
+
+	if found.ID != id1 {
+		t.Fatalf("expected %s, got %s", id1, found.ID)
+	}
+
+	notFound := FindReusableSession("firefox", true)
+	if notFound != nil {
+		t.Fatal("expected no match for firefox")
+	}
+}
+
+func TestRemoveSessionInfo(t *testing.T) {
+	dir := t.TempDir()
+	origFunc := sessionsDir
+	sessionsDir = func() string { return dir }
+
+	defer func() { sessionsDir = origFunc }()
+
+	id := DomainHash("https://example.com")
+	now := time.Now()
+	_ = WriteSessionInfo(id, &SessionInfo{Browser: "chrome", CreatedAt: now, LastUsed: now})
+
+	RemoveSessionInfo(id)
+
+	if _, err := ReadSessionInfo(id); !os.IsNotExist(err) {
+		t.Fatalf("expected not-exist error, got: %v", err)
+	}
+}
+
+func TestRootDomain(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"https://www.seoptimer.com/page", "seoptimer.com"},
+		{"https://sub.admin.mysite.com/path", "mysite.com"},
+		{"https://admin.mysite.com", "mysite.com"},
+		{"https://mysite.com", "mysite.com"},
+		{"https://app.mysite.co.uk/path", "mysite.co.uk"},
+		{"https://deep.sub.mysite.co.uk", "mysite.co.uk"},
+		{"https://192.168.1.1:8080/path", "192.168.1.1"},
+		{"", ""},
+		{"mysite.com", "mysite.com"},
+	}
+
+	for _, tt := range tests {
+		got := RootDomain(tt.input)
+		if got != tt.want {
+			t.Errorf("RootDomain(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestDomainHash(t *testing.T) {
+	// Same root domain → same hash.
+	h1 := DomainHash("https://sub.mysite.com")
+	h2 := DomainHash("https://admin.mysite.com")
+	h3 := DomainHash("https://mysite.com/path")
+
+	if h1 != h2 {
+		t.Errorf("sub.mysite.com and admin.mysite.com should have same hash: %s vs %s", h1, h2)
+	}
+
+	if h1 != h3 {
+		t.Errorf("sub.mysite.com and mysite.com should have same hash: %s vs %s", h1, h3)
+	}
+
+	// Different domain → different hash.
+	h4 := DomainHash("https://other.com")
+	if h1 == h4 {
+		t.Error("mysite.com and other.com should have different hashes")
+	}
+}
+
+func TestFindByDomain(t *testing.T) {
+	dir := t.TempDir()
+	origFunc := sessionsDir
+	sessionsDir = func() string { return dir }
+
+	defer func() { sessionsDir = origFunc }()
+
+	hash := DomainHash("https://mysite.com")
+	now := time.Now()
+
+	// Dir name IS the domain hash — direct lookup.
+	_ = WriteSessionInfo(hash, &SessionInfo{
+		Browser:    "chrome",
+		CreatedAt:  now,
+		LastUsed:   now,
+		DomainHash: hash,
+		Domain:     "mysite.com",
+	})
+
+	// Should find by subdomain of same root.
+	found := FindSessionByDomain("https://admin.mysite.com/page")
+	if found == nil {
+		t.Fatal("expected to find session by domain")
+	}
+
+	if found.ID != hash {
+		t.Fatalf("expected %s, got %s", hash, found.ID)
+	}
+
+	// Should not find for different domain.
+	notFound := FindSessionByDomain("https://other.com")
+	if notFound != nil {
+		t.Fatal("expected no match for other.com")
 	}
 }

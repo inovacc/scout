@@ -21,6 +21,7 @@ func (m *mockLLMProvider) Complete(_ context.Context, _, userPrompt string) (str
 	if m.err != nil {
 		return "", m.err
 	}
+
 	for keyword, response := range m.responses {
 		if strings.Contains(userPrompt, keyword) {
 			return response, nil
@@ -30,6 +31,7 @@ func (m *mockLLMProvider) Complete(_ context.Context, _, userPrompt string) (str
 	for _, response := range m.responses {
 		return response, nil
 	}
+
 	return "", fmt.Errorf("no mock response configured")
 }
 
@@ -76,6 +78,7 @@ func TestRefineSelectors_Mock(t *testing.T) {
 	if result["title"] != "[data-testid=\"title\"]" {
 		t.Errorf("title selector = %q, want %q", result["title"], "[data-testid=\"title\"]")
 	}
+
 	if result["price"] != "[data-testid=\"price\"]" {
 		t.Errorf("price selector = %q, want %q", result["price"], "[data-testid=\"price\"]")
 	}

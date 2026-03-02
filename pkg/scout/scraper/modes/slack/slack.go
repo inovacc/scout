@@ -60,6 +60,7 @@ func (p *slackProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	if err != nil {
 		return nil, fmt.Errorf("slack: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -101,6 +102,7 @@ func (p *slackProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "slack",
 		Version:      "1",
@@ -220,6 +222,7 @@ func (m *SlackMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -243,6 +246,7 @@ func (m *SlackMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -265,10 +269,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToLower(strings.TrimPrefix(t, "#"))] = struct{}{}
 	}
+
 	return set
 }
 
@@ -279,6 +285,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -306,6 +313,7 @@ type slackAPIResponse struct {
 
 type channelsListResponse struct {
 	slackAPIResponse
+
 	Channels []slackChannel `json:"channels"`
 }
 
@@ -351,11 +359,13 @@ func parseChannelsList(body string, targetSet map[string]struct{}) []scraper.Res
 			Raw: ch,
 		})
 	}
+
 	return results
 }
 
 type historyResponse struct {
 	slackAPIResponse
+
 	Messages []slackMessage `json:"messages"`
 }
 
@@ -394,6 +404,7 @@ func parseConversationHistory(body string, targetSet map[string]struct{}) []scra
 	}
 
 	var results []scraper.Result
+
 	for _, msg := range resp.Messages {
 		if msg.Type != "message" {
 			continue
@@ -444,6 +455,7 @@ func parseConversationHistory(body string, targetSet map[string]struct{}) []scra
 
 type usersListResponse struct {
 	slackAPIResponse
+
 	Members []slackUser `json:"members"`
 }
 
@@ -485,11 +497,13 @@ func parseUsersList(body string) []scraper.Result {
 			Raw: u,
 		})
 	}
+
 	return results
 }
 
 type filesListResponse struct {
 	slackAPIResponse
+
 	Files []slackFile `json:"files"`
 }
 
@@ -503,11 +517,13 @@ func parseFilesList(body string) []scraper.Result {
 	for _, f := range resp.Files {
 		results = append(results, fileToResult(f))
 	}
+
 	return results
 }
 
 func fileToResult(f slackFile) scraper.Result {
 	ts := parseSlackTimestamp(f.Timestamp.String())
+
 	return scraper.Result{
 		Type:      scraper.ResultFile,
 		Source:    "slack",
@@ -533,16 +549,19 @@ func parseSlackTimestamp(ts string) time.Time {
 
 	// Slack timestamps are Unix epoch seconds, possibly with a fractional part.
 	parts := strings.SplitN(ts, ".", 2)
+
 	var sec, nsec int64
 	if _, err := fmt.Sscanf(parts[0], "%d", &sec); err != nil {
 		return time.Time{}
 	}
+
 	if len(parts) == 2 {
 		// Pad or truncate to nanoseconds (9 digits).
 		frac := parts[1]
 		for len(frac) < 9 {
 			frac += "0"
 		}
+
 		frac = frac[:9]
 		_, _ = fmt.Sscanf(frac, "%d", &nsec)
 	}

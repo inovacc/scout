@@ -11,6 +11,7 @@ import (
 
 func TestSitemapExtract(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -28,6 +29,7 @@ func TestSitemapExtract(t *testing.T) {
 	}
 
 	foundStart := false
+
 	for _, p := range result.Pages {
 		t.Logf("page: %s (depth=%d, title=%q, dom=%v, md=%d, err=%q)",
 			p.URL, p.Depth, p.Title, p.DOM != nil, len(p.Markdown), p.Error)
@@ -56,6 +58,7 @@ func TestSitemapExtract(t *testing.T) {
 
 func TestSitemapExtractOutputDir(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -120,6 +123,7 @@ func TestSitemapExtractOutputDir(t *testing.T) {
 
 func TestSitemapExtractOptions(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -205,41 +209,49 @@ func TestSitemapOptionDefaults(t *testing.T) {
 	}
 
 	WithSitemapMaxDepth(5)(o)
+
 	if o.maxDepth != 5 {
 		t.Errorf("maxDepth = %d, want 5", o.maxDepth)
 	}
 
 	WithSitemapMaxPages(50)(o)
+
 	if o.maxPages != 50 {
 		t.Errorf("maxPages = %d, want 50", o.maxPages)
 	}
 
 	WithSitemapDOMDepth(10)(o)
+
 	if o.domDepth != 10 {
 		t.Errorf("domDepth = %d, want 10", o.domDepth)
 	}
 
 	WithSitemapSelector("main")(o)
+
 	if o.selector != "main" {
 		t.Errorf("selector = %q, want 'main'", o.selector)
 	}
 
 	WithSitemapMainOnly()(o)
+
 	if !o.mainOnly {
 		t.Error("expected mainOnly = true")
 	}
 
 	WithSitemapSkipJSON()(o)
+
 	if !o.skipJSON {
 		t.Error("expected skipJSON = true")
 	}
 
 	WithSitemapSkipMarkdown()(o)
+
 	if !o.skipMarkdown {
 		t.Error("expected skipMarkdown = true")
 	}
 
 	WithSitemapOutputDir("/tmp/out")(o)
+
 	if o.outputDir != "/tmp/out" {
 		t.Errorf("outputDir = %q", o.outputDir)
 	}
@@ -266,6 +278,7 @@ func TestURLToDir(t *testing.T) {
 
 func TestSitemapExtractIndexMarkdown(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 

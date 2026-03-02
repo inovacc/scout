@@ -145,6 +145,7 @@ func (b *Browser) Connect() error {
 		u := b.controlURL
 		if u == "" {
 			var err error
+
 			u, err = launcher.New().Context(b.ctx).Launch()
 			if err != nil {
 				return err
@@ -155,6 +156,7 @@ func (b *Browser) Connect() error {
 		if err != nil {
 			return err
 		}
+
 		b.client = c
 	} else if b.controlURL != "" {
 		panic("Browser.Client and Browser.ControlURL can't be set at the same time")
@@ -174,6 +176,7 @@ func (b *Browser) Close() error {
 	if b.BrowserContextID == "" {
 		return proto.BrowserClose{}.Call(b)
 	}
+
 	return proto.TargetDisposeBrowserContext{BrowserContextID: b.BrowserContextID}.Call(b)
 }
 
@@ -187,6 +190,7 @@ func (b *Browser) Page(opts proto.TargetCreateTarget) (p *Page, err error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() {
 		// If Navigate or PageFromTarget fails we should close the target to prevent leak
 		if err != nil {
@@ -216,6 +220,7 @@ func (b *Browser) Pages() (Pages, error) {
 	}
 
 	pageList := Pages{}
+
 	for _, target := range list.TargetInfos {
 		if target.Type != proto.TargetTargetInfoTypePage {
 			continue
@@ -225,6 +230,7 @@ func (b *Browser) Pages() (Pages, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		pageList = append(pageList, page)
 	}
 
@@ -232,19 +238,21 @@ func (b *Browser) Pages() (Pages, error) {
 }
 
 // Call implements the [proto.Client] to call raw cdp interface directly.
-func (b *Browser) Call(ctx context.Context, sessionID, methodName string, params interface{}) (res []byte, err error) {
+func (b *Browser) Call(ctx context.Context, sessionID, methodName string, params any) (res []byte, err error) {
 	res, err = b.client.Call(ctx, sessionID, methodName, params)
 	if err != nil {
 		return nil, err
 	}
 
 	b.set(proto.TargetSessionID(sessionID), methodName, params)
+
 	return
 }
 
 // PageFromSession is used for low-level debugging.
 func (b *Browser) PageFromSession(sessionID proto.TargetSessionID) *Page {
 	sessionCtx, cancel := context.WithCancel(b.ctx)
+
 	return &Page{
 		e:             b.e,
 		ctx:           sessionCtx,
@@ -311,7 +319,7 @@ func (b *Browser) PageFromTarget(targetID proto.TargetTargetID) (*Page, error) {
 }
 
 // EachEvent is similar to [Page.EachEvent], but catches events of the entire browser.
-func (b *Browser) EachEvent(callbacks ...interface{}) (wait func()) {
+func (b *Browser) EachEvent(callbacks ...any) (wait func()) {
 	return b.eachEvent("", callbacks...)
 }
 
@@ -346,7 +354,7 @@ func (b *Browser) waitEvent(sessionID proto.TargetSessionID, e proto.Event) (wai
 
 // If the any callback returns true the event loop will stop.
 // It will enable the related domains if not enabled, and restore them after wait ends.
-func (b *Browser) eachEvent(sessionID proto.TargetSessionID, callbacks ...interface{}) (wait func()) {
+func (b *Browser) eachEvent(sessionID proto.TargetSessionID, callbacks ...any) (wait func()) {
 	cbMap := map[string]reflect.Value{}
 	restores := []func(){}
 
@@ -376,24 +384,28 @@ func (b *Browser) eachEvent(sessionID proto.TargetSessionID, callbacks ...interf
 
 		defer func() {
 			cancel()
+
 			messages = nil
+
 			for _, restore := range restores {
 				restore()
 			}
 		}()
 
 		for msg := range messages {
-			if !(sessionID == "" || msg.SessionID == sessionID) {
+			if sessionID != "" && msg.SessionID != sessionID {
 				continue
 			}
 
 			if cbVal, has := cbMap[msg.Method]; has {
 				e := reflect.New(proto.GetType(msg.Method))
 				msg.Load(e.Interface().(proto.Event)) //nolint: forcetypeassert
+
 				args := []reflect.Value{e}
 				if cbVal.Type().NumIn() == 2 {
 					args = append(args, reflect.ValueOf(msg.SessionID))
 				}
+
 				res := cbVal.Call(args)
 				if len(res) > 0 {
 					if res[0].Bool() {
@@ -409,8 +421,10 @@ func (b *Browser) eachEvent(sessionID proto.TargetSessionID, callbacks ...interf
 func (b *Browser) Event() <-chan *Message {
 	src := b.event.Subscribe(b.ctx)
 	dst := make(chan *Message)
+
 	go func() {
 		defer close(dst)
+
 		for {
 			select {
 			case <-b.ctx.Done():
@@ -419,6 +433,7 @@ func (b *Browser) Event() <-chan *Message {
 				if !ok {
 					return
 				}
+
 				select {
 				case <-b.ctx.Done():
 					return
@@ -427,6 +442,7 @@ func (b *Browser) Event() <-chan *Message {
 			}
 		}
 	}()
+
 	return dst
 }
 
@@ -437,6 +453,7 @@ func (b *Browser) initEvents() {
 
 	go func() {
 		defer cancel()
+
 		for e := range event {
 			b.event.Publish(&Message{
 				SessionID: proto.TargetSessionID(e.SessionID),
@@ -453,6 +470,7 @@ func (b *Browser) pageInfo(id proto.TargetTargetID) (*proto.TargetTargetInfo, er
 	if err != nil {
 		return nil, err
 	}
+
 	return res.TargetInfo, nil
 }
 
@@ -463,6 +481,7 @@ func (b *Browser) isHeadless() (enabled bool) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -477,6 +496,7 @@ func (b *Browser) GetCookies() ([]*proto.NetworkCookie, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return res.Cookies, nil
 }
 
@@ -498,6 +518,7 @@ func (b *Browser) SetCookies(cookies []*proto.NetworkCookieParam) error {
 //	filepath.Join(dir, info.GUID)
 func (b *Browser) WaitDownload(dir string) func() (info *proto.PageDownloadWillBegin) {
 	var oldDownloadBehavior proto.BrowserSetDownloadBehavior
+
 	has := b.LoadState("", &oldDownloadBehavior)
 
 	_ = proto.BrowserSetDownloadBehavior{

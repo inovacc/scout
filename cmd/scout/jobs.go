@@ -25,6 +25,7 @@ func defaultJobsDir() string {
 	if err != nil {
 		return filepath.Join(".", ".scout", "jobs")
 	}
+
 	return filepath.Join(home, ".scout", "jobs")
 }
 
@@ -55,6 +56,7 @@ var jobsListCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(jobs)
 		}
 
@@ -104,6 +106,7 @@ var jobsStatusCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(j)
 		}
 
@@ -146,6 +149,7 @@ var jobsCancelCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Job %s cancelled.\n", args[0])
+
 		return nil
 	},
 }

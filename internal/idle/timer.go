@@ -36,6 +36,7 @@ func New(timeout time.Duration, onIdle func()) *Timer {
 			t.mu.Unlock()
 			return
 		}
+
 		t.stopped = true
 		t.mu.Unlock()
 		onIdle()

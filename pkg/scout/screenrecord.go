@@ -53,9 +53,11 @@ func WithRecordQuality(q int) ScreenRecordOption {
 		if q < 1 {
 			q = 1
 		}
+
 		if q > 100 {
 			q = 100
 		}
+
 		o.quality = q
 	}
 }
@@ -111,6 +113,7 @@ func (r *ScreenRecorder) Start() error {
 		r.mu.Unlock()
 		return fmt.Errorf("scout: screenrecord: already recording")
 	}
+
 	r.recording = true
 	r.startTime = time.Now()
 	r.mu.Unlock()
@@ -159,6 +162,7 @@ func (r *ScreenRecorder) Start() error {
 
 	// Enable the screencast.
 	quality := r.opts.quality
+
 	req := proto.PageStartScreencast{
 		Format:  proto.PageStartScreencastFormatJpeg,
 		Quality: &quality,
@@ -166,6 +170,7 @@ func (r *ScreenRecorder) Start() error {
 	if r.opts.maxWidth > 0 {
 		req.MaxWidth = &r.opts.maxWidth
 	}
+
 	if r.opts.maxHeight > 0 {
 		req.MaxHeight = &r.opts.maxHeight
 	}
@@ -174,6 +179,7 @@ func (r *ScreenRecorder) Start() error {
 		r.mu.Lock()
 		r.recording = false
 		r.mu.Unlock()
+
 		return fmt.Errorf("scout: screenrecord: start: %w", err)
 	}
 
@@ -191,6 +197,7 @@ func (r *ScreenRecorder) Stop() error {
 		r.mu.Unlock()
 		return nil
 	}
+
 	r.recording = false
 	r.mu.Unlock()
 
@@ -273,12 +280,11 @@ func (r *ScreenRecorder) ExportGIF(w io.Writer) error {
 
 		// Calculate delay in centiseconds between frames.
 		delay := 10 // default 100ms
+
 		if i < len(frames)-1 {
 			dt := frames[i+1].Timestamp.Sub(frame.Timestamp)
-			delay = int(dt.Milliseconds() / 10)
-			if delay < 1 {
-				delay = 1
-			}
+
+			delay = max(int(dt.Milliseconds()/10), 1)
 		}
 
 		g.Image = append(g.Image, palettedImg)

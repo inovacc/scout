@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -64,6 +65,7 @@ func (p *youtubeProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	if err != nil {
 		return nil, fmt.Errorf("youtube: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -88,9 +90,7 @@ func (p *youtubeProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		if raw != "" && raw != "{}" {
 			var lsData map[string]string
 			if json.Unmarshal([]byte(raw), &lsData) == nil {
-				for k, v := range lsData {
-					localStorage[k] = v
-				}
+				maps.Copy(localStorage, lsData)
 			}
 		}
 	}
@@ -120,14 +120,13 @@ func (p *youtubeProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		if raw != "" && raw != "{}" {
 			var tokensData map[string]string
 			if json.Unmarshal([]byte(raw), &tokensData) == nil {
-				for k, v := range tokensData {
-					tokens[k] = v
-				}
+				maps.Copy(tokens, tokensData)
 			}
 		}
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "youtube",
 		Version:      "1",
@@ -147,6 +146,7 @@ func (p *youtubeProvider) ValidateSession(_ context.Context, session *auth.Sessi
 
 	// Check for essential YouTube/Google cookies (SID, SSID, HSID, LOGIN_INFO).
 	requiredCookies := map[string]bool{}
+
 	for _, cookie := range session.Cookies {
 		switch cookie.Name {
 		case "SID", "SSID", "HSID", "LOGIN_INFO":
@@ -240,6 +240,7 @@ func (m *YouTubeMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -263,6 +264,7 @@ func (m *YouTubeMode) Scrape(ctx context.Context, session scraper.SessionData, o
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -285,12 +287,14 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		// Normalize by lowercasing and trimming URL schemes.
 		normalized := strings.ToLower(strings.TrimSpace(t))
 		set[normalized] = struct{}{}
 	}
+
 	return set
 }
 
@@ -301,6 +305,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -323,12 +328,13 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 // youtubeAPIResponse is the common envelope for YouTube InnerTube API responses.
 type youtubeAPIResponse struct {
 	ResponseContext struct {
-		ServiceTrackingParams []map[string]interface{} `json:"serviceTrackingParams"`
+		ServiceTrackingParams []map[string]any `json:"serviceTrackingParams"`
 	} `json:"responseContext"`
 }
 
 type searchResponse struct {
 	youtubeAPIResponse
+
 	Contents struct {
 		TwoColumnSearchResultsRenderer struct {
 			PrimaryContents struct {
@@ -346,6 +352,7 @@ type searchResponse struct {
 
 type browseResponse struct {
 	youtubeAPIResponse
+
 	Contents struct {
 		TwoColumnBrowseResultsRenderer struct {
 			Tabs []struct {
@@ -522,17 +529,18 @@ func parseVideoPageResults(body string, targetSet map[string]struct{}) []scraper
 				} `json:"commentThreadRenderer"`
 			}
 			if json.Unmarshal(item, &commentData) == nil && commentData.CommentThreadRenderer.Comment.CommentRenderer.AuthorText.SimpleText != "" {
-				var contentText string
+				var contentText strings.Builder
 				for _, run := range commentData.CommentThreadRenderer.Comment.CommentRenderer.ContentText.Runs {
-					contentText += run.Text
+					contentText.WriteString(run.Text)
 				}
+
 				results = append(results, scraper.Result{
 					Type:      scraper.ResultComment,
 					Source:    "youtube",
 					ID:        fmt.Sprintf("%s-%d", commentData.CommentThreadRenderer.Comment.CommentRenderer.AuthorText.SimpleText, time.Now().UnixNano()),
 					Timestamp: time.Now(),
 					Author:    commentData.CommentThreadRenderer.Comment.CommentRenderer.AuthorText.SimpleText,
-					Content:   contentText,
+					Content:   contentText.String(),
 					Metadata:  make(map[string]any),
 					Raw:       commentData,
 				})

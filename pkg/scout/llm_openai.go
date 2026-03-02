@@ -118,6 +118,7 @@ func NewOpenRouterProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIP
 		WithOpenAIKey(apiKey),
 		WithOpenAIModel(model),
 	}
+
 	return NewOpenAIProvider(append(defaults, opts...)...)
 }
 
@@ -126,11 +127,13 @@ func NewDeepSeekProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIPro
 	if model == "" {
 		model = "deepseek-chat"
 	}
+
 	defaults := []OpenAIOption{
 		WithOpenAIBaseURL(DeepSeekBaseURL),
 		WithOpenAIKey(apiKey),
 		WithOpenAIModel(model),
 	}
+
 	return NewOpenAIProvider(append(defaults, opts...)...)
 }
 
@@ -139,11 +142,13 @@ func NewGeminiProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIProvi
 	if model == "" {
 		model = "gemini-2.0-flash"
 	}
+
 	defaults := []OpenAIOption{
 		WithOpenAIBaseURL(GeminiBaseURL),
 		WithOpenAIKey(apiKey),
 		WithOpenAIModel(model),
 	}
+
 	return NewOpenAIProvider(append(defaults, opts...)...)
 }
 
@@ -202,6 +207,7 @@ func (p *OpenAIProvider) Complete(ctx context.Context, systemPrompt, userPrompt 
 	}
 
 	url := p.baseURL + "/chat/completions"
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("scout: %s: create request: %w", p.Name(), err)
@@ -209,6 +215,7 @@ func (p *OpenAIProvider) Complete(ctx context.Context, systemPrompt, userPrompt 
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(p.authHeader, p.authPrefix+p.apiKey)
+
 	for k, v := range p.extraHeaders {
 		req.Header.Set(k, v)
 	}
@@ -217,6 +224,7 @@ func (p *OpenAIProvider) Complete(ctx context.Context, systemPrompt, userPrompt 
 	if err != nil {
 		return "", fmt.Errorf("scout: %s: request: %w", p.Name(), err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)

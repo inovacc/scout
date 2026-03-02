@@ -61,6 +61,7 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	if err != nil {
 		return nil, fmt.Errorf("cloud: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -182,6 +183,7 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:       "cloud",
 		Version:        "1",
@@ -209,9 +211,11 @@ func (p *cloudProvider) ValidateSession(_ context.Context, session *auth.Session
 		if strings.Contains(k, "aws") || strings.Contains(v, "aws") {
 			hasAWSAuth = true
 		}
+
 		if strings.Contains(k, "gcp") || strings.Contains(k, "osid") {
 			hasGCPAuth = true
 		}
+
 		if strings.Contains(k, "azure") {
 			hasAzureAuth = true
 		}
@@ -222,9 +226,11 @@ func (p *cloudProvider) ValidateSession(_ context.Context, session *auth.Session
 		if strings.Contains(k, "aws") {
 			hasAWSAuth = true
 		}
+
 		if strings.Contains(k, "gcp") {
 			hasGCPAuth = true
 		}
+
 		if strings.Contains(k, "azure") {
 			hasAzureAuth = true
 		}
@@ -234,6 +240,7 @@ func (p *cloudProvider) ValidateSession(_ context.Context, session *auth.Session
 		if strings.Contains(k, "aws") {
 			hasAWSAuth = true
 		}
+
 		if strings.Contains(k, "azure") {
 			hasAzureAuth = true
 		}
@@ -325,6 +332,7 @@ func (m *CloudMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -348,6 +356,7 @@ func (m *CloudMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -371,10 +380,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToLower(strings.TrimSpace(t))] = struct{}{}
 	}
+
 	return set
 }
 
@@ -385,6 +396,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -696,6 +708,7 @@ func parseGCPProjects(body string, targetSet map[string]struct{}) []scraper.Resu
 			if projMap, ok := p.(map[string]any); ok {
 				projectID, _ := projMap["projectId"].(string)
 				projectName, _ := projMap["name"].(string)
+
 				if projectID == "" {
 					continue
 				}
@@ -744,6 +757,7 @@ func parseAzureResources(body string, targetSet map[string]struct{}) []scraper.R
 		for _, r := range resources {
 			if resMap, ok := r.(map[string]any); ok {
 				resourceID, _ := resMap["id"].(string)
+
 				resourceName, _ := resMap["name"].(string)
 				if resourceID == "" || resourceName == "" {
 					continue
@@ -800,6 +814,7 @@ func parseAzureAPI(body string, targetSet map[string]struct{}) []scraper.Result 
 				if subMap, ok := sub.(map[string]any); ok {
 					subID, _ := subMap["subscriptionId"].(string)
 					subName, _ := subMap["displayName"].(string)
+
 					if subID == "" {
 						continue
 					}
@@ -839,6 +854,7 @@ func parseAzureAPI(body string, targetSet map[string]struct{}) []scraper.Result 
 			if vMap, ok := v.(map[string]any); ok {
 				itemID, _ := vMap["id"].(string)
 				itemName, _ := vMap["name"].(string)
+
 				if itemID == "" {
 					continue
 				}

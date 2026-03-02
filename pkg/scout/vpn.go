@@ -75,6 +75,7 @@ func NewDirectProxy(host string, port int, opts ...DirectProxyOption) *DirectPro
 	for _, fn := range opts {
 		fn(dp)
 	}
+
 	return dp
 }
 
@@ -101,6 +102,7 @@ func (dp *DirectProxy) Servers(_ context.Context) ([]VPNServer, error) {
 	if dp == nil {
 		return nil, fmt.Errorf("scout: vpn: proxy is nil")
 	}
+
 	return []VPNServer{dp.server()}, nil
 }
 
@@ -109,6 +111,7 @@ func (dp *DirectProxy) Connect(_ context.Context, _ string) (*VPNConnection, err
 	if dp == nil {
 		return nil, fmt.Errorf("scout: vpn: proxy is nil")
 	}
+
 	return &VPNConnection{
 		Server:   dp.server(),
 		Protocol: dp.scheme,
@@ -126,11 +129,13 @@ func (dp *DirectProxy) Status(_ context.Context) (*VPNStatus, error) {
 	if dp == nil {
 		return nil, fmt.Errorf("scout: vpn: proxy is nil")
 	}
+
 	conn := &VPNConnection{
 		Server:   dp.server(),
 		Protocol: dp.scheme,
 		Port:     dp.port,
 	}
+
 	return &VPNStatus{
 		Connected:  true,
 		Connection: conn,
@@ -142,9 +147,11 @@ func (dp *DirectProxy) ProxyURL() string {
 	if dp == nil {
 		return ""
 	}
+
 	if dp.username != "" {
 		return fmt.Sprintf("%s://%s:%s@%s:%d", dp.scheme, dp.username, dp.password, dp.host, dp.port)
 	}
+
 	return fmt.Sprintf("%s://%s:%d", dp.scheme, dp.host, dp.port)
 }
 

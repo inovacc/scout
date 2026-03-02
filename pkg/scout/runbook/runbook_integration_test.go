@@ -77,17 +77,21 @@ func TestRunbookPipeline_GenerateWithFragileSelectors(t *testing.T) {
 
 	foundContainer := false
 	foundField := false
+
 	for _, w := range r.Warnings {
 		if strings.Contains(w, "container") {
 			foundContainer = true
 		}
+
 		if strings.Contains(w, "field:title") {
 			foundField = true
 		}
 	}
+
 	if !foundContainer {
 		t.Error("expected fragile warning for container")
 	}
+
 	if !foundField {
 		t.Error("expected fragile warning for field:title")
 	}
@@ -105,6 +109,7 @@ func TestRunbookPipeline_FixRunbookNoURL(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for missing URL")
 	}
+
 	if !strings.Contains(err.Error(), "no URL") {
 		t.Errorf("error = %q, want to contain 'no URL'", err.Error())
 	}
@@ -122,6 +127,7 @@ func TestRunbookPipeline_SampleExtractNoItems(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for missing items")
 	}
+
 	if !strings.Contains(err.Error(), "no items spec") {
 		t.Errorf("error = %q, want to contain 'no items spec'", err.Error())
 	}
@@ -167,35 +173,45 @@ func TestRunbookPipeline_LoadSaveRoundTrip(t *testing.T) {
 	if loaded.Version != original.Version {
 		t.Errorf("Version = %q, want %q", loaded.Version, original.Version)
 	}
+
 	if loaded.Name != original.Name {
 		t.Errorf("Name = %q, want %q", loaded.Name, original.Name)
 	}
+
 	if loaded.Type != original.Type {
 		t.Errorf("Type = %q, want %q", loaded.Type, original.Type)
 	}
+
 	if loaded.URL != original.URL {
 		t.Errorf("URL = %q, want %q", loaded.URL, original.URL)
 	}
+
 	if loaded.Items.Container != original.Items.Container {
 		t.Errorf("Items.Container = %q, want %q", loaded.Items.Container, original.Items.Container)
 	}
+
 	if len(loaded.Items.Fields) != len(original.Items.Fields) {
 		t.Errorf("Items.Fields count = %d, want %d", len(loaded.Items.Fields), len(original.Items.Fields))
 	}
+
 	for k, v := range original.Items.Fields {
 		if loaded.Items.Fields[k] != v {
 			t.Errorf("Items.Fields[%q] = %q, want %q", k, loaded.Items.Fields[k], v)
 		}
 	}
+
 	if loaded.Pagination.Strategy != original.Pagination.Strategy {
 		t.Errorf("Pagination.Strategy = %q, want %q", loaded.Pagination.Strategy, original.Pagination.Strategy)
 	}
+
 	if loaded.Pagination.MaxPages != original.Pagination.MaxPages {
 		t.Errorf("Pagination.MaxPages = %d, want %d", loaded.Pagination.MaxPages, original.Pagination.MaxPages)
 	}
+
 	if loaded.Pagination.DedupField != original.Pagination.DedupField {
 		t.Errorf("Pagination.DedupField = %q, want %q", loaded.Pagination.DedupField, original.Pagination.DedupField)
 	}
+
 	if loaded.Output.Format != original.Output.Format {
 		t.Errorf("Output.Format = %q, want %q", loaded.Output.Format, original.Output.Format)
 	}
@@ -255,6 +271,7 @@ func TestRunbookPipeline_ValidateRunbookFormat(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected error")
 			}
+
 			if !strings.Contains(err.Error(), tt.wantErr) {
 				t.Errorf("error = %q, want to contain %q", err.Error(), tt.wantErr)
 			}
@@ -270,6 +287,7 @@ func TestRunbookPipeline_InteractiveWithNilBrowser(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil browser")
 	}
+
 	if !strings.Contains(err.Error(), "nil browser") {
 		t.Errorf("error = %q, want to contain 'nil browser'", err.Error())
 	}
@@ -317,6 +335,7 @@ func TestRunbookPipeline_ScoreAndWarn(t *testing.T) {
 			t.Errorf("missing score for %q", tt.key)
 			continue
 		}
+
 		if s.Tier != tt.wantTier {
 			t.Errorf("scores[%q].Tier = %q, want %q (score=%.2f)", tt.key, s.Tier, tt.wantTier, s.Score)
 		}
@@ -324,17 +343,21 @@ func TestRunbookPipeline_ScoreAndWarn(t *testing.T) {
 
 	// Warnings should mention fragile selectors but not excellent/fair ones.
 	hasFragileTitle := false
+
 	for _, w := range r.Warnings {
 		if strings.Contains(w, "field:title") {
 			hasFragileTitle = true
 		}
+
 		if strings.Contains(w, "field:link") {
 			t.Error("unexpected warning for excellent field:link")
 		}
+
 		if strings.Contains(w, "field:price") {
 			t.Error("unexpected warning for fair field:price")
 		}
 	}
+
 	if !hasFragileTitle {
 		t.Error("expected fragile warning for field:title")
 	}

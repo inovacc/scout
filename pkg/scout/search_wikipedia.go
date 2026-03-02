@@ -17,6 +17,7 @@ var wikipediaParser = serpParser{
 			// Use language subdomain instead of en
 			u = "https://" + url.QueryEscape(opts.language) + ".wikipedia.org/w/index.php?search=" + url.QueryEscape(query) + "&ns0=1"
 		}
+
 		return u
 	},
 }

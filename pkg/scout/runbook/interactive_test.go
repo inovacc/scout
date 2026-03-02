@@ -9,7 +9,9 @@ import (
 
 func TestPrompt_WithDefault(t *testing.T) {
 	input := strings.NewReader("\n")
+
 	var output bytes.Buffer
+
 	scanner := bufio.NewScanner(input)
 
 	result := prompt(&output, scanner, "Enter name", "default-value")
@@ -17,6 +19,7 @@ func TestPrompt_WithDefault(t *testing.T) {
 	if result != "default-value" {
 		t.Errorf("expected %q, got %q", "default-value", result)
 	}
+
 	if !strings.Contains(output.String(), "[default-value]") {
 		t.Errorf("output should contain default value hint, got %q", output.String())
 	}
@@ -24,7 +27,9 @@ func TestPrompt_WithDefault(t *testing.T) {
 
 func TestPrompt_WithInput(t *testing.T) {
 	input := strings.NewReader("custom-value\n")
+
 	var output bytes.Buffer
+
 	scanner := bufio.NewScanner(input)
 
 	result := prompt(&output, scanner, "Enter name", "default-value")
@@ -36,7 +41,9 @@ func TestPrompt_WithInput(t *testing.T) {
 
 func TestPrompt_NoDefault(t *testing.T) {
 	input := strings.NewReader("\n")
+
 	var output bytes.Buffer
+
 	scanner := bufio.NewScanner(input)
 
 	result := prompt(&output, scanner, "Enter name", "")
@@ -44,6 +51,7 @@ func TestPrompt_NoDefault(t *testing.T) {
 	if result != "" {
 		t.Errorf("expected empty string, got %q", result)
 	}
+
 	if strings.Contains(output.String(), "[") {
 		t.Errorf("output should not contain brackets for empty default, got %q", output.String())
 	}

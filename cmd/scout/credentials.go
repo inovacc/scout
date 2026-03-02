@@ -82,6 +82,7 @@ Optionally navigates to a different URL after restoring.`,
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = b.Close() }()
 
 		session := creds.ToSessionState()

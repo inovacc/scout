@@ -34,6 +34,7 @@ var versionRe = regexp.MustCompile(`(\d+\.\d+\.\d+\.\d+)`)
 // Returns detected browsers sorted by preference (Chrome > Brave > Edge > Chromium).
 func DetectBrowsers() []DetectedBrowser {
 	candidates := detectBrowserPaths()
+
 	var results []DetectedBrowser
 
 	for _, c := range candidates {
@@ -53,6 +54,7 @@ func DetectBrowsers() []DetectedBrowser {
 	sort.Slice(results, func(i, j int) bool {
 		pi := browserTypePriority[results[i].Type]
 		pj := browserTypePriority[results[j].Type]
+
 		return pi < pj
 	})
 
@@ -68,6 +70,7 @@ func ParseBrowserVersion(output string) string {
 
 	// Fallback: try to find any version-like pattern (X.Y.Z).
 	re2 := regexp.MustCompile(`(\d+\.\d+\.\d+)`)
+
 	return re2.FindString(output)
 }
 

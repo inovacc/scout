@@ -115,10 +115,12 @@ func (b *Browser) CrawlWithJob(startURL string, handler CrawlHandler, opts ...Cr
 	visited := &visitedSet{urls: make(map[string]bool)}
 
 	var jobID string
+
 	jm := o.jobManager
 
 	if jm != nil {
 		var err error
+
 		jobID, err = jm.Create("crawl", map[string]any{
 			"start_url": startURL,
 			"max_depth": o.maxDepth,
@@ -177,6 +179,7 @@ func (b *Browser) CrawlWithJob(startURL string, handler CrawlHandler, opts ...Cr
 			mu.Lock()
 
 			results = append(results, result)
+
 			errCount++
 			if jm != nil {
 				_ = jm.UpdateProgress(jobID, len(results), errCount)
@@ -197,6 +200,7 @@ func (b *Browser) CrawlWithJob(startURL string, handler CrawlHandler, opts ...Cr
 			mu.Lock()
 
 			results = append(results, result)
+
 			errCount++
 			if jm != nil {
 				_ = jm.UpdateProgress(jobID, len(results), errCount)
@@ -233,6 +237,7 @@ func (b *Browser) CrawlWithJob(startURL string, handler CrawlHandler, opts ...Cr
 				mu.Lock()
 
 				results = append(results, result)
+
 				errCount++
 				if jm != nil {
 					_ = jm.UpdateProgress(jobID, len(results), errCount)

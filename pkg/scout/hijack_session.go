@@ -135,6 +135,7 @@ func (p *Page) NewSessionHijacker(opts ...HijackOption) (*SessionHijacker, error
 	}
 
 	h.startCDP()
+
 	return h, nil
 }
 
@@ -190,6 +191,7 @@ func (h *SessionHijacker) matchFilter(url string) bool {
 			}
 		}
 	}
+
 	return false
 }
 
@@ -263,6 +265,7 @@ func (h *SessionHijacker) startCDP() {
 				h.mu.Lock()
 				delete(h.startTimes, e.RequestID)
 				h.mu.Unlock()
+
 				return
 			}
 
@@ -318,9 +321,12 @@ func (h *SessionHijacker) startCDP() {
 				return
 			}
 
-			var payload string
-			var opcode float64
-			var masked bool
+			var (
+				payload string
+				opcode  float64
+				masked  bool
+			)
+
 			if e.Response != nil {
 				payload = e.Response.PayloadData
 				opcode = e.Response.Opcode
@@ -350,9 +356,12 @@ func (h *SessionHijacker) startCDP() {
 				return
 			}
 
-			var payload string
-			var opcode float64
-			var masked bool
+			var (
+				payload string
+				opcode  float64
+				masked  bool
+			)
+
 			if e.Response != nil {
 				payload = e.Response.PayloadData
 				opcode = e.Response.Opcode

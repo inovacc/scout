@@ -128,6 +128,7 @@ func (p *AnthropicProvider) Complete(ctx context.Context, systemPrompt, userProm
 	}
 
 	url := p.baseURL + "/messages"
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("scout: anthropic: create request: %w", err)
@@ -141,6 +142,7 @@ func (p *AnthropicProvider) Complete(ctx context.Context, systemPrompt, userProm
 	if err != nil {
 		return "", fmt.Errorf("scout: anthropic: request: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
@@ -162,6 +164,7 @@ func (p *AnthropicProvider) Complete(ctx context.Context, systemPrompt, userProm
 	}
 
 	var result string
+
 	for _, c := range chatResp.Content {
 		if c.Type == "text" {
 			result += c.Text

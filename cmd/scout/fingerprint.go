@@ -26,9 +26,11 @@ var fingerprintGenerateCmd = &cobra.Command{
 		if osFlag != "" {
 			opts = append(opts, scout.WithFingerprintOS(osFlag))
 		}
+
 		if mobile {
 			opts = append(opts, scout.WithFingerprintMobile(true))
 		}
+
 		if locale != "" {
 			opts = append(opts, scout.WithFingerprintLocale(locale))
 		}
@@ -36,11 +38,13 @@ var fingerprintGenerateCmd = &cobra.Command{
 		fp := scout.GenerateFingerprint(opts...)
 
 		w := cmd.OutOrStdout()
+
 		if format == "json" {
 			data, err := json.MarshalIndent(fp, "", "  ")
 			if err != nil {
 				return fmt.Errorf("scout: fingerprint: marshal: %w", err)
 			}
+
 			_, _ = fmt.Fprintln(w, string(data))
 		} else {
 			_, _ = fmt.Fprintf(w, "User-Agent:    %s\n", fp.UserAgent)
@@ -58,6 +62,7 @@ var fingerprintGenerateCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(w, "Touch Points:  %d\n", fp.MaxTouchPoints)
 			_, _ = fmt.Fprintf(w, "Do Not Track:  %s\n", fp.DoNotTrack)
 		}
+
 		return nil
 	},
 }
@@ -75,24 +80,29 @@ var fingerprintApplyCmd = &cobra.Command{
 		if osFlag != "" {
 			fpOpts = append(fpOpts, scout.WithFingerprintOS(osFlag))
 		}
+
 		if mobile {
 			fpOpts = append(fpOpts, scout.WithFingerprintMobile(true))
 		}
+
 		if locale != "" {
 			fpOpts = append(fpOpts, scout.WithFingerprintLocale(locale))
 		}
 
 		opts := append(baseOpts(cmd), scout.WithRandomFingerprint(fpOpts...))
+
 		b, err := scout.New(opts...)
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = b.Close() }()
 
 		page, err := b.NewPage(args[0])
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = page.Close() }()
 
 		if err := page.WaitLoad(); err != nil {

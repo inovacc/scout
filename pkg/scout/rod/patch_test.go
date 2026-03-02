@@ -37,8 +37,8 @@ func TestPageContextPropagation(t *testing.T) {
 // with the new context without affecting the original.
 func TestPageContextClone(t *testing.T) {
 	ctx1 := context.Background()
-	ctx2, cancel2 := context.WithCancel(context.Background())
-	defer cancel2()
+
+	ctx2 := t.Context()
 
 	p := &Page{
 		ctx:         ctx1,
@@ -50,6 +50,7 @@ func TestPageContextClone(t *testing.T) {
 	if clone.GetContext() != ctx2 {
 		t.Fatal("clone should have new context")
 	}
+
 	if p.GetContext() != ctx1 {
 		t.Fatal("original should keep old context")
 	}
@@ -74,6 +75,7 @@ func TestPageWithCancel(t *testing.T) {
 	if clone.GetContext().Err() != context.Canceled {
 		t.Fatal("clone context should be cancelled after cancel()")
 	}
+
 	if p.GetContext().Err() != nil {
 		t.Fatal("original context should not be affected")
 	}
@@ -86,12 +88,14 @@ func TestBrowserCloseNilClient(t *testing.T) {
 	b := New()
 
 	panicked := false
+
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
 				panicked = true
 			}
 		}()
+
 		_ = b.Close()
 	}()
 
@@ -118,6 +122,7 @@ func TestPageInfoContextPath(t *testing.T) {
 	if bClone.GetContext() != ctx {
 		t.Fatal("Info path: browser clone should use page context")
 	}
+
 	if bClone.GetContext().Err() != context.Canceled {
 		t.Fatal("Info path: browser clone context should be cancelled")
 	}
@@ -163,10 +168,11 @@ func TestPageTriggerFaviconContextPath(t *testing.T) {
 // TestBrowserContextClone verifies Browser.Context creates isolated clones.
 func TestBrowserContextClone(t *testing.T) {
 	b := New()
+
 	ctx1, cancel1 := context.WithCancel(context.Background())
 	defer cancel1()
-	ctx2, cancel2 := context.WithCancel(context.Background())
-	defer cancel2()
+
+	ctx2 := t.Context()
 
 	b1 := b.Context(ctx1)
 	b2 := b.Context(ctx2)
@@ -174,15 +180,18 @@ func TestBrowserContextClone(t *testing.T) {
 	if b1.GetContext() != ctx1 {
 		t.Fatal("b1 should have ctx1")
 	}
+
 	if b2.GetContext() != ctx2 {
 		t.Fatal("b2 should have ctx2")
 	}
 
 	// Cancelling one should not affect the other.
 	cancel1()
+
 	if b1.GetContext().Err() != context.Canceled {
 		t.Fatal("b1 context should be cancelled")
 	}
+
 	if b2.GetContext().Err() != nil {
 		t.Fatal("b2 context should not be cancelled")
 	}

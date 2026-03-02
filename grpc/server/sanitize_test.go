@@ -30,8 +30,10 @@ func TestSanitizeError(t *testing.T) {
 				if result != nil {
 					t.Errorf("expected nil, got %v", result)
 				}
+
 				return
 			}
+
 			if result.Error() != tt.want {
 				t.Errorf("got %q, want %q", result.Error(), tt.want)
 			}
@@ -48,6 +50,7 @@ func TestSessionEvent(t *testing.T) {
 	if len(events) != 1 {
 		t.Fatalf("events count = %d, want 1", len(events))
 	}
+
 	if events[0].Type != "test" {
 		t.Errorf("event type = %q, want %q", events[0].Type, "test")
 	}
@@ -56,6 +59,7 @@ func TestSessionEvent(t *testing.T) {
 	if totalSess != 0 {
 		t.Errorf("totalSessions = %d, want 0", totalSess)
 	}
+
 	if totalReq != 1 {
 		t.Errorf("totalRequests = %d, want 1", totalReq)
 	}
@@ -64,7 +68,7 @@ func TestSessionEvent(t *testing.T) {
 func TestEventRingBuffer(t *testing.T) {
 	srv := New()
 
-	for i := 0; i < maxEvents+10; i++ {
+	for range maxEvents + 10 {
 		srv.recordEvent("test", "sess", "dev", "detail")
 	}
 
@@ -76,6 +80,7 @@ func TestEventRingBuffer(t *testing.T) {
 
 func TestPrintServerTable_NoPeers(t *testing.T) {
 	var buf bytes.Buffer
+
 	info := ServerInfo{
 		DeviceID:      "TEST-DEVICE-ID",
 		ListenAddr:    ":50051",
@@ -89,15 +94,19 @@ func TestPrintServerTable_NoPeers(t *testing.T) {
 	if !strings.Contains(out, "Scout Server") {
 		t.Error("missing header")
 	}
+
 	if !strings.Contains(out, "Active: 0  Total: 5") {
 		t.Error("missing counters")
 	}
+
 	if !strings.Contains(out, "Insecure") {
 		t.Error("missing mode")
 	}
+
 	if !strings.Contains(out, "Recent Activity") {
 		t.Error("missing activity section")
 	}
+
 	if !strings.Contains(out, "(no activity yet)") {
 		t.Error("missing empty activity message")
 	}
@@ -105,6 +114,7 @@ func TestPrintServerTable_NoPeers(t *testing.T) {
 
 func TestPrintServerTable_WithPeersAndEvents(t *testing.T) {
 	var buf bytes.Buffer
+
 	info := ServerInfo{
 		DeviceID:      "ABCDEFG",
 		ListenAddr:    ":50051",
@@ -125,15 +135,19 @@ func TestPrintServerTable_WithPeersAndEvents(t *testing.T) {
 	if !strings.Contains(out, "Active: 1  Total: 3") {
 		t.Error("missing counters")
 	}
+
 	if !strings.Contains(out, "HM2ASC3") {
 		t.Error("missing peer short ID")
 	}
+
 	if !strings.Contains(out, "connect") {
 		t.Error("missing connect event")
 	}
+
 	if !strings.Contains(out, "navigate") {
 		t.Error("missing navigate event")
 	}
+
 	if !strings.Contains(out, "Pairing") {
 		t.Error("missing pairing addr")
 	}
@@ -145,6 +159,7 @@ func TestOnStatsChangeCallback(t *testing.T) {
 	srv.OnStatsChange = func() { called = true }
 
 	srv.recordEvent("test", "s1", "d1", "detail")
+
 	if !called {
 		t.Error("OnStatsChange not called")
 	}
@@ -157,10 +172,12 @@ func TestGetLocalIPs(t *testing.T) {
 	if ips == nil {
 		t.Log("GetLocalIPs returned nil (no non-loopback IPv4 interfaces)")
 	}
+
 	for _, ip := range ips {
 		if ip == "" {
 			t.Error("empty IP in result")
 		}
+
 		if ip == "127.0.0.1" {
 			t.Error("loopback should be excluded")
 		}

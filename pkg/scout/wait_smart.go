@@ -173,10 +173,12 @@ func (p *Page) WaitFrameworkReady() error {
 		if loadErr := p.WaitLoad(); loadErr != nil {
 			return fmt.Errorf("scout: wait framework ready: %w", loadErr)
 		}
+
 		if stableErr := p.WaitDOMStable(300*time.Millisecond, 0.1); stableErr != nil {
 			// DOM stable can timeout on simple pages; not fatal
 			return nil
 		}
+
 		return nil
 	}
 

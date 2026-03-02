@@ -55,6 +55,7 @@ func NewManaged(serviceURL string) (*Launcher, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = res.Body.Close() }()
 
 	return l, json.NewDecoder(res.Body).Decode(l)
@@ -64,6 +65,7 @@ func NewManaged(serviceURL string) (*Launcher, error) {
 func (l *Launcher) KeepUserDataDir() *Launcher {
 	l.mustManaged()
 	l.Set(flags.KeepUserDataDir)
+
 	return l
 }
 
@@ -87,8 +89,10 @@ func (l *Launcher) Client() (*cdp.Client, error) {
 // ClientHeader for launching browser remotely via the launcher.Manager.
 func (l *Launcher) ClientHeader() (string, http.Header) {
 	l.mustManaged()
+
 	header := http.Header{}
 	header.Add(string(HeaderName), utils.MustToJSON(l))
+
 	return l.serviceURL, header
 }
 
@@ -144,7 +148,7 @@ func NewManager() *Manager {
 			for f, allowed := range allowedPath {
 				p := l.Get(f)
 				if p != "" && !strings.HasPrefix(p, allowed) {
-					b := []byte(fmt.Sprintf("[scout-manager] not allowed %s path: %s (use --allow-all to disable the protection)", f, p))
+					b := fmt.Appendf(nil, "[scout-manager] not allowed %s path: %s (use --allow-all to disable the protection)", f, p)
 					w.Header().Add("Content-Length", fmt.Sprintf("%d", len(b)))
 					w.WriteHeader(http.StatusBadRequest)
 					utils.E(w.Write(b))
@@ -190,6 +194,7 @@ func (m *Manager) launch(w http.ResponseWriter, r *http.Request) {
 
 	parsedWS, err := url.Parse(u)
 	utils.E(err)
+
 	parsedURL.Path = parsedWS.Path
 
 	httputil.NewSingleHostReverseProxy(toHTTP(*parsedURL)).ServeHTTP(w, r)

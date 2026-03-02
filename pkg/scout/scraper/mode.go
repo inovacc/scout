@@ -125,6 +125,7 @@ func GetMode(name string) (Mode, error) {
 	if !ok {
 		return nil, &AuthError{Reason: "unknown scraper mode: " + name}
 	}
+
 	return m, nil
 }
 
@@ -134,5 +135,6 @@ func ListModes() []string {
 	for name := range DefaultModeRegistry.modes {
 		names = append(names, name)
 	}
+
 	return names
 }

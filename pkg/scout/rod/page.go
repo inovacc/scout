@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -78,6 +79,7 @@ func (p *Page) String() string {
 	if len(id) > 8 {
 		id = id[:8]
 	}
+
 	return fmt.Sprintf("<page:%s>", id)
 }
 
@@ -107,6 +109,7 @@ func (p *Page) HTML() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return el.HTML()
 }
 
@@ -118,6 +121,7 @@ func (p *Page) Cookies(urls []string) ([]*proto.NetworkCookie, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		urls = []string{info.URL}
 	}
 
@@ -125,6 +129,7 @@ func (p *Page) Cookies(urls []string) ([]*proto.NetworkCookie, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return res.Cookies, nil
 }
 
@@ -133,6 +138,7 @@ func (p *Page) SetCookies(cookies []*proto.NetworkCookieParam) error {
 	if cookies == nil {
 		return proto.NetworkClearBrowserCookies{}.Call(p)
 	}
+
 	return proto.NetworkSetCookies{Cookies: cookies}.Call(p)
 }
 
@@ -153,6 +159,7 @@ func (p *Page) SetUserAgent(req *proto.NetworkSetUserAgentOverride) error {
 	if req == nil {
 		req = devices.LaptopWithMDPIScreen.UserAgentEmulation()
 	}
+
 	return req.Call(p)
 }
 
@@ -164,6 +171,7 @@ func (p *Page) SetBlockedURLs(urls []string) error {
 	if len(urls) == 0 {
 		return nil
 	}
+
 	return proto.NetworkSetBlockedURLs{Urls: urls}.Call(p)
 }
 
@@ -181,6 +189,7 @@ func (p *Page) Navigate(url string) error {
 	if err != nil {
 		return err
 	}
+
 	if res.ErrorText != "" {
 		return &NavigationError{res.ErrorText}
 	}
@@ -248,6 +257,7 @@ func (p *Page) getWindowID() (proto.BrowserWindowID, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return res.WindowID, err
 }
 
@@ -274,6 +284,7 @@ func (p *Page) SetWindow(bounds *proto.BrowserBounds) error {
 	}
 
 	err = proto.BrowserSetWindowBounds{WindowID: id, Bounds: bounds}.Call(p)
+
 	return err
 }
 
@@ -282,6 +293,7 @@ func (p *Page) SetViewport(params *proto.EmulationSetDeviceMetricsOverride) erro
 	if params == nil {
 		return proto.EmulationClearDeviceMetricsOverride{}.Call(p)
 	}
+
 	return params.Call(p)
 }
 
@@ -319,8 +331,10 @@ func (p *Page) Close() error {
 	defer p.browser.targetsLock.Unlock()
 
 	success := true
+
 	ctx, cancel := context.WithCancel(p.ctx)
 	defer cancel()
+
 	messages := p.browser.Context(ctx).Event()
 
 	for {
@@ -333,6 +347,7 @@ func (p *Page) Close() error {
 		} else if err != nil {
 			return err
 		}
+
 		break
 	}
 
@@ -340,6 +355,7 @@ func (p *Page) Close() error {
 		stop := false
 
 		destroyed := proto.TargetTargetDestroyed{}
+
 		closed := proto.PageJavascriptDialogClosed{}
 		if msg.Load(&destroyed) {
 			stop = destroyed.TargetID == p.TargetID
@@ -378,6 +394,7 @@ func (p *Page) TriggerFavicon() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -396,6 +413,7 @@ func (p *Page) HandleDialog() (
 	restore := p.EnableDomain(&proto.PageEnable{})
 
 	var e proto.PageJavascriptDialogOpening
+
 	w := p.WaitEvent(&e)
 
 	return func() *proto.PageJavascriptDialogOpening {
@@ -416,6 +434,7 @@ func (p *Page) HandleFileDialog() (func([]string) error, error) {
 	}
 
 	var e proto.PageFileChooserOpened
+
 	w := p.WaitEvent(&e)
 
 	return func(paths []string) error {
@@ -438,6 +457,7 @@ func (p *Page) Screenshot(fullPage bool, req *proto.PageCaptureScreenshot) ([]by
 	if req == nil {
 		req = &proto.PageCaptureScreenshot{}
 	}
+
 	if fullPage {
 		metrics, err := proto.PageGetLayoutMetrics{}.Call(p)
 		if err != nil {
@@ -473,6 +493,7 @@ func (p *Page) Screenshot(fullPage bool, req *proto.PageCaptureScreenshot) ([]by
 	if err != nil {
 		return nil, err
 	}
+
 	return shot.Data, nil
 }
 
@@ -508,6 +529,7 @@ func (p *Page) ScrollScreenshot(opt *ScrollScreenshotOptions) ([]byte, error) {
 	if opt == nil {
 		opt = &ScrollScreenshotOptions{}
 	}
+
 	if opt.WaitPerScroll == 0 {
 		opt.WaitPerScroll = time.Millisecond * 300
 	}
@@ -524,8 +546,10 @@ func (p *Page) ScrollScreenshot(opt *ScrollScreenshotOptions) ([]byte, error) {
 	viewpointHeight := metrics.CSSVisualViewport.ClientHeight
 	contentHeight := metrics.CSSContentSize.Height
 
-	var scrollTop float64
-	var images []utils.ImgWithBox
+	var (
+		scrollTop float64
+		images    []utils.ImgWithBox
+	)
 
 	for {
 		clip := &proto.PageViewport{
@@ -553,6 +577,7 @@ func (p *Page) ScrollScreenshot(opt *ScrollScreenshotOptions) ([]byte, error) {
 			CaptureBeyondViewport: false,
 			OptimizeForSpeed:      false,
 		}
+
 		shot, err := req.Call(p)
 		if err != nil {
 			return nil, err
@@ -582,6 +607,7 @@ func (p *Page) ScrollScreenshot(opt *ScrollScreenshotOptions) ([]byte, error) {
 			Quality: *opt.Quality,
 		}
 	}
+
 	bs, err := utils.SplicePngVertical(images, opt.Format, imgOption)
 	if err != nil {
 		return nil, err
@@ -610,12 +636,14 @@ func (p *Page) CaptureDOMSnapshot() (domSnapshot *proto.DOMSnapshotCaptureSnapsh
 	if err != nil {
 		return nil, err
 	}
+
 	return snapshot, nil
 }
 
 // PDF prints page as PDF.
 func (p *Page) PDF(req *proto.PagePrintToPDF) (*StreamReader, error) {
 	req.TransferMode = proto.PagePrintToPDFTransferModeReturnAsStream
+
 	res, err := req.Call(p)
 	if err != nil {
 		return nil, err
@@ -660,7 +688,9 @@ func (p *Page) WaitOpen() func() (*Page, error) {
 
 	return func() (*Page, error) {
 		defer p.tryTrace(TraceTypeWait, "wait open")()
+
 		wait()
+
 		return b.PageFromTarget(targetID)
 	}
 }
@@ -680,7 +710,7 @@ func (p *Page) WaitOpen() func() (*Page, error) {
 //	go page.EachEvent(func(e *proto.PageJavascriptDialogOpening) {
 //	    _ = proto.PageHandleJavaScriptDialog{ Accept: false, PromptText: ""}.Call(page)
 //	})()
-func (p *Page) EachEvent(callbacks ...interface{}) (wait func()) {
+func (p *Page) EachEvent(callbacks ...any) (wait func()) {
 	return p.browser.Context(p.ctx).eachEvent(p.SessionID, callbacks...)
 }
 
@@ -701,7 +731,9 @@ func (p *Page) WaitNavigation(name proto.PageLifecycleEventName) func() {
 
 	return func() {
 		defer p.tryTrace(TraceTypeWait, "navigation", name)()
+
 		wait()
+
 		_ = proto.PageSetLifecycleEventsEnabled{Enabled: false}.Call(p)
 	}
 }
@@ -747,10 +779,8 @@ func (p *Page) WaitRequestIdle(
 	}
 
 	wait := p.EachEvent(func(sent *proto.NetworkRequestWillBeSent) {
-		for _, t := range excludeTypes {
-			if sent.Type == t {
-				return
-			}
+		if slices.Contains(excludeTypes, sent.Type) {
+			return
 		}
 
 		if match(sent.Request.URL) {
@@ -773,6 +803,7 @@ func (p *Page) WaitRequestIdle(
 			idleCounter.Wait(p.ctx)
 			cancel()
 		}()
+
 		wait()
 	}
 }
@@ -814,6 +845,7 @@ func (p *Page) WaitDOMStable(d time.Duration, diff float64) error {
 
 		domSnapshot = currentDomSnapshot
 	}
+
 	return nil
 }
 
@@ -827,11 +859,13 @@ func (p *Page) WaitStable(d time.Duration) error {
 
 	utils.All(func() {
 		e := p.WaitLoad()
+
 		setErr.Do(func() { err = e })
 	}, func() {
 		p.WaitRequestIdle(d, nil, nil, nil)()
 	}, func() {
 		e := p.WaitDOMStable(d, 0)
+
 		setErr.Do(func() { err = e })
 	})()
 
@@ -855,7 +889,9 @@ func (p *Page) WaitRepaint() error {
 // WaitLoad waits for the `window.onload` event, it returns immediately if the event is already fired.
 func (p *Page) WaitLoad() error {
 	defer p.tryTrace(TraceTypeWait, "load")()
+
 	_, err := p.Evaluate(evalHelper(js.WaitLoad).ByPromise())
+
 	return err
 }
 
@@ -864,6 +900,7 @@ func (p *Page) AddScriptTag(url, content string) error {
 	hash := md5.Sum([]byte(url + content))
 	id := hex.EncodeToString(hash[:])
 	_, err := p.Evaluate(evalHelper(js.AddScriptTag, id, url, content).ByPromise())
+
 	return err
 }
 
@@ -872,6 +909,7 @@ func (p *Page) AddStyleTag(url, content string) error {
 	hash := md5.Sum([]byte(url + content))
 	id := hex.EncodeToString(hash[:])
 	_, err := p.Evaluate(evalHelper(js.AddStyleTag, id, url, content).ByPromise())
+
 	return err
 }
 
@@ -922,6 +960,7 @@ func (p *Page) ObjectToJSON(obj *proto.RuntimeRemoteObject) (gson.JSON, error) {
 	if err != nil {
 		return gson.New(nil), err
 	}
+
 	return res.Result.Value, nil
 }
 
@@ -973,6 +1012,7 @@ func (p *Page) ElementFromNode(node *proto.DOMNode) (*Element, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if desc.NodeName == "#text" {
 		el, err = el.Parent()
 		if err != nil {
@@ -1005,7 +1045,7 @@ func (p *Page) Release(obj *proto.RuntimeRemoteObject) error {
 }
 
 // Call implements the [proto.Client].
-func (p *Page) Call(ctx context.Context, sessionID, methodName string, params interface{}) (res []byte, err error) {
+func (p *Page) Call(ctx context.Context, sessionID, methodName string, params any) (res []byte, err error) {
 	return p.browser.Call(ctx, sessionID, methodName, params)
 }
 
@@ -1016,6 +1056,7 @@ func (p *Page) Event() <-chan *Message {
 
 	go func() {
 		defer close(dst)
+
 		for {
 			select {
 			case <-p.ctx.Done():
@@ -1024,6 +1065,7 @@ func (p *Page) Event() <-chan *Message {
 				if !ok {
 					return
 				}
+
 				select {
 				case <-p.ctx.Done():
 					return

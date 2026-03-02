@@ -102,16 +102,20 @@ With --workspace, jobs are persisted to disk with full metadata.`,
 		}
 
 		var llmOpts []scout.LLMOption
+
 		llmOpts = append(llmOpts, scout.WithLLMProvider(provider))
 		if modelFlag != "" {
 			llmOpts = append(llmOpts, scout.WithLLMModel(modelFlag))
 		}
+
 		if mainOnly {
 			llmOpts = append(llmOpts, scout.WithLLMMainContent())
 		}
+
 		if systemPrompt != "" {
 			llmOpts = append(llmOpts, scout.WithLLMSystemPrompt(systemPrompt))
 		}
+
 		llmOpts = append(llmOpts, scout.WithLLMTimeout(timeout))
 
 		if schemaFile != "" {
@@ -119,6 +123,7 @@ With --workspace, jobs are persisted to disk with full metadata.`,
 			if err != nil {
 				return fmt.Errorf("scout: read schema: %w", err)
 			}
+
 			llmOpts = append(llmOpts, scout.WithLLMSchema(json.RawMessage(data)))
 		}
 
@@ -127,22 +132,27 @@ With --workspace, jobs are persisted to disk with full metadata.`,
 			if reviewProviderName == "" {
 				reviewProviderName = providerName
 			}
+
 			rKey := reviewAPIKey
 			if rKey == "" {
 				rKey = apiKey
 			}
+
 			rBase := reviewAPIBase
 			if rBase == "" {
 				rBase = apiBase
 			}
+
 			reviewProv, err := createProviderFull(reviewProviderName, reviewModel, rKey, rBase, ollamaHost)
 			if err != nil {
 				return fmt.Errorf("scout: create review provider: %w", err)
 			}
+
 			llmOpts = append(llmOpts, scout.WithLLMReview(reviewProv))
 			if reviewModel != "" {
 				llmOpts = append(llmOpts, scout.WithLLMReviewModel(reviewModel))
 			}
+
 			if reviewPrompt != "" {
 				llmOpts = append(llmOpts, scout.WithLLMReviewPrompt(reviewPrompt))
 			}
@@ -154,6 +164,7 @@ With --workspace, jobs are persisted to disk with full metadata.`,
 			if err != nil {
 				return fmt.Errorf("scout: open workspace: %w", err)
 			}
+
 			llmOpts = append(llmOpts, scout.WithLLMWorkspace(ws))
 			if sessionID != "" {
 				llmOpts = append(llmOpts, scout.WithLLMSessionID(sessionID))
@@ -171,12 +182,14 @@ With --workspace, jobs are persisted to disk with full metadata.`,
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(urlFlag)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -203,11 +216,14 @@ With --workspace, jobs are persisted to disk with full metadata.`,
 			if err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Written to %s\n", dest)
+
 			return nil
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), result)
+
 		return nil
 	},
 }
@@ -228,10 +244,12 @@ func outputJobResult(cmd *cobra.Command, result *scout.LLMJobResult) error {
 	outFile, _ := cmd.Flags().GetString("output")
 	if outFile != "" {
 		data, _ := json.MarshalIndent(result, "", "  ")
+
 		dest, err := writeOutput(cmd, data, "extract-ai.json")
 		if err != nil {
 			return err
 		}
+
 		_, _ = fmt.Fprintf(w, "\nWritten to %s\n", dest)
 	}
 
@@ -298,6 +316,7 @@ var ollamaPullCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nDone.\n")
+
 		return nil
 	},
 }
@@ -318,6 +337,7 @@ var ollamaStatusCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Connected. %d model(s) available.\n", len(models))
+
 		return nil
 	},
 }
@@ -347,6 +367,7 @@ var aiJobListCmd = &cobra.Command{
 		} else {
 			refs, err = ws.ListJobs()
 		}
+
 		if err != nil {
 			return err
 		}
@@ -386,6 +407,7 @@ var aiJobShowCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
+
 		return nil
 	},
 }
@@ -415,11 +437,13 @@ var aiJobSessionListCmd = &cobra.Command{
 		}
 
 		cur, _ := ws.CurrentSession()
+
 		for _, s := range sessions {
 			marker := "  "
 			if cur != nil && cur.ID == s.ID {
 				marker = "* "
 			}
+
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s%s  %s  %s\n",
 				marker, s.ID[:8], s.Name, s.CreatedAt.Format("2006-01-02 15:04"))
 		}
@@ -448,6 +472,7 @@ var aiJobSessionCreateCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Created session %s (%s)\n", sess.ID[:8], sess.Name)
+
 		return nil
 	},
 }
@@ -469,6 +494,7 @@ var aiJobSessionUseCmd = &cobra.Command{
 		}
 
 		var matchID string
+
 		for _, s := range sessions {
 			if s.ID == args[0] || (len(args[0]) >= 4 && s.ID[:len(args[0])] == args[0]) {
 				matchID = s.ID
@@ -485,6 +511,7 @@ var aiJobSessionUseCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Switched to session %s\n", matchID[:8])
+
 		return nil
 	},
 }
@@ -503,9 +530,11 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 		if ollamaHost != "" {
 			opts = append(opts, scout.WithOllamaHost(ollamaHost))
 		}
+
 		if model != "" {
 			opts = append(opts, scout.WithOllamaModel(model))
 		}
+
 		return scout.NewOllamaProvider(opts...)
 
 	case "openai":
@@ -513,9 +542,11 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 		if model != "" {
 			opts = append(opts, scout.WithOpenAIModel(model))
 		}
+
 		if apiBase != "" {
 			opts = append(opts, scout.WithOpenAIBaseURL(apiBase))
 		}
+
 		return scout.NewOpenAIProvider(opts...)
 
 	case "anthropic":
@@ -523,9 +554,11 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 		if model != "" {
 			opts = append(opts, scout.WithAnthropicModel(model))
 		}
+
 		if apiBase != "" {
 			opts = append(opts, scout.WithAnthropicBaseURL(apiBase))
 		}
+
 		return scout.NewAnthropicProvider(opts...)
 
 	case "openrouter":
@@ -533,6 +566,7 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 		if apiBase != "" {
 			extra = append(extra, scout.WithOpenAIBaseURL(apiBase))
 		}
+
 		return scout.NewOpenRouterProvider(apiKey, model, extra...)
 
 	case "deepseek":
@@ -540,6 +574,7 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 		if apiBase != "" {
 			extra = append(extra, scout.WithOpenAIBaseURL(apiBase))
 		}
+
 		return scout.NewDeepSeekProvider(apiKey, model, extra...)
 
 	case "gemini":
@@ -547,6 +582,7 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 		if apiBase != "" {
 			extra = append(extra, scout.WithOpenAIBaseURL(apiBase))
 		}
+
 		return scout.NewGeminiProvider(apiKey, model, extra...)
 
 	default:
@@ -559,8 +595,10 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 			if model != "" {
 				opts = append(opts, scout.WithOpenAIModel(model))
 			}
+
 			return scout.NewOpenAIProvider(opts...)
 		}
+
 		return nil, fmt.Errorf("scout: unknown LLM provider %q (use --api-base for custom endpoints)", name)
 	}
 }
@@ -595,10 +633,12 @@ func resolveAPIKey(provider string) string {
 
 func newOllamaFromFlags(cmd *cobra.Command) (*scout.OllamaProvider, error) {
 	host, _ := cmd.Flags().GetString("ollama-host")
+
 	var opts []scout.OllamaOption
 	if host != "" {
 		opts = append(opts, scout.WithOllamaHost(host))
 	}
+
 	return scout.NewOllamaProvider(opts...)
 }
 
@@ -607,6 +647,7 @@ func workspaceFromFlags(cmd *cobra.Command) (*scout.LLMWorkspace, error) {
 	if path == "" {
 		return nil, fmt.Errorf("scout: --workspace is required")
 	}
+
 	return scout.NewLLMWorkspace(path)
 }
 
@@ -616,5 +657,6 @@ func splitMeta(kv string) (string, string) {
 			return kv[:i], kv[i+1:]
 		}
 	}
+
 	return kv, ""
 }

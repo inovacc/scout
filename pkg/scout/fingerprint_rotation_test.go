@@ -18,6 +18,7 @@ func TestFingerprintRotation_PerSession(t *testing.T) {
 	if fp1.UserAgent != fp2.UserAgent {
 		t.Fatal("expected same fingerprint per session")
 	}
+
 	if fp1.UserAgent != fp3.UserAgent {
 		t.Fatal("expected same fingerprint per session")
 	}
@@ -30,11 +31,13 @@ func TestFingerprintRotation_PerPage(t *testing.T) {
 	})
 
 	seen := make(map[string]bool)
-	for i := 0; i < 10; i++ {
+
+	for range 10 {
 		fp := r.forPage("example.com")
 		if fp.Platform != "Win32" {
 			t.Fatalf("expected Win32, got %s", fp.Platform)
 		}
+
 		seen[fp.UserAgent] = true
 	}
 
@@ -107,12 +110,15 @@ func TestFingerprintRotation_Pool(t *testing.T) {
 	if fp1.Platform != "MacIntel" {
 		t.Fatalf("expected MacIntel, got %s", fp1.Platform)
 	}
+
 	if fp2.Platform != "Linux x86_64" {
 		t.Fatalf("expected Linux x86_64, got %s", fp2.Platform)
 	}
+
 	if fp3.Platform != "Win32" {
 		t.Fatalf("expected Win32 (wrap), got %s", fp3.Platform)
 	}
+
 	if fp4.Platform != "MacIntel" {
 		t.Fatalf("expected MacIntel, got %s", fp4.Platform)
 	}
@@ -120,6 +126,7 @@ func TestFingerprintRotation_Pool(t *testing.T) {
 
 func TestFingerprintRotation_NilSafe(t *testing.T) {
 	var r *fingerprintRotator
+
 	fp := r.forPage("example.com")
 	if fp != nil {
 		t.Fatal("expected nil from nil rotator")

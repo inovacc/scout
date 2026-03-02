@@ -48,6 +48,7 @@ const (
 // The reason why not to use "chrome://inspect/#devices" is one target cannot be driven by multiple controllers.
 func (b *Browser) ServeMonitor(host string) string {
 	u, mux, closeSvr := serve(host)
+
 	go func() {
 		<-b.ctx.Done()
 		utils.E(closeSvr())
@@ -61,6 +62,7 @@ func (b *Browser) ServeMonitor(host string) string {
 		utils.E(err)
 
 		list := []*proto.TargetTargetInfo{}
+
 		for _, info := range res.TargetInfos {
 			if info.Type == proto.TargetTargetInfoTypePage {
 				list = append(list, info)
@@ -130,12 +132,12 @@ func (p *Page) Overlay(left, top, width, height float64, msg string) (remove fun
 	return
 }
 
-func (p *Page) tryTrace(typ TraceType, msg ...interface{}) func() {
+func (p *Page) tryTrace(typ TraceType, msg ...any) func() {
 	if !p.browser.trace {
 		return func() {}
 	}
 
-	msg = append([]interface{}{typ}, msg...)
+	msg = append([]any{typ}, msg...)
 	msg = append(msg, p)
 
 	p.browser.logger.Println(msg...)
@@ -151,6 +153,7 @@ func (p *Page) tryTraceQuery(opts *EvalOptions) func() {
 	p.browser.logger.Println(TraceTypeQuery, opts, p)
 
 	msg := fmt.Sprintf("<code>%s</code>", html.EscapeString(opts.String()))
+
 	return p.Overlay(0, 0, 500, 0, msg)
 }
 
@@ -172,17 +175,21 @@ func (p *Page) tryTraceReq(includes, excludes []string) func(map[proto.NetworkRe
 		for k, v := range list {
 			clone[string(k)] = v
 		}
+
 		ch <- clone
 	}
 
 	go func() {
 		var waitList map[string]string
+
 		t := time.NewTicker(time.Second)
+
 		for {
 			select {
 			case <-p.ctx.Done():
 				t.Stop()
 				cleanup()
+
 				return
 			case waitList = <-ch:
 			case <-t.C:
@@ -210,12 +217,12 @@ func (el *Element) Overlay(msg string) (removeOverlay func()) {
 	return
 }
 
-func (el *Element) tryTrace(typ TraceType, msg ...interface{}) func() {
+func (el *Element) tryTrace(typ TraceType, msg ...any) func() {
 	if !el.page.browser.trace {
 		return func() {}
 	}
 
-	msg = append([]interface{}{typ}, msg...)
+	msg = append([]any{typ}, msg...)
 	msg = append(msg, el)
 
 	el.page.browser.logger.Println(msg...)
@@ -232,6 +239,7 @@ func (m *Mouse) updateMouseTracer() bool {
 	if err != nil {
 		return true
 	}
+
 	return res.Value.Bool()
 }
 

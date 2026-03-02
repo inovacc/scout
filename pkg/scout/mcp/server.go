@@ -57,6 +57,7 @@ func (s *mcpState) ensureBrowser(ctx context.Context) (*scout.Browser, error) {
 	if s.config.BrowserBin != "" {
 		opts = append(opts, scout.WithExecPath(s.config.BrowserBin))
 	}
+
 	if s.config.Stealth {
 		opts = append(opts, scout.WithStealth())
 	}
@@ -67,6 +68,7 @@ func (s *mcpState) ensureBrowser(ctx context.Context) (*scout.Browser, error) {
 	}
 
 	s.browser = b
+
 	return b, nil
 }
 
@@ -88,6 +90,7 @@ func (s *mcpState) ensurePage(ctx context.Context) (*scout.Page, error) {
 	}
 
 	s.page = p
+
 	return p, nil
 }
 
@@ -98,6 +101,7 @@ func (s *mcpState) reset() {
 	if s.browser != nil {
 		_ = s.browser.Close()
 	}
+
 	s.browser = nil
 	s.page = nil
 }
@@ -127,6 +131,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 			if cfg.Logger != nil {
 				cfg.Logger.Warn("idle timeout reached, shutting down", "timeout", cfg.IdleTimeout)
 			}
+
 			state.reset()
 			cb()
 		})
@@ -169,6 +174,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 
 		title, _ := page.Title()
 		url, _ := page.URL()
+
 		return textResult(fmt.Sprintf("Navigated to %s (%s)", url, title))
 	})
 
@@ -239,6 +245,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 		var args struct {
 			FullPage bool `json:"fullPage"`
 		}
+
 		_ = json.Unmarshal(req.Params.Arguments, &args)
 
 		page, err := state.ensurePage(ctx)
@@ -252,6 +259,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 		} else {
 			data, err = page.Screenshot()
 		}
+
 		if err != nil {
 			return errResult(err.Error())
 		}
@@ -272,6 +280,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 		var args struct {
 			InteractableOnly bool `json:"interactableOnly"`
 		}
+
 		_ = json.Unmarshal(req.Params.Arguments, &args)
 
 		page, err := state.ensurePage(ctx)
@@ -389,6 +398,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 		var args struct {
 			Selector string `json:"selector"`
 		}
+
 		_ = json.Unmarshal(req.Params.Arguments, &args)
 
 		page, err := state.ensurePage(ctx)
@@ -400,6 +410,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 			if _, err := page.WaitSelector(args.Selector); err != nil {
 				return errResult(err.Error())
 			}
+
 			return textResult(fmt.Sprintf("Found %s", args.Selector))
 		}
 
@@ -469,6 +480,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 		}
 
 		var opts []scout.SearchOption
+
 		switch args.Engine {
 		case "bing":
 			opts = append(opts, scout.WithSearchEngine(scout.Bing))
@@ -514,6 +526,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 		if args.Mode != "" {
 			opts = append(opts, scout.WithFetchMode(args.Mode))
 		}
+
 		if args.MainOnly {
 			opts = append(opts, scout.WithFetchMainContent())
 		}
@@ -541,6 +554,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 			PrintBackground bool    `json:"printBackground"`
 			Scale           float64 `json:"scale"`
 		}
+
 		_ = json.Unmarshal(req.Params.Arguments, &args)
 
 		page, err := state.ensurePage(ctx)
@@ -558,6 +572,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 		} else {
 			data, err = page.PDF()
 		}
+
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: pdf: %s", err))
 		}
@@ -598,6 +613,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 			"title":  title,
 		}
 		data, _ := json.Marshal(info)
+
 		return textResult(string(data))
 	})
 
@@ -608,6 +624,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		state.touch()
 		state.reset()
+
 		return textResult("Session reset")
 	})
 
@@ -628,10 +645,12 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 		opts := []scout.Option{
 			scout.WithHeadless(false),
 			scout.WithNoSandbox(),
+			scout.WithTargetURL(args.URL),
 		}
 		if state.config.Stealth {
 			opts = append(opts, scout.WithStealth())
 		}
+
 		if args.DevTools {
 			opts = append(opts, scout.WithDevTools())
 		}
@@ -693,10 +712,12 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 func RegisterWebMCPTools(server *mcp.Server, tools []scout.WebMCPTool, callFn func(name string, params map[string]any) (*scout.WebMCPToolResult, error)) {
 	for _, t := range tools {
 		tool := t // capture
+
 		origin := sanitizeMCPName(tool.ServerURL)
 		if origin == "" {
 			origin = sanitizeMCPName(tool.Source)
 		}
+
 		mcpName := "webmcp_" + origin + "_" + sanitizeMCPName(tool.Name)
 
 		schema := tool.InputSchema
@@ -733,6 +754,7 @@ func RegisterWebMCPTools(server *mcp.Server, tools []scout.WebMCPTool, callFn fu
 // sanitizeMCPName replaces non-alphanumeric characters with underscores for tool naming.
 func sanitizeMCPName(s string) string {
 	var b []byte
+
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') {
@@ -747,6 +769,7 @@ func sanitizeMCPName(s string) string {
 	if len(b) > 0 && b[len(b)-1] == '_' {
 		b = b[:len(b)-1]
 	}
+
 	return string(b)
 }
 
@@ -765,6 +788,7 @@ func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool, bro
 	}
 
 	server := NewServer(cfg, cancel)
+
 	return server.Run(ctx, &mcp.StdioTransport{})
 }
 
@@ -799,10 +823,12 @@ func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, s
 	logger.Info("MCP SSE server listening", "addr", ln.Addr().String())
 
 	errCh := make(chan error, 1)
+
 	go func() {
 		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
 			errCh <- fmt.Errorf("scout: mcp: %w", err)
 		}
+
 		close(errCh)
 	}()
 

@@ -40,10 +40,12 @@ var hijackWatchCmd = &cobra.Command{
 		outFile, _ := cmd.Flags().GetString("output")
 
 		opts := baseOpts(cmd)
+
 		b, err := scout.New(opts...)
 		if err != nil {
 			return fmt.Errorf("scout: hijack: %w", err)
 		}
+
 		defer func() { _ = b.Close() }()
 
 		page, err := b.NewPage(url)
@@ -57,6 +59,7 @@ var hijackWatchCmd = &cobra.Command{
 		if captureBody {
 			hijackOpts = append(hijackOpts, scout.WithHijackBodyCapture())
 		}
+
 		if len(filters) > 0 {
 			hijackOpts = append(hijackOpts, scout.WithHijackURLFilter(filters...))
 		}
@@ -69,12 +72,15 @@ var hijackWatchCmd = &cobra.Command{
 
 		// Set up output writer.
 		var out *os.File
+
 		if outFile != "" && outFile != "-" {
 			f, fErr := os.Create(outFile)
 			if fErr != nil {
 				return fmt.Errorf("scout: hijack: create output: %w", fErr)
 			}
+
 			defer func() { _ = f.Close() }()
+
 			out = f
 		}
 

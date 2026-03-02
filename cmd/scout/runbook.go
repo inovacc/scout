@@ -84,6 +84,7 @@ var runbookApplyCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		result, err := runbook.Apply(context.Background(), browser, r)
@@ -123,6 +124,7 @@ var runbookApplyCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }
@@ -139,6 +141,7 @@ var runbookValidateCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(os.Stdout, "valid %s runbook: %s (type=%s)\n", r.Version, r.Name, r.Type)
+
 		return nil
 	},
 }
@@ -159,6 +162,7 @@ var runbookPlanCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		plan, err := runbook.Plan(browser, r)
@@ -171,7 +175,9 @@ var runbookPlanCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("marshal plan: %w", err)
 			}
+
 			_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 			return nil
 		}
 
@@ -194,6 +200,7 @@ var runbookPlanCmd = &cobra.Command{
 
 				// Try to get sample items for context.
 				var samples []map[string]any
+
 				if r.Type == "extract" {
 					items, sampleErr := runbook.SampleExtract(browser, r)
 					if sampleErr == nil {
@@ -210,12 +217,15 @@ var runbookPlanCmd = &cobra.Command{
 					} else {
 						_, _ = fmt.Fprintln(os.Stdout, "LLM: runbook has issues")
 					}
+
 					for _, s := range llmResult.Suggestions {
 						_, _ = fmt.Fprintf(os.Stdout, "  suggestion: %s\n", s)
 					}
+
 					for _, f := range llmResult.MissingFields {
 						_, _ = fmt.Fprintf(os.Stdout, "  missing field: %s\n", f)
 					}
+
 					for _, fs := range llmResult.FragileSelectors {
 						_, _ = fmt.Fprintf(os.Stdout, "  fragile: %s\n", fs)
 					}
@@ -243,6 +253,7 @@ var runbookCreateCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		interactive, _ := cmd.Flags().GetBool("interactive")
@@ -276,6 +287,7 @@ var runbookCreateCmd = &cobra.Command{
 			if provider != nil {
 				aiOpts = append(aiOpts, runbook.WithAI(provider))
 			}
+
 			if goal != "" {
 				aiOpts = append(aiOpts, runbook.WithGoal(goal))
 			}
@@ -299,6 +311,7 @@ var runbookCreateCmd = &cobra.Command{
 			if forceType != "" {
 				genOpts = append(genOpts, runbook.WithGenerateType(forceType))
 			}
+
 			if maxPages > 0 {
 				genOpts = append(genOpts, runbook.WithGenerateMaxPages(maxPages))
 			}
@@ -323,11 +336,14 @@ var runbookCreateCmd = &cobra.Command{
 			if err := os.WriteFile(output, data, 0o644); err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(os.Stderr, "runbook written to %s\n", output)
+
 			return nil
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }
@@ -348,6 +364,7 @@ var runbookFixCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		fixed, changes, err := runbook.FixRunbook(browser, r)
@@ -372,11 +389,14 @@ var runbookFixCmd = &cobra.Command{
 			if err := os.WriteFile(output, data, 0o644); err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(os.Stderr, "fixed runbook written to %s\n", output)
+
 			return nil
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }
@@ -396,6 +416,7 @@ var runbookSampleCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		items, err := runbook.SampleExtract(browser, r)
@@ -411,6 +432,7 @@ var runbookSampleCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }
@@ -423,7 +445,9 @@ var runbookPresetsCmd = &cobra.Command{
 		asJSON, _ := cmd.Flags().GetBool("json")
 
 		all := runbooks.All()
+
 		var filtered []runbooks.Preset
+
 		for _, p := range all {
 			if service == "" || p.Service == service {
 				filtered = append(filtered, p)
@@ -435,13 +459,16 @@ var runbookPresetsCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("marshal presets: %w", err)
 			}
+
 			_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 			return nil
 		}
 
 		for _, p := range filtered {
 			_, _ = fmt.Fprintf(os.Stdout, "%-25s %-12s %s\n", p.ID, p.Service, p.Description)
 		}
+
 		return nil
 	},
 }
@@ -461,13 +488,16 @@ var runbookRunPresetCmd = &cobra.Command{
 		}
 
 		varMap := make(map[string]string)
+
 		for _, v := range vars {
 			k, val, ok := strings.Cut(v, "=")
 			if !ok {
 				return fmt.Errorf("invalid --var format %q (expected key=value)", v)
 			}
+
 			varMap[k] = val
 		}
+
 		applyRunbookVars(r, varMap)
 
 		if unresolved := findUnresolvedRunbookVars(r); len(unresolved) > 0 {
@@ -478,6 +508,7 @@ var runbookRunPresetCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		result, err := runbook.Apply(context.Background(), browser, r)
@@ -503,6 +534,7 @@ var runbookRunPresetCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }
@@ -511,6 +543,7 @@ var runbookRunPresetCmd = &cobra.Command{
 func applyRunbookVars(r *runbook.Runbook, vars map[string]string) {
 	for k, v := range vars {
 		placeholder := "{{" + k + "}}"
+
 		r.URL = strings.ReplaceAll(r.URL, placeholder, v)
 		for i := range r.Steps {
 			r.Steps[i].URL = strings.ReplaceAll(r.Steps[i].URL, placeholder, v)
@@ -528,26 +561,32 @@ func findUnresolvedRunbookVars(r *runbook.Runbook) []string {
 			if start < 0 {
 				return
 			}
+
 			end := strings.Index(s[start:], "}}")
 			if end < 0 {
 				return
 			}
+
 			name := s[start+2 : start+end]
 			if name != "" && !seen[name] {
 				seen[name] = true
 			}
+
 			s = s[start+end+2:]
 		}
 	}
 	scan(r.URL)
+
 	for _, step := range r.Steps {
 		scan(step.URL)
 		scan(step.Text)
 	}
+
 	var names []string
 	for name := range seen {
 		names = append(names, name)
 	}
+
 	return names
 }
 
@@ -563,6 +602,7 @@ var runbookFlowCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		_, _ = fmt.Fprintf(os.Stderr, "detecting flow across %d URL(s)...\n", len(args))
@@ -591,11 +631,14 @@ var runbookFlowCmd = &cobra.Command{
 			if err := os.WriteFile(output, data, 0o644); err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(os.Stderr, "flow runbook written to %s\n", output)
+
 			return nil
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }

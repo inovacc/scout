@@ -178,6 +178,7 @@ func (p *Page) ExtractSwagger(opts ...SwaggerOption) (*SwaggerSpec, error) {
 		if err != nil {
 			return nil, fmt.Errorf("scout: extract swagger: get page url: %w", err)
 		}
+
 		if strings.HasPrefix(specURL, "/") {
 			// Absolute path — combine with origin
 			idx := strings.Index(pageURL[8:], "/") // skip https://
@@ -215,6 +216,7 @@ func (b *Browser) ExtractSwagger(url string, opts ...SwaggerOption) (*SwaggerSpe
 	if err != nil {
 		return nil, fmt.Errorf("scout: extract swagger: navigate: %w", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		return nil, fmt.Errorf("scout: extract swagger: wait load: %w", err)
 	}
@@ -265,11 +267,13 @@ func parseSwaggerSpec(specURL string, raw []byte, cfg *swaggerOptions) (*Swagger
 	// Parse host/basePath (Swagger 2.0)
 	if host := strVal(doc, "host"); host != "" {
 		scheme := "https"
+
 		if schemes, ok := doc["schemes"].([]any); ok && len(schemes) > 0 {
 			if s, ok := schemes[0].(string); ok {
 				scheme = s
 			}
 		}
+
 		basePath := strVal(doc, "basePath")
 		spec.Servers = append(spec.Servers, SwaggerServer{
 			URL: scheme + "://" + host + basePath,
@@ -302,6 +306,7 @@ func parseSwaggerInfo(info map[string]any) SwaggerInfo {
 	if contact, ok := info["contact"].(map[string]any); ok {
 		si.Contact = mapStrStr(contact)
 	}
+
 	if license, ok := info["license"].(map[string]any); ok {
 		si.License = mapStrStr(license)
 	}
@@ -359,6 +364,7 @@ func parseSwaggerPaths(paths map[string]any) []SwaggerPath {
 
 			if responses, ok := op["responses"].(map[string]any); ok {
 				sp.Responses = make(map[string]string)
+
 				for code, resp := range responses {
 					if rm, ok := resp.(map[string]any); ok {
 						sp.Responses[code] = strVal(rm, "description")
@@ -370,6 +376,7 @@ func parseSwaggerPaths(paths map[string]any) []SwaggerPath {
 				for _, sec := range security {
 					if sm, ok := sec.(map[string]any); ok {
 						entry := make(map[string][]string)
+
 						for k, v := range sm {
 							if arr, ok := v.([]any); ok {
 								for _, item := range arr {
@@ -377,11 +384,13 @@ func parseSwaggerPaths(paths map[string]any) []SwaggerPath {
 										entry[k] = append(entry[k], s)
 									}
 								}
+
 								if entry[k] == nil {
 									entry[k] = []string{}
 								}
 							}
 						}
+
 						sp.Security = append(sp.Security, entry)
 					}
 				}
@@ -432,6 +441,7 @@ func parseSwaggerSecurityDefs(doc map[string]any) []SwaggerSecurity {
 	}
 
 	var result []SwaggerSecurity
+
 	for name, def := range defs {
 		dm, ok := def.(map[string]any)
 		if !ok {
@@ -453,6 +463,7 @@ func strVal(m map[string]any, key string) string {
 	if v, ok := m[key].(string); ok {
 		return v
 	}
+
 	return ""
 }
 
@@ -460,16 +471,19 @@ func boolVal(m map[string]any, key string) bool {
 	if v, ok := m[key].(bool); ok {
 		return v
 	}
+
 	return false
 }
 
 func mapStrStr(m map[string]any) map[string]string {
 	result := make(map[string]string)
+
 	for k, v := range m {
 		if s, ok := v.(string); ok {
 			result[k] = s
 		}
 	}
+
 	return result
 }
 
@@ -478,5 +492,6 @@ func isHTTPMethod(m string) bool {
 	case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE":
 		return true
 	}
+
 	return false
 }

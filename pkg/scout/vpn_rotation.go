@@ -24,6 +24,7 @@ func newVPNRotator(provider VPNProvider, config VPNRotationConfig) *vpnRotator {
 	if len(countries) == 0 {
 		countries = []string{""} // empty string = provider default/nearest
 	}
+
 	return &vpnRotator{
 		provider:   provider,
 		config:     config,
@@ -55,6 +56,7 @@ func (r *vpnRotator) next() string {
 
 	country := r.countries[r.index%len(r.countries)]
 	r.index++
+
 	return country
 }
 

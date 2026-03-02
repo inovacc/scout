@@ -42,6 +42,7 @@ func NewBridgeRecorder(server *BridgeServer) *BridgeRecorder {
 	if server == nil {
 		return nil
 	}
+
 	return &BridgeRecorder{
 		server: server,
 		done:   make(chan struct{}),
@@ -60,6 +61,7 @@ func (r *BridgeRecorder) Start() {
 		r.mu.Unlock()
 		return
 	}
+
 	r.recording = true
 	r.steps = nil
 	r.done = make(chan struct{})
@@ -68,13 +70,16 @@ func (r *BridgeRecorder) Start() {
 	r.server.Subscribe(BridgeEventUserClick, func(e BridgeEvent) {
 		r.mu.Lock()
 		defer r.mu.Unlock()
+
 		if !r.recording {
 			return
 		}
+
 		selector, _ := e.Data["selector"].(string)
 		if selector == "" {
 			return
 		}
+
 		r.steps = append(r.steps, RecordedStep{
 			Action:   "click",
 			Selector: selector,
@@ -84,14 +89,18 @@ func (r *BridgeRecorder) Start() {
 	r.server.Subscribe(BridgeEventUserInput, func(e BridgeEvent) {
 		r.mu.Lock()
 		defer r.mu.Unlock()
+
 		if !r.recording {
 			return
 		}
+
 		selector, _ := e.Data["selector"].(string)
 		value, _ := e.Data["value"].(string)
+
 		if selector == "" {
 			return
 		}
+
 		r.steps = append(r.steps, RecordedStep{
 			Action:   "type",
 			Selector: selector,
@@ -102,13 +111,16 @@ func (r *BridgeRecorder) Start() {
 	r.server.Subscribe(BridgeEventNavigation, func(e BridgeEvent) {
 		r.mu.Lock()
 		defer r.mu.Unlock()
+
 		if !r.recording {
 			return
 		}
+
 		url, _ := e.Data["url"].(string)
 		if url == "" {
 			return
 		}
+
 		r.steps = append(r.steps, RecordedStep{
 			Action: "navigate",
 			URL:    url,
@@ -134,6 +146,7 @@ func (r *BridgeRecorder) Stop() []RecordedStep {
 
 	out := make([]RecordedStep, len(r.steps))
 	copy(out, r.steps)
+
 	return out
 }
 
@@ -148,6 +161,7 @@ func (r *BridgeRecorder) Steps() []RecordedStep {
 
 	out := make([]RecordedStep, len(r.steps))
 	copy(out, r.steps)
+
 	return out
 }
 

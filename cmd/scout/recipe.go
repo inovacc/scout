@@ -84,6 +84,7 @@ var recipeRunCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		result, err := recipe.Run(context.Background(), browser, r)
@@ -123,6 +124,7 @@ var recipeRunCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }
@@ -139,6 +141,7 @@ var recipeValidateCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(os.Stdout, "valid %s recipe: %s (type=%s)\n", r.Version, r.Name, r.Type)
+
 		return nil
 	},
 }
@@ -159,6 +162,7 @@ var recipeTestCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		result, err := recipe.ValidateRecipe(browser, r)
@@ -180,7 +184,9 @@ var recipeTestCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("marshal result: %w", err)
 			}
+
 			_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 			return nil
 		}
 
@@ -210,6 +216,7 @@ var recipeTestCmd = &cobra.Command{
 
 				// Try to get sample items for context.
 				var samples []map[string]any
+
 				if r.Type == "extract" {
 					items, sampleErr := recipe.SampleExtract(browser, r)
 					if sampleErr == nil {
@@ -226,12 +233,15 @@ var recipeTestCmd = &cobra.Command{
 					} else {
 						_, _ = fmt.Fprintln(os.Stdout, "LLM: recipe has issues")
 					}
+
 					for _, s := range llmResult.Suggestions {
 						_, _ = fmt.Fprintf(os.Stdout, "  suggestion: %s\n", s)
 					}
+
 					for _, f := range llmResult.MissingFields {
 						_, _ = fmt.Fprintf(os.Stdout, "  missing field: %s\n", f)
 					}
+
 					for _, fs := range llmResult.FragileSelectors {
 						_, _ = fmt.Fprintf(os.Stdout, "  fragile: %s\n", fs)
 					}
@@ -259,6 +269,7 @@ var recipeCreateCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		interactive, _ := cmd.Flags().GetBool("interactive")
@@ -292,6 +303,7 @@ var recipeCreateCmd = &cobra.Command{
 			if provider != nil {
 				aiOpts = append(aiOpts, recipe.WithAI(provider))
 			}
+
 			if goal != "" {
 				aiOpts = append(aiOpts, recipe.WithGoal(goal))
 			}
@@ -315,6 +327,7 @@ var recipeCreateCmd = &cobra.Command{
 			if forceType != "" {
 				genOpts = append(genOpts, recipe.WithGenerateType(forceType))
 			}
+
 			if maxPages > 0 {
 				genOpts = append(genOpts, recipe.WithGenerateMaxPages(maxPages))
 			}
@@ -339,11 +352,14 @@ var recipeCreateCmd = &cobra.Command{
 			if err := os.WriteFile(output, data, 0o644); err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(os.Stderr, "recipe written to %s\n", output)
+
 			return nil
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }
@@ -364,6 +380,7 @@ var recipeFixCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		fixed, changes, err := recipe.FixRecipe(browser, r)
@@ -388,11 +405,14 @@ var recipeFixCmd = &cobra.Command{
 			if err := os.WriteFile(output, data, 0o644); err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(os.Stderr, "fixed recipe written to %s\n", output)
+
 			return nil
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }
@@ -412,6 +432,7 @@ var recipeSampleCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		items, err := recipe.SampleExtract(browser, r)
@@ -427,6 +448,7 @@ var recipeSampleCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }
@@ -439,7 +461,9 @@ var recipePresetsCmd = &cobra.Command{
 		asJSON, _ := cmd.Flags().GetBool("json")
 
 		all := recipes.All()
+
 		var filtered []recipes.Preset
+
 		for _, p := range all {
 			if service == "" || p.Service == service {
 				filtered = append(filtered, p)
@@ -451,13 +475,16 @@ var recipePresetsCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("marshal presets: %w", err)
 			}
+
 			_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 			return nil
 		}
 
 		for _, p := range filtered {
 			_, _ = fmt.Fprintf(os.Stdout, "%-25s %-12s %s\n", p.ID, p.Service, p.Description)
 		}
+
 		return nil
 	},
 }
@@ -477,13 +504,16 @@ var recipeRunPresetCmd = &cobra.Command{
 		}
 
 		varMap := make(map[string]string)
+
 		for _, v := range vars {
 			k, val, ok := strings.Cut(v, "=")
 			if !ok {
 				return fmt.Errorf("invalid --var format %q (expected key=value)", v)
 			}
+
 			varMap[k] = val
 		}
+
 		applyVars(r, varMap)
 
 		if unresolved := findUnresolvedVars(r); len(unresolved) > 0 {
@@ -494,6 +524,7 @@ var recipeRunPresetCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		result, err := recipe.Run(context.Background(), browser, r)
@@ -519,6 +550,7 @@ var recipeRunPresetCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }
@@ -527,6 +559,7 @@ var recipeRunPresetCmd = &cobra.Command{
 func applyVars(r *recipe.Recipe, vars map[string]string) {
 	for k, v := range vars {
 		placeholder := "{{" + k + "}}"
+
 		r.URL = strings.ReplaceAll(r.URL, placeholder, v)
 		for i := range r.Steps {
 			r.Steps[i].URL = strings.ReplaceAll(r.Steps[i].URL, placeholder, v)
@@ -544,26 +577,32 @@ func findUnresolvedVars(r *recipe.Recipe) []string {
 			if start < 0 {
 				return
 			}
+
 			end := strings.Index(s[start:], "}}")
 			if end < 0 {
 				return
 			}
+
 			name := s[start+2 : start+end]
 			if name != "" && !seen[name] {
 				seen[name] = true
 			}
+
 			s = s[start+end+2:]
 		}
 	}
 	scan(r.URL)
+
 	for _, step := range r.Steps {
 		scan(step.URL)
 		scan(step.Text)
 	}
+
 	var names []string
 	for name := range seen {
 		names = append(names, name)
 	}
+
 	return names
 }
 
@@ -579,6 +618,7 @@ var recipeFlowCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		_, _ = fmt.Fprintf(os.Stderr, "detecting flow across %d URL(s)...\n", len(args))
@@ -607,11 +647,14 @@ var recipeFlowCmd = &cobra.Command{
 			if err := os.WriteFile(output, data, 0o644); err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(os.Stderr, "flow recipe written to %s\n", output)
+
 			return nil
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, string(data))
+
 		return nil
 	},
 }

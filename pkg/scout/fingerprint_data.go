@@ -113,7 +113,7 @@ var webglProfilesLinux = []webglProfile{
 var webglProfilesMobile = []webglProfile{
 	{"Qualcomm", "Adreno (TM) 740"},
 	{"Qualcomm", "Adreno (TM) 730"},
-	{"ARM", "Mali-G715 Immortalis MC11"},
+	{"ARM", "Mali-G715 Immortals MC11"},
 	{"Apple GPU", "Apple GPU"},
 }
 

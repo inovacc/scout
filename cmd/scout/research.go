@@ -63,9 +63,11 @@ Supported LLM providers: ollama, openai, anthropic, openrouter, deepseek, gemini
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var searchEngine scout.SearchEngine
+
 		switch engine {
 		case "bing":
 			searchEngine = scout.Bing
@@ -90,6 +92,7 @@ Supported LLM providers: ollama, openai, anthropic, openrouter, deepseek, gemini
 		} else {
 			result, err = agent.Research(cmd.Context(), query)
 		}
+
 		if err != nil {
 			return err
 		}
@@ -97,6 +100,7 @@ Supported LLM providers: ollama, openai, anthropic, openrouter, deepseek, gemini
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(result)
 		}
 
@@ -113,6 +117,7 @@ Supported LLM providers: ollama, openai, anthropic, openrouter, deepseek, gemini
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%d. [%.0f%%] %s\n   %s\n",
 					i+1, src.Relevance*100, src.Title, src.URL)
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout())
 		}
 
@@ -121,16 +126,19 @@ Supported LLM providers: ollama, openai, anthropic, openrouter, deepseek, gemini
 			for i, q := range result.FollowUpQuestions {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%d. %s\n", i+1, q)
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout())
 		}
 
 		outFile, _ := cmd.Flags().GetString("output")
 		if outFile != "" {
 			data, _ := json.MarshalIndent(result, "", "  ")
+
 			dest, writeErr := writeOutput(cmd, data, "research.json")
 			if writeErr != nil {
 				return writeErr
 			}
+
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Written to %s\n", dest)
 		}
 

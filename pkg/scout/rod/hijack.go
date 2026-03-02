@@ -78,10 +78,12 @@ func (r *HijackRouter) initEvents() *HijackRouter { //nolint: gocognit
 
 				if ctx.continueRequest != nil {
 					ctx.continueRequest.RequestID = e.RequestID
+
 					err := ctx.continueRequest.Call(r.client)
 					if err != nil {
 						ctx.OnError(err)
 					}
+
 					return
 				}
 
@@ -94,6 +96,7 @@ func (r *HijackRouter) initEvents() *HijackRouter { //nolint: gocognit
 					if err != nil {
 						ctx.OnError(err)
 					}
+
 					return
 				}
 
@@ -107,6 +110,7 @@ func (r *HijackRouter) initEvents() *HijackRouter { //nolint: gocognit
 
 		return false
 	})
+
 	return r
 }
 
@@ -131,6 +135,7 @@ func (r *HijackRouter) Add(pattern string, resourceType proto.NetworkResourceTyp
 // Remove handler via the pattern.
 func (r *HijackRouter) Remove(pattern string) error {
 	patterns := []*proto.FetchRequestPattern{}
+
 	handlers := []*hijackHandler{}
 	for _, h := range r.handlers {
 		if h.pattern != pattern {
@@ -138,6 +143,7 @@ func (r *HijackRouter) Remove(pattern string) error {
 			handlers = append(handlers, h)
 		}
 	}
+
 	r.enable.Patterns = patterns
 	r.handlers = handlers
 
@@ -210,7 +216,7 @@ type Hijack struct {
 	continueRequest *proto.FetchContinueRequest
 
 	// CustomState is used to store things for this context
-	CustomState interface{}
+	CustomState any
 
 	browser *Browser
 }
@@ -243,6 +249,7 @@ func (h *Hijack) LoadResponse(client *http.Client, loadBody bool) error {
 		if err != nil {
 			return err
 		}
+
 		h.Response.payload.Body = b
 	}
 
@@ -303,7 +310,7 @@ func (ctx *HijackRequest) SetContext(c context.Context) *HijackRequest {
 }
 
 // SetBody of the request, if obj is []byte or string, raw body will be used, else it will be encoded as json.
-func (ctx *HijackRequest) SetBody(obj interface{}) *HijackRequest {
+func (ctx *HijackRequest) SetBody(obj any) *HijackRequest {
 	var b []byte
 
 	switch body := obj.(type) {
@@ -375,6 +382,7 @@ func (ctx *HijackResponse) SetHeader(pairs ...string) *HijackResponse {
 			headerIndex[name] = len(ctx.payload.ResponseHeaders) - 1
 		}
 	}
+
 	return ctx
 }
 
@@ -387,11 +395,12 @@ func (ctx *HijackResponse) AddHeader(pairs ...string) *HijackResponse {
 			Value: pairs[i+1],
 		})
 	}
+
 	return ctx
 }
 
 // SetBody of the payload, if obj is []byte or string, raw body will be used, else it will be encoded as json.
-func (ctx *HijackResponse) SetBody(obj interface{}) *HijackResponse {
+func (ctx *HijackResponse) SetBody(obj any) *HijackResponse {
 	switch body := obj.(type) {
 	case []byte:
 		ctx.payload.Body = body
@@ -400,6 +409,7 @@ func (ctx *HijackResponse) SetBody(obj interface{}) *HijackResponse {
 	default:
 		ctx.payload.Body = utils.MustToJSONBytes(body)
 	}
+
 	return ctx
 }
 

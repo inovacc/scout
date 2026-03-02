@@ -10,7 +10,7 @@ import (
 
 Debugger
 
-Debugger domain exposes JavaScript debugging capabilities. It allows setting and removing
+domain exposes JavaScript debugging capabilities. It allows setting and removing
 breakpoints, stepping through execution, exploring stack traces, etc.
 
 */

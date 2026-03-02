@@ -80,6 +80,7 @@ func isLocalAddr(addr string) bool {
 	if err != nil {
 		return true // no port, assume local
 	}
+
 	return host == "" || host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
@@ -98,6 +99,7 @@ func ensureDaemon(addr string) error {
 			_ = conn.Close()
 			return nil // port is open, let the caller try mTLS
 		}
+
 		return fmt.Errorf("scout: server at %s not reachable", addr)
 	}
 
@@ -160,6 +162,7 @@ func getClientTLS(addr string) (pb.ScoutServiceClient, *grpc.ClientConn, error) 
 	}
 
 	creds := grpc.WithTransportCredentials(server.ClientTLSCredentials(id))
+
 	return dialClient(addr, creds)
 }
 
@@ -170,7 +173,6 @@ func getClient(addr string) (pb.ScoutServiceClient, *grpc.ClientConn, error) {
 }
 
 func dialClient(addr string, creds grpc.DialOption) (pb.ScoutServiceClient, *grpc.ClientConn, error) {
-
 	conn, err := grpc.NewClient(addr,
 		creds,
 		grpc.WithDefaultCallOptions(

@@ -20,6 +20,7 @@ func TestResearchCache_PutGet(t *testing.T) {
 	if !ok {
 		t.Fatal("expected cache hit")
 	}
+
 	if got.Summary != "test summary" {
 		t.Fatalf("expected 'test summary', got %q", got.Summary)
 	}
@@ -57,6 +58,7 @@ func TestResearchCache_Evict(t *testing.T) {
 	if evicted != 2 {
 		t.Fatalf("expected 2 evicted, got %d", evicted)
 	}
+
 	if cache.Size() != 0 {
 		t.Fatalf("expected size 0 after evict, got %d", cache.Size())
 	}
@@ -67,6 +69,7 @@ func TestResearchCache_Clear(t *testing.T) {
 	cache.Put("a", &ResearchResult{Summary: "a"})
 	cache.Put("b", &ResearchResult{Summary: "b"})
 	cache.Clear()
+
 	if cache.Size() != 0 {
 		t.Fatalf("expected size 0, got %d", cache.Size())
 	}
@@ -82,6 +85,7 @@ func TestResearchCache_Miss(t *testing.T) {
 func TestResearchPreset_Shallow(t *testing.T) {
 	o := researchDefaults()
 	WithResearchPreset(ResearchShallow)(o)
+
 	if o.maxDepth != 1 || o.maxSources != 3 || o.concurrency != 2 {
 		t.Fatalf("shallow preset: depth=%d sources=%d concurrency=%d", o.maxDepth, o.maxSources, o.concurrency)
 	}
@@ -90,6 +94,7 @@ func TestResearchPreset_Shallow(t *testing.T) {
 func TestResearchPreset_Medium(t *testing.T) {
 	o := researchDefaults()
 	WithResearchPreset(ResearchMedium)(o)
+
 	if o.maxDepth != 2 || o.maxSources != 5 || o.concurrency != 3 {
 		t.Fatalf("medium preset: depth=%d sources=%d concurrency=%d", o.maxDepth, o.maxSources, o.concurrency)
 	}
@@ -98,9 +103,11 @@ func TestResearchPreset_Medium(t *testing.T) {
 func TestResearchPreset_Deep(t *testing.T) {
 	o := researchDefaults()
 	WithResearchPreset(ResearchDeep)(o)
+
 	if o.maxDepth != 3 || o.maxSources != 8 || o.concurrency != 5 {
 		t.Fatalf("deep preset: depth=%d sources=%d concurrency=%d", o.maxDepth, o.maxSources, o.concurrency)
 	}
+
 	if o.timeout != 5*time.Minute {
 		t.Fatalf("deep preset timeout: got %v", o.timeout)
 	}

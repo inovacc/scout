@@ -28,6 +28,7 @@ func (p *Page) newKeyboard() *Page {
 func (k *Keyboard) getModifiers() int {
 	k.Lock()
 	defer k.Unlock()
+
 	return k.modifiers()
 }
 
@@ -36,6 +37,7 @@ func (k *Keyboard) modifiers() int {
 	for key := range k.pressed {
 		ms |= key.Modifier()
 	}
+
 	return ms
 }
 
@@ -44,6 +46,7 @@ func (k *Keyboard) modifiers() int {
 // use method like [Page.InsertText].
 func (k *Keyboard) Press(key input.Key) error {
 	defer k.page.tryTrace(TraceTypeInput, "press key: "+key.Info().Code)()
+
 	k.page.browser.trySlowMotion()
 
 	k.Lock()
@@ -77,11 +80,13 @@ func (k *Keyboard) Type(keys ...input.Key) (err error) {
 		if err != nil {
 			return
 		}
+
 		err = k.Release(key)
 		if err != nil {
 			return
 		}
 	}
+
 	return
 }
 
@@ -119,6 +124,7 @@ func (ka *KeyActions) Press(keys ...input.Key) *KeyActions {
 	for _, key := range keys {
 		ka.Actions = append(ka.Actions, KeyAction{KeyActionPress, key})
 	}
+
 	return ka
 }
 
@@ -127,6 +133,7 @@ func (ka *KeyActions) Release(keys ...input.Key) *KeyActions {
 	for _, key := range keys {
 		ka.Actions = append(ka.Actions, KeyAction{KeyActionRelease, key})
 	}
+
 	return ka
 }
 
@@ -135,6 +142,7 @@ func (ka *KeyActions) Type(keys ...input.Key) *KeyActions {
 	for _, key := range keys {
 		ka.Actions = append(ka.Actions, KeyAction{KeyActionTypeKey, key})
 	}
+
 	return ka
 }
 
@@ -149,10 +157,12 @@ func (ka *KeyActions) Do() (err error) {
 		case KeyActionTypeKey:
 			err = ka.keyboard.Type(a.Key)
 		}
+
 		if err != nil {
 			return
 		}
 	}
+
 	return
 }
 
@@ -163,6 +173,7 @@ func (ka *KeyActions) balance() []KeyAction {
 	actions := ka.Actions
 
 	h := map[input.Key]bool{}
+
 	for _, a := range actions {
 		switch a.Type {
 		case KeyActionPress:
@@ -184,9 +195,11 @@ func (ka *KeyActions) balance() []KeyAction {
 // InsertText is like pasting text into the page.
 func (p *Page) InsertText(text string) error {
 	defer p.tryTrace(TraceTypeInput, "insert text "+text)()
+
 	p.browser.trySlowMotion()
 
 	err := proto.InputInsertText{Text: text}.Call(p)
+
 	return err
 }
 
@@ -213,6 +226,7 @@ func (p *Page) newMouse() *Page {
 func (m *Mouse) Position() proto.Point {
 	m.Lock()
 	defer m.Unlock()
+
 	return m.pos
 }
 
@@ -281,6 +295,7 @@ func (m *Mouse) MoveLinear(to proto.Point, steps int) error {
 		}
 
 		p = p.Add(step)
+
 		return p, false
 	})
 }
@@ -291,6 +306,7 @@ func (m *Mouse) Scroll(offsetX, offsetY float64, steps int) error {
 	defer m.Unlock()
 
 	defer m.page.tryTrace(TraceTypeInput, fmt.Sprintf("scroll (%.2f, %.2f)", offsetX, offsetY))()
+
 	m.page.browser.trySlowMotion()
 
 	if steps < 1 {
@@ -342,7 +358,9 @@ func (m *Mouse) Down(button proto.InputMouseButton, clickCount int) error {
 	if err != nil {
 		return err
 	}
+
 	m.buttons = toButtons
+
 	return nil
 }
 
@@ -352,10 +370,12 @@ func (m *Mouse) Up(button proto.InputMouseButton, clickCount int) error {
 	defer m.Unlock()
 
 	toButtons := []proto.InputMouseButton{}
+
 	for _, btn := range m.buttons {
 		if btn == button {
 			continue
 		}
+
 		toButtons = append(toButtons, btn)
 	}
 
@@ -373,7 +393,9 @@ func (m *Mouse) Up(button proto.InputMouseButton, clickCount int) error {
 	if err != nil {
 		return err
 	}
+
 	m.buttons = toButtons
+
 	return nil
 }
 
@@ -444,6 +466,7 @@ func (t *Touch) Cancel() error {
 // Tap dispatches a touchstart and touchend event.
 func (t *Touch) Tap(x, y float64) error {
 	defer t.page.tryTrace(TraceTypeInput, "touch")()
+
 	t.page.browser.trySlowMotion()
 
 	p := &proto.InputTouchPoint{X: x, Y: y}

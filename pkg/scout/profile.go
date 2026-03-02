@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -97,8 +98,10 @@ func CaptureProfile(page *Page, opts ...ProfileOption) (*UserProfile, error) {
 		if v, err := page.browser.Version(); err == nil {
 			p.Browser.Type = v
 		}
+
 		if page.browser.opts != nil {
 			p.Browser.WindowW = page.browser.opts.windowW
+
 			p.Browser.WindowH = page.browser.opts.windowH
 			if page.browser.opts.browserType != "" {
 				p.Browser.Type = string(page.browser.opts.browserType)
@@ -204,6 +207,7 @@ func WithProfile(path string) Option {
 		if err != nil {
 			return
 		}
+
 		applyProfileToOptions(p, o)
 	}
 }
@@ -214,6 +218,7 @@ func WithProfileData(p *UserProfile) Option {
 		if p == nil {
 			return
 		}
+
 		applyProfileToOptions(p, o)
 	}
 }
@@ -284,6 +289,7 @@ func ResolveExtensionsWithBase(p *UserProfile, baseDir string) []string {
 				slog.Warn("scout: profile: resolve extensions: cannot determine extension dir", "error", err)
 				continue
 			}
+
 			dir = filepath.Join(extDir, ext)
 		}
 
@@ -431,12 +437,15 @@ func MergeProfiles(base, overlay *UserProfile) *UserProfile {
 	if overlay.Identity.UserAgent != "" {
 		merged.Identity.UserAgent = overlay.Identity.UserAgent
 	}
+
 	if overlay.Identity.Language != "" {
 		merged.Identity.Language = overlay.Identity.Language
 	}
+
 	if overlay.Identity.Timezone != "" {
 		merged.Identity.Timezone = overlay.Identity.Timezone
 	}
+
 	if overlay.Identity.Locale != "" {
 		merged.Identity.Locale = overlay.Identity.Locale
 	}
@@ -446,18 +455,23 @@ func MergeProfiles(base, overlay *UserProfile) *UserProfile {
 	if overlay.Browser.Type != "" {
 		merged.Browser.Type = overlay.Browser.Type
 	}
+
 	if overlay.Browser.ExecPath != "" {
 		merged.Browser.ExecPath = overlay.Browser.ExecPath
 	}
+
 	if overlay.Browser.WindowW > 0 {
 		merged.Browser.WindowW = overlay.Browser.WindowW
 	}
+
 	if overlay.Browser.WindowH > 0 {
 		merged.Browser.WindowH = overlay.Browser.WindowH
 	}
+
 	if overlay.Browser.Platform != "" {
 		merged.Browser.Platform = overlay.Browser.Platform
 	}
+
 	if overlay.Browser.Arch != "" {
 		merged.Browser.Arch = overlay.Browser.Arch
 	}
@@ -466,13 +480,16 @@ func MergeProfiles(base, overlay *UserProfile) *UserProfile {
 	type cookieKey struct {
 		Domain, Name, Path string
 	}
+
 	cookieMap := make(map[cookieKey]Cookie)
 	for _, c := range base.Cookies {
 		cookieMap[cookieKey{c.Domain, c.Name, c.Path}] = c
 	}
+
 	for _, c := range overlay.Cookies {
 		cookieMap[cookieKey{c.Domain, c.Name, c.Path}] = c
 	}
+
 	merged.Cookies = make([]Cookie, 0, len(cookieMap))
 	for _, c := range cookieMap {
 		merged.Cookies = append(merged.Cookies, c)
@@ -481,23 +498,17 @@ func MergeProfiles(base, overlay *UserProfile) *UserProfile {
 	// Storage: merge per-origin (overlay origins win, base-only origins kept).
 	if len(base.Storage) > 0 || len(overlay.Storage) > 0 {
 		merged.Storage = make(map[string]ProfileOriginStorage)
-		for origin, s := range base.Storage {
-			merged.Storage[origin] = s
-		}
-		for origin, s := range overlay.Storage {
-			merged.Storage[origin] = s
-		}
+		maps.Copy(merged.Storage, base.Storage)
+
+		maps.Copy(merged.Storage, overlay.Storage)
 	}
 
 	// Headers: merge maps (overlay wins).
 	if len(base.Headers) > 0 || len(overlay.Headers) > 0 {
 		merged.Headers = make(map[string]string)
-		for k, v := range base.Headers {
-			merged.Headers[k] = v
-		}
-		for k, v := range overlay.Headers {
-			merged.Headers[k] = v
-		}
+		maps.Copy(merged.Headers, base.Headers)
+
+		maps.Copy(merged.Headers, overlay.Headers)
 	}
 
 	// Extensions: union (deduplicated).
@@ -505,9 +516,11 @@ func MergeProfiles(base, overlay *UserProfile) *UserProfile {
 	for _, e := range base.Extensions {
 		extSet[e] = struct{}{}
 	}
+
 	for _, e := range overlay.Extensions {
 		extSet[e] = struct{}{}
 	}
+
 	if len(extSet) > 0 {
 		merged.Extensions = make([]string, 0, len(extSet))
 		for e := range extSet {
@@ -545,14 +558,17 @@ func DiffProfiles(a, b *UserProfile) ProfileDiff {
 	type cookieKey struct {
 		Domain, Name, Path string
 	}
+
 	aCookies := make(map[cookieKey]Cookie)
 	for _, c := range a.Cookies {
 		aCookies[cookieKey{c.Domain, c.Name, c.Path}] = c
 	}
+
 	bCookies := make(map[cookieKey]Cookie)
 	for _, c := range b.Cookies {
 		bCookies[cookieKey{c.Domain, c.Name, c.Path}] = c
 	}
+
 	for k, bc := range bCookies {
 		if ac, ok := aCookies[k]; !ok {
 			d.CookiesAdded++
@@ -560,6 +576,7 @@ func DiffProfiles(a, b *UserProfile) ProfileDiff {
 			d.CookiesModified++
 		}
 	}
+
 	for k := range aCookies {
 		if _, ok := bCookies[k]; !ok {
 			d.CookiesRemoved++
@@ -572,6 +589,7 @@ func DiffProfiles(a, b *UserProfile) ProfileDiff {
 			d.StorageOriginsAdded++
 		}
 	}
+
 	for origin := range a.Storage {
 		if _, ok := b.Storage[origin]; !ok {
 			d.StorageOriginsRemoved++
@@ -583,11 +601,14 @@ func DiffProfiles(a, b *UserProfile) ProfileDiff {
 	for k := range a.Headers {
 		allHeaders[k] = struct{}{}
 	}
+
 	for k := range b.Headers {
 		allHeaders[k] = struct{}{}
 	}
+
 	for k := range allHeaders {
 		va, oka := a.Headers[k]
+
 		vb, okb := b.Headers[k]
 		if oka != okb || va != vb {
 			d.HeadersChanged++
@@ -599,15 +620,18 @@ func DiffProfiles(a, b *UserProfile) ProfileDiff {
 	for _, e := range a.Extensions {
 		aExts[e] = struct{}{}
 	}
+
 	bExts := make(map[string]struct{})
 	for _, e := range b.Extensions {
 		bExts[e] = struct{}{}
 	}
+
 	for e := range bExts {
 		if _, ok := aExts[e]; !ok {
 			d.ExtensionsAdded++
 		}
 	}
+
 	for e := range aExts {
 		if _, ok := bExts[e]; !ok {
 			d.ExtensionsRemoved++

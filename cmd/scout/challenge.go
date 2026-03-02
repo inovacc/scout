@@ -22,12 +22,14 @@ var challengeDetectCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = b.Close() }()
 
 		page, err := b.NewPage(args[0])
 		if err != nil {
 			return err
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return err
 		}
@@ -46,10 +48,12 @@ var challengeDetectCmd = &cobra.Command{
 				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No bot protection challenges detected.")
 				return nil
 			}
+
 			for _, c := range challenges {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%-15s  confidence=%.1f  %s\n", c.Type, c.Confidence, c.Details)
 			}
 		}
+
 		return nil
 	},
 }
@@ -63,11 +67,13 @@ var challengeSolveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = b.Close() }()
 
 		var solverOpts []scout.SolverOption
 
 		service, _ := cmd.Flags().GetString("service")
+
 		apiKey, _ := cmd.Flags().GetString("api-key")
 		if service != "" && apiKey != "" {
 			switch service {
@@ -103,6 +109,7 @@ var challengeSolveCmd = &cobra.Command{
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %-15s  confidence=%.1f  %s\n", c.Type, c.Confidence, c.Details)
 			}
 		}
+
 		return nil
 	},
 }

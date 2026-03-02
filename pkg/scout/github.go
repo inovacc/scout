@@ -144,6 +144,7 @@ func (b *Browser) GitHubRepo(owner, name string, opts ...GitHubOption) (*GitHubR
 	if err != nil {
 		return nil, fmt.Errorf("scout: github: navigate repo: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -212,23 +213,28 @@ func (b *Browser) GitHubRepo(owner, name string, opts ...GitHubOption) (*GitHubR
 		Name:  name,
 	}
 
-	if m, ok := result.Value.(map[string]interface{}); ok {
+	if m, ok := result.Value.(map[string]any); ok {
 		if v, ok := m["description"].(string); ok {
 			repo.Description = v
 		}
+
 		if v, ok := m["stars"].(float64); ok {
 			repo.Stars = int(v)
 		}
+
 		if v, ok := m["forks"].(float64); ok {
 			repo.Forks = int(v)
 		}
+
 		if v, ok := m["language"].(string); ok {
 			repo.Language = v
 		}
+
 		if v, ok := m["license"].(string); ok {
 			repo.License = v
 		}
-		if topics, ok := m["topics"].([]interface{}); ok {
+
+		if topics, ok := m["topics"].([]any); ok {
 			for _, t := range topics {
 				if s, ok := t.(string); ok {
 					repo.Topics = append(repo.Topics, s)
@@ -240,9 +246,11 @@ func (b *Browser) GitHubRepo(owner, name string, opts ...GitHubOption) (*GitHubR
 	// Optionally fetch README
 	if cfg.includeBody {
 		readmeURL := fmt.Sprintf("https://github.com/%s/%s/blob/HEAD/README.md", owner, name)
+
 		readmePage, readmeErr := b.NewPage(readmeURL)
 		if readmeErr == nil {
 			defer func() { _ = readmePage.Close() }()
+
 			if readmePage.WaitLoad() == nil {
 				md, mdErr := readmePage.Markdown(WithMainContentOnly())
 				if mdErr == nil {
@@ -267,6 +275,7 @@ func (b *Browser) GitHubIssues(owner, name string, opts ...GitHubOption) ([]GitH
 	}
 
 	stateQuery := "is%3Aopen"
+
 	switch cfg.state {
 	case "closed":
 		stateQuery = "is%3Aclosed"
@@ -344,6 +353,7 @@ func (b *Browser) GitHubIssues(owner, name string, opts ...GitHubOption) ([]GitH
 			return items;
 		}`, remaining))
 		_ = page.Close()
+
 		if err != nil {
 			return nil, fmt.Errorf("scout: github: eval issues: %w", err)
 		}
@@ -352,6 +362,7 @@ func (b *Browser) GitHubIssues(owner, name string, opts ...GitHubOption) ([]GitH
 		if len(pageIssues) == 0 {
 			break
 		}
+
 		issues = append(issues, pageIssues...)
 	}
 
@@ -361,11 +372,14 @@ func (b *Browser) GitHubIssues(owner, name string, opts ...GitHubOption) ([]GitH
 		if cfg.baseURL != "" {
 			baseHost = cfg.baseURL
 		}
+
 		for i := range issues {
 			if issues[i].Number == 0 {
 				continue
 			}
+
 			issueURL := fmt.Sprintf("%s/%s/%s/issues/%d", baseHost, owner, name, issues[i].Number)
+
 			body, bodyErr := b.fetchGitHubBody(issueURL)
 			if bodyErr == nil {
 				issues[i].Body = body
@@ -388,6 +402,7 @@ func (b *Browser) GitHubPRs(owner, name string, opts ...GitHubOption) ([]GitHubP
 	}
 
 	stateQuery := "is%3Aopen"
+
 	switch cfg.state {
 	case "closed":
 		stateQuery = "is%3Aclosed"
@@ -401,6 +416,7 @@ func (b *Browser) GitHubPRs(owner, name string, opts ...GitHubOption) ([]GitHubP
 	if err != nil {
 		return nil, fmt.Errorf("scout: github: navigate prs: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -458,35 +474,43 @@ func (b *Browser) GitHubPRs(owner, name string, opts ...GitHubOption) ([]GitHubP
 	}
 
 	var prs []GitHubPR
-	if arr, ok := result.Value.([]interface{}); ok {
+
+	if arr, ok := result.Value.([]any); ok {
 		for _, item := range arr {
-			m, ok := item.(map[string]interface{})
+			m, ok := item.(map[string]any)
 			if !ok {
 				continue
 			}
+
 			pr := GitHubPR{}
 			if v, ok := m["number"].(float64); ok {
 				pr.Number = int(v)
 			}
+
 			if v, ok := m["title"].(string); ok {
 				pr.Title = v
 			}
+
 			if v, ok := m["state"].(string); ok {
 				pr.State = v
 			}
+
 			if v, ok := m["author"].(string); ok {
 				pr.Author = v
 			}
+
 			if v, ok := m["created_at"].(string); ok {
 				pr.CreatedAt = v
 			}
-			if labels, ok := m["labels"].([]interface{}); ok {
+
+			if labels, ok := m["labels"].([]any); ok {
 				for _, l := range labels {
 					if s, ok := l.(string); ok {
 						pr.Labels = append(pr.Labels, s)
 					}
 				}
 			}
+
 			prs = append(prs, pr)
 		}
 	}
@@ -496,7 +520,9 @@ func (b *Browser) GitHubPRs(owner, name string, opts ...GitHubOption) ([]GitHubP
 			if prs[i].Number == 0 {
 				continue
 			}
+
 			prURL := fmt.Sprintf("https://github.com/%s/%s/pull/%d", owner, name, prs[i].Number)
+
 			body, bodyErr := b.fetchGitHubBody(prURL)
 			if bodyErr == nil {
 				prs[i].Body = body
@@ -519,6 +545,7 @@ func (b *Browser) GitHubUser(username string) (*GitHubUser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: github: navigate user: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -588,25 +615,31 @@ func (b *Browser) GitHubUser(username string) (*GitHubUser, error) {
 
 	user := &GitHubUser{Username: username}
 
-	if m, ok := result.Value.(map[string]interface{}); ok {
+	if m, ok := result.Value.(map[string]any); ok {
 		if v, ok := m["username"].(string); ok && v != "" {
 			user.Username = v
 		}
+
 		if v, ok := m["display_name"].(string); ok {
 			user.DisplayName = v
 		}
+
 		if v, ok := m["bio"].(string); ok {
 			user.Bio = v
 		}
+
 		if v, ok := m["location"].(string); ok {
 			user.Location = v
 		}
+
 		if v, ok := m["repos"].(float64); ok {
 			user.Repos = int(v)
 		}
+
 		if v, ok := m["followers"].(float64); ok {
 			user.Followers = int(v)
 		}
+
 		if v, ok := m["following"].(float64); ok {
 			user.Following = int(v)
 		}
@@ -632,6 +665,7 @@ func (b *Browser) GitHubReleases(owner, name string, opts ...GitHubOption) ([]Gi
 	if err != nil {
 		return nil, fmt.Errorf("scout: github: navigate releases: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -676,28 +710,35 @@ func (b *Browser) GitHubReleases(owner, name string, opts ...GitHubOption) ([]Gi
 	}
 
 	var releases []GitHubRelease
-	if arr, ok := result.Value.([]interface{}); ok {
+
+	if arr, ok := result.Value.([]any); ok {
 		for _, item := range arr {
-			m, ok := item.(map[string]interface{})
+			m, ok := item.(map[string]any)
 			if !ok {
 				continue
 			}
+
 			rel := GitHubRelease{}
 			if v, ok := m["tag"].(string); ok {
 				rel.Tag = v
 			}
+
 			if v, ok := m["name"].(string); ok {
 				rel.Name = v
 			}
+
 			if v, ok := m["body"].(string); ok {
 				rel.Body = v
 			}
+
 			if v, ok := m["date"].(string); ok {
 				rel.Date = v
 			}
+
 			if v, ok := m["assets"].(float64); ok {
 				rel.Assets = int(v)
 			}
+
 			releases = append(releases, rel)
 		}
 	}
@@ -721,6 +762,7 @@ func (b *Browser) GitHubTree(owner, name, branch string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: github: navigate tree: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -748,7 +790,8 @@ func (b *Browser) GitHubTree(owner, name, branch string) ([]string, error) {
 	}
 
 	var files []string
-	if arr, ok := result.Value.([]interface{}); ok {
+
+	if arr, ok := result.Value.([]any); ok {
 		for _, item := range arr {
 			if s, ok := item.(string); ok {
 				s = strings.TrimSpace(s)
@@ -765,40 +808,50 @@ func (b *Browser) GitHubTree(owner, name, branch string) ([]string, error) {
 // parseGitHubIssues converts an EvalResult into a slice of GitHubIssue.
 func parseGitHubIssues(result *EvalResult) []GitHubIssue {
 	var issues []GitHubIssue
-	arr, ok := result.Value.([]interface{})
+
+	arr, ok := result.Value.([]any)
 	if !ok {
 		return nil
 	}
+
 	for _, item := range arr {
-		m, ok := item.(map[string]interface{})
+		m, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
+
 		issue := GitHubIssue{}
 		if v, ok := m["number"].(float64); ok {
 			issue.Number = int(v)
 		}
+
 		if v, ok := m["title"].(string); ok {
 			issue.Title = v
 		}
+
 		if v, ok := m["state"].(string); ok {
 			issue.State = v
 		}
+
 		if v, ok := m["author"].(string); ok {
 			issue.Author = v
 		}
+
 		if v, ok := m["created_at"].(string); ok {
 			issue.CreatedAt = v
 		}
-		if labels, ok := m["labels"].([]interface{}); ok {
+
+		if labels, ok := m["labels"].([]any); ok {
 			for _, l := range labels {
 				if s, ok := l.(string); ok {
 					issue.Labels = append(issue.Labels, s)
 				}
 			}
 		}
+
 		issues = append(issues, issue)
 	}
+
 	return issues
 }
 
@@ -874,6 +927,7 @@ func (b *Browser) GitHubSearchCode(query string, opts ...GitHubOption) ([]GitHub
 			return items;
 		}`, remaining))
 		_ = page.Close()
+
 		if err != nil {
 			return nil, fmt.Errorf("scout: github: eval code search: %w", err)
 		}
@@ -882,6 +936,7 @@ func (b *Browser) GitHubSearchCode(query string, opts ...GitHubOption) ([]GitHub
 		if len(pageResults) == 0 {
 			break
 		}
+
 		results = append(results, pageResults...)
 	}
 
@@ -891,27 +946,34 @@ func (b *Browser) GitHubSearchCode(query string, opts ...GitHubOption) ([]GitHub
 // parseGitHubCodeResults converts an EvalResult into a slice of GitHubCodeResult.
 func parseGitHubCodeResults(result *EvalResult) []GitHubCodeResult {
 	var results []GitHubCodeResult
-	arr, ok := result.Value.([]interface{})
+
+	arr, ok := result.Value.([]any)
 	if !ok {
 		return nil
 	}
+
 	for _, item := range arr {
-		m, ok := item.(map[string]interface{})
+		m, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
+
 		r := GitHubCodeResult{}
 		if v, ok := m["repo"].(string); ok {
 			r.Repo = v
 		}
+
 		if v, ok := m["file_path"].(string); ok {
 			r.FilePath = v
 		}
+
 		if v, ok := m["snippet"].(string); ok {
 			r.Snippet = v
 		}
+
 		results = append(results, r)
 	}
+
 	return results
 }
 
@@ -921,6 +983,7 @@ func (b *Browser) fetchGitHubBody(pageURL string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("scout: github: fetch body: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {

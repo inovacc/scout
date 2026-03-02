@@ -42,9 +42,11 @@ func TestPrintKV(t *testing.T) {
 	if !strings.Contains(got, "Listen") {
 		t.Error("printKV output should contain key")
 	}
+
 	if !strings.Contains(got, ":9551") {
 		t.Error("printKV output should contain value")
 	}
+
 	if !strings.HasPrefix(got, "│") {
 		t.Error("printKV output should start with box-drawing border")
 	}
@@ -94,8 +96,10 @@ func TestPrintServerTable_Basic(t *testing.T) {
 
 func TestPrintServerTable_InsecureMode(t *testing.T) {
 	var buf bytes.Buffer
+
 	info := ServerInfo{Insecure: true}
 	PrintServerTable(&buf, info, nil)
+
 	if !strings.Contains(buf.String(), "Insecure") {
 		t.Error("insecure mode should show 'Insecure'")
 	}
@@ -103,8 +107,10 @@ func TestPrintServerTable_InsecureMode(t *testing.T) {
 
 func TestPrintServerTable_EmptyDeviceID(t *testing.T) {
 	var buf bytes.Buffer
+
 	info := ServerInfo{DeviceID: ""}
 	PrintServerTable(&buf, info, nil)
+
 	if !strings.Contains(buf.String(), "(none)") {
 		t.Error("empty device ID should show '(none)'")
 	}
@@ -112,8 +118,10 @@ func TestPrintServerTable_EmptyDeviceID(t *testing.T) {
 
 func TestPrintServerTable_NoLocalIPs(t *testing.T) {
 	var buf bytes.Buffer
+
 	info := ServerInfo{LocalIPs: nil}
 	PrintServerTable(&buf, info, nil)
+
 	if !strings.Contains(buf.String(), "(none)") {
 		t.Error("no local IPs should show '(none)'")
 	}
@@ -121,6 +129,7 @@ func TestPrintServerTable_NoLocalIPs(t *testing.T) {
 
 func TestPrintServerTable_WithPeers(t *testing.T) {
 	var buf bytes.Buffer
+
 	info := ServerInfo{
 		ListenAddr:    ":9551",
 		TotalSessions: 2,
@@ -136,12 +145,15 @@ func TestPrintServerTable_WithPeers(t *testing.T) {
 	if !strings.Contains(out, "HM2ASC3") {
 		t.Error("output should contain peer short ID")
 	}
+
 	if !strings.Contains(out, "device-abc-123") {
 		t.Error("output should contain peer device ID")
 	}
+
 	if !strings.Contains(out, "Active: 2") {
 		t.Error("output should show 2 active peers")
 	}
+
 	if !strings.Contains(out, "Short ID") {
 		t.Error("output should contain column header")
 	}
@@ -149,6 +161,7 @@ func TestPrintServerTable_WithPeers(t *testing.T) {
 
 func TestPrintServerTable_WithEvents(t *testing.T) {
 	var buf bytes.Buffer
+
 	now := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
 	info := ServerInfo{
 		Events: []SessionEvent{
@@ -161,9 +174,11 @@ func TestPrintServerTable_WithEvents(t *testing.T) {
 	if !strings.Contains(out, "Recent Activity") {
 		t.Error("output should contain Recent Activity header")
 	}
+
 	if !strings.Contains(out, "connect") {
 		t.Error("output should contain event type")
 	}
+
 	if !strings.Contains(out, "10:30:00") {
 		t.Error("output should contain formatted event time")
 	}
@@ -171,6 +186,7 @@ func TestPrintServerTable_WithEvents(t *testing.T) {
 
 func TestPrintServerTable_MoreThan10Events(t *testing.T) {
 	var buf bytes.Buffer
+
 	events := make([]SessionEvent, 15)
 	for i := range events {
 		events[i] = SessionEvent{
@@ -179,6 +195,7 @@ func TestPrintServerTable_MoreThan10Events(t *testing.T) {
 			Detail: "event",
 		}
 	}
+
 	info := ServerInfo{Events: events}
 	PrintServerTable(&buf, info, nil)
 	out := buf.String()
@@ -187,6 +204,7 @@ func TestPrintServerTable_MoreThan10Events(t *testing.T) {
 	if !strings.Contains(out, "00:00:05") {
 		t.Error("should show event at index 5")
 	}
+
 	if strings.Contains(out, "00:00:04") {
 		t.Error("should NOT show event at index 4 (only last 10)")
 	}
@@ -194,8 +212,10 @@ func TestPrintServerTable_MoreThan10Events(t *testing.T) {
 
 func TestPrintServerTable_NoPairingAddr(t *testing.T) {
 	var buf bytes.Buffer
+
 	info := ServerInfo{PairingAddr: ""}
 	PrintServerTable(&buf, info, nil)
+
 	if strings.Contains(buf.String(), "Pairing") {
 		t.Error("should not show Pairing row when empty")
 	}
@@ -208,6 +228,7 @@ func TestGetLocalIPsDisplay(t *testing.T) {
 		if strings.HasPrefix(ip, "127.") {
 			t.Errorf("GetLocalIPs should not return loopback: %s", ip)
 		}
+
 		if strings.Contains(ip, ":") {
 			t.Errorf("GetLocalIPs should not return IPv6: %s", ip)
 		}

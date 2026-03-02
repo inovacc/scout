@@ -22,6 +22,7 @@ func (p *Page) SaveCookiesToFile(path string, includeSession bool) error {
 				filtered = append(filtered, c)
 			}
 		}
+
 		cookies = filtered
 	}
 

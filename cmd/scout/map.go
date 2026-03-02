@@ -39,24 +39,31 @@ var mapCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.MapOption
+
 		opts = append(opts, scout.WithMapLimit(limit))
 		opts = append(opts, scout.WithMapDelay(delay))
+
 		opts = append(opts, scout.WithMapMaxDepth(maxDepth))
 		if includeSubs {
 			opts = append(opts, scout.WithMapSubdomains())
 		}
+
 		if len(includePaths) > 0 {
 			opts = append(opts, scout.WithMapIncludePaths(includePaths...))
 		}
+
 		if len(excludePaths) > 0 {
 			opts = append(opts, scout.WithMapExcludePaths(excludePaths...))
 		}
+
 		if search != "" {
 			opts = append(opts, scout.WithMapSearch(search))
 		}
+
 		if noSitemap {
 			opts = append(opts, scout.WithMapSitemap(false))
 		}
@@ -71,6 +78,7 @@ var mapCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nDiscovered %d URLs\n", len(urls))
+
 		return nil
 	},
 }

@@ -31,6 +31,7 @@ var browserListCmd = &cobra.Command{
 
 		if detect {
 			fmt.Println("Detected browsers (full scan):")
+
 			detected := scout.DetectBrowsers()
 			if len(detected) == 0 {
 				fmt.Println("  (none found)")
@@ -40,12 +41,15 @@ var browserListCmd = &cobra.Command{
 					if ver == "" {
 						ver = "unknown"
 					}
+
 					fmt.Printf("  %-20s  %-8s  %s  (%s)\n", d.Name, d.Type, d.Path, ver)
 				}
 			}
+
 			fmt.Println()
 		} else {
 			fmt.Println("Detected browsers (local install):")
+
 			for _, bt := range []scout.BrowserType{scout.BrowserChrome, scout.BrowserBrave, scout.BrowserEdge} {
 				path, err := scout.LookupBrowserPublic(bt)
 				if err != nil {
@@ -56,6 +60,7 @@ var browserListCmd = &cobra.Command{
 					fmt.Printf("  %-8s  %s\n", bt, path)
 				}
 			}
+
 			fmt.Println()
 		}
 
@@ -88,13 +93,17 @@ var browserDownloadCmd = &cobra.Command{
 		switch name {
 		case "brave":
 			fmt.Println("Downloading Brave browser...")
+
 			ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Minute)
 			defer cancel()
+
 			path, err := scout.DownloadBrave(ctx)
 			if err != nil {
 				return fmt.Errorf("download brave: %w", err)
 			}
+
 			fmt.Printf("Brave downloaded to: %s\n", path)
+
 			return nil
 		default:
 			return fmt.Errorf("unsupported browser %q (supported: brave)", name)

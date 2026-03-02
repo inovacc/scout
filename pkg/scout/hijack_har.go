@@ -40,6 +40,7 @@ func (r *HijackRecorder) Record(ev HijackEvent) {
 			if _, exists := r.requests[id]; !exists {
 				r.order = append(r.order, id)
 			}
+
 			r.requests[id] = ev.Request
 		}
 	case HijackEventResponse:
@@ -48,6 +49,7 @@ func (r *HijackRecorder) Record(ev HijackEvent) {
 			if ev.Response.Status > 0 {
 				r.responses[id] = ev.Response
 			}
+
 			if ev.Response.Body != "" {
 				r.bodies[id] = ev.Response.Body
 			}
@@ -66,6 +68,7 @@ func (r *HijackRecorder) RecordAll(events <-chan HijackEvent) {
 func (r *HijackRecorder) Len() int {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	return len(r.order)
 }
 
@@ -100,6 +103,7 @@ func (r *HijackRecorder) ExportHAR() ([]byte, int, error) {
 			if ct == "" {
 				ct = req.Headers["Content-Type"]
 			}
+
 			entry.Request.PostData = &HARPost{
 				MimeType: ct,
 				Text:     req.Body,
@@ -183,6 +187,7 @@ func mapToHARHeaders(m map[string]string) []HARHeader {
 	sort.Slice(headers, func(i, j int) bool {
 		return headers[i].Name < headers[j].Name
 	})
+
 	return headers
 }
 
@@ -193,12 +198,14 @@ func urlToHARQuery(rawURL string) []HARQuery {
 	}
 
 	params := u.Query()
+
 	qs := make([]HARQuery, 0, len(params))
 	for k, vals := range params {
 		for _, v := range vals {
 			qs = append(qs, HARQuery{Name: k, Value: v})
 		}
 	}
+
 	return qs
 }
 
@@ -213,5 +220,6 @@ func statusText(code int) string {
 	if t, ok := texts[code]; ok {
 		return t
 	}
+
 	return fmt.Sprintf("%d", code)
 }

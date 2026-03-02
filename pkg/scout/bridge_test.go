@@ -197,6 +197,7 @@ func newBridgeBrowser(t *testing.T) *Browser {
 
 func TestBridgeAvailable(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -204,6 +205,7 @@ func TestBridgeAvailable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new page: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -230,6 +232,7 @@ func TestBridgeAvailable(t *testing.T) {
 
 func TestBridgeSendReceive(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -237,6 +240,7 @@ func TestBridgeSendReceive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new page: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -259,11 +263,14 @@ func TestBridgeSendReceive(t *testing.T) {
 		});
 	}`)
 
-	var mu sync.Mutex
-	var received []json.RawMessage
+	var (
+		mu       sync.Mutex
+		received []json.RawMessage
+	)
 
 	bridge.On("greeting", func(data json.RawMessage) {
 		mu.Lock()
+
 		received = append(received, data)
 		mu.Unlock()
 	})
@@ -300,6 +307,7 @@ func TestBridgeSendReceive(t *testing.T) {
 
 func TestBridgeOnEvent(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -307,6 +315,7 @@ func TestBridgeOnEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new page: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -319,6 +328,7 @@ func TestBridgeOnEvent(t *testing.T) {
 	}
 
 	ch := make(chan json.RawMessage, 1)
+
 	bridge.On("test-event", func(data json.RawMessage) {
 		ch <- data
 	})
@@ -346,6 +356,7 @@ func TestBridgeOnEvent(t *testing.T) {
 
 func TestBridgeMutationObserver(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -353,6 +364,7 @@ func TestBridgeMutationObserver(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new page: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -369,6 +381,7 @@ func TestBridgeMutationObserver(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	ch := make(chan []MutationEvent, 1)
+
 	bridge.OnMutation(func(events []MutationEvent) {
 		select {
 		case ch <- events:
@@ -381,6 +394,7 @@ func TestBridgeMutationObserver(t *testing.T) {
 
 	// Trigger a DOM mutation.
 	time.Sleep(200 * time.Millisecond)
+
 	_, _ = page.Eval(`function() { document.getElementById('target').textContent = 'Mutated' }`)
 
 	select {
@@ -397,6 +411,7 @@ func TestBridgeMutationObserver(t *testing.T) {
 
 func TestBridgeQuery(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -404,6 +419,7 @@ func TestBridgeQuery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new page: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -445,6 +461,7 @@ func TestBridgeQuery(t *testing.T) {
 
 func TestBridgeFullRoundtrip(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -452,6 +469,7 @@ func TestBridgeFullRoundtrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new page: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -482,6 +500,7 @@ func TestBridgeFullRoundtrip(t *testing.T) {
 		}`)
 
 		ch := make(chan json.RawMessage, 1)
+
 		bridge.On("result", func(data json.RawMessage) {
 			ch <- data
 		})
@@ -537,8 +556,10 @@ func TestBridgeFullRoundtrip(t *testing.T) {
 	})
 
 	t.Run("multiple_handlers", func(t *testing.T) {
-		var mu sync.Mutex
-		var counts [2]int
+		var (
+			mu     sync.Mutex
+			counts [2]int
+		)
 
 		bridge.On("multi", func(_ json.RawMessage) {
 			mu.Lock()
@@ -553,6 +574,7 @@ func TestBridgeFullRoundtrip(t *testing.T) {
 
 		// Fire the event from browser.
 		_, _ = page.Eval(`function() { window.__scout.send('multi', {n: 1}) }`)
+
 		time.Sleep(500 * time.Millisecond)
 
 		mu.Lock()
@@ -570,12 +592,14 @@ func TestBridgeFullRoundtrip(t *testing.T) {
 
 	t.Run("off_unregisters", func(t *testing.T) {
 		called := false
+
 		bridge.On("ephemeral", func(_ json.RawMessage) {
 			called = true
 		})
 		bridge.Off("ephemeral")
 
 		_, _ = page.Eval(`function() { window.__scout.send('ephemeral', null) }`)
+
 		time.Sleep(500 * time.Millisecond)
 
 		if called {
@@ -585,6 +609,7 @@ func TestBridgeFullRoundtrip(t *testing.T) {
 
 	t.Run("mutation_with_attribute", func(t *testing.T) {
 		ch := make(chan []MutationEvent, 1)
+
 		bridge.OnMutation(func(events []MutationEvent) {
 			select {
 			case ch <- events:
@@ -593,6 +618,7 @@ func TestBridgeFullRoundtrip(t *testing.T) {
 		})
 
 		_, _ = page.Eval(`function() { window.__scout.observeMutations('#target') }`)
+
 		time.Sleep(200 * time.Millisecond)
 
 		// Change an attribute to trigger a mutation.
@@ -601,9 +627,11 @@ func TestBridgeFullRoundtrip(t *testing.T) {
 		select {
 		case mutations := <-ch:
 			found := false
+
 			for _, m := range mutations {
 				if m.Type == "attributes" && m.AttributeName == "data-test" {
 					found = true
+
 					t.Logf("Mutation: type=%q attr=%q on %s", m.Type, m.AttributeName, m.Target)
 				}
 			}
@@ -621,6 +649,7 @@ func TestBridgeFullRoundtrip(t *testing.T) {
 
 func TestBridgeDOMJSON(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -628,6 +657,7 @@ func TestBridgeDOMJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new page: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -660,6 +690,7 @@ func TestBridgeDOMJSON(t *testing.T) {
 
 func TestBridgeDOMMarkdown(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -667,6 +698,7 @@ func TestBridgeDOMMarkdown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new page: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -702,6 +734,7 @@ func TestBridgeDOMMarkdown(t *testing.T) {
 
 func TestBridgeDOMSelector(t *testing.T) {
 	browser := newBridgeBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -709,6 +742,7 @@ func TestBridgeDOMSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new page: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -770,6 +804,7 @@ func TestBridgeDOMSelector(t *testing.T) {
 func TestBridgeWithoutExtension(t *testing.T) {
 	// Create a browser WITHOUT bridge to verify graceful behavior.
 	t.Helper()
+
 	b, err := New(
 		WithHeadless(true),
 		WithNoSandbox(),
@@ -780,6 +815,7 @@ func TestBridgeWithoutExtension(t *testing.T) {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
 	defer b.Close()
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -787,6 +823,7 @@ func TestBridgeWithoutExtension(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new page: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {

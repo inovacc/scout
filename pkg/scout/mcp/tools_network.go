@@ -38,15 +38,18 @@ func registerNetworkTools(server *mcp.Server, state *mcpState) {
 			if err != nil {
 				return errResult(err.Error())
 			}
+
 			return jsonResult(cookies)
 		case "set":
 			if args.Name == "" {
 				return errResult("name is required for set action")
 			}
+
 			path := args.Path
 			if path == "" {
 				path = "/"
 			}
+
 			c := scout.Cookie{
 				Name:   args.Name,
 				Value:  args.Value,
@@ -56,11 +59,13 @@ func registerNetworkTools(server *mcp.Server, state *mcpState) {
 			if err := page.SetCookies(c); err != nil {
 				return errResult(err.Error())
 			}
+
 			return textResult(fmt.Sprintf("cookie %q set", args.Name))
 		case "clear":
 			if err := page.ClearCookies(); err != nil {
 				return errResult(err.Error())
 			}
+
 			return textResult("cookies cleared")
 		default:
 			return errResult(fmt.Sprintf("unknown action %q (use get, set, or clear)", args.Action))

@@ -33,12 +33,14 @@ var webmcpDiscoverCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: webmcp: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(args[0])
 		if err != nil {
 			return fmt.Errorf("scout: webmcp: navigate: %w", err)
 		}
+
 		defer func() { _ = page.Close() }()
 
 		if err := page.WaitLoad(); err != nil {
@@ -53,6 +55,7 @@ var webmcpDiscoverCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(tools)
 		}
 
@@ -86,12 +89,14 @@ var webmcpCallCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: webmcp: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(args[0])
 		if err != nil {
 			return fmt.Errorf("scout: webmcp: navigate: %w", err)
 		}
+
 		defer func() { _ = page.Close() }()
 
 		if err := page.WaitLoad(); err != nil {
@@ -106,6 +111,7 @@ var webmcpCallCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(result)
 		}
 
@@ -114,6 +120,7 @@ var webmcpCallCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), result.Content)
+
 		return nil
 	},
 }
@@ -129,12 +136,14 @@ var webmcpInspectCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: webmcp: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(args[0])
 		if err != nil {
 			return fmt.Errorf("scout: webmcp: navigate: %w", err)
 		}
+
 		defer func() { _ = page.Close() }()
 
 		if err := page.WaitLoad(); err != nil {
@@ -149,6 +158,7 @@ var webmcpInspectCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(tools)
 		}
 
@@ -165,13 +175,16 @@ var webmcpInspectCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(w, "--- Tool %d ---\n", i+1)
 			_, _ = fmt.Fprintf(w, "  Name:        %s\n", t.Name)
 			_, _ = fmt.Fprintf(w, "  Description: %s\n", t.Description)
+
 			_, _ = fmt.Fprintf(w, "  Source:       %s\n", t.Source)
 			if t.ServerURL != "" {
 				_, _ = fmt.Fprintf(w, "  Server URL:  %s\n", t.ServerURL)
 			}
+
 			if len(t.InputSchema) > 0 {
 				_, _ = fmt.Fprintf(w, "  Input Schema: %s\n", string(t.InputSchema))
 			}
+
 			_, _ = fmt.Fprintln(w)
 		}
 

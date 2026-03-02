@@ -22,6 +22,7 @@ func TestResolveElectronFromPATH(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: no electron in PATH and download unavailable: %v", err)
 	}
+
 	assert.NotEmpty(t, path)
 }
 

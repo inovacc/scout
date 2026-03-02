@@ -80,10 +80,12 @@ func (b *Browser) BatchScrapeWithJob(urls []string, handler BatchHandler, opts .
 	}
 
 	var jobID string
+
 	jm := o.jobManager
 
 	if jm != nil {
 		var err error
+
 		jobID, err = jm.Create("batch", map[string]any{
 			"urls":        urls,
 			"concurrency": o.concurrency,
@@ -114,6 +116,7 @@ func (b *Browser) BatchScrapeWithJob(urls []string, handler BatchHandler, opts .
 			defer wg.Done()
 
 			sem <- struct{}{}
+
 			defer func() { <-sem }()
 
 			result := BatchResult{URL: rawURL}
@@ -126,14 +129,18 @@ func (b *Browser) BatchScrapeWithJob(urls []string, handler BatchHandler, opts .
 			if err != nil {
 				result.Error = fmt.Errorf("scout: batch: %w", err)
 				results[idx] = result
+
 				mu.Lock()
 				done++
+
 				if result.Error != nil {
 					failed++
 				}
+
 				if o.onProgress != nil {
 					o.onProgress(done, len(urls))
 				}
+
 				if jm != nil {
 					_ = jm.UpdateProgress(jobID, done, failed)
 				}
@@ -147,14 +154,18 @@ func (b *Browser) BatchScrapeWithJob(urls []string, handler BatchHandler, opts .
 			if err := page.WaitLoad(); err != nil {
 				result.Error = fmt.Errorf("scout: batch: %w", err)
 				results[idx] = result
+
 				mu.Lock()
 				done++
+
 				if result.Error != nil {
 					failed++
 				}
+
 				if o.onProgress != nil {
 					o.onProgress(done, len(urls))
 				}
+
 				if jm != nil {
 					_ = jm.UpdateProgress(jobID, done, failed)
 				}
@@ -173,12 +184,15 @@ func (b *Browser) BatchScrapeWithJob(urls []string, handler BatchHandler, opts .
 
 			mu.Lock()
 			done++
+
 			if result.Error != nil {
 				failed++
 			}
+
 			if o.onProgress != nil {
 				o.onProgress(done, len(urls))
 			}
+
 			if jm != nil {
 				_ = jm.UpdateProgress(jobID, done, failed)
 			}

@@ -85,10 +85,12 @@ func ListLocalExtensions() ([]ExtensionInfo, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
+
 		return nil, fmt.Errorf("scout: read extensions dir: %w", err)
 	}
 
 	var exts []ExtensionInfo
+
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -178,6 +180,7 @@ func downloadCRX(id string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: download extension: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -209,6 +212,7 @@ func unpackCRX(data []byte, destDir string) error {
 	version := binary.LittleEndian.Uint32(data[4:8])
 
 	var zipStart int
+
 	switch version {
 	case 3:
 		headerLen := binary.LittleEndian.Uint32(data[8:12])
@@ -217,6 +221,7 @@ func unpackCRX(data []byte, destDir string) error {
 		if len(data) < 16 {
 			return fmt.Errorf("scout: CRX2 data too short")
 		}
+
 		pubKeyLen := binary.LittleEndian.Uint32(data[8:12])
 		sigLen := binary.LittleEndian.Uint32(data[12:16])
 		zipStart = 16 + int(pubKeyLen) + int(sigLen)
@@ -247,6 +252,7 @@ func unpackCRX(data []byte, destDir string) error {
 			if err := os.MkdirAll(target, 0o755); err != nil {
 				return fmt.Errorf("scout: create dir %s: %w", f.Name, err)
 			}
+
 			continue
 		}
 
@@ -267,12 +273,14 @@ func extractZipFile(f *zip.File, target string) error {
 	if err != nil {
 		return fmt.Errorf("scout: open zip entry %s: %w", f.Name, err)
 	}
+
 	defer func() { _ = rc.Close() }()
 
 	out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 	if err != nil {
 		return fmt.Errorf("scout: create file %s: %w", f.Name, err)
 	}
+
 	defer func() { _ = out.Close() }()
 
 	if _, err := io.Copy(out, rc); err != nil {

@@ -14,6 +14,7 @@ func TestBridgeRecorder_StartStop(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	rec := NewBridgeRecorder(s)
@@ -43,12 +44,14 @@ func TestBridgeRecorder_EventConversion(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	rec := NewBridgeRecorder(s)
 	rec.Start()
 
 	conn := connectTestClient(t, s.Addr(), "page-rec")
+
 	defer func() { _ = conn.Close() }()
 
 	// Send user.click event.
@@ -82,13 +85,14 @@ func TestBridgeRecorder_EventConversion(t *testing.T) {
 	}
 
 	// Drain events channel and give subscribers time.
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		select {
 		case <-s.Events():
 		case <-time.After(2 * time.Second):
 			t.Fatal("timeout draining events")
 		}
 	}
+
 	time.Sleep(100 * time.Millisecond)
 
 	steps := rec.Stop()
@@ -100,6 +104,7 @@ func TestBridgeRecorder_EventConversion(t *testing.T) {
 	if steps[0].Action != "click" {
 		t.Fatalf("step 0: expected action click, got %s", steps[0].Action)
 	}
+
 	if steps[0].Selector != "#submit-btn" {
 		t.Fatalf("step 0: expected selector #submit-btn, got %s", steps[0].Selector)
 	}
@@ -108,9 +113,11 @@ func TestBridgeRecorder_EventConversion(t *testing.T) {
 	if steps[1].Action != "type" {
 		t.Fatalf("step 1: expected action type, got %s", steps[1].Action)
 	}
+
 	if steps[1].Selector != "#email" {
 		t.Fatalf("step 1: expected selector #email, got %s", steps[1].Selector)
 	}
+
 	if steps[1].Text != "test@example.com" {
 		t.Fatalf("step 1: expected text test@example.com, got %s", steps[1].Text)
 	}
@@ -119,6 +126,7 @@ func TestBridgeRecorder_EventConversion(t *testing.T) {
 	if steps[2].Action != "navigate" {
 		t.Fatalf("step 2: expected action navigate, got %s", steps[2].Action)
 	}
+
 	if steps[2].URL != "https://example.com/page2" {
 		t.Fatalf("step 2: expected url https://example.com/page2, got %s", steps[2].URL)
 	}
@@ -129,12 +137,14 @@ func TestBridgeRecorder_ToRecipe(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	rec := NewBridgeRecorder(s)
 	rec.Start()
 
 	conn := connectTestClient(t, s.Addr(), "page-recipe")
+
 	defer func() { _ = conn.Close() }()
 
 	evt := BridgeMessage{
@@ -151,24 +161,30 @@ func TestBridgeRecorder_ToRecipe(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("timeout")
 	}
+
 	time.Sleep(100 * time.Millisecond)
 
 	r := rec.ToRecipe("Login Flow", "https://example.com")
 	if r == nil {
 		t.Fatal("expected non-nil recipe")
 	}
+
 	if r.Type != "automate" {
 		t.Fatalf("expected type automate, got %s", r.Type)
 	}
+
 	if r.Name != "Login Flow" {
 		t.Fatalf("expected name 'Login Flow', got %s", r.Name)
 	}
+
 	if r.URL != "https://example.com" {
 		t.Fatalf("expected url https://example.com, got %s", r.URL)
 	}
+
 	if len(r.Steps) != 1 {
 		t.Fatalf("expected 1 step, got %d", len(r.Steps))
 	}
+
 	if r.Steps[0].Action != "click" {
 		t.Fatalf("expected click step, got %s", r.Steps[0].Action)
 	}
@@ -183,14 +199,17 @@ func TestBridgeRecorder_NilServer(t *testing.T) {
 	// All methods on nil receiver should be safe.
 	var nilRec *BridgeRecorder
 	nilRec.Start()
+
 	steps := nilRec.Stop()
 	if steps != nil {
 		t.Fatal("expected nil from nil Stop")
 	}
+
 	steps = nilRec.Steps()
 	if steps != nil {
 		t.Fatal("expected nil from nil Steps")
 	}
+
 	r := nilRec.ToRecipe("test", "http://example.com")
 	if r != nil {
 		t.Fatal("expected nil from nil ToRecipe")
@@ -202,21 +221,25 @@ func TestBridgeRecorder_ConcurrentSteps(t *testing.T) {
 	if err := s.Start(); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
+
 	defer func() { _ = s.Stop() }()
 
 	rec := NewBridgeRecorder(s)
 	rec.Start()
 
 	conn := connectTestClient(t, s.Addr(), "page-conc")
+
 	defer func() { _ = conn.Close() }()
 
 	const numEvents = 20
+
 	var wg sync.WaitGroup
 	wg.Add(numEvents)
 
-	for i := 0; i < numEvents; i++ {
+	for range numEvents {
 		go func() {
 			defer wg.Done()
+
 			evt := BridgeMessage{
 				Type:   "event",
 				Method: "user.click",
@@ -230,6 +253,7 @@ func TestBridgeRecorder_ConcurrentSteps(t *testing.T) {
 
 	// Drain events.
 	deadline := time.After(5 * time.Second)
+
 	drained := 0
 	for drained < numEvents {
 		select {
@@ -239,6 +263,7 @@ func TestBridgeRecorder_ConcurrentSteps(t *testing.T) {
 			goto done
 		}
 	}
+
 done:
 	time.Sleep(200 * time.Millisecond)
 

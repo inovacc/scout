@@ -13,6 +13,7 @@ func TestResolveExtensions_Found(t *testing.T) {
 
 	// Create fake extension directories.
 	extID := "cjpalhdlnbpafiamejdnhcphjbkeiagm"
+
 	extPath := filepath.Join(baseDir, extID)
 	if err := os.MkdirAll(extPath, 0o755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
@@ -122,6 +123,7 @@ func TestProfileApplyWithExtensions(t *testing.T) {
 	baseDir := t.TempDir()
 
 	extID := "test-ext-abc"
+
 	extPath := filepath.Join(baseDir, extID)
 	if err := os.MkdirAll(extPath, 0o755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)

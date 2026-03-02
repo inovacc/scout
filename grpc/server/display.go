@@ -55,9 +55,11 @@ func PrintServerTable(w io.Writer, info ServerInfo, peers []ConnectedPeer) {
 	// Info rows
 	printKV(w, width, "Device ID", truncate(deviceID, width-18))
 	printKV(w, width, "Listen", info.ListenAddr)
+
 	if info.PairingAddr != "" {
 		printKV(w, width, "Pairing", info.PairingAddr)
 	}
+
 	printKV(w, width, "Local IPs", truncate(ips, width-18))
 	printKV(w, width, "Mode", mode)
 
@@ -73,6 +75,7 @@ func PrintServerTable(w io.Writer, info ServerInfo, peers []ConnectedPeer) {
 			colAddr    = 17
 			colBorders = 3 // 3 inner borders (┬/┼/┴ between 4 columns)
 		)
+
 		colSess := width - colShort - colDevice - colAddr - colBorders
 
 		_, _ = fmt.Fprintf(w, "├%s┬%s┬%s┬%s┤\n",
@@ -106,6 +109,7 @@ func PrintServerTable(w io.Writer, info ServerInfo, peers []ConnectedPeer) {
 		if len(info.Events) > 10 {
 			start = len(info.Events) - 10
 		}
+
 		for _, ev := range info.Events[start:] {
 			line := fmt.Sprintf("%s %-10s %-7s %s",
 				ev.Time.Format("15:04:05"), ev.Type, ev.DeviceID, truncate(ev.Detail, width-30))
@@ -126,9 +130,11 @@ func truncate(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
 	}
+
 	if maxLen <= 3 {
 		return s[:maxLen]
 	}
+
 	return s[:maxLen-3] + "..."
 }
 
@@ -140,16 +146,20 @@ func GetLocalIPs() []string {
 	}
 
 	var ips []string
+
 	for _, addr := range addrs {
 		ipNet, ok := addr.(*net.IPNet)
 		if !ok {
 			continue
 		}
+
 		ip := ipNet.IP
 		if ip.IsLoopback() || ip.To4() == nil {
 			continue
 		}
+
 		ips = append(ips, ip.String())
 	}
+
 	return ips
 }

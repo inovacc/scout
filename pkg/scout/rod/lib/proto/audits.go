@@ -6,7 +6,7 @@ package proto
 
 Audits
 
-Audits domain allows investigation of page violations and possible improvements.
+domain allows investigation of page violations and possible improvements.
 
 */
 

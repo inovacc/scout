@@ -20,12 +20,14 @@ By default runs all detectors. Use flags to select specific checks.`,
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = b.Close() }()
 
 		page, err := b.NewPage(args[0])
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = page.Close() }()
 
 		if err := page.WaitLoad(); err != nil {
@@ -49,6 +51,7 @@ By default runs all detectors. Use flags to select specific checks.`,
 			TechStack  *scout.TechStack      `json:"tech_stack,omitempty"`
 			Render     *scout.RenderInfo     `json:"render,omitempty"`
 		}
+
 		result := detectResult{URL: args[0]}
 
 		// Framework detection
@@ -57,21 +60,25 @@ By default runs all detectors. Use flags to select specific checks.`,
 			if err != nil {
 				return err
 			}
+
 			result.Frameworks = frameworks
 			if format != "json" {
 				if len(frameworks) == 0 {
 					_, _ = fmt.Fprintln(w, "Frameworks:      none detected")
 				} else {
 					_, _ = fmt.Fprintln(w, "Frameworks:")
+
 					for _, f := range frameworks {
 						ver := f.Version
 						if ver == "" {
 							ver = "-"
 						}
+
 						spa := ""
 						if f.SPA {
 							spa = " (SPA)"
 						}
+
 						_, _ = fmt.Fprintf(w, "  %-15s  version=%-10s%s\n", f.Name, ver, spa)
 					}
 				}
@@ -84,13 +91,16 @@ By default runs all detectors. Use flags to select specific checks.`,
 			if err != nil {
 				return err
 			}
+
 			result.PWA = pwa
+
 			if format != "json" {
 				_, _ = fmt.Fprintln(w, "PWA:")
 				_, _ = fmt.Fprintf(w, "  Service Worker: %v\n", pwa.HasServiceWorker)
 				_, _ = fmt.Fprintf(w, "  Manifest:       %v\n", pwa.HasManifest)
 				_, _ = fmt.Fprintf(w, "  Installable:    %v\n", pwa.Installable)
 				_, _ = fmt.Fprintf(w, "  HTTPS:          %v\n", pwa.HTTPS)
+
 				_, _ = fmt.Fprintf(w, "  Push Capable:   %v\n", pwa.PushCapable)
 				if pwa.Manifest != nil {
 					_, _ = fmt.Fprintf(w, "  App Name:       %s\n", pwa.Manifest.Name)
@@ -106,10 +116,13 @@ By default runs all detectors. Use flags to select specific checks.`,
 			if err != nil {
 				return err
 			}
+
 			result.Render = render
+
 			if format != "json" {
 				_, _ = fmt.Fprintln(w, "Rendering:")
 				_, _ = fmt.Fprintf(w, "  Mode:           %s\n", render.Mode)
+
 				_, _ = fmt.Fprintf(w, "  Hydrated:       %v\n", render.Hydrated)
 				if render.Details != "" {
 					_, _ = fmt.Fprintf(w, "  Details:        %s\n", render.Details)
@@ -123,24 +136,31 @@ By default runs all detectors. Use flags to select specific checks.`,
 			if err != nil {
 				return err
 			}
+
 			result.TechStack = tech
+
 			if format != "json" {
 				_, _ = fmt.Fprintln(w, "Tech Stack:")
 				if tech.CSSFramework != "" {
 					_, _ = fmt.Fprintf(w, "  CSS Framework:  %s\n", tech.CSSFramework)
 				}
+
 				if tech.BuildTool != "" {
 					_, _ = fmt.Fprintf(w, "  Build Tool:     %s\n", tech.BuildTool)
 				}
+
 				if tech.CMS != "" {
 					_, _ = fmt.Fprintf(w, "  CMS:            %s\n", tech.CMS)
 				}
+
 				if len(tech.Analytics) > 0 {
 					_, _ = fmt.Fprintf(w, "  Analytics:      %v\n", tech.Analytics)
 				}
+
 				if tech.CDN != "" {
 					_, _ = fmt.Fprintf(w, "  CDN:            %s\n", tech.CDN)
 				}
+
 				if tech.CSSFramework == "" && tech.BuildTool == "" && tech.CMS == "" && len(tech.Analytics) == 0 && tech.CDN == "" {
 					_, _ = fmt.Fprintln(w, "  (none detected)")
 				}
