@@ -21,9 +21,11 @@ var navigateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -39,6 +41,7 @@ var navigateCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s - %s\n", resp.GetTitle(), resp.GetUrl())
+
 		return nil
 	},
 }
@@ -51,9 +54,11 @@ var backCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -65,6 +70,7 @@ var backCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "navigated back")
+
 		return nil
 	},
 }
@@ -77,9 +83,11 @@ var forwardCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -91,6 +99,7 @@ var forwardCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "navigated forward")
+
 		return nil
 	},
 }
@@ -103,9 +112,11 @@ var reloadCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -117,6 +128,7 @@ var reloadCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "page reloaded")
+
 		return nil
 	},
 }

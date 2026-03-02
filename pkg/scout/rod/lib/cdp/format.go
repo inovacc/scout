@@ -24,6 +24,7 @@ func (res Response) String() string {
 			dump(res.Error),
 		)
 	}
+
 	return fmt.Sprintf(
 		"<= #%d %s",
 		res.ID,
@@ -44,10 +45,12 @@ func fSessionID(s string) string {
 	if s == "" {
 		s = "00000000"
 	}
+
 	s = s[:8]
+
 	return "@" + s
 }
 
-func dump(v interface{}) string {
+func dump(v any) string {
 	return utils.MustToJSON(v)
 }

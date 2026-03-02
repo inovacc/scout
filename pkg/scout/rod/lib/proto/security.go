@@ -6,8 +6,6 @@ package proto
 
 Security
 
-Security
-
 */
 
 // SecurityCertificateID An internal certificate ID value.

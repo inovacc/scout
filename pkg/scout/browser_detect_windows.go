@@ -19,6 +19,7 @@ func detectBrowserPaths() []browserCandidate {
 		if dir == "" {
 			continue
 		}
+
 		candidates = append(candidates, browserCandidate{
 			Name: "Google Chrome",
 			Type: BrowserChrome,
@@ -31,6 +32,7 @@ func detectBrowserPaths() []browserCandidate {
 		if dir == "" {
 			continue
 		}
+
 		candidates = append(candidates, browserCandidate{
 			Name: "Brave Browser",
 			Type: BrowserBrave,
@@ -43,6 +45,7 @@ func detectBrowserPaths() []browserCandidate {
 		if dir == "" {
 			continue
 		}
+
 		candidates = append(candidates, browserCandidate{
 			Name: "Microsoft Edge",
 			Type: BrowserEdge,

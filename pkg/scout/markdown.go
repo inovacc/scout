@@ -323,7 +323,7 @@ func (c *renderCtx) listItem(n *html.Node) {
 
 	if info.ordered {
 		info.index++
-		c.sb.WriteString(fmt.Sprintf("%d. ", info.index))
+		fmt.Fprintf(&c.sb, "%d. ", info.index)
 	} else {
 		c.sb.WriteString("- ")
 	}

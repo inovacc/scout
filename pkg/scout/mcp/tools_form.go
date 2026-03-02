@@ -32,6 +32,7 @@ func registerFormTools(server *mcp.Server, state *mcpState) {
 			if err != nil {
 				return errResult(err.Error())
 			}
+
 			return jsonResult(form)
 		}
 
@@ -39,6 +40,7 @@ func registerFormTools(server *mcp.Server, state *mcpState) {
 		if err != nil {
 			return errResult(err.Error())
 		}
+
 		return jsonResult(forms)
 	})
 
@@ -54,9 +56,11 @@ func registerFormTools(server *mcp.Server, state *mcpState) {
 		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
 			return errResult(err.Error())
 		}
+
 		if args.Selector == "" {
 			args.Selector = "form"
 		}
+
 		if len(args.Data) == 0 {
 			return errResult("data is required and must contain at least one field")
 		}
@@ -89,6 +93,7 @@ func registerFormTools(server *mcp.Server, state *mcpState) {
 		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
 			return errResult(err.Error())
 		}
+
 		if args.Selector == "" {
 			args.Selector = "form"
 		}

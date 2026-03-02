@@ -122,9 +122,11 @@ func FuzzParse(f *testing.F) {
 		if r.Version == "" {
 			t.Error("parsed runbook has empty version")
 		}
+
 		if r.Name == "" {
 			t.Error("parsed runbook has empty name")
 		}
+
 		if r.Type != "extract" && r.Type != "automate" {
 			t.Errorf("parsed runbook has unexpected type %q", r.Type)
 		}

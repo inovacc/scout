@@ -7,6 +7,7 @@ func TestDetectFlow_NilBrowser(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil browser")
 	}
+
 	if got := err.Error(); got != "runbook: flow: nil browser" {
 		t.Fatalf("unexpected error: %s", got)
 	}
@@ -46,9 +47,11 @@ func TestGenerateFlowRunbook_SingleListingPage(t *testing.T) {
 	if r.Type != "extract" {
 		t.Errorf("expected type=extract for single listing, got %s", r.Type)
 	}
+
 	if r.URL != "http://example.com/products" {
 		t.Errorf("unexpected URL: %s", r.URL)
 	}
+
 	if r.Items == nil {
 		t.Fatal("expected items spec for extract runbook")
 	}
@@ -90,6 +93,7 @@ func TestGenerateFlowRunbook_LoginThenSearch(t *testing.T) {
 	if r.Type != "automate" {
 		t.Errorf("expected type=automate, got %s", r.Type)
 	}
+
 	if r.Name != "login-search" {
 		t.Errorf("unexpected name: %s", r.Name)
 	}
@@ -152,6 +156,7 @@ func TestFlowStep_IsLogin(t *testing.T) {
 					step.IsLogin = true
 				}
 			}
+
 			if step.IsLogin != tt.isLogin {
 				t.Errorf("IsLogin = %v, want %v", step.IsLogin, tt.isLogin)
 			}

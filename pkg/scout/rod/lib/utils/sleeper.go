@@ -47,7 +47,9 @@ func CountSleeper(max int) Sleeper {
 		if count == max {
 			return &MaxSleepCountError{max}
 		}
+
 		count++
+
 		return nil
 	}
 }
@@ -123,6 +125,7 @@ func RaceSleepers(list ...Sleeper) Sleeper {
 
 		sleep := func(s Sleeper) {
 			done <- s(ctx)
+
 			cancel()
 		}
 
@@ -141,6 +144,7 @@ func Retry(ctx context.Context, s Sleeper, fn func() (stop bool, err error)) err
 		if stop {
 			return err
 		}
+
 		err = s(ctx)
 		if err != nil {
 			return err

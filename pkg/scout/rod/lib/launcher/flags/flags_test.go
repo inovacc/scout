@@ -8,6 +8,7 @@ func TestFlagCheck(t *testing.T) {
 			t.Fatal("expected panic for flag with =")
 		}
 	}()
+
 	Flag("bad=flag").Check()
 }
 

@@ -65,6 +65,7 @@ func init() {
 
 func TestDetectChallenges(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -88,6 +89,7 @@ func TestDetectChallenges(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if err := page.WaitLoad(); err != nil {
 				t.Fatal(err)
 			}
@@ -103,14 +105,17 @@ func TestDetectChallenges(t *testing.T) {
 
 			if tt.wantType != ChallengeNone {
 				found := false
+
 				for _, c := range challenges {
 					if c.Type == tt.wantType {
 						found = true
+
 						if c.Confidence <= 0 || c.Confidence > 1.0 {
 							t.Errorf("confidence should be (0,1], got %f", c.Confidence)
 						}
 					}
 				}
+
 				if !found {
 					t.Errorf("expected challenge type %s not found in %v", tt.wantType, challenges)
 				}
@@ -121,6 +126,7 @@ func TestDetectChallenges(t *testing.T) {
 
 func TestDetectChallenge_Highest(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -128,6 +134,7 @@ func TestDetectChallenge_Highest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -136,9 +143,11 @@ func TestDetectChallenge_Highest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if c == nil {
 		t.Fatal("expected a challenge, got nil")
 	}
+
 	if c.Type != ChallengeCloudflare {
 		t.Errorf("expected cloudflare, got %s", c.Type)
 	}
@@ -146,6 +155,7 @@ func TestDetectChallenge_Highest(t *testing.T) {
 
 func TestHasChallenge(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -154,13 +164,16 @@ func TestHasChallenge(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			t.Fatal(err)
 		}
+
 		has, err := page.HasChallenge()
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if !has {
 			t.Error("expected true")
 		}
@@ -171,13 +184,16 @@ func TestHasChallenge(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			t.Fatal(err)
 		}
+
 		has, err := page.HasChallenge()
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if has {
 			t.Error("expected false")
 		}
@@ -186,6 +202,7 @@ func TestHasChallenge(t *testing.T) {
 
 func TestDetectChallenges_Multiple(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -193,6 +210,7 @@ func TestDetectChallenges_Multiple(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -210,9 +228,11 @@ func TestDetectChallenges_Multiple(t *testing.T) {
 	for _, c := range challenges {
 		types[c.Type] = true
 	}
+
 	if !types[ChallengeCloudflare] {
 		t.Error("expected cloudflare challenge")
 	}
+
 	if !types[ChallengeTurnstile] {
 		t.Error("expected turnstile challenge")
 	}
@@ -220,6 +240,7 @@ func TestDetectChallenges_Multiple(t *testing.T) {
 
 func TestDetectChallenges_NilPage(t *testing.T) {
 	var p *Page
+
 	_, err := p.DetectChallenges()
 	if err == nil {
 		t.Error("expected error for nil page")

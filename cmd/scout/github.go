@@ -52,6 +52,7 @@ func parseOwnerName(arg string) (string, string, error) {
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 		return "", "", fmt.Errorf("expected format: owner/name")
 	}
+
 	return parts[0], parts[1], nil
 }
 
@@ -69,6 +70,7 @@ var githubRepoCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.GitHubOption
@@ -85,19 +87,23 @@ var githubRepoCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(repo)
 		}
 
 		w := cmd.OutOrStdout()
 		_, _ = fmt.Fprintf(w, "%s/%s\n", repo.Owner, repo.Name)
 		_, _ = fmt.Fprintf(w, "  %s\n", repo.Description)
+
 		_, _ = fmt.Fprintf(w, "  Language: %s  Stars: %d  Forks: %d\n", repo.Language, repo.Stars, repo.Forks)
 		if repo.License != "" {
 			_, _ = fmt.Fprintf(w, "  License: %s\n", repo.License)
 		}
+
 		if len(repo.Topics) > 0 {
 			_, _ = fmt.Fprintf(w, "  Topics: %s\n", strings.Join(repo.Topics, ", "))
 		}
+
 		if repo.ReadmeMD != "" {
 			_, _ = fmt.Fprintf(w, "\n--- README ---\n%s\n", repo.ReadmeMD)
 		}
@@ -120,18 +126,22 @@ var githubIssuesCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.GitHubOption
 		if state, _ := cmd.Flags().GetString("state"); state != "" {
 			opts = append(opts, scout.WithGitHubState(state))
 		}
+
 		if max, _ := cmd.Flags().GetInt("max"); max > 0 {
 			opts = append(opts, scout.WithGitHubMaxItems(max))
 		}
+
 		if body, _ := cmd.Flags().GetBool("body"); body {
 			opts = append(opts, scout.WithGitHubBody())
 		}
+
 		if pages, _ := cmd.Flags().GetInt("pages"); pages > 1 {
 			opts = append(opts, scout.WithGitHubMaxPages(pages))
 		}
@@ -145,15 +155,18 @@ var githubIssuesCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(issues)
 		}
 
 		w := cmd.OutOrStdout()
+
 		for _, issue := range issues {
 			labels := ""
 			if len(issue.Labels) > 0 {
 				labels = " [" + strings.Join(issue.Labels, ", ") + "]"
 			}
+
 			_, _ = fmt.Fprintf(w, "#%d %s (%s) by %s%s  %s\n", issue.Number, issue.Title, issue.State, issue.Author, labels, issue.CreatedAt)
 			if issue.Body != "" {
 				_, _ = fmt.Fprintf(w, "  %s\n", truncate(issue.Body, 200))
@@ -178,18 +191,22 @@ var githubPRsCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.GitHubOption
 		if state, _ := cmd.Flags().GetString("state"); state != "" {
 			opts = append(opts, scout.WithGitHubState(state))
 		}
+
 		if max, _ := cmd.Flags().GetInt("max"); max > 0 {
 			opts = append(opts, scout.WithGitHubMaxItems(max))
 		}
+
 		if body, _ := cmd.Flags().GetBool("body"); body {
 			opts = append(opts, scout.WithGitHubBody())
 		}
+
 		if pages, _ := cmd.Flags().GetInt("pages"); pages > 1 {
 			opts = append(opts, scout.WithGitHubMaxPages(pages))
 		}
@@ -203,15 +220,18 @@ var githubPRsCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(prs)
 		}
 
 		w := cmd.OutOrStdout()
+
 		for _, pr := range prs {
 			labels := ""
 			if len(pr.Labels) > 0 {
 				labels = " [" + strings.Join(pr.Labels, ", ") + "]"
 			}
+
 			_, _ = fmt.Fprintf(w, "#%d %s (%s) by %s%s  %s\n", pr.Number, pr.Title, pr.State, pr.Author, labels, pr.CreatedAt)
 			if pr.Body != "" {
 				_, _ = fmt.Fprintf(w, "  %s\n", truncate(pr.Body, 200))
@@ -233,6 +253,7 @@ var githubUserCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		user, err := browser.GitHubUser(username)
@@ -244,21 +265,26 @@ var githubUserCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(user)
 		}
 
 		w := cmd.OutOrStdout()
+
 		_, _ = fmt.Fprintf(w, "%s", user.Username)
 		if user.DisplayName != "" {
 			_, _ = fmt.Fprintf(w, " (%s)", user.DisplayName)
 		}
+
 		_, _ = fmt.Fprintln(w)
 		if user.Bio != "" {
 			_, _ = fmt.Fprintf(w, "  %s\n", user.Bio)
 		}
+
 		if user.Location != "" {
 			_, _ = fmt.Fprintf(w, "  Location: %s\n", user.Location)
 		}
+
 		_, _ = fmt.Fprintf(w, "  Repos: %d  Followers: %d  Following: %d\n", user.Repos, user.Followers, user.Following)
 
 		return nil
@@ -279,6 +305,7 @@ var githubReleasesCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.GitHubOption
@@ -295,6 +322,7 @@ var githubReleasesCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(releases)
 		}
 
@@ -321,19 +349,24 @@ var githubCodeCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.GitHubOption
+
 		if repo, _ := cmd.Flags().GetString("repo"); repo != "" {
 			owner, name, parseErr := parseOwnerName(repo)
 			if parseErr != nil {
 				return fmt.Errorf("invalid --repo format: %w", parseErr)
 			}
+
 			opts = append(opts, scout.WithGitHubRepo(owner, name))
 		}
+
 		if max, _ := cmd.Flags().GetInt("max"); max > 0 {
 			opts = append(opts, scout.WithGitHubMaxItems(max))
 		}
+
 		if pages, _ := cmd.Flags().GetInt("pages"); pages > 1 {
 			opts = append(opts, scout.WithGitHubMaxPages(pages))
 		}
@@ -347,6 +380,7 @@ var githubCodeCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(results)
 		}
 
@@ -378,6 +412,7 @@ var githubTreeCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		files, err := browser.GitHubTree(owner, name, branch)
@@ -389,6 +424,7 @@ var githubTreeCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(files)
 		}
 

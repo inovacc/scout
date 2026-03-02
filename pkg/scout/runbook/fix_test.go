@@ -7,6 +7,7 @@ func TestFixRunbook_NilRunbook(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil runbook")
 	}
+
 	if got := err.Error(); got != "runbook: fix: nil runbook" {
 		t.Fatalf("unexpected error: %s", got)
 	}
@@ -19,10 +20,12 @@ func TestFixRunbook_NoURL(t *testing.T) {
 		Type:    "extract",
 		Items:   &ItemSpec{Container: ".item", Fields: map[string]string{"title": "h2"}},
 	}
+
 	_, _, err := FixRunbook(nil, r)
 	if err == nil {
 		t.Fatal("expected error for missing URL")
 	}
+
 	if got := err.Error(); got != "runbook: fix: no URL to navigate to" {
 		t.Fatalf("unexpected error: %s", got)
 	}
@@ -33,6 +36,7 @@ func TestSampleExtract_NilRunbook(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nil runbook")
 	}
+
 	if got := err.Error(); got != "runbook: sample: nil runbook" {
 		t.Fatalf("unexpected error: %s", got)
 	}
@@ -83,6 +87,7 @@ func TestCopyRunbook(t *testing.T) {
 	if orig.Items.Fields["title"] != "h2" {
 		t.Fatal("copyRunbook did not deep-copy Items.Fields")
 	}
+
 	if orig.Pagination.NextSelector != ".next" {
 		t.Fatal("copyRunbook did not deep-copy Pagination")
 	}

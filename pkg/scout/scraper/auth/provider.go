@@ -31,6 +31,7 @@ func (s *Session) ProviderName() string {
 	if s == nil {
 		return ""
 	}
+
 	return s.Provider
 }
 

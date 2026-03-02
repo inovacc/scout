@@ -25,6 +25,7 @@ var typePriority = map[string]int{
 // Returns detected browsers sorted by preference (Chrome > Brave > Edge).
 func Detect() ([]BrowserInfo, error) {
 	candidates := detectBrowserPaths()
+
 	var results []BrowserInfo
 
 	for _, c := range candidates {

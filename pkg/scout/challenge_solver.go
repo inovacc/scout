@@ -72,6 +72,7 @@ func (cs *ChallengeSolver) Register(ct ChallengeType, fn SolveFunc) {
 	if cs == nil {
 		return
 	}
+
 	cs.solvers[ct] = fn
 }
 
@@ -81,6 +82,7 @@ func (cs *ChallengeSolver) Solve(page *Page) error {
 	if cs == nil || cs.browser == nil {
 		return fmt.Errorf("scout: challenge: nil solver or browser")
 	}
+
 	if page == nil || page.page == nil {
 		return fmt.Errorf("scout: challenge: nil page")
 	}
@@ -89,6 +91,7 @@ func (cs *ChallengeSolver) Solve(page *Page) error {
 	if err != nil {
 		return fmt.Errorf("scout: challenge: detect: %w", err)
 	}
+
 	if challenge == nil {
 		return nil
 	}
@@ -101,16 +104,18 @@ func (cs *ChallengeSolver) SolveAll(page *Page) error {
 	if cs == nil || cs.browser == nil {
 		return fmt.Errorf("scout: challenge: nil solver or browser")
 	}
+
 	if page == nil || page.page == nil {
 		return fmt.Errorf("scout: challenge: nil page")
 	}
 
 	const maxRetries = 3
-	for i := 0; i < maxRetries; i++ {
+	for range maxRetries {
 		challenges, err := page.DetectChallenges()
 		if err != nil {
 			return fmt.Errorf("scout: challenge: detect: %w", err)
 		}
+
 		if len(challenges) == 0 {
 			return nil
 		}
@@ -131,6 +136,7 @@ func (cs *ChallengeSolver) SolveAll(page *Page) error {
 	if err != nil {
 		return fmt.Errorf("scout: challenge: final detect: %w", err)
 	}
+
 	if len(remaining) > 0 {
 		return fmt.Errorf("scout: challenge: %d challenge(s) remain after %d retries", len(remaining), maxRetries)
 	}
@@ -144,5 +150,6 @@ func (cs *ChallengeSolver) solveOne(page *Page, ch ChallengeInfo) error {
 	if !ok {
 		return fmt.Errorf("scout: challenge: no solver for %s", ch.Type)
 	}
+
 	return fn(page, ch)
 }

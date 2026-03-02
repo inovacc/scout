@@ -37,6 +37,7 @@ var serverCmd = &cobra.Command{
 		insecureMode, _ := cmd.Flags().GetBool("insecure")
 
 		addr := fmt.Sprintf(":%d", port)
+
 		lis, err := net.Listen("tcp", addr)
 		if err != nil {
 			return fmt.Errorf("scout: listen on %s: %w", addr, err)
@@ -90,9 +91,11 @@ var serverCmd = &cobra.Command{
 
 		// Print initial table
 		var displayMu sync.Mutex
+
 		refreshDisplay := func() {
 			displayMu.Lock()
 			defer displayMu.Unlock()
+
 			_, _ = fmt.Fprint(os.Stdout, "\033[2J\033[H") // clear screen + cursor home
 			info.PairingAddr = pairingAddr
 			info.TotalSessions, _ = scoutServer.Stats()
@@ -119,12 +122,14 @@ var serverCmd = &cobra.Command{
 
 		// Start pairing listener on port+1 when mTLS is enabled.
 		var pairingGRPC *grpc.Server
+
 		if !insecureMode {
 			dir, _ := scoutDir()
 			id, _ := identity2.LoadOrGenerate(filepath.Join(dir, "identity"))
 			trustStore, _ := identity2.NewTrustStore(filepath.Join(dir, "trusted"))
 
 			pairingAddr = fmt.Sprintf(":%d", port+1)
+
 			pairingLis, err := net.Listen("tcp", pairingAddr)
 			if err != nil {
 				return fmt.Errorf("scout: listen pairing on %s: %w", pairingAddr, err)
@@ -147,11 +152,14 @@ var serverCmd = &cobra.Command{
 		scoutServer.IdleTimeout = idleTimeout
 		scoutServer.OnIdleShutdown = func() {
 			_, _ = fmt.Fprintln(os.Stdout, "\nidle timeout reached, shutting down gRPC server...")
+
 			if pairingGRPC != nil {
 				pairingGRPC.GracefulStop()
 			}
+
 			grpcServer.GracefulStop()
 		}
+
 		scoutServer.StartIdleTimer()
 		defer scoutServer.StopIdleTimer()
 
@@ -162,10 +170,13 @@ var serverCmd = &cobra.Command{
 			sigCh := make(chan os.Signal, 1)
 			signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 			<-sigCh
+
 			_, _ = fmt.Fprintln(os.Stdout, "\nshutting down gRPC server...")
+
 			if pairingGRPC != nil {
 				pairingGRPC.GracefulStop()
 			}
+
 			grpcServer.GracefulStop()
 		}()
 

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -61,6 +62,7 @@ func (p *salesforceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 	if err != nil {
 		return nil, fmt.Errorf("salesforce: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -124,14 +126,13 @@ func (p *salesforceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 		if raw != "" && raw != "{}" {
 			var lsMap map[string]string
 			if json.Unmarshal([]byte(raw), &lsMap) == nil {
-				for k, v := range lsMap {
-					localStorage[k] = v
-				}
+				maps.Copy(localStorage, lsMap)
 			}
 		}
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "salesforce",
 		Version:      "1",
@@ -243,6 +244,7 @@ func (m *SalesforceMode) Scrape(ctx context.Context, session scraper.SessionData
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -266,6 +268,7 @@ func (m *SalesforceMode) Scrape(ctx context.Context, session scraper.SessionData
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -289,12 +292,14 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		// Normalize by converting to uppercase (for object types like "Lead", "Contact").
 		normalized := strings.ToUpper(t)
 		set[normalized] = struct{}{}
 	}
+
 	return set
 }
 
@@ -305,6 +310,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -395,6 +401,7 @@ func parseLeadsResponse(body string, targetSet map[string]struct{}) []scraper.Re
 			Raw: lead,
 		})
 	}
+
 	return results
 }
 
@@ -453,6 +460,7 @@ func parseContactsResponse(body string, targetSet map[string]struct{}) []scraper
 			Raw: contact,
 		})
 	}
+
 	return results
 }
 
@@ -512,6 +520,7 @@ func parseOpportunitiesResponse(body string, targetSet map[string]struct{}) []sc
 			Raw: opp,
 		})
 	}
+
 	return results
 }
 
@@ -571,6 +580,7 @@ func parseAccountsResponse(body string, targetSet map[string]struct{}) []scraper
 			Raw: account,
 		})
 	}
+
 	return results
 }
 
@@ -619,6 +629,7 @@ func parseReportsResponse(body string, targetSet map[string]struct{}) []scraper.
 			Raw: report,
 		})
 	}
+
 	return results
 }
 
@@ -680,6 +691,7 @@ func parseTasksResponse(body string, targetSet map[string]struct{}) []scraper.Re
 			Raw: task,
 		})
 	}
+
 	return results
 }
 
@@ -700,10 +712,12 @@ func parseUIAPIResponse(body string, targetSet map[string]struct{}) []scraper.Re
 		if err := json.Unmarshal([]byte(body), &single); err != nil {
 			return nil
 		}
+
 		items = []uiAPIRecord{single}
 	}
 
 	var results []scraper.Result
+
 	for _, item := range items {
 		if item.ID == "" {
 			continue
@@ -711,6 +725,7 @@ func parseUIAPIResponse(body string, targetSet map[string]struct{}) []scraper.Re
 
 		// Infer result type based on ApiName.
 		resultType := scraper.ResultPost
+
 		if item.ApiName != "" {
 			switch {
 			case strings.Contains(item.ApiName, "Lead"):
@@ -741,6 +756,7 @@ func parseUIAPIResponse(body string, targetSet map[string]struct{}) []scraper.Re
 			Raw: item,
 		})
 	}
+
 	return results
 }
 

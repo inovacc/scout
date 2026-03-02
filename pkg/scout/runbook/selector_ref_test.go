@@ -44,6 +44,7 @@ func TestSelectorRef_Resolution(t *testing.T) {
 			if err != nil {
 				t.Fatalf("resolveSelector(%q): %v", tt.sel, err)
 			}
+
 			if got != tt.want {
 				t.Errorf("resolveSelector(%q) = %q, want %q", tt.sel, got, tt.want)
 			}
@@ -74,6 +75,7 @@ func TestSelectorRef_FullRunbookResolution(t *testing.T) {
 	if r.Items.Container != ".product-card" {
 		t.Errorf("container = %q, want .product-card", r.Items.Container)
 	}
+
 	if r.Items.Fields["title"] != ".product-card h2" {
 		t.Errorf("field title = %q, want '.product-card h2'", r.Items.Fields["title"])
 	}
@@ -84,6 +86,7 @@ func TestSelectorRef_UnknownRef(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unknown ref")
 	}
+
 	if !strings.Contains(err.Error(), "unknown selector reference $unknown") {
 		t.Errorf("error = %q, want to contain 'unknown selector reference $unknown'", err.Error())
 	}
@@ -108,6 +111,7 @@ func TestSelectorRef_UnknownRefInRunbook(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unknown ref in runbook")
 	}
+
 	if !strings.Contains(err.Error(), "$nonexistent") {
 		t.Errorf("error = %q, want to contain '$nonexistent'", err.Error())
 	}
@@ -165,6 +169,7 @@ func TestSelectorRef_AttrPreserved(t *testing.T) {
 			if err != nil {
 				t.Fatalf("resolveSelector(%q): %v", tt.sel, err)
 			}
+
 			if got != tt.want {
 				t.Errorf("resolveSelector(%q) = %q, want %q", tt.sel, got, tt.want)
 			}
@@ -205,6 +210,7 @@ func TestSelectorRef_SiblingPrefix(t *testing.T) {
 			if err != nil {
 				t.Fatalf("resolveSelector(%q): %v", tt.sel, err)
 			}
+
 			if got != tt.want {
 				t.Errorf("resolveSelector(%q) = %q, want %q", tt.sel, got, tt.want)
 			}

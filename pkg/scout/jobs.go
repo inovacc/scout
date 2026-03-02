@@ -207,6 +207,7 @@ func (m *AsyncJobManager) Get(id string) (*AsyncJob, error) {
 
 	// Return a copy to avoid data races.
 	cp := *j
+
 	return &cp, nil
 }
 
@@ -221,10 +222,12 @@ func (m *AsyncJobManager) List(status ...AsyncJobStatus) []*AsyncJob {
 	}
 
 	var result []*AsyncJob
+
 	for _, j := range m.jobs {
 		if len(filter) > 0 && !filter[j.Status] {
 			continue
 		}
+
 		cp := *j
 		result = append(result, &cp)
 	}

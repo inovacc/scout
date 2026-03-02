@@ -81,6 +81,7 @@ func BenchmarkNewBrowser(b *testing.B) {
 	if err != nil {
 		b.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	_ = probe.Close()
 
 	b.ResetTimer()

@@ -15,16 +15,19 @@ func buildTestCRX3(t *testing.T, files map[string]string) []byte {
 
 	// Build ZIP archive in memory.
 	var zipBuf bytes.Buffer
+
 	zw := zip.NewWriter(&zipBuf)
 	for name, content := range files {
 		fw, err := zw.Create(name)
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if _, err := fw.Write([]byte(content)); err != nil {
 			t.Fatal(err)
 		}
 	}
+
 	if err := zw.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -56,6 +59,7 @@ func TestUnpackCRX(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read manifest.json: %v", err)
 	}
+
 	if string(data) != manifest {
 		t.Errorf("manifest content = %q, want %q", data, manifest)
 	}
@@ -64,6 +68,7 @@ func TestUnpackCRX(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read background.js: %v", err)
 	}
+
 	if string(data) != "console.log('hello');" {
 		t.Errorf("background.js content = %q", data)
 	}
@@ -71,6 +76,7 @@ func TestUnpackCRX(t *testing.T) {
 
 func TestUnpackCRXInvalidMagic(t *testing.T) {
 	data := []byte("BAD_MAGIC_1234567890")
+
 	err := unpackCRX(data, t.TempDir())
 	if err == nil {
 		t.Fatal("expected error for invalid magic")
@@ -101,16 +107,19 @@ func buildTestCRX2(t *testing.T, files map[string]string) []byte {
 	t.Helper()
 
 	var zipBuf bytes.Buffer
+
 	zw := zip.NewWriter(&zipBuf)
 	for name, content := range files {
 		fw, err := zw.Create(name)
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if _, err := fw.Write([]byte(content)); err != nil {
 			t.Fatal(err)
 		}
 	}
+
 	if err := zw.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -147,6 +156,7 @@ func TestUnpackCRX2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read manifest.json: %v", err)
 	}
+
 	if string(data) != manifest {
 		t.Errorf("manifest content = %q, want %q", data, manifest)
 	}
@@ -165,6 +175,7 @@ func TestUnpackCRX2TooShort(t *testing.T) {
 
 func TestReadManifest(t *testing.T) {
 	dir := t.TempDir()
+
 	manifest := `{"name":"My Ext","version":"2.0.1"}`
 	if err := os.WriteFile(filepath.Join(dir, "manifest.json"), []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
@@ -174,9 +185,11 @@ func TestReadManifest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("readManifest: %v", err)
 	}
+
 	if name != "My Ext" {
 		t.Errorf("name = %q, want %q", name, "My Ext")
 	}
+
 	if version != "2.0.1" {
 		t.Errorf("version = %q, want %q", version, "2.0.1")
 	}
@@ -192,9 +205,11 @@ func TestReadManifestDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("readManifest: %v", err)
 	}
+
 	if name != "unknown" {
 		t.Errorf("name = %q, want %q", name, "unknown")
 	}
+
 	if version != "0.0.0" {
 		t.Errorf("version = %q, want %q", version, "0.0.0")
 	}
@@ -215,16 +230,20 @@ func TestListLocalExtensions(t *testing.T) {
 	// Create two fake extensions.
 	ext1Dir := filepath.Join(extDir, "ext-aaa")
 	ext2Dir := filepath.Join(extDir, "ext-bbb")
+
 	if err := os.MkdirAll(ext1Dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := os.MkdirAll(ext2Dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := os.WriteFile(filepath.Join(ext1Dir, "manifest.json"),
 		[]byte(`{"name":"Ext A","version":"1.0"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := os.WriteFile(filepath.Join(ext2Dir, "manifest.json"),
 		[]byte(`{"name":"Ext B","version":"2.0"}`), 0o644); err != nil {
 		t.Fatal(err)
@@ -243,15 +262,19 @@ func TestListLocalExtensions(t *testing.T) {
 	}
 
 	var exts []ExtensionInfo
+
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
+
 		dir := filepath.Join(extDir, entry.Name())
+
 		name, version, err := readManifest(dir)
 		if err != nil {
 			continue
 		}
+
 		exts = append(exts, ExtensionInfo{
 			ID:      entry.Name(),
 			Name:    name,

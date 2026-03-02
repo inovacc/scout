@@ -37,6 +37,7 @@ func newContentTestServer() *httptest.Server {
   </table>
 </body></html>`))
 	})
+
 	return httptest.NewServer(mux)
 }
 
@@ -54,6 +55,7 @@ func TestMarkdownTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("markdown: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -83,6 +85,7 @@ func TestMarkdownToolWithOptions(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("markdown with options: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -110,6 +113,7 @@ func TestTableTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("table: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -129,9 +133,11 @@ func TestTableTool(t *testing.T) {
 	if len(table.Headers) != 2 || table.Headers[0] != "Name" || table.Headers[1] != "Value" {
 		t.Errorf("unexpected headers: %v", table.Headers)
 	}
+
 	if len(table.Rows) != 2 {
 		t.Errorf("expected 2 rows, got %d", len(table.Rows))
 	}
+
 	if len(table.Rows) > 0 && (table.Rows[0][0] != "Alpha" || table.Rows[0][1] != "100") {
 		t.Errorf("unexpected first row: %v", table.Rows[0])
 	}
@@ -151,6 +157,7 @@ func TestMetaTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("meta: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -173,15 +180,19 @@ func TestMetaTool(t *testing.T) {
 	if meta.Title != "Content Test" {
 		t.Errorf("expected title 'Content Test', got: %s", meta.Title)
 	}
+
 	if meta.Description != "A test page for content extraction" {
 		t.Errorf("unexpected description: %s", meta.Description)
 	}
+
 	if meta.Canonical != "https://example.com/content" {
 		t.Errorf("unexpected canonical: %s", meta.Canonical)
 	}
+
 	if meta.OG["og:title"] != "OG Title" {
 		t.Errorf("unexpected og:title: %s", meta.OG["og:title"])
 	}
+
 	if meta.Twitter["twitter:card"] != "summary" {
 		t.Errorf("unexpected twitter:card: %s", meta.Twitter["twitter:card"])
 	}

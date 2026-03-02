@@ -90,6 +90,7 @@ func init() {
 
 func TestSnapshot_Basic(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -97,6 +98,7 @@ func TestSnapshot_Basic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -109,21 +111,27 @@ func TestSnapshot_Basic(t *testing.T) {
 	if !strings.Contains(snap, "- document") {
 		t.Error("snapshot should start with document")
 	}
+
 	if !strings.Contains(snap, `navigation "Main Menu"`) {
 		t.Error("snapshot should contain navigation with label")
 	}
+
 	if !strings.Contains(snap, `link "Home"`) {
 		t.Error("snapshot should contain Home link")
 	}
+
 	if !strings.Contains(snap, `link "About"`) {
 		t.Error("snapshot should contain About link")
 	}
+
 	if !strings.Contains(snap, `heading "Welcome" level=1`) {
 		t.Error("snapshot should contain h1 heading with level")
 	}
+
 	if !strings.Contains(snap, `button "Submit"`) {
 		t.Error("snapshot should contain Submit button")
 	}
+
 	if !strings.Contains(snap, "[ref=") {
 		t.Error("snapshot should contain ref markers")
 	}
@@ -131,6 +139,7 @@ func TestSnapshot_Basic(t *testing.T) {
 
 func TestSnapshot_Form(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -138,6 +147,7 @@ func TestSnapshot_Form(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -150,12 +160,15 @@ func TestSnapshot_Form(t *testing.T) {
 	if !strings.Contains(snap, `form "Login"`) {
 		t.Error("snapshot should contain form with label")
 	}
+
 	if !strings.Contains(snap, "textbox") {
 		t.Error("snapshot should contain textbox for email input")
 	}
+
 	if !strings.Contains(snap, `button "Log In"`) {
 		t.Error("snapshot should contain Log In button")
 	}
+
 	if !strings.Contains(snap, "checkbox") {
 		t.Error("snapshot should contain checkbox")
 	}
@@ -163,6 +176,7 @@ func TestSnapshot_Form(t *testing.T) {
 
 func TestSnapshot_ElementByRef(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -170,6 +184,7 @@ func TestSnapshot_ElementByRef(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -179,13 +194,15 @@ func TestSnapshot_ElementByRef(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, line := range strings.Split(snap, "\n") {
+	for line := range strings.SplitSeq(snap, "\n") {
 		if strings.Contains(line, `button "Submit"`) {
 			start := strings.Index(line, "[ref=")
+
 			end := strings.Index(line[start:], "]")
 			if start < 0 || end < 0 {
 				t.Fatal("could not find ref in button line")
 			}
+
 			ref := line[start+5 : start+end]
 
 			el, err := page.ElementByRef(ref)
@@ -197,17 +214,21 @@ func TestSnapshot_ElementByRef(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if text != "Submit" {
 				t.Errorf("expected 'Submit', got %q", text)
 			}
+
 			return
 		}
 	}
+
 	t.Fatal("button not found in snapshot")
 }
 
 func TestSnapshot_MaxDepth(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -215,6 +236,7 @@ func TestSnapshot_MaxDepth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -230,6 +252,7 @@ func TestSnapshot_MaxDepth(t *testing.T) {
 	}
 
 	fullLines := strings.Count(full, "\n")
+
 	shallowLines := strings.Count(shallow, "\n")
 	if shallowLines >= fullLines {
 		t.Errorf("shallow (%d lines) should have fewer lines than full (%d lines)", shallowLines, fullLines)
@@ -238,6 +261,7 @@ func TestSnapshot_MaxDepth(t *testing.T) {
 
 func TestSnapshot_InteractableOnly(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -245,6 +269,7 @@ func TestSnapshot_InteractableOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -257,9 +282,11 @@ func TestSnapshot_InteractableOnly(t *testing.T) {
 	if !strings.Contains(snap, "link") {
 		t.Error("interactable snapshot should contain links")
 	}
+
 	if !strings.Contains(snap, "button") {
 		t.Error("interactable snapshot should contain buttons")
 	}
+
 	if strings.Contains(snap, "heading") {
 		t.Error("interactable snapshot should NOT contain headings")
 	}
@@ -267,6 +294,7 @@ func TestSnapshot_InteractableOnly(t *testing.T) {
 
 func TestSnapshot_Hidden(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -274,6 +302,7 @@ func TestSnapshot_Hidden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -286,9 +315,11 @@ func TestSnapshot_Hidden(t *testing.T) {
 	if !strings.Contains(snap, `link "Visible Link"`) {
 		t.Error("snapshot should contain visible link")
 	}
+
 	if strings.Contains(snap, "Hidden Link") {
 		t.Error("snapshot should NOT contain aria-hidden link")
 	}
+
 	if strings.Contains(snap, "Hidden Button") {
 		t.Error("snapshot should NOT contain hidden button")
 	}
@@ -296,6 +327,7 @@ func TestSnapshot_Hidden(t *testing.T) {
 
 func TestSnapshot_NilPage(t *testing.T) {
 	var p *Page
+
 	_, err := p.Snapshot()
 	if err == nil {
 		t.Error("expected error for nil page")
@@ -304,6 +336,7 @@ func TestSnapshot_NilPage(t *testing.T) {
 
 func TestElementByRef_NotFound(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -311,6 +344,7 @@ func TestElementByRef_NotFound(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -323,6 +357,7 @@ func TestElementByRef_NotFound(t *testing.T) {
 
 func TestElementByRef_EmptyRef(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -339,6 +374,7 @@ func TestElementByRef_EmptyRef(t *testing.T) {
 
 func TestSnapshotWithIframes(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -349,6 +385,7 @@ func TestSnapshotWithIframes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -358,6 +395,7 @@ func TestSnapshotWithIframes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(snapNoIframes, `heading "Parent Page"`) {
 		t.Error("snapshot should contain parent page heading")
 	}
@@ -367,6 +405,7 @@ func TestSnapshotWithIframes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(snapWithIframes, "[iframe") {
 		t.Error("snapshot with iframes should contain [iframe marker")
 	}
@@ -385,15 +424,18 @@ func (m *mockLLMProvider) Name() string { return m.name }
 
 func (m *mockLLMProvider) Complete(_ context.Context, systemPrompt, userPrompt string) (string, error) {
 	m.lastSys = systemPrompt
+
 	m.lastUser = userPrompt
 	if m.err != nil {
 		return "", m.err
 	}
+
 	return m.response, nil
 }
 
 func TestSnapshotWithLLM_NilProvider(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -401,6 +443,7 @@ func TestSnapshotWithLLM_NilProvider(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -409,6 +452,7 @@ func TestSnapshotWithLLM_NilProvider(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for nil provider")
 	}
+
 	if !strings.Contains(err.Error(), "nil LLM provider") {
 		t.Errorf("expected nil provider error, got: %v", err)
 	}
@@ -416,6 +460,7 @@ func TestSnapshotWithLLM_NilProvider(t *testing.T) {
 
 func TestSnapshotWithLLM_MockProvider(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -423,6 +468,7 @@ func TestSnapshotWithLLM_MockProvider(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -445,9 +491,11 @@ func TestSnapshotWithLLM_MockProvider(t *testing.T) {
 	if !strings.Contains(mock.lastUser, "describe this page") {
 		t.Error("user prompt should contain the original prompt")
 	}
+
 	if !strings.Contains(mock.lastUser, "- document") {
 		t.Error("user prompt should contain the accessibility tree")
 	}
+
 	if !strings.Contains(mock.lastUser, "button") {
 		t.Error("user prompt should contain snapshot content")
 	}
@@ -456,6 +504,7 @@ func TestSnapshotWithLLM_MockProvider(t *testing.T) {
 	if !strings.Contains(mock.lastSys, "accessibility tree") {
 		t.Error("system prompt should describe the accessibility tree format")
 	}
+
 	if !strings.Contains(mock.lastSys, "[ref=") {
 		t.Error("system prompt should mention ref markers")
 	}
@@ -463,6 +512,7 @@ func TestSnapshotWithLLM_MockProvider(t *testing.T) {
 
 func TestSnapshotWithLLM_Error(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -470,6 +520,7 @@ func TestSnapshotWithLLM_Error(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -483,6 +534,7 @@ func TestSnapshotWithLLM_Error(t *testing.T) {
 	if err == nil {
 		t.Error("expected error from failing provider")
 	}
+
 	if !strings.Contains(err.Error(), "failing-mock") {
 		t.Errorf("error should mention provider name, got: %v", err)
 	}

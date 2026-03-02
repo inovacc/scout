@@ -43,6 +43,7 @@ func TestWithProxyChain(t *testing.T) {
 	if o.proxy != "socks5://localhost:1080" {
 		t.Fatalf("expected proxy set, got %q", o.proxy)
 	}
+
 	if o.proxyChain == nil || len(o.proxyChain.Hops) != 1 {
 		t.Fatal("expected proxy chain with 1 hop")
 	}
@@ -55,6 +56,7 @@ func TestWithProxyChainAuth(t *testing.T) {
 	if o.proxyAuth == nil {
 		t.Fatal("expected proxy auth extracted")
 	}
+
 	if o.proxyAuth.username != "user" || o.proxyAuth.password != "secret" {
 		t.Fatalf("unexpected auth: %+v", o.proxyAuth)
 	}

@@ -7,6 +7,7 @@ import (
 
 func TestWaitSafe_NilPage(t *testing.T) {
 	var p *Page
+
 	err := p.WaitSafe(100 * time.Millisecond)
 	if err == nil {
 		t.Error("expected error for nil page")
@@ -15,6 +16,7 @@ func TestWaitSafe_NilPage(t *testing.T) {
 
 func TestWaitSafe_Normal(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -22,6 +24,7 @@ func TestWaitSafe_Normal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -39,6 +42,7 @@ func TestBrowserClose_NoZombies(t *testing.T) {
 	if err := b.Close(); err != nil {
 		t.Fatalf("first Close failed: %v", err)
 	}
+
 	if err := b.Close(); err != nil {
 		t.Fatalf("second Close (idempotent) failed: %v", err)
 	}
@@ -53,6 +57,7 @@ func TestBrowserClose_Nil(t *testing.T) {
 
 func TestHijack_InvalidRegexp(t *testing.T) {
 	b := newTestBrowser(t)
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -60,6 +65,7 @@ func TestHijack_InvalidRegexp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}

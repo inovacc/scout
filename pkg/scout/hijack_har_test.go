@@ -8,10 +8,12 @@ import (
 
 func TestHijackRecorderEmpty(t *testing.T) {
 	r := NewHijackRecorder()
+
 	data, count, err := r.ExportHAR()
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if count != 0 {
 		t.Fatalf("expected 0 entries, got %d", count)
 	}
@@ -22,6 +24,7 @@ func TestHijackRecorderEmpty(t *testing.T) {
 	if err := json.Unmarshal(data, &har); err != nil {
 		t.Fatal(err)
 	}
+
 	if har.Log.Version != "1.2" {
 		t.Fatalf("expected HAR version 1.2, got %s", har.Log.Version)
 	}
@@ -73,6 +76,7 @@ func TestHijackRecorderRequestResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if count != 1 {
 		t.Fatalf("expected 1 entry, got %d", count)
 	}
@@ -85,15 +89,18 @@ func TestHijackRecorderRequestResponse(t *testing.T) {
 	}
 
 	entry := har.Log.Entries[0]
-	if entry.Request.Method != "GET" {
+	if entry.Request.Method != http.MethodGet {
 		t.Fatalf("expected GET, got %s", entry.Request.Method)
 	}
+
 	if entry.Response.Status != 200 {
 		t.Fatalf("expected 200, got %d", entry.Response.Status)
 	}
+
 	if entry.Response.Content.Text != `{"result":"ok"}` {
 		t.Fatalf("expected body, got %q", entry.Response.Content.Text)
 	}
+
 	if len(entry.Request.QueryString) != 1 || entry.Request.QueryString[0].Name != "q" {
 		t.Fatalf("expected query string parsed, got %v", entry.Request.QueryString)
 	}
@@ -122,9 +129,11 @@ func TestStatusText(t *testing.T) {
 	if got := statusText(200); got != "OK" {
 		t.Fatalf("expected OK, got %s", got)
 	}
+
 	if got := statusText(404); got != "Not Found" {
 		t.Fatalf("expected Not Found, got %s", got)
 	}
+
 	if got := statusText(999); got != "999" {
 		t.Fatalf("expected 999, got %s", got)
 	}

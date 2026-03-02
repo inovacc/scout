@@ -87,6 +87,7 @@ func (r *URLParser) Err() error {
 func MustResolveURL(u string) string {
 	u, err := ResolveURL(u)
 	utils.E(err)
+
 	return u
 }
 
@@ -123,6 +124,7 @@ func ResolveURL(u string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	defer func() { _ = res.Body.Close() }()
 
 	data, err := io.ReadAll(res.Body)

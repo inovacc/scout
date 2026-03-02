@@ -10,7 +10,7 @@ import (
 
 Network
 
-Network domain allows tracking network activities of the page. It exposes information about http,
+domain allows tracking network activities of the page. It exposes information about http,
 file, data and other requests and responses, their headers, bodies, timing, etc.
 
 */
@@ -1867,7 +1867,7 @@ type NetworkDeleteCookies struct {
 	// Path (optional) If specified, deletes only cookies with the exact path.
 	Path string `json:"path,omitempty"`
 
-	// PartitionKey (experimental) (optional) If specified, deletes only cookies with the the given name and partitionKey where
+	// PartitionKey (experimental) (optional) If specified, deletes only cookies with the given name and partitionKey where
 	// all partition key attributes match the cookie partition key attribute.
 	PartitionKey *NetworkCookiePartitionKey `json:"partitionKey,omitempty"`
 }

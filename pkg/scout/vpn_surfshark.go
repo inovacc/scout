@@ -100,12 +100,14 @@ func (s *SurfsharkProvider) Servers(ctx context.Context) ([]VPNServer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("scout: vpn: surfshark: create server request: %w", err)
 	}
+
 	req.Header.Set("Authorization", "Bearer "+s.token)
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("scout: vpn: surfshark: fetch servers: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -130,6 +132,7 @@ func (s *SurfsharkProvider) Servers(ctx context.Context) ([]VPNServer, error) {
 	}
 
 	s.servers = servers
+
 	return servers, nil
 }
 
@@ -159,6 +162,7 @@ func (s *SurfsharkProvider) Connect(ctx context.Context, country string) (*VPNCo
 		if err != nil {
 			return nil, err
 		}
+
 		s.servers = servers
 	}
 
@@ -173,6 +177,7 @@ func (s *SurfsharkProvider) Connect(ctx context.Context, country string) (*VPNCo
 		Port:     443,
 	}
 	s.connected = conn
+
 	return conn, nil
 }
 
@@ -186,6 +191,7 @@ func (s *SurfsharkProvider) Disconnect(_ context.Context) error {
 	defer s.mu.Unlock()
 
 	s.connected = nil
+
 	return nil
 }
 
@@ -209,6 +215,7 @@ func (s *SurfsharkProvider) Status(_ context.Context) (*VPNStatus, error) {
 func (s *SurfsharkProvider) ProxyCredentials() (username, password string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	return s.proxyUser, s.proxyPass
 }
 
@@ -226,12 +233,14 @@ func (s *SurfsharkProvider) authenticate(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("scout: vpn: surfshark: create login request: %w", err)
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("scout: vpn: surfshark: login request: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -250,6 +259,7 @@ func (s *SurfsharkProvider) authenticate(ctx context.Context) error {
 
 	s.token = loginResp.Token
 	s.renewToken = loginResp.RenewToken
+
 	return nil
 }
 
@@ -263,12 +273,14 @@ func (s *SurfsharkProvider) fetchProxyCredentials(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("scout: vpn: surfshark: create creds request: %w", err)
 	}
+
 	req.Header.Set("Authorization", "Bearer "+s.token)
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("scout: vpn: surfshark: fetch proxy creds: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -287,6 +299,7 @@ func (s *SurfsharkProvider) fetchProxyCredentials(ctx context.Context) error {
 
 	s.proxyUser = creds.Username
 	s.proxyPass = creds.Password
+
 	return nil
 }
 
@@ -295,6 +308,7 @@ func (s *SurfsharkProvider) ensureAuthenticated(ctx context.Context) error {
 	if s.token != "" {
 		return nil
 	}
+
 	return s.authenticate(ctx)
 }
 
@@ -303,11 +317,13 @@ func (s *SurfsharkProvider) pickServer(country string) (*VPNServer, error) {
 	country = strings.ToLower(country)
 
 	var best *VPNServer
+
 	for i := range s.servers {
 		sv := &s.servers[i]
 		if sv.Country != country {
 			continue
 		}
+
 		if best == nil || sv.Load < best.Load {
 			best = sv
 		}
@@ -324,12 +340,15 @@ func (s *SurfsharkProvider) pickServer(country string) (*VPNServer, error) {
 // Exported for testing and external use.
 func FilterServersByCountry(servers []VPNServer, country string) []VPNServer {
 	country = strings.ToLower(country)
+
 	var result []VPNServer
+
 	for _, s := range servers {
 		if s.Country == country {
 			result = append(result, s)
 		}
 	}
+
 	return result
 }
 
@@ -352,5 +371,6 @@ func ParseSurfsharkClusters(data []byte) ([]VPNServer, error) {
 			Tags:    c.Tags,
 		}
 	}
+
 	return servers, nil
 }

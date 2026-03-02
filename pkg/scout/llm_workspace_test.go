@@ -22,6 +22,7 @@ func TestWorkspaceCreateAndList(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "sessions.json")); err != nil {
 		t.Errorf("sessions.json missing: %v", err)
 	}
+
 	if _, err := os.Stat(filepath.Join(dir, "jobs", "jobs.json")); err != nil {
 		t.Errorf("jobs/jobs.json missing: %v", err)
 	}
@@ -31,6 +32,7 @@ func TestWorkspaceCreateAndList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListSessions: %v", err)
 	}
+
 	if len(sessions) != 0 {
 		t.Errorf("expected 0 sessions, got %d", len(sessions))
 	}
@@ -51,6 +53,7 @@ func TestWorkspaceSessionLifecycle(t *testing.T) {
 	if sess.Name != "test-session" {
 		t.Errorf("Name = %q", sess.Name)
 	}
+
 	if sess.Metadata["env"] != "test" {
 		t.Errorf("Metadata[env] = %q", sess.Metadata["env"])
 	}
@@ -60,6 +63,7 @@ func TestWorkspaceSessionLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CurrentSession: %v", err)
 	}
+
 	if cur.ID != sess.ID {
 		t.Errorf("current session ID = %q, want %q", cur.ID, sess.ID)
 	}
@@ -75,6 +79,7 @@ func TestWorkspaceSessionLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CurrentSession: %v", err)
 	}
+
 	if cur.ID != sess2.ID {
 		t.Errorf("current = %q, want %q", cur.ID, sess2.ID)
 	}
@@ -83,10 +88,12 @@ func TestWorkspaceSessionLifecycle(t *testing.T) {
 	if err := ws.SetCurrentSession(sess.ID); err != nil {
 		t.Fatalf("SetCurrentSession: %v", err)
 	}
+
 	cur, err = ws.CurrentSession()
 	if err != nil {
 		t.Fatalf("CurrentSession: %v", err)
 	}
+
 	if cur.ID != sess.ID {
 		t.Errorf("current = %q, want %q", cur.ID, sess.ID)
 	}
@@ -96,6 +103,7 @@ func TestWorkspaceSessionLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListSessions: %v", err)
 	}
+
 	if len(sessions) != 2 {
 		t.Errorf("expected 2 sessions, got %d", len(sessions))
 	}
@@ -105,6 +113,7 @@ func TestWorkspaceSessionLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetSession: %v", err)
 	}
+
 	if got.Name != "test-session" {
 		t.Errorf("Name = %q", got.Name)
 	}
@@ -136,9 +145,11 @@ func TestWorkspaceJobLifecycle(t *testing.T) {
 	if job.Status != JobStatusPending {
 		t.Errorf("Status = %q, want %q", job.Status, JobStatusPending)
 	}
+
 	if job.URL != "https://example.com" {
 		t.Errorf("URL = %q", job.URL)
 	}
+
 	if job.Metadata["tag"] != "demo" {
 		t.Errorf("Metadata[tag] = %q", job.Metadata["tag"])
 	}
@@ -151,6 +162,7 @@ func TestWorkspaceJobLifecycle(t *testing.T) {
 
 	// Update job
 	job.Status = JobStatusExtracting
+
 	job.ExtractResult = "# Extracted\nSome content"
 	if err := ws.UpdateJob(job); err != nil {
 		t.Fatalf("UpdateJob: %v", err)
@@ -167,6 +179,7 @@ func TestWorkspaceJobLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetJob: %v", err)
 	}
+
 	if got.ExtractResult != "# Extracted\nSome content" {
 		t.Errorf("ExtractResult = %q", got.ExtractResult)
 	}
@@ -176,6 +189,7 @@ func TestWorkspaceJobLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CurrentJob: %v", err)
 	}
+
 	if cur.ID != job.ID {
 		t.Errorf("current job = %q, want %q", cur.ID, job.ID)
 	}
@@ -185,6 +199,7 @@ func TestWorkspaceJobLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListJobs: %v", err)
 	}
+
 	if len(refs) != 1 {
 		t.Errorf("expected 1 job, got %d", len(refs))
 	}
@@ -194,6 +209,7 @@ func TestWorkspaceJobLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListSessionJobs: %v", err)
 	}
+
 	if len(sessRefs) != 1 {
 		t.Errorf("expected 1 session job, got %d", len(sessRefs))
 	}
@@ -223,6 +239,7 @@ func TestWorkspaceReviewFiles(t *testing.T) {
 
 	job.ExtractResult = "extraction output"
 	job.ReviewResult = "review output"
+
 	job.Status = JobStatusCompleted
 	if err := ws.UpdateJob(job); err != nil {
 		t.Fatalf("UpdateJob: %v", err)
@@ -233,6 +250,7 @@ func TestWorkspaceReviewFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read extract.md: %v", err)
 	}
+
 	if string(extractData) != "extraction output" {
 		t.Errorf("extract.md = %q", extractData)
 	}
@@ -241,6 +259,7 @@ func TestWorkspaceReviewFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read review.md: %v", err)
 	}
+
 	if string(reviewData) != "review output" {
 		t.Errorf("review.md = %q", reviewData)
 	}

@@ -22,18 +22,18 @@ func TestCreateDestroySession(t *testing.T) {
 		t.Skipf("browser unavailable: %v", err)
 	}
 
-	if resp.SessionId == "" {
+	if resp.GetSessionId() == "" {
 		t.Fatal("empty session ID")
 	}
 
 	// Destroy should succeed
-	_, err = env.client.DestroySession(ctx, &pb.SessionRequest{SessionId: resp.SessionId})
+	_, err = env.client.DestroySession(ctx, &pb.SessionRequest{SessionId: resp.GetSessionId()})
 	if err != nil {
 		t.Fatalf("destroy: %v", err)
 	}
 
 	// Double destroy should fail (not found)
-	_, err = env.client.DestroySession(ctx, &pb.SessionRequest{SessionId: resp.SessionId})
+	_, err = env.client.DestroySession(ctx, &pb.SessionRequest{SessionId: resp.GetSessionId()})
 	if err == nil {
 		t.Fatal("expected error on double destroy")
 	}
@@ -44,12 +44,12 @@ func TestNavigate(t *testing.T) {
 	sid := env.createSession(t)
 
 	resp := env.navigate(t, sid, "/")
-	if resp.Title != "Test Page" {
-		t.Errorf("title = %q, want %q", resp.Title, "Test Page")
+	if resp.GetTitle() != "Test Page" {
+		t.Errorf("title = %q, want %q", resp.GetTitle(), "Test Page")
 	}
 
-	if !strings.HasSuffix(resp.Url, "/") {
-		t.Errorf("url = %q, want suffix /", resp.Url)
+	if !strings.HasSuffix(resp.GetUrl(), "/") {
+		t.Errorf("url = %q, want suffix /", resp.GetUrl())
 	}
 }
 
@@ -281,8 +281,9 @@ func TestGetText(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get text: %v", err)
 	}
-	if resp.Text != "Some text" {
-		t.Errorf("text = %q, want %q", resp.Text, "Some text")
+
+	if resp.GetText() != "Some text" {
+		t.Errorf("text = %q, want %q", resp.GetText(), "Some text")
 	}
 
 	// XPath
@@ -290,8 +291,9 @@ func TestGetText(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get text xpath: %v", err)
 	}
-	if resp.Text != "Hello World" {
-		t.Errorf("text = %q, want %q", resp.Text, "Hello World")
+
+	if resp.GetText() != "Hello World" {
+		t.Errorf("text = %q, want %q", resp.GetText(), "Hello World")
 	}
 }
 
@@ -310,8 +312,9 @@ func TestGetAttribute(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get attribute: %v", err)
 	}
-	if resp.Text != "text" {
-		t.Errorf("attr = %q, want %q", resp.Text, "text")
+
+	if resp.GetText() != "text" {
+		t.Errorf("attr = %q, want %q", resp.GetText(), "text")
 	}
 }
 
@@ -326,16 +329,18 @@ func TestGetTitleURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get title: %v", err)
 	}
-	if titleResp.Text != "Test Page" {
-		t.Errorf("title = %q, want %q", titleResp.Text, "Test Page")
+
+	if titleResp.GetText() != "Test Page" {
+		t.Errorf("title = %q, want %q", titleResp.GetText(), "Test Page")
 	}
 
 	urlResp, err := env.client.GetURL(ctx, &pb.SessionRequest{SessionId: sid})
 	if err != nil {
 		t.Fatalf("get url: %v", err)
 	}
-	if !strings.Contains(urlResp.Text, env.baseURL) {
-		t.Errorf("url = %q, want contains %q", urlResp.Text, env.baseURL)
+
+	if !strings.Contains(urlResp.GetText(), env.baseURL) {
+		t.Errorf("url = %q, want contains %q", urlResp.GetText(), env.baseURL)
 	}
 }
 
@@ -354,10 +359,10 @@ func TestEval(t *testing.T) {
 
 	// Result is JSON-encoded EvalResult struct with Type/Value/Subtype fields
 	var val struct {
-		Type  string      `json:"Type"`
-		Value interface{} `json:"Value"`
+		Type  string `json:"Type"`
+		Value any    `json:"Value"`
 	}
-	if err := json.Unmarshal([]byte(resp.Result), &val); err != nil {
+	if err := json.Unmarshal([]byte(resp.GetResult()), &val); err != nil {
 		t.Fatalf("unmarshal eval result: %v", err)
 	}
 
@@ -370,8 +375,9 @@ func TestEval(t *testing.T) {
 	if err != nil {
 		t.Fatalf("eval title: %v", err)
 	}
-	if !strings.Contains(resp.Result, "Test Page") {
-		t.Errorf("eval title = %q, want contains 'Test Page'", resp.Result)
+
+	if !strings.Contains(resp.GetResult(), "Test Page") {
+		t.Errorf("eval title = %q, want contains 'Test Page'", resp.GetResult())
 	}
 }
 
@@ -387,7 +393,8 @@ func TestElementExists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("element exists: %v", err)
 	}
-	if !resp.Value {
+
+	if !resp.GetValue() {
 		t.Error("expected #info to exist")
 	}
 
@@ -396,7 +403,8 @@ func TestElementExists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("element exists: %v", err)
 	}
-	if resp.Value {
+
+	if resp.GetValue() {
 		t.Error("expected #nonexistent to not exist")
 	}
 
@@ -405,7 +413,8 @@ func TestElementExists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("element exists xpath: %v", err)
 	}
-	if !resp.Value {
+
+	if !resp.GetValue() {
 		t.Error("expected //h1 to exist")
 	}
 
@@ -414,7 +423,8 @@ func TestElementExists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("element exists xpath: %v", err)
 	}
-	if resp.Value {
+
+	if resp.GetValue() {
 		t.Error("expected //nonexistent to not exist")
 	}
 }
@@ -431,11 +441,13 @@ func TestScreenshot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("screenshot: %v", err)
 	}
-	if len(resp.Data) == 0 {
+
+	if len(resp.GetData()) == 0 {
 		t.Error("empty screenshot data")
 	}
-	if resp.Format != "png" {
-		t.Errorf("format = %q, want png", resp.Format)
+
+	if resp.GetFormat() != "png" {
+		t.Errorf("format = %q, want png", resp.GetFormat())
 	}
 
 	// Full page screenshot
@@ -443,7 +455,8 @@ func TestScreenshot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("full screenshot: %v", err)
 	}
-	if len(resp.Data) == 0 {
+
+	if len(resp.GetData()) == 0 {
 		t.Error("empty full-page screenshot data")
 	}
 }
@@ -459,11 +472,12 @@ func TestPDF(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pdf: %v", err)
 	}
-	if len(resp.Data) == 0 {
+
+	if len(resp.GetData()) == 0 {
 		t.Error("empty PDF data")
 	}
 	// PDF magic bytes
-	if len(resp.Data) > 4 && string(resp.Data[:5]) != "%PDF-" {
+	if len(resp.GetData()) > 4 && string(resp.GetData()[:5]) != "%PDF-" {
 		t.Error("data does not start with PDF header")
 	}
 }
@@ -488,10 +502,12 @@ func TestHARRecording(t *testing.T) {
 	if err != nil {
 		t.Fatalf("export har: %v", err)
 	}
-	if len(harResp.Data) == 0 {
+
+	if len(harResp.GetData()) == 0 {
 		t.Error("empty HAR data")
 	}
-	if harResp.EntryCount == 0 {
+
+	if harResp.GetEntryCount() == 0 {
 		t.Error("zero HAR entries")
 	}
 
@@ -523,8 +539,10 @@ func TestStreamEvents(t *testing.T) {
 	// Navigate to trigger events (use separate context to avoid stream cancellation)
 	go func() {
 		time.Sleep(200 * time.Millisecond)
+
 		navCtx, navCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer navCancel()
+
 		_, _ = env.client.Navigate(navCtx, &pb.NavigateRequest{
 			SessionId:  sid,
 			Url:        env.baseURL + "/",
@@ -537,10 +555,12 @@ func TestStreamEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recv event: %v", err)
 	}
-	if ev.SessionId != sid {
-		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+
+	if ev.GetSessionId() != sid {
+		t.Errorf("event session = %q, want %q", ev.GetSessionId(), sid)
 	}
-	if ev.Timestamp == 0 {
+
+	if ev.GetTimestamp() == 0 {
 		t.Error("event timestamp is zero")
 	}
 }
@@ -601,10 +621,12 @@ func TestErrorPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start recording: %v", err)
 	}
+
 	_, err = env.client.StartRecording(ctx, &pb.RecordingRequest{SessionId: sid})
 	if err == nil {
 		t.Error("expected error for double start recording")
 	}
+
 	_, _ = env.client.StopRecording(ctx, &pb.SessionRequest{SessionId: sid})
 }
 
@@ -673,8 +695,9 @@ func TestInteractive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recv: %v", err)
 	}
-	if ev.SessionId != sid {
-		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+
+	if ev.GetSessionId() != sid {
+		t.Errorf("event session = %q, want %q", ev.GetSessionId(), sid)
 	}
 
 	// Close send direction
@@ -724,8 +747,9 @@ func TestInteractive_Type(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recv: %v", err)
 	}
-	if ev.SessionId != sid {
-		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+
+	if ev.GetSessionId() != sid {
+		t.Errorf("event session = %q, want %q", ev.GetSessionId(), sid)
 	}
 
 	_ = stream.CloseSend()
@@ -773,8 +797,9 @@ func TestInteractive_PressKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recv: %v", err)
 	}
-	if ev.SessionId != sid {
-		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+
+	if ev.GetSessionId() != sid {
+		t.Errorf("event session = %q, want %q", ev.GetSessionId(), sid)
 	}
 
 	_ = stream.CloseSend()
@@ -822,8 +847,9 @@ func TestInteractive_Eval(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recv: %v", err)
 	}
-	if ev.SessionId != sid {
-		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+
+	if ev.GetSessionId() != sid {
+		t.Errorf("event session = %q, want %q", ev.GetSessionId(), sid)
 	}
 
 	_ = stream.CloseSend()
@@ -869,8 +895,9 @@ func TestInteractive_Scroll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recv: %v", err)
 	}
-	if ev.SessionId != sid {
-		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+
+	if ev.GetSessionId() != sid {
+		t.Errorf("event session = %q, want %q", ev.GetSessionId(), sid)
 	}
 
 	_ = stream.CloseSend()
@@ -917,8 +944,9 @@ func TestInteractive_Wait(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recv: %v", err)
 	}
-	if ev.SessionId != sid {
-		t.Errorf("event session = %q, want %q", ev.SessionId, sid)
+
+	if ev.GetSessionId() != sid {
+		t.Errorf("event session = %q, want %q", ev.GetSessionId(), sid)
 	}
 
 	_ = stream.CloseSend()
@@ -952,8 +980,10 @@ func TestStreamHijack(t *testing.T) {
 	// Navigate to trigger network events that the hijacker captures
 	go func() {
 		time.Sleep(200 * time.Millisecond)
+
 		navCtx, navCancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer navCancel()
+
 		_, _ = env.client.Navigate(navCtx, &pb.NavigateRequest{
 			SessionId:  sid,
 			Url:        env.baseURL + "/recorder-page",
@@ -966,6 +996,7 @@ func TestStreamHijack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("recv hijack event: %v", err)
 	}
+
 	if ev == nil {
 		t.Fatal("received nil hijack event")
 	}
@@ -1048,14 +1079,15 @@ func TestCreateSession_WithOptions(t *testing.T) {
 		t.Skipf("browser unavailable: %v", err)
 	}
 
-	if resp.SessionId == "" {
+	if resp.GetSessionId() == "" {
 		t.Fatal("empty session ID")
 	}
 
 	t.Cleanup(func() {
 		ctx2, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = env.client.DestroySession(ctx2, &pb.SessionRequest{SessionId: resp.SessionId})
+
+		_, _ = env.client.DestroySession(ctx2, &pb.SessionRequest{SessionId: resp.GetSessionId()})
 	})
 }
 
@@ -1072,17 +1104,18 @@ func TestCreateSession_WithInitialURL(t *testing.T) {
 		t.Skipf("browser unavailable: %v", err)
 	}
 
-	if resp.SessionId == "" {
+	if resp.GetSessionId() == "" {
 		t.Fatal("empty session ID")
 	}
 
-	if resp.Title != "Page Two" {
-		t.Errorf("title = %q, want %q", resp.Title, "Page Two")
+	if resp.GetTitle() != "Page Two" {
+		t.Errorf("title = %q, want %q", resp.GetTitle(), "Page Two")
 	}
 
 	t.Cleanup(func() {
 		ctx2, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		_, _ = env.client.DestroySession(ctx2, &pb.SessionRequest{SessionId: resp.SessionId})
+
+		_, _ = env.client.DestroySession(ctx2, &pb.SessionRequest{SessionId: resp.GetSessionId()})
 	})
 }

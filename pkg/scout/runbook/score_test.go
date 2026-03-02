@@ -133,13 +133,16 @@ func TestScoreSelector(t *testing.T) {
 				t.Errorf("ScoreSelector(%q).Tier = %q, want %q (score=%.2f, reason=%s)",
 					tt.selector, got.Tier, tt.wantTier, got.Score, got.Reason)
 			}
+
 			if got.Score < tt.minScore || got.Score > tt.maxScore {
 				t.Errorf("ScoreSelector(%q).Score = %.2f, want [%.2f, %.2f] (tier=%s, reason=%s)",
 					tt.selector, got.Score, tt.minScore, tt.maxScore, got.Tier, got.Reason)
 			}
+
 			if got.Selector != tt.selector {
 				t.Errorf("ScoreSelector(%q).Selector = %q, want %q", tt.selector, got.Selector, tt.selector)
 			}
+
 			if got.Reason == "" {
 				t.Errorf("ScoreSelector(%q).Reason is empty", tt.selector)
 			}

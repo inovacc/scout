@@ -18,12 +18,14 @@ func newTestPairingServer(t *testing.T) (*PairingServer, *identity2.Identity) {
 	}
 
 	dir := t.TempDir()
+
 	ts, err := identity2.NewTrustStore(dir)
 	if err != nil {
 		t.Fatalf("NewTrustStore: %v", err)
 	}
 
 	ps := NewPairingServer(serverID, ts)
+
 	return ps, serverID
 }
 
@@ -36,6 +38,7 @@ func TestPair_HappyPath(t *testing.T) {
 	}
 
 	var pairedDeviceID string
+
 	ps.OnPaired = func(deviceID string) {
 		pairedDeviceID = deviceID
 	}
@@ -48,12 +51,14 @@ func TestPair_HappyPath(t *testing.T) {
 		t.Fatalf("Pair: %v", err)
 	}
 
-	if resp.ServerDeviceId == "" {
+	if resp.GetServerDeviceId() == "" {
 		t.Error("server device ID should not be empty")
 	}
-	if len(resp.ServerCertDer) == 0 {
+
+	if len(resp.GetServerCertDer()) == 0 {
 		t.Error("server cert should not be empty")
 	}
+
 	if pairedDeviceID != clientID.DeviceID {
 		t.Errorf("OnPaired called with %q, want %q", pairedDeviceID, clientID.DeviceID)
 	}
@@ -69,6 +74,7 @@ func TestPair_EmptyCert(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty cert")
 	}
+
 	if !strings.Contains(err.Error(), "empty certificate") {
 		t.Errorf("error = %q, want contains 'empty certificate'", err.Error())
 	}
@@ -89,6 +95,7 @@ func TestPair_EmptyDeviceID(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for empty device ID")
 	}
+
 	if !strings.Contains(err.Error(), "empty device ID") {
 		t.Errorf("error = %q, want contains 'empty device ID'", err.Error())
 	}
@@ -104,6 +111,7 @@ func TestPair_CertParseFail(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for invalid cert")
 	}
+
 	if !strings.Contains(err.Error(), "parse client cert") {
 		t.Errorf("error = %q, want contains 'parse client cert'", err.Error())
 	}
@@ -124,6 +132,7 @@ func TestPair_DeviceIDMismatch(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for device ID mismatch")
 	}
+
 	if !strings.Contains(err.Error(), "device ID mismatch") {
 		t.Errorf("error = %q, want contains 'device ID mismatch'", err.Error())
 	}

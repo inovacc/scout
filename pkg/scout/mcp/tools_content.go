@@ -33,9 +33,11 @@ func registerContentTools(server *mcp.Server, state *mcpState) {
 		if args.MainOnly != nil && *args.MainOnly {
 			opts = append(opts, scout.WithMainContentOnly())
 		}
+
 		if args.IncludeImages != nil {
 			opts = append(opts, scout.WithIncludeImages(*args.IncludeImages))
 		}
+
 		if args.IncludeLinks != nil {
 			opts = append(opts, scout.WithIncludeLinks(*args.IncludeLinks))
 		}
@@ -59,6 +61,7 @@ func registerContentTools(server *mcp.Server, state *mcpState) {
 		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
 			return errResult(err.Error())
 		}
+
 		if args.Selector == "" {
 			args.Selector = "table"
 		}

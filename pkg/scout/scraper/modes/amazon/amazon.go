@@ -68,9 +68,11 @@ func (p *amazonProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 	if err != nil {
 		return nil, fmt.Errorf("amazon: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:  "amazon",
 		Version:   "1",
@@ -186,6 +188,7 @@ func (m *AmazonMode) Scrape(ctx context.Context, session scraper.SessionData, op
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -210,6 +213,7 @@ func (m *AmazonMode) Scrape(ctx context.Context, session scraper.SessionData, op
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -233,10 +237,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToLower(strings.TrimSpace(t))] = struct{}{}
 	}
+
 	return set
 }
 
@@ -307,6 +313,7 @@ func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.
 	if err != nil {
 		return nil, fmt.Errorf("amazon: extract asin: %w", err)
 	}
+
 	asin := asinResult.String()
 
 	// Extract title.
@@ -314,6 +321,7 @@ func extractSingleProductPage(ctx context.Context, page *scout.Page) ([]scraper.
 	if err != nil {
 		return nil, fmt.Errorf("amazon: extract title: %w", err)
 	}
+
 	titleText, _ := titleElem.Text()
 
 	// Extract price.
@@ -379,6 +387,7 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 	if titleElem != nil {
 		title, _ = titleElem.Text()
 	}
+
 	title = strings.TrimSpace(title)
 
 	// Extract price.
@@ -391,6 +400,7 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 	if priceElem != nil {
 		price, _ = priceElem.Text()
 	}
+
 	price = strings.TrimSpace(price)
 
 	// Extract rating.
@@ -403,10 +413,12 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 	if ratingElem != nil {
 		rating, _ = ratingElem.Text()
 	}
+
 	rating = strings.TrimSpace(rating)
 
 	// Extract review count.
 	reviewElem, err := elem.Element("span[aria-label*='rating']")
+
 	var reviewCount string
 	if reviewElem != nil {
 		reviewCount, _ = reviewElem.Text()
@@ -414,7 +426,9 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 
 	// Extract product URL.
 	linkElem, err := elem.Element("h2 a, a.a-link-normal")
+
 	var productURL string
+
 	if linkElem != nil {
 		href, _, _ := linkElem.Attribute("href")
 		if href != "" {
@@ -433,12 +447,15 @@ func extractProductFromElement(ctx context.Context, elem *scout.Element) (*scrap
 	if title != "" {
 		metadata["title"] = title
 	}
+
 	if price != "" {
 		metadata["price"] = price
 	}
+
 	if rating != "" {
 		metadata["rating"] = rating
 	}
+
 	if reviewCount != "" {
 		metadata["review_count"] = reviewCount
 	}
@@ -466,6 +483,7 @@ func extractReviewsFromPage(ctx context.Context, page *scout.Page, asin string) 
 		if err := page.Navigate(reviewURL); err != nil {
 			return results
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return results
 		}
@@ -520,6 +538,7 @@ func parsePrice(priceStr string) float64 {
 		if (r >= '0' && r <= '9') || r == '.' {
 			return r
 		}
+
 		return -1
 	}, priceStr)
 
@@ -528,6 +547,7 @@ func parsePrice(priceStr string) float64 {
 	}
 
 	val, _ := strconv.ParseFloat(priceStr, 64)
+
 	return val
 }
 

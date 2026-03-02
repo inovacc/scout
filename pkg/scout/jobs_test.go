@@ -8,6 +8,7 @@ import (
 
 func TestAsyncJobManager_CreateAndGet(t *testing.T) {
 	dir := t.TempDir()
+
 	m, err := NewAsyncJobManager(dir)
 	if err != nil {
 		t.Fatalf("NewAsyncJobManager: %v", err)
@@ -46,6 +47,7 @@ func TestAsyncJobManager_CreateAndGet(t *testing.T) {
 
 func TestAsyncJobManager_Lifecycle(t *testing.T) {
 	dir := t.TempDir()
+
 	m, err := NewAsyncJobManager(dir)
 	if err != nil {
 		t.Fatalf("NewAsyncJobManager: %v", err)
@@ -97,6 +99,7 @@ func TestAsyncJobManager_Lifecycle(t *testing.T) {
 
 func TestAsyncJobManager_Cancel(t *testing.T) {
 	dir := t.TempDir()
+
 	m, err := NewAsyncJobManager(dir)
 	if err != nil {
 		t.Fatalf("NewAsyncJobManager: %v", err)
@@ -106,11 +109,13 @@ func TestAsyncJobManager_Cancel(t *testing.T) {
 	_ = m.Start(id)
 
 	cancelled := false
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	m.RegisterCancel(id, func() {
 		cancelled = true
+
 		cancel()
 	})
 
@@ -136,6 +141,7 @@ func TestAsyncJobManager_Cancel(t *testing.T) {
 
 func TestAsyncJobManager_Fail(t *testing.T) {
 	dir := t.TempDir()
+
 	m, err := NewAsyncJobManager(dir)
 	if err != nil {
 		t.Fatalf("NewAsyncJobManager: %v", err)
@@ -164,6 +170,7 @@ func TestAsyncJobManager_Fail(t *testing.T) {
 
 func TestAsyncJobManager_List(t *testing.T) {
 	dir := t.TempDir()
+
 	m, err := NewAsyncJobManager(dir)
 	if err != nil {
 		t.Fatalf("NewAsyncJobManager: %v", err)
@@ -207,6 +214,7 @@ func TestAsyncJobManager_List(t *testing.T) {
 
 func TestAsyncJobManager_Persistence(t *testing.T) {
 	dir := t.TempDir()
+
 	m, err := NewAsyncJobManager(dir)
 	if err != nil {
 		t.Fatalf("NewAsyncJobManager: %v", err)
@@ -238,6 +246,7 @@ func TestAsyncJobManager_Persistence(t *testing.T) {
 
 func TestAsyncJobManager_NilCases(t *testing.T) {
 	dir := t.TempDir()
+
 	m, err := NewAsyncJobManager(dir)
 	if err != nil {
 		t.Fatalf("NewAsyncJobManager: %v", err)
@@ -285,6 +294,7 @@ func TestBatchWithJobManager(t *testing.T) {
 	}
 
 	dir := t.TempDir()
+
 	jm, err := NewAsyncJobManager(dir)
 	if err != nil {
 		t.Fatalf("NewAsyncJobManager: %v", err)

@@ -26,6 +26,7 @@ var fetchCmd = &cobra.Command{
 		if urlFlag == "" && len(args) > 0 {
 			urlFlag = args[0]
 		}
+
 		if urlFlag == "" {
 			return fmt.Errorf("scout: --url or positional URL is required")
 		}
@@ -39,15 +40,18 @@ var fetchCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.WebFetchOption
 		if mode != "" {
 			opts = append(opts, scout.WithFetchMode(mode))
 		}
+
 		if mainOnly {
 			opts = append(opts, scout.WithFetchMainContent())
 		}
+
 		if includeHTML {
 			opts = append(opts, scout.WithFetchHTML())
 		}
@@ -60,6 +64,7 @@ var fetchCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(result)
 		}
 
@@ -80,10 +85,12 @@ var fetchCmd = &cobra.Command{
 		outFile, _ := cmd.Flags().GetString("output")
 		if outFile != "" {
 			data, _ := json.MarshalIndent(result, "", "  ")
+
 			dest, writeErr := writeOutput(cmd, data, "fetch.json")
 			if writeErr != nil {
 				return writeErr
 			}
+
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Written to %s\n", dest)
 		}
 

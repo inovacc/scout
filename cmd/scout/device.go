@@ -46,6 +46,7 @@ var deviceIDCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), id.DeviceID)
+
 		return nil
 	},
 }
@@ -77,6 +78,7 @@ var deviceTrustCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Trusted: %s\n", deviceID)
+
 		return nil
 	},
 }
@@ -134,6 +136,7 @@ var deviceRemoveCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed: %s\n", args[0])
+
 		return nil
 	},
 }
@@ -168,6 +171,7 @@ var devicePairCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: connect to pairing endpoint %s: %w", addr, err)
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		client := pb.NewPairingServiceClient(conn)
@@ -195,6 +199,7 @@ var devicePairCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Server device ID: %s\nTrust this server? [y/N] ", serverID)
 			reader := bufio.NewReader(os.Stdin)
 			answer, _ := reader.ReadString('\n')
+
 			answer = strings.TrimSpace(strings.ToLower(answer))
 			if answer != "y" && answer != "yes" {
 				return fmt.Errorf("scout: pairing cancelled by user")
@@ -207,6 +212,7 @@ var devicePairCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Paired with %s successfully.\n", identity2.ShortID(serverID))
+
 		return nil
 	},
 }
@@ -228,11 +234,13 @@ var deviceDiscoverCmd = &cobra.Command{
 		found := 0
 		for peer := range peers {
 			found++
+
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s  %s:%d",
 				peer.DeviceID, peer.Host, peer.Port)
 			if len(peer.Addrs) > 0 {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  (%s)", peer.Addrs[0])
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout())
 		}
 

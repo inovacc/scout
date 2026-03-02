@@ -36,9 +36,11 @@ var injectCmd = &cobra.Command{
 		if len(codes) > 0 {
 			opts = append(opts, scout.WithInjectCode(codes...))
 		}
+
 		if len(files) > 0 {
 			opts = append(opts, scout.WithInjectJS(files...))
 		}
+
 		if dir != "" {
 			opts = append(opts, scout.WithInjectDir(dir))
 		}
@@ -47,6 +49,7 @@ var injectCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: inject: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(url)
@@ -69,6 +72,7 @@ var injectCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Title: %s\nURL:   %s\n", title, pageURL)
+
 		return nil
 	},
 }

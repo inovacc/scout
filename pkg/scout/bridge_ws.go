@@ -86,6 +86,7 @@ func (s *BridgeServer) Start() error {
 	if err != nil {
 		return fmt.Errorf("scout: bridge: listen: %w", err)
 	}
+
 	s.listener = ln
 
 	mux := http.NewServeMux()
@@ -108,6 +109,7 @@ func (s *BridgeServer) Addr() string {
 	if s == nil || s.listener == nil {
 		return ""
 	}
+
 	return s.listener.Addr().String()
 }
 
@@ -122,6 +124,7 @@ func (s *BridgeServer) Stop() error {
 	for id, c := range s.clients {
 		c.closeOnce.Do(func() { close(c.done) })
 		_ = c.conn.Close()
+
 		delete(s.clients, id)
 	}
 	s.mu.Unlock()
@@ -130,6 +133,7 @@ func (s *BridgeServer) Stop() error {
 	if s.server != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
+
 		return s.server.Shutdown(ctx)
 	}
 
@@ -187,6 +191,7 @@ func (s *BridgeServer) Send(pageID, method string, params any) (*BridgeMessage, 
 
 	// Register pending response channel.
 	ch := make(chan *BridgeMessage, 1)
+
 	s.pendingMu.Lock()
 	s.pending[id] = ch
 	s.pendingMu.Unlock()
@@ -210,6 +215,7 @@ func (s *BridgeServer) Send(pageID, method string, params any) (*BridgeMessage, 
 		if resp.Error != "" {
 			return resp, fmt.Errorf("scout: bridge: remote error: %s", resp.Error)
 		}
+
 		return resp, nil
 	case <-time.After(10 * time.Second):
 		return nil, fmt.Errorf("scout: bridge: send to %q: timeout after 10s", pageID)
@@ -285,9 +291,11 @@ func (s *BridgeServer) handleWS(conn *websocket.Conn) {
 		var p struct {
 			PageID string `json:"pageID"`
 		}
+
 		_ = json.Unmarshal(reg.Params, &p)
 		pageID = p.PageID
 	}
+
 	if pageID == "" {
 		pageID = conn.Request().RemoteAddr
 	}
@@ -308,6 +316,7 @@ func (s *BridgeServer) handleWS(conn *websocket.Conn) {
 		s.mu.Lock()
 		delete(s.clients, pageID)
 		s.mu.Unlock()
+
 		_ = conn.Close()
 	}()
 
@@ -332,6 +341,7 @@ func (s *BridgeServer) handleWS(conn *websocket.Conn) {
 			if err == io.EOF {
 				return
 			}
+
 			return
 		}
 
@@ -341,6 +351,7 @@ func (s *BridgeServer) handleWS(conn *websocket.Conn) {
 			s.pendingMu.Lock()
 			ch, ok := s.pending[msg.ID]
 			s.pendingMu.Unlock()
+
 			if ok {
 				ch <- &msg
 			}
@@ -351,6 +362,7 @@ func (s *BridgeServer) handleWS(conn *websocket.Conn) {
 			if msg.Params != nil {
 				_ = json.Unmarshal(msg.Params, &data)
 			}
+
 			evt := BridgeEvent{
 				Type:      msg.Method,
 				PageID:    pageID,
@@ -364,11 +376,13 @@ func (s *BridgeServer) handleWS(conn *websocket.Conn) {
 			}
 			// Notify subscribers.
 			s.subMu.RLock()
+
 			for _, sub := range s.eventSubs {
 				if sub.eventType == "" || sub.eventType == msg.Method {
 					sub.fn(evt)
 				}
 			}
+
 			s.subMu.RUnlock()
 
 		case "request":
@@ -380,6 +394,7 @@ func (s *BridgeServer) handleWS(conn *websocket.Conn) {
 			if ok {
 				go func(m BridgeMessage) {
 					result, err := handler(m)
+
 					resp := BridgeMessage{
 						ID:   m.ID,
 						Type: "response",
@@ -389,6 +404,7 @@ func (s *BridgeServer) handleWS(conn *websocket.Conn) {
 					} else {
 						resp.Result, _ = json.Marshal(result)
 					}
+
 					data, _ := json.Marshal(resp)
 					select {
 					case c.send <- data:
@@ -403,6 +419,8 @@ func (s *BridgeServer) handleWS(conn *websocket.Conn) {
 func (s *BridgeServer) nextID() string {
 	s.idMu.Lock()
 	defer s.idMu.Unlock()
+
 	s.idCounter++
+
 	return fmt.Sprintf("bs_%d", s.idCounter)
 }

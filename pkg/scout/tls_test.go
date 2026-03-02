@@ -19,6 +19,7 @@ func TestWithTLSProfile(t *testing.T) {
 			if tt.profile != "" {
 				WithTLSProfile(tt.profile)(o)
 			}
+
 			if o.tlsProfile != tt.want {
 				t.Errorf("tlsProfile = %q, want %q", o.tlsProfile, tt.want)
 			}

@@ -32,12 +32,14 @@ var tableCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(urlFlag)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -51,6 +53,7 @@ var tableCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(table) //nolint:musttag
 		}
 
@@ -60,8 +63,10 @@ var tableCmd = &cobra.Command{
 				if i > 0 {
 					_, _ = fmt.Fprint(cmd.OutOrStdout(), "\t")
 				}
+
 				_, _ = fmt.Fprint(cmd.OutOrStdout(), h)
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout())
 		}
 
@@ -70,8 +75,10 @@ var tableCmd = &cobra.Command{
 				if i > 0 {
 					_, _ = fmt.Fprint(cmd.OutOrStdout(), "\t")
 				}
+
 				_, _ = fmt.Fprint(cmd.OutOrStdout(), cell)
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout())
 		}
 
@@ -93,12 +100,14 @@ var metaCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(urlFlag)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -112,6 +121,7 @@ var metaCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(meta) //nolint:musttag
 		}
 
@@ -122,6 +132,7 @@ var metaCmd = &cobra.Command{
 		for k, v := range meta.OG {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "OG %-9s %s\n", k+":", v)
 		}
+
 		for k, v := range meta.Twitter {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Twitter %-5s %s\n", k+":", v)
 		}

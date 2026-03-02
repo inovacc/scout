@@ -21,14 +21,17 @@ func NewTLSServer(id *identity2.Identity, trustStore *identity2.TrustStore, opts
 			if len(rawCerts) == 0 {
 				return fmt.Errorf("no client certificate provided")
 			}
+
 			cert, err := x509.ParseCertificate(rawCerts[0])
 			if err != nil {
 				return fmt.Errorf("parse client cert: %w", err)
 			}
+
 			deviceID := identity2.DeviceIDFromCert(cert)
 			if !trustStore.IsTrusted(deviceID) {
 				return fmt.Errorf("device %s not trusted", identity2.ShortID(deviceID))
 			}
+
 			return nil
 		},
 	}
@@ -38,6 +41,7 @@ func NewTLSServer(id *identity2.Identity, trustStore *identity2.TrustStore, opts
 	grpcServer := grpc.NewServer(allOpts...)
 
 	scoutServer := New()
+
 	return grpcServer, scoutServer, nil
 }
 
@@ -48,5 +52,6 @@ func ClientTLSCredentials(id *identity2.Identity) credentials.TransportCredentia
 		InsecureSkipVerify: true, //nolint:gosec // self-signed certs; we verify via device ID
 		MinVersion:         tls.VersionTLS13,
 	}
+
 	return credentials.NewTLS(tlsCfg)
 }

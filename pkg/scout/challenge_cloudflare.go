@@ -36,6 +36,7 @@ func solveCloudflareWait(page *Page, _ ChallengeInfo) error {
 
 		// Also check if the challenge elements have disappeared.
 		hasCF, _ := page.Has("#cf-browser-verification")
+
 		hasRunning, _ := page.Has("#challenge-running")
 		if !hasCF && !hasRunning {
 			// Challenge page replaced with content.
@@ -98,6 +99,7 @@ func persistClearanceCookies(page *Page) ([]map[string]string, error) {
 	}
 
 	var result []map[string]string
+
 	for _, c := range cookies {
 		if c.Name == "cf_clearance" || c.Name == "__cf_bm" || c.Name == "cf_chl_2" {
 			result = append(result, map[string]string{

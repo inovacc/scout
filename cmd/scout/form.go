@@ -41,12 +41,14 @@ var formDetectCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(urlFlag)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -57,6 +59,7 @@ var formDetectCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("scout: detect form: %w", err)
 			}
+
 			return outputForm(cmd, form)
 		}
 
@@ -69,6 +72,7 @@ var formDetectCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(forms) //nolint:musttag
 		}
 
@@ -78,6 +82,7 @@ var formDetectCmd = &cobra.Command{
 			for _, field := range f.Fields {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %-20s type=%-10s value=%q\n", field.Name, field.Type, field.Value)
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout())
 		}
 
@@ -104,12 +109,14 @@ var formFillCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(urlFlag)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -135,6 +142,7 @@ var formFillCmd = &cobra.Command{
 			if err := form.Submit(); err != nil {
 				return fmt.Errorf("scout: submit form: %w", err)
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "form submitted")
 		}
 
@@ -155,12 +163,14 @@ var formSubmitCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(urlFlag)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -180,6 +190,7 @@ var formSubmitCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "form submitted")
+
 		return nil
 	},
 }

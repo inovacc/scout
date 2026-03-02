@@ -34,16 +34,19 @@ func init() {
 		// Mock JSON-RPC MCP API endpoint (for meta server).
 		mux.HandleFunc("/mcp-api", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
+
 			if r.Method == http.MethodGet {
 				// GET returns tool list.
 				_, _ = fmt.Fprint(w, `[
 					{"name":"greet","description":"Say hello","server_url":""},
 					{"name":"add","description":"Add two numbers","server_url":""}
 				]`)
+
 				return
 			}
 			// POST handles JSON-RPC tool calls.
 			body, _ := io.ReadAll(r.Body)
+
 			var req struct {
 				Method string `json:"method"`
 				Params struct {
@@ -55,6 +58,7 @@ func init() {
 				_, _ = fmt.Fprint(w, `{"error":{"message":"bad request"}}`)
 				return
 			}
+
 			switch req.Params.Name {
 			case "greet":
 				name, _ := req.Params.Arguments["name"].(string)
@@ -117,12 +121,14 @@ window.__mcp_tools = {
 func TestDiscoverWebMCPTools_Meta(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(ts.URL + "/webmcp-meta")
 	if err != nil {
 		t.Fatalf("NewPage failed: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -147,9 +153,11 @@ func TestDiscoverWebMCPTools_Meta(t *testing.T) {
 	if _, ok := names["greet"]; !ok {
 		t.Error("expected 'greet' tool from meta server")
 	}
+
 	if _, ok := names["link-tool"]; !ok {
 		t.Error("expected 'link-tool' from link tag")
 	}
+
 	if _, ok := names["well-known-tool"]; !ok {
 		t.Error("expected 'well-known-tool' from .well-known/mcp")
 	}
@@ -158,6 +166,7 @@ func TestDiscoverWebMCPTools_Meta(t *testing.T) {
 func TestDiscoverWebMCPTools_WellKnown(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	// webmcp-none has no meta/link but well-known is still served.
@@ -165,6 +174,7 @@ func TestDiscoverWebMCPTools_WellKnown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage failed: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -177,12 +187,14 @@ func TestDiscoverWebMCPTools_WellKnown(t *testing.T) {
 	}
 
 	found := false
+
 	for _, tool := range tools {
 		if tool.Name == "well-known-tool" && tool.Source == "well-known" {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		t.Error("expected 'well-known-tool' from .well-known/mcp endpoint")
 	}
@@ -191,12 +203,14 @@ func TestDiscoverWebMCPTools_WellKnown(t *testing.T) {
 func TestDiscoverWebMCPTools_Script(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(ts.URL + "/webmcp-script")
 	if err != nil {
 		t.Fatalf("NewPage failed: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -209,12 +223,14 @@ func TestDiscoverWebMCPTools_Script(t *testing.T) {
 	}
 
 	found := false
+
 	for _, tool := range tools {
 		if tool.Name == "script-tool" && tool.Source == "script" {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		t.Error("expected 'script-tool' from inline script")
 	}
@@ -234,12 +250,14 @@ func TestDiscoverWebMCPTools_None(t *testing.T) {
 
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(ts.URL + "/")
 	if err != nil {
 		t.Fatalf("NewPage failed: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -258,10 +276,12 @@ func TestDiscoverWebMCPTools_None(t *testing.T) {
 
 func TestDiscoverWebMCPTools_NilPage(t *testing.T) {
 	var p *Page
+
 	tools, err := p.DiscoverWebMCPTools()
 	if err != nil {
 		t.Fatalf("expected nil error for nil page, got: %v", err)
 	}
+
 	if len(tools) != 0 {
 		t.Errorf("expected 0 tools for nil page, got %d", len(tools))
 	}
@@ -270,12 +290,14 @@ func TestDiscoverWebMCPTools_NilPage(t *testing.T) {
 func TestCallWebMCPTool(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(ts.URL + "/webmcp-meta")
 	if err != nil {
 		t.Fatalf("NewPage failed: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -290,6 +312,7 @@ func TestCallWebMCPTool(t *testing.T) {
 	if result.IsError {
 		t.Errorf("expected no error, got: %s", result.Content)
 	}
+
 	if !strings.Contains(result.Content, "Hello, World!") {
 		t.Errorf("content = %q, want to contain 'Hello, World!'", result.Content)
 	}
@@ -298,12 +321,14 @@ func TestCallWebMCPTool(t *testing.T) {
 func TestCallWebMCPTool_Add(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(ts.URL + "/webmcp-meta")
 	if err != nil {
 		t.Fatalf("NewPage failed: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -318,6 +343,7 @@ func TestCallWebMCPTool_Add(t *testing.T) {
 	if result.IsError {
 		t.Errorf("expected no error, got: %s", result.Content)
 	}
+
 	if result.Content != "7" {
 		t.Errorf("content = %q, want '7'", result.Content)
 	}
@@ -337,12 +363,14 @@ func TestCallWebMCPTool_NotFound(t *testing.T) {
 
 	ts := httptest.NewServer(mux)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(ts.URL + "/")
 	if err != nil {
 		t.Fatalf("NewPage failed: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -353,6 +381,7 @@ func TestCallWebMCPTool_NotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for nonexistent tool")
 	}
+
 	if !strings.Contains(err.Error(), "not found") {
 		t.Errorf("error = %q, want to contain 'not found'", err.Error())
 	}
@@ -361,12 +390,14 @@ func TestCallWebMCPTool_NotFound(t *testing.T) {
 func TestCallWebMCPTool_ViaJS(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(ts.URL + "/webmcp-js")
 	if err != nil {
 		t.Fatalf("NewPage failed: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -381,6 +412,7 @@ func TestCallWebMCPTool_ViaJS(t *testing.T) {
 	if result.IsError {
 		t.Errorf("expected no error, got: %s", result.Content)
 	}
+
 	if !strings.Contains(result.Content, "echo: hello") {
 		t.Errorf("content = %q, want to contain 'echo: hello'", result.Content)
 	}
@@ -388,6 +420,7 @@ func TestCallWebMCPTool_ViaJS(t *testing.T) {
 
 func TestCallWebMCPTool_NilPage(t *testing.T) {
 	var p *Page
+
 	_, err := p.CallWebMCPTool("test", nil)
 	if err == nil {
 		t.Fatal("expected error for nil page")
@@ -421,6 +454,7 @@ func TestWebMCPRegistry(t *testing.T) {
 	if !ok {
 		t.Fatal("expected to find 'example.com/greet'")
 	}
+
 	if tool.Name != "greet" {
 		t.Errorf("tool.Name = %q, want 'greet'", tool.Name)
 	}
@@ -437,6 +471,7 @@ func TestWebMCPRegistry(t *testing.T) {
 
 	// Clear.
 	r.Clear()
+
 	if got := r.All(); len(got) != 0 {
 		t.Errorf("expected 0 tools after Clear, got %d", len(got))
 	}
@@ -449,6 +484,7 @@ func TestWithWebMCPAutoDiscover(t *testing.T) {
 	}
 
 	WithWebMCPAutoDiscover()(o)
+
 	if !o.webmcpAutoDiscover {
 		t.Error("expected webmcpAutoDiscover to be true after WithWebMCPAutoDiscover")
 	}

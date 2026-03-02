@@ -54,6 +54,7 @@ func WithLLMMetadata(key, value string) LLMOption {
 		if o.metadata == nil {
 			o.metadata = make(map[string]string)
 		}
+
 		o.metadata[key] = value
 	}
 }
@@ -71,13 +72,17 @@ func (p *Page) ExtractWithLLMReview(prompt string, opts ...LLMOption) (*LLMJobRe
 	}
 
 	// Get page markdown
-	var md string
-	var err error
+	var (
+		md  string
+		err error
+	)
+
 	if o.mainOnly {
 		md, err = p.MarkdownContent()
 	} else {
 		md, err = p.Markdown()
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("scout: extract-llm-review: get markdown: %w", err)
 	}
@@ -87,6 +92,7 @@ func (p *Page) ExtractWithLLMReview(prompt string, opts ...LLMOption) (*LLMJobRe
 
 	// Create job if workspace is set
 	var job *LLMJob
+
 	if o.workspace != nil {
 		sessionID := o.sessionID
 		if sessionID == "" {
@@ -98,6 +104,7 @@ func (p *Page) ExtractWithLLMReview(prompt string, opts ...LLMOption) (*LLMJobRe
 					return nil, fmt.Errorf("scout: extract-llm-review: create default session: %w", err)
 				}
 			}
+
 			sessionID = sess.ID
 		}
 
@@ -107,6 +114,7 @@ func (p *Page) ExtractWithLLMReview(prompt string, opts ...LLMOption) (*LLMJobRe
 		}
 
 		job.ExtractProvider = o.provider.Name()
+
 		job.ExtractModel = o.model
 		if job.ExtractModel == "" {
 			job.ExtractModel = "(default)"
@@ -138,6 +146,7 @@ func (p *Page) ExtractWithLLMReview(prompt string, opts ...LLMOption) (*LLMJobRe
 			job.Error = err.Error()
 			_ = o.workspace.UpdateJob(job)
 		}
+
 		return nil, fmt.Errorf("scout: extract-llm-review: extract: %s: %w", o.provider.Name(), err)
 	}
 
@@ -160,16 +169,19 @@ func (p *Page) ExtractWithLLMReview(prompt string, opts ...LLMOption) (*LLMJobRe
 			job.Status = JobStatusCompleted
 			_ = o.workspace.UpdateJob(job)
 		}
+
 		return result, nil
 	}
 
 	if job != nil {
 		job.Status = JobStatusReviewing
 		job.ReviewProvider = o.reviewProvider.Name()
+
 		job.ReviewModel = o.reviewModel
 		if job.ReviewModel == "" {
 			job.ReviewModel = "(default)"
 		}
+
 		job.ReviewStarted = time.Now().UTC()
 		_ = o.workspace.UpdateJob(job)
 	}
@@ -197,6 +209,7 @@ func (p *Page) ExtractWithLLMReview(prompt string, opts ...LLMOption) (*LLMJobRe
 			job.Error = fmt.Sprintf("review failed: %v", err)
 			_ = o.workspace.UpdateJob(job)
 		}
+
 		return nil, fmt.Errorf("scout: extract-llm-review: review: %s: %w", o.reviewProvider.Name(), err)
 	}
 

@@ -90,6 +90,7 @@ func (s *BridgeServer) QueryShadowDOM(pageID, selector string) ([]map[string]any
 	}
 
 	elems, _ := result["elements"].([]any)
+
 	out := make([]map[string]any, 0, len(elems))
 	for _, e := range elems {
 		if m, ok := e.(map[string]any); ok {
@@ -121,6 +122,7 @@ func (s *BridgeServer) ListFrames(pageID string) ([]map[string]any, error) {
 	}
 
 	frames, _ := result["frames"].([]any)
+
 	out := make([]map[string]any, 0, len(frames))
 	for _, f := range frames {
 		if m, ok := f.(map[string]any); ok {

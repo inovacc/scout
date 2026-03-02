@@ -122,10 +122,12 @@ func latestBraveVersion(ctx context.Context) (string, error) {
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
 	client := &http.Client{Timeout: 30 * time.Second}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("browser: fetch brave version: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -150,10 +152,12 @@ func latestBraveVersion(ctx context.Context) (string, error) {
 // braveAssetName returns the zip filename for the current platform and version.
 func braveAssetName(version string) string {
 	key := runtime.GOOS + "_" + runtime.GOARCH
+
 	pattern, ok := braveAssets[key]
 	if !ok {
 		return ""
 	}
+
 	return fmt.Sprintf(pattern, version)
 }
 
@@ -163,6 +167,7 @@ func braveBinPath() string {
 	if !ok {
 		return "brave"
 	}
+
 	return bin
 }
 
@@ -174,10 +179,12 @@ func downloadFile(ctx context.Context, url string) ([]byte, error) {
 	}
 
 	client := &http.Client{Timeout: downloadTimeout}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -205,6 +212,7 @@ func extractZipArchive(data []byte, destDir string) error {
 			if err := os.MkdirAll(target, 0o755); err != nil {
 				return fmt.Errorf("browser: create dir %s: %w", f.Name, err)
 			}
+
 			continue
 		}
 
@@ -226,12 +234,14 @@ func extractZipFile(f *zip.File, target string) error {
 	if err != nil {
 		return fmt.Errorf("browser: open zip entry %s: %w", f.Name, err)
 	}
+
 	defer func() { _ = rc.Close() }()
 
 	out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 	if err != nil {
 		return fmt.Errorf("browser: create file %s: %w", f.Name, err)
 	}
+
 	defer func() { _ = out.Close() }()
 
 	if _, err := io.Copy(out, rc); err != nil {

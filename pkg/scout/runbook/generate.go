@@ -48,8 +48,10 @@ func GenerateRunbook(analysis *SiteAnalysis, opts ...GenerateOption) (*Runbook, 
 
 	name := inferName(analysis)
 
-	var r *Runbook
-	var err error
+	var (
+		r   *Runbook
+		err error
+	)
 
 	switch runbookType {
 	case "extract":
@@ -59,6 +61,7 @@ func GenerateRunbook(analysis *SiteAnalysis, opts ...GenerateOption) (*Runbook, 
 	default:
 		return nil, fmt.Errorf("runbook: generate: cannot determine runbook type from analysis")
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -81,9 +84,11 @@ func detectRunbookType(a *SiteAnalysis) string {
 	if len(a.Containers) > 0 && a.Containers[0].Count >= 3 {
 		return "extract"
 	}
+
 	if len(a.Forms) > 0 {
 		return "automate"
 	}
+
 	return ""
 }
 
@@ -91,10 +96,12 @@ func inferName(a *SiteAnalysis) string {
 	if title, ok := a.Metadata["title"]; ok && title != "" {
 		// Sanitize: lowercase, replace spaces with hyphens, truncate
 		name := strings.ToLower(title)
+
 		name = strings.ReplaceAll(name, " ", "-")
 		if len(name) > 40 {
 			name = name[:40]
 		}
+
 		return name
 	}
 
@@ -120,12 +127,14 @@ func generateExtract(a *SiteAnalysis, o *generateOptions, name string) (*Runbook
 		for _, f := range top.Fields {
 			fieldMap[f.Name] = f
 		}
+
 		for _, name := range o.fields {
 			if fc, ok := fieldMap[name]; ok {
 				sel := fc.Selector
 				if fc.Attr != "" {
 					sel += "@" + fc.Attr
 				}
+
 				fields[name] = sel
 			}
 		}
@@ -136,6 +145,7 @@ func generateExtract(a *SiteAnalysis, o *generateOptions, name string) (*Runbook
 			if f.Attr != "" {
 				sel += "@" + f.Attr
 			}
+
 			fields[f.Name] = sel
 		}
 	}
@@ -162,6 +172,7 @@ func generateExtract(a *SiteAnalysis, o *generateOptions, name string) (*Runbook
 		if maxPages < 2 {
 			maxPages = 5
 		}
+
 		r.Pagination = &Pagination{
 			Strategy:     "click",
 			NextSelector: a.Pagination.NextSelector,
@@ -187,9 +198,11 @@ func generateAutomate(a *SiteAnalysis, _ *generateOptions, name string) (*Runboo
 		if field.Type == "hidden" || field.Type == "submit" {
 			continue
 		}
+
 		if field.Selector == "" {
 			continue
 		}
+
 		steps = append(steps, Step{
 			Action:   "type",
 			Selector: field.Selector,

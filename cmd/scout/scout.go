@@ -23,15 +23,18 @@ or run standalone for one-shot operations.`,
 		if err := flags.ExportFlagsToEnv(); err != nil {
 			return nil // non-fatal
 		}
+
 		if flags.ShouldIgnoreCommand(cmd.Name()) {
 			return nil
 		}
+
 		log := logger.Init(cmd.Name())
 		if log.IsActive() {
 			stdout, stderr := log.StartExecution(cmd.Name(), args, cmd.OutOrStdout(), cmd.ErrOrStderr())
 			cmd.SetOut(stdout)
 			cmd.SetErr(stderr)
 		}
+
 		return nil
 	},
 }
@@ -58,11 +61,13 @@ func init() {
 
 func Execute() {
 	err := rootCmd.Execute()
+
 	log := logger.Get()
 	if log != nil && log.IsActive() {
 		log.EndExecution(err)
 		_ = log.Close()
 	}
+
 	if err != nil {
 		os.Exit(1)
 	}

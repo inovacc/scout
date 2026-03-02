@@ -61,6 +61,7 @@ func TestHelperTableExtract(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad: %v", err)
 	}
@@ -97,6 +98,7 @@ func TestHelperShadowQuery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad: %v", err)
 	}
@@ -128,6 +130,7 @@ func TestHelperClickAll(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad: %v", err)
 	}
@@ -156,6 +159,7 @@ func TestInjectAllHelpers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad: %v", err)
 	}
@@ -170,6 +174,7 @@ func TestInjectAllHelpers(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Eval typeof %s: %v", fn, err)
 		}
+
 		if got := result.String(); got != "function" {
 			t.Errorf("window.__scout.%s type = %q, want 'function'", fn, got)
 		}
@@ -210,16 +215,20 @@ func TestRenderTemplate(t *testing.T) {
 			if !ok {
 				t.Fatalf("template %q not found", tc.tmpl)
 			}
+
 			got, err := RenderTemplate(tmpl, tc.data)
 			if tc.wantErr {
 				if err == nil {
 					t.Fatal("expected error")
 				}
+
 				return
 			}
+
 			if err != nil {
 				t.Fatalf("RenderTemplate: %v", err)
 			}
+
 			if !contains(got, tc.wantSub) {
 				t.Errorf("rendered template missing %q:\n%s", tc.wantSub, got)
 			}
@@ -229,6 +238,7 @@ func TestRenderTemplate(t *testing.T) {
 
 func TestRenderTemplate_Invalid(t *testing.T) {
 	bad := ScriptTemplate{Name: "bad", Template: `{{.missing | badFunc}}`}
+
 	_, err := RenderTemplate(bad, map[string]any{})
 	if err == nil {
 		t.Fatal("expected error for invalid template")
@@ -262,6 +272,7 @@ func TestInjectTemplate_ExtractList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad: %v", err)
 	}

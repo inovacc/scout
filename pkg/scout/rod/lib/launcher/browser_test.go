@@ -15,6 +15,7 @@ func TestLockPort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	port := ln.Addr().(*net.TCPAddr).Port
 	_ = ln.Close()
 
@@ -34,6 +35,7 @@ func TestLockPort(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected port to be free after unlock: %v", err)
 	}
+
 	_ = ln2.Close()
 }
 
@@ -42,11 +44,14 @@ func TestLockPortConcurrent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	port := ln.Addr().(*net.TCPAddr).Port
 	_ = ln.Close()
 
-	var mu sync.Mutex
-	var order []int
+	var (
+		mu    sync.Mutex
+		order []int
+	)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -54,8 +59,11 @@ func TestLockPortConcurrent(t *testing.T) {
 	// First goroutine acquires lock.
 	go func() {
 		defer wg.Done()
+
 		unlock := lockPort(port)
+
 		mu.Lock()
+
 		order = append(order, 1)
 		mu.Unlock()
 		time.Sleep(200 * time.Millisecond)
@@ -68,8 +76,11 @@ func TestLockPortConcurrent(t *testing.T) {
 	// Second goroutine waits for lock.
 	go func() {
 		defer wg.Done()
+
 		unlock := lockPort(port)
+
 		mu.Lock()
+
 		order = append(order, 2)
 		mu.Unlock()
 		unlock()
@@ -87,9 +98,11 @@ func TestNewBrowserDefaults(t *testing.T) {
 	if b.Revision != RevisionDefault {
 		t.Fatalf("expected revision %d, got %d", RevisionDefault, b.Revision)
 	}
+
 	if len(b.Hosts) != 3 {
 		t.Fatalf("expected 3 hosts, got %d", len(b.Hosts))
 	}
+
 	if b.LockPort == 0 {
 		t.Fatal("expected non-zero lock port")
 	}
@@ -99,9 +112,11 @@ func TestBrowserDir(t *testing.T) {
 	b := NewBrowser()
 	dir := b.Dir()
 	expected := fmt.Sprintf("chromium-%d", RevisionDefault)
+
 	if len(dir) == 0 {
 		t.Fatal("expected non-empty dir")
 	}
+
 	if !contains(dir, expected) {
 		t.Fatalf("expected dir to contain %q, got %q", expected, dir)
 	}
@@ -109,6 +124,7 @@ func TestBrowserDir(t *testing.T) {
 
 func TestBrowserBinPath(t *testing.T) {
 	b := NewBrowser()
+
 	p := b.BinPath()
 	if p == "" {
 		t.Fatal("expected non-empty bin path")
@@ -157,10 +173,12 @@ func TestToHTTPAndToWS(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			u := mustParseURL(tt.input)
+
 			h := toHTTP(*u)
 			if h.String() != tt.toHTTP {
 				t.Fatalf("toHTTP(%s) = %s, want %s", tt.input, h, tt.toHTTP)
 			}
+
 			w := toWS(*u)
 			if w.String() != tt.toWS {
 				t.Fatalf("toWS(%s) = %s, want %s", tt.input, w, tt.toWS)
@@ -174,6 +192,7 @@ func mustParseURL(s string) *url.URL {
 	if err != nil {
 		panic(err)
 	}
+
 	return u
 }
 
@@ -194,5 +213,6 @@ func searchString(s, substr string) bool {
 			return true
 		}
 	}
+
 	return false
 }

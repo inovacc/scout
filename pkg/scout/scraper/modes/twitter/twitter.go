@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -60,6 +61,7 @@ func (p *twitterProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	if err != nil {
 		return nil, fmt.Errorf("twitter: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	tokens := make(map[string]string)
@@ -67,11 +69,12 @@ func (p *twitterProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 
 	// Extract auth_token, ct0, and twid from cookies.
 	for _, cookie := range cookies {
-		if cookie.Name == "auth_token" {
+		switch cookie.Name {
+		case "auth_token":
 			tokens["auth_token"] = cookie.Value
-		} else if cookie.Name == "ct0" {
+		case "ct0":
 			tokens["ct0"] = cookie.Value
-		} else if cookie.Name == "twid" {
+		case "twid":
 			tokens["twid"] = cookie.Value
 		}
 	}
@@ -93,9 +96,7 @@ func (p *twitterProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		if raw != "" && raw != "{}" {
 			var lsData map[string]string
 			if json.Unmarshal([]byte(raw), &lsData) == nil {
-				for k, v := range lsData {
-					localStorage[k] = v
-				}
+				maps.Copy(localStorage, lsData)
 			}
 		}
 	}
@@ -117,6 +118,7 @@ func (p *twitterProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:     "twitter",
 		Version:      "1",
@@ -142,6 +144,7 @@ func (p *twitterProvider) ValidateSession(_ context.Context, session *auth.Sessi
 		if k == "auth_token" && v != "" {
 			hasAuthToken = true
 		}
+
 		if k == "ct0" && v != "" {
 			hasCT0 = true
 		}
@@ -235,6 +238,7 @@ func (m *TwitterMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		defer cancel()
 
 		count := 0
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -258,6 +262,7 @@ func (m *TwitterMode) Scrape(ctx context.Context, session scraper.SessionData, o
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -280,10 +285,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToLower(strings.TrimPrefix(t, "@"))] = struct{}{}
 	}
+
 	return set
 }
 
@@ -294,6 +301,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -346,6 +354,7 @@ func extractGraphQLTweets(data map[string]any, targetSet map[string]struct{}) []
 
 	// Recursively search for tweet-like objects.
 	var search func(any)
+
 	search = func(v any) {
 		switch val := v.(type) {
 		case map[string]any:
@@ -354,6 +363,7 @@ func extractGraphQLTweets(data map[string]any, targetSet map[string]struct{}) []
 				if fullText, ok := val["full_text"].(string); ok {
 					// This looks like a tweet.
 					author := ""
+
 					if user, ok := val["user"].(map[string]any); ok {
 						if screenName, ok := user["screen_name"].(string); ok {
 							author = screenName
@@ -398,6 +408,7 @@ func extractGraphQLTweets(data map[string]any, targetSet map[string]struct{}) []
 	}
 
 	search(data)
+
 	return results
 }
 
@@ -407,6 +418,7 @@ func extractGraphQLProfiles(data map[string]any) []scraper.Result {
 
 	// Recursively search for user-like objects.
 	var search func(any)
+
 	search = func(v any) {
 		switch val := v.(type) {
 		case map[string]any:
@@ -450,6 +462,7 @@ func extractGraphQLProfiles(data map[string]any) []scraper.Result {
 	}
 
 	search(data)
+
 	return results
 }
 
@@ -516,6 +529,7 @@ func tweetMapToResult(tweet map[string]any, targetSet map[string]struct{}) *scra
 	}
 
 	ts := parseTwitterTimestamp(tweet["created_at"])
+
 	return &scraper.Result{
 		Type:      scraper.ResultPost,
 		Source:    "twitter",
@@ -543,6 +557,7 @@ func userMapToResult(user map[string]any) *scraper.Result {
 	description, _ := user["description"].(string)
 
 	ts := parseTwitterTimestamp(user["created_at"])
+
 	return &scraper.Result{
 		Type:      scraper.ResultProfile,
 		Source:    "twitter",

@@ -6,16 +6,19 @@ func TestNewOllamaProviderOptions(t *testing.T) {
 	o := defaultOllamaOptions()
 
 	WithOllamaHost("http://remote:11434")(o)
+
 	if o.host != "http://remote:11434" {
 		t.Errorf("host = %q, want %q", o.host, "http://remote:11434")
 	}
 
 	WithOllamaModel("mistral")(o)
+
 	if o.model != "mistral" {
 		t.Errorf("model = %q, want %q", o.model, "mistral")
 	}
 
 	WithOllamaAutoPull()(o)
+
 	if !o.autoPull {
 		t.Error("autoPull should be true")
 	}

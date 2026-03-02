@@ -119,9 +119,11 @@ func registerDiagTools(server *mcp.Server, state *mcpState) {
 		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
 			return errResult(err.Error())
 		}
+
 		if args.Count <= 0 {
 			args.Count = 3
 		}
+
 		if args.Count > 20 {
 			args.Count = 20
 		}
@@ -131,6 +133,7 @@ func registerDiagTools(server *mcp.Server, state *mcpState) {
 		if args.UseBrowser {
 			return pingViaBrowser(ctx, state, args.URL, args.Count)
 		}
+
 		return pingRaw(ctx, args.URL, args.Count)
 	})
 
@@ -156,13 +159,16 @@ func registerDiagTools(server *mcp.Server, state *mcpState) {
 		if args.Method == "" {
 			args.Method = "GET"
 		}
+
 		if args.FollowRedirects == nil {
 			t := true
 			args.FollowRedirects = &t
 		}
+
 		if args.MaxRedirects <= 0 {
 			args.MaxRedirects = 10
 		}
+
 		if args.Timeout <= 0 {
 			args.Timeout = 30
 		}
@@ -172,6 +178,7 @@ func registerDiagTools(server *mcp.Server, state *mcpState) {
 		if args.UseBrowser {
 			return curlViaBrowser(ctx, state, args.URL)
 		}
+
 		return curlRaw(ctx, args.URL, args.Method, args.Headers, args.Body, *args.FollowRedirects, args.MaxRedirects, args.Timeout)
 	})
 }
@@ -180,6 +187,7 @@ func normalizeURL(u string) string {
 	if !strings.Contains(u, "://") {
 		u = "https://" + u
 	}
+
 	return u
 }
 
@@ -216,11 +224,14 @@ func summarizePings(pings []pingResult) *pingSummary {
 		if i == 0 || p.TotalMS < min {
 			min = p.TotalMS
 		}
+
 		if p.TotalMS > max {
 			max = p.TotalMS
 		}
+
 		sum += p.TotalMS
 	}
+
 	return &pingSummary{MinMS: min, MaxMS: max, AvgMS: sum / float64(len(pings))}
 }
 
@@ -231,17 +242,21 @@ func pingRaw(ctx context.Context, rawURL string, count int) (*mcp.CallToolResult
 	}
 
 	resp := pingResponse{URL: rawURL}
+
 	var pings []pingResult
 
-	for i := 0; i < count; i++ {
-		var dnsStart, dnsEnd, connStart, connEnd, tlsStart, tlsEnd, gotFirstByte time.Time
-		var resolvedAddrs []string
-		var tlsState *tls.ConnectionState
+	for i := range count {
+		var (
+			dnsStart, dnsEnd, connStart, connEnd, tlsStart, tlsEnd, gotFirstByte time.Time
+			resolvedAddrs                                                        []string
+			tlsState                                                             *tls.ConnectionState
+		)
 
 		trace := &httptrace.ClientTrace{
 			DNSStart: func(_ httptrace.DNSStartInfo) { dnsStart = time.Now() },
 			DNSDone: func(info httptrace.DNSDoneInfo) {
 				dnsEnd = time.Now()
+
 				for _, addr := range info.Addrs {
 					resolvedAddrs = append(resolvedAddrs, addr.String())
 				}
@@ -257,6 +272,7 @@ func pingRaw(ctx context.Context, rawURL string, count int) (*mcp.CallToolResult
 		}
 
 		reqCtx := httptrace.WithClientTrace(ctx, trace)
+
 		httpReq, err := http.NewRequestWithContext(reqCtx, http.MethodHead, rawURL, nil)
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: ping: %s", err))
@@ -269,9 +285,12 @@ func pingRaw(ctx context.Context, rawURL string, count int) (*mcp.CallToolResult
 
 		if err != nil {
 			resp.Error = err.Error()
+
 			pings = append(pings, pingResult{Seq: i + 1, TotalMS: ms(total)})
+
 			continue
 		}
+
 		_ = httpResp.Body.Close()
 
 		pings = append(pings, pingResult{Seq: i + 1, TotalMS: ms(total)})
@@ -283,9 +302,11 @@ func pingRaw(ctx context.Context, rawURL string, count int) (*mcp.CallToolResult
 				DurationMS: ms(dnsEnd.Sub(dnsStart)),
 			}
 		}
+
 		if resp.TCP == nil && !connStart.IsZero() {
 			resp.TCP = &pingTCP{DurationMS: ms(connEnd.Sub(connStart))}
 		}
+
 		if resp.TLS == nil && tlsState != nil && parsed.Scheme == "https" {
 			t := &pingTLS{
 				Version:    tlsVersionString(tlsState.Version),
@@ -295,8 +316,10 @@ func pingRaw(ctx context.Context, rawURL string, count int) (*mcp.CallToolResult
 			if len(tlsState.PeerCertificates) > 0 {
 				t.CertExpiry = tlsState.PeerCertificates[0].NotAfter.Format(time.RFC3339)
 			}
+
 			resp.TLS = t
 		}
+
 		if resp.HTTP == nil {
 			resp.HTTP = &pingHTTP{
 				Status:     httpResp.StatusCode,
@@ -322,15 +345,20 @@ func pingViaBrowser(ctx context.Context, state *mcpState, rawURL string, count i
 	}
 
 	resp := pingResponse{URL: rawURL}
+
 	var pings []pingResult
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		start := time.Now()
+
 		if err := page.Navigate(rawURL); err != nil {
 			resp.Error = err.Error()
+
 			pings = append(pings, pingResult{Seq: i + 1, TotalMS: ms(time.Since(start))})
+
 			continue
 		}
+
 		_ = page.WaitLoad()
 		total := time.Since(start)
 		pings = append(pings, pingResult{Seq: i + 1, TotalMS: ms(total)})
@@ -342,10 +370,12 @@ func pingViaBrowser(ctx context.Context, state *mcpState, rawURL string, count i
 			var perf curlTiming
 			if json.Unmarshal([]byte(s), &perf) == nil {
 				resp.DNS = &pingDNS{DurationMS: perf.DNSMS}
+
 				resp.TCP = &pingTCP{DurationMS: perf.ConnectMS}
 				if perf.TLSMS > 0 {
 					resp.TLS = &pingTLS{DurationMS: perf.TLSMS}
 				}
+
 				resp.HTTP = &pingHTTP{
 					DurationMS: perf.TotalMS,
 					TTFBMS:     perf.TTFBMS,
@@ -362,8 +392,10 @@ func pingViaBrowser(ctx context.Context, state *mcpState, rawURL string, count i
 }
 
 func curlRaw(ctx context.Context, rawURL, method string, headers map[string]string, body string, followRedirects bool, maxRedirects, timeout int) (*mcp.CallToolResult, error) {
-	var dnsStart, dnsEnd, connStart, connEnd, tlsStart, tlsEnd, gotFirstByte time.Time
-	var tlsState *tls.ConnectionState
+	var (
+		dnsStart, dnsEnd, connStart, connEnd, tlsStart, tlsEnd, gotFirstByte time.Time
+		tlsState                                                             *tls.ConnectionState
+	)
 
 	trace := &httptrace.ClientTrace{
 		DNSStart:          func(_ httptrace.DNSStartInfo) { dnsStart = time.Now() },
@@ -384,51 +416,63 @@ func curlRaw(ctx context.Context, rawURL, method string, headers map[string]stri
 	}
 
 	reqCtx := httptrace.WithClientTrace(ctx, trace)
+
 	httpReq, err := http.NewRequestWithContext(reqCtx, method, rawURL, bodyReader)
 	if err != nil {
 		return errResult(fmt.Sprintf("scout-mcp: curl: %s", err))
 	}
+
 	for k, v := range headers {
 		httpReq.Header.Set(k, v)
 	}
 
 	var redirects []curlRedirect
+
 	client := &http.Client{
 		Timeout: time.Duration(timeout) * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if !followRedirects {
 				return http.ErrUseLastResponse
 			}
+
 			if len(via) >= maxRedirects {
 				return fmt.Errorf("stopped after %d redirects", maxRedirects)
 			}
+
 			prev := via[len(via)-1]
+
 			rd := curlRedirect{URL: prev.URL.String()}
 			if prev.Response != nil {
 				rd.Status = prev.Response.StatusCode
 			}
+
 			redirects = append(redirects, rd)
+
 			return nil
 		},
 	}
 
 	start := time.Now()
+
 	httpResp, err := client.Do(httpReq)
 	if err != nil {
 		// Return partial result with error.
 		cr := curlResponse{Error: err.Error()}
 		return jsonResult(cr)
 	}
+
 	defer func() { _ = httpResp.Body.Close() }()
 
 	// Read body with limit.
 	limited := io.LimitReader(httpResp.Body, maxBodySize+1)
+
 	bodyBytes, err := io.ReadAll(limited)
 	if err != nil {
 		return errResult(fmt.Sprintf("scout-mcp: curl: read body: %s", err))
 	}
 
 	total := time.Since(start)
+
 	truncated := len(bodyBytes) > maxBodySize
 	if truncated {
 		bodyBytes = bodyBytes[:maxBodySize]
@@ -437,6 +481,7 @@ func curlRaw(ctx context.Context, rawURL, method string, headers map[string]stri
 	// Flatten response headers.
 	respHeaders := make(map[string]string, len(httpResp.Header))
 	headerSize := 0
+
 	for k, vals := range httpResp.Header {
 		respHeaders[strings.ToLower(k)] = strings.Join(vals, ", ")
 		headerSize += len(k) + len(strings.Join(vals, ", ")) + 4 // ": " + "\r\n"
@@ -461,12 +506,15 @@ func curlRaw(ctx context.Context, rawURL, method string, headers map[string]stri
 	if !dnsStart.IsZero() && !dnsEnd.IsZero() {
 		cr.Timing.DNSMS = ms(dnsEnd.Sub(dnsStart))
 	}
+
 	if !connStart.IsZero() && !connEnd.IsZero() {
 		cr.Timing.ConnectMS = ms(connEnd.Sub(connStart))
 	}
+
 	if !tlsStart.IsZero() && !tlsEnd.IsZero() {
 		cr.Timing.TLSMS = ms(tlsEnd.Sub(tlsStart))
 	}
+
 	if !gotFirstByte.IsZero() {
 		cr.Timing.TTFBMS = ms(gotFirstByte.Sub(start))
 	}
@@ -492,9 +540,11 @@ func curlViaBrowser(ctx context.Context, state *mcpState, rawURL string) (*mcp.C
 	}
 
 	start := time.Now()
+
 	if err := page.Navigate(rawURL); err != nil {
 		return errResult(err.Error())
 	}
+
 	_ = page.WaitLoad()
 	total := time.Since(start)
 
@@ -542,5 +592,6 @@ func jsonResult(v any) (*mcp.CallToolResult, error) {
 	if err != nil {
 		return errResult(fmt.Sprintf("scout-mcp: marshal: %s", err))
 	}
+
 	return textResult(string(data))
 }

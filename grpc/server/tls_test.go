@@ -13,6 +13,7 @@ func TestNewTLSServer(t *testing.T) {
 	}
 
 	dir := t.TempDir()
+
 	ts, err := identity2.NewTrustStore(dir)
 	if err != nil {
 		t.Fatalf("NewTrustStore: %v", err)
@@ -26,6 +27,7 @@ func TestNewTLSServer(t *testing.T) {
 	if grpcSrv == nil {
 		t.Error("grpcServer should not be nil")
 	}
+
 	if scoutSrv == nil {
 		t.Error("scoutServer should not be nil")
 	}

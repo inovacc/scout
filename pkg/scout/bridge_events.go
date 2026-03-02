@@ -23,8 +23,10 @@ func (s *BridgeServer) Events() <-chan BridgeEvent {
 	if s == nil {
 		ch := make(chan BridgeEvent)
 		close(ch)
+
 		return ch
 	}
+
 	return s.events
 }
 

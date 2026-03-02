@@ -9,6 +9,7 @@ func TestDetectBrowsers(t *testing.T) {
 		t.Log("DetectBrowsers returned nil (expected on systems without browsers)")
 	} else {
 		t.Logf("DetectBrowsers found %d browser(s)", len(browsers))
+
 		for _, b := range browsers {
 			t.Logf("  %s (%s) at %s version=%s", b.Name, b.Type, b.Path, b.Version)
 		}
@@ -17,6 +18,7 @@ func TestDetectBrowsers(t *testing.T) {
 	// Verify sorting: each browser should have priority <= next.
 	for i := 1; i < len(browsers); i++ {
 		prev := browserTypePriority[browsers[i-1].Type]
+
 		curr := browserTypePriority[browsers[i].Type]
 		if prev > curr {
 			t.Errorf("browsers not sorted by priority: %s (%d) before %s (%d)",
@@ -32,6 +34,7 @@ func TestWithAutoDetect(t *testing.T) {
 	}
 
 	WithAutoDetect()(o)
+
 	if !o.autoDetect {
 		t.Fatal("WithAutoDetect should set autoDetect to true")
 	}

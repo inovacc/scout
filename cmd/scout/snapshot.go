@@ -29,12 +29,14 @@ var snapshotCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(url)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -44,9 +46,11 @@ var snapshotCmd = &cobra.Command{
 		if iframes, _ := cmd.Flags().GetBool("iframes"); iframes {
 			opts = append(opts, scout.WithSnapshotIframes())
 		}
+
 		if maxDepth, _ := cmd.Flags().GetInt("max-depth"); maxDepth > 0 {
 			opts = append(opts, scout.WithSnapshotMaxDepth(maxDepth))
 		}
+
 		if interactable, _ := cmd.Flags().GetBool("interactable"); interactable {
 			opts = append(opts, scout.WithSnapshotInteractableOnly())
 		}
@@ -63,6 +67,7 @@ var snapshotCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("scout: json encode: %w", err)
 			}
+
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
 		default:
 			outFile, _ := cmd.Flags().GetString("output")
@@ -71,9 +76,12 @@ var snapshotCmd = &cobra.Command{
 				if err != nil {
 					return err
 				}
+
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Written to %s\n", dest)
+
 				return nil
 			}
+
 			_, _ = fmt.Fprint(cmd.OutOrStdout(), snap)
 		}
 

@@ -27,6 +27,7 @@ func TestAnthropicProviderComplete(t *testing.T) {
 		if r.Header.Get("x-api-key") != "test-key" {
 			t.Errorf("x-api-key = %q, want %q", r.Header.Get("x-api-key"), "test-key")
 		}
+
 		if r.Header.Get("anthropic-version") != AnthropicAPIVersion {
 			t.Errorf("anthropic-version = %q", r.Header.Get("anthropic-version"))
 		}
@@ -39,9 +40,11 @@ func TestAnthropicProviderComplete(t *testing.T) {
 		if req.Model != "claude-test" {
 			t.Errorf("model = %q, want %q", req.Model, "claude-test")
 		}
+
 		if req.System != "system prompt" {
 			t.Errorf("system = %q", req.System)
 		}
+
 		if len(req.Messages) != 1 || req.Messages[0].Role != "user" {
 			t.Errorf("messages unexpected: %+v", req.Messages)
 		}
@@ -104,16 +107,19 @@ func TestAnthropicOptions(t *testing.T) {
 	o := defaultAnthropicOptions()
 
 	WithAnthropicBaseURL("https://custom.anthropic.com")(o)
+
 	if o.baseURL != "https://custom.anthropic.com" {
 		t.Errorf("baseURL = %q", o.baseURL)
 	}
 
 	WithAnthropicKey("my-key")(o)
+
 	if o.apiKey != "my-key" {
 		t.Errorf("apiKey = %q", o.apiKey)
 	}
 
 	WithAnthropicModel("claude-opus-4-20250514")(o)
+
 	if o.model != "claude-opus-4-20250514" {
 		t.Errorf("model = %q", o.model)
 	}

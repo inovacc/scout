@@ -55,12 +55,15 @@ func makeEngineSearchFunc(engine scout.SearchEngine) func(cmd *cobra.Command, ar
 func makeDDGSearchFunc() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		searchType, _ := cmd.Flags().GetString("type")
+
 		var extraOpts []scout.SearchOption
-		if searchType == "news" {
+		switch searchType {
+		case "news":
 			extraOpts = append(extraOpts, scout.WithDDGSearchType("news"))
-		} else if searchType == "images" {
+		case "images":
 			extraOpts = append(extraOpts, scout.WithDDGSearchType("images"))
 		}
+
 		return runSearch(cmd, args[0], scout.DuckDuckGo, extraOpts)
 	}
 }
@@ -71,6 +74,7 @@ func runSearch(cmd *cobra.Command, query string, engine scout.SearchEngine, extr
 	if maxPages == 0 {
 		maxPages = 1
 	}
+
 	language, _ := cmd.InheritedFlags().GetString("language")
 	region, _ := cmd.InheritedFlags().GetString("region")
 
@@ -78,17 +82,22 @@ func runSearch(cmd *cobra.Command, query string, engine scout.SearchEngine, extr
 	if err != nil {
 		return fmt.Errorf("scout: launch browser: %w", err)
 	}
+
 	defer func() { _ = browser.Close() }()
 
 	var opts []scout.SearchOption
+
 	opts = append(opts, scout.WithSearchEngine(engine))
+
 	opts = append(opts, scout.WithSearchMaxPages(maxPages))
 	if language != "" {
 		opts = append(opts, scout.WithSearchLanguage(language))
 	}
+
 	if region != "" {
 		opts = append(opts, scout.WithSearchRegion(region))
 	}
+
 	opts = append(opts, extraOpts...)
 
 	results, err := browser.Search(query, opts...)
@@ -100,6 +109,7 @@ func runSearch(cmd *cobra.Command, query string, engine scout.SearchEngine, extr
 	if format == "json" {
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(results) //nolint:musttag
 	}
 

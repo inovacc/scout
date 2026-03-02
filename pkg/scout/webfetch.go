@@ -118,8 +118,10 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 		}
 	}
 
-	var page *Page
-	var lastErr error
+	var (
+		page    *Page
+		lastErr error
+	)
 
 	for attempt := 0; attempt <= o.retries; attempt++ {
 		if attempt > 0 {
@@ -137,6 +139,7 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 		if lastErr != nil {
 			_ = page.Close()
 			page = nil
+
 			continue
 		}
 
@@ -147,8 +150,10 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 		if page != nil {
 			_ = page.Close()
 		}
+
 		return nil, fmt.Errorf("scout: webfetch: navigate: %w", lastErr)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	result := &WebFetchResult{
@@ -174,6 +179,7 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 		if linkErr != nil {
 			return nil, fmt.Errorf("scout: webfetch: links: %w", linkErr)
 		}
+
 		result.Links = links
 
 	case "meta":
@@ -181,6 +187,7 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 		if metaErr != nil {
 			return nil, fmt.Errorf("scout: webfetch: meta: %w", metaErr)
 		}
+
 		result.Meta = meta
 
 	case "html":
@@ -188,6 +195,7 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 		if htmlErr != nil {
 			return nil, fmt.Errorf("scout: webfetch: html: %w", htmlErr)
 		}
+
 		result.HTML = h
 
 	case "text":
@@ -195,6 +203,7 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 		if mdErr != nil {
 			return nil, fmt.Errorf("scout: webfetch: text: %w", mdErr)
 		}
+
 		result.Markdown = md
 
 	case "markdown":
@@ -202,10 +211,12 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 		if o.mainOnly {
 			mdOpts = append(mdOpts, WithMainContentOnly())
 		}
+
 		md, mdErr := page.Markdown(mdOpts...)
 		if mdErr != nil {
 			return nil, fmt.Errorf("scout: webfetch: markdown: %w", mdErr)
 		}
+
 		result.Markdown = md
 
 	default: // "full"
@@ -214,6 +225,7 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 		if o.mainOnly {
 			mdOpts = append(mdOpts, WithMainContentOnly())
 		}
+
 		md, mdErr := page.Markdown(mdOpts...)
 		if mdErr == nil {
 			result.Markdown = md
@@ -251,6 +263,7 @@ func (b *Browser) WebFetch(url string, opts ...WebFetchOption) (*WebFetchResult,
 // WebFetchBatch fetches multiple URLs concurrently and returns results.
 func (b *Browser) WebFetchBatch(urls []string, opts ...WebFetchOption) []*WebFetchResult {
 	results := make([]*WebFetchResult, len(urls))
+
 	var wg sync.WaitGroup
 
 	sem := make(chan struct{}, 3) // default concurrency
@@ -262,6 +275,7 @@ func (b *Browser) WebFetchBatch(urls []string, opts ...WebFetchOption) []*WebFet
 			defer wg.Done()
 
 			sem <- struct{}{}
+
 			defer func() { <-sem }()
 
 			result, err := b.WebFetch(rawURL, opts...)
@@ -291,6 +305,7 @@ func extractPageLinks(page *Page) ([]string, error) {
 	}
 
 	seen := make(map[string]struct{})
+
 	var links []string
 
 	for _, el := range elems {

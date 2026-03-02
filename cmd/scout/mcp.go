@@ -70,6 +70,7 @@ Subcommands:
 				}
 
 				_, _ = fmt.Fprintln(os.Stderr, "Wrote .mcp.json")
+
 				return nil
 			}
 
@@ -88,6 +89,7 @@ Subcommands:
 			}
 
 			_, _ = fmt.Fprintln(os.Stderr, "Registered scout MCP server globally via claude mcp add")
+
 			return nil
 		}
 
@@ -102,6 +104,7 @@ Subcommands:
 		if useSSE {
 			return scoutmcp.ServeSSE(context.Background(), logger, addr, headless, stealth, bin, idleTimeout)
 		}
+
 		return scoutmcp.Serve(context.Background(), logger, headless, stealth, bin, idleTimeout)
 	},
 }

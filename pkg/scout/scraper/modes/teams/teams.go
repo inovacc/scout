@@ -74,6 +74,7 @@ func (p *teamsProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 		if err != nil {
 			continue
 		}
+
 		val := result.String()
 		if val != "" {
 			localStorage[key] = val
@@ -132,6 +133,7 @@ func (m *TeamsMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 	if !ok {
 		return nil, fmt.Errorf("teams: scrape: invalid session type")
 	}
+
 	if typedSession == nil {
 		return nil, fmt.Errorf("teams: scrape: nil session")
 	}
@@ -234,9 +236,11 @@ func (m *TeamsMode) run(ctx context.Context, session *auth.Session, opts scraper
 		if !strings.HasPrefix(target, "http") {
 			targetURL = "https://teams.microsoft.com/_#/" + strings.TrimPrefix(target, "/")
 		}
+
 		if err := page.Navigate(targetURL); err != nil {
 			return fmt.Errorf("teams: navigate target %q: %w", target, err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("teams: wait load target %q: %w", target, err)
 		}
@@ -244,6 +248,7 @@ func (m *TeamsMode) run(ctx context.Context, session *auth.Session, opts scraper
 
 	// Process intercepted events until context cancellation or limit reached.
 	count := 0
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -252,14 +257,18 @@ func (m *TeamsMode) run(ctx context.Context, session *auth.Session, opts scraper
 			if !ok {
 				return nil
 			}
+
 			if ev.Response == nil || ev.Response.Body == "" {
 				continue
 			}
+
 			emitted := m.parseResponse(ev.Response, results)
+
 			count += emitted
 			if opts.Limit > 0 && count >= opts.Limit {
 				return nil
 			}
+
 			if opts.Progress != nil {
 				opts.Progress(scraper.Progress{
 					Phase:   "intercepting",
@@ -306,6 +315,7 @@ func (m *TeamsMode) parseResponse(resp *scout.CapturedResponse, results chan<- s
 			Metadata:  map[string]any{"raw_endpoint": true},
 			Raw:       raw,
 		}
+
 		count++
 	}
 
@@ -315,11 +325,13 @@ func (m *TeamsMode) parseResponse(resp *scout.CapturedResponse, results chan<- s
 func (m *TeamsMode) parseChats(data map[string]any, results chan<- scraper.Result) int {
 	items := extractArray(data, "value")
 	count := 0
+
 	for _, item := range items {
 		chat, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
+
 		results <- scraper.Result{
 			Type:      scraper.ResultThread,
 			Source:    "teams",
@@ -331,8 +343,10 @@ func (m *TeamsMode) parseChats(data map[string]any, results chan<- scraper.Resul
 			},
 			Raw: chat,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -341,7 +355,9 @@ func (m *TeamsMode) parseMessages(data map[string]any, url string, results chan<
 	if items == nil {
 		items = extractArray(data, "messages")
 	}
+
 	count := 0
+
 	for _, item := range items {
 		msg, ok := item.(map[string]any)
 		if !ok {
@@ -349,6 +365,7 @@ func (m *TeamsMode) parseMessages(data map[string]any, url string, results chan<
 		}
 
 		author := ""
+
 		if from, ok := msg["from"].(map[string]any); ok {
 			if user, ok := from["user"].(map[string]any); ok {
 				author = stringVal(user, "displayName")
@@ -374,8 +391,10 @@ func (m *TeamsMode) parseMessages(data map[string]any, url string, results chan<
 			},
 			Raw: msg,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -384,12 +403,15 @@ func (m *TeamsMode) parseMembers(data map[string]any, url string, results chan<-
 	if items == nil {
 		items = extractArray(data, "members")
 	}
+
 	count := 0
+
 	for _, item := range items {
 		member, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
+
 		results <- scraper.Result{
 			Type:      scraper.ResultUser,
 			Source:    "teams",
@@ -403,8 +425,10 @@ func (m *TeamsMode) parseMembers(data map[string]any, url string, results chan<-
 			},
 			Raw: member,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -413,12 +437,15 @@ func (m *TeamsMode) parseChannels(data map[string]any, results chan<- scraper.Re
 	if items == nil {
 		items = extractArray(data, "channels")
 	}
+
 	count := 0
+
 	for _, item := range items {
 		ch, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
+
 		results <- scraper.Result{
 			Type:      scraper.ResultChannel,
 			Source:    "teams",
@@ -432,19 +459,23 @@ func (m *TeamsMode) parseChannels(data map[string]any, results chan<- scraper.Re
 			},
 			Raw: ch,
 		}
+
 		count++
 	}
+
 	return count
 }
 
 func (m *TeamsMode) parseFiles(data map[string]any, url string, results chan<- scraper.Result) int {
 	items := extractArray(data, "value")
 	count := 0
+
 	for _, item := range items {
 		file, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
+
 		results <- scraper.Result{
 			Type:      scraper.ResultFile,
 			Source:    "teams",
@@ -458,8 +489,10 @@ func (m *TeamsMode) parseFiles(data map[string]any, url string, results chan<- s
 			},
 			Raw: file,
 		}
+
 		count++
 	}
+
 	if count == 0 && url != "" {
 		// Single file response.
 		if name := stringVal(data, "name"); name != "" {
@@ -472,20 +505,24 @@ func (m *TeamsMode) parseFiles(data map[string]any, url string, results chan<- s
 				Timestamp: parseTime(stringVal(data, "lastModifiedDateTime")),
 				Raw:       data,
 			}
+
 			count++
 		}
 	}
+
 	return count
 }
 
 func (m *TeamsMode) parseMeetings(data map[string]any, results chan<- scraper.Result) int {
 	items := extractArray(data, "value")
 	count := 0
+
 	for _, item := range items {
 		meeting, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
+
 		results <- scraper.Result{
 			Type:      scraper.ResultMeeting,
 			Source:    "teams",
@@ -499,8 +536,10 @@ func (m *TeamsMode) parseMeetings(data map[string]any, results chan<- scraper.Re
 			},
 			Raw: meeting,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -510,10 +549,12 @@ func extractArray(data map[string]any, key string) []any {
 	if !ok {
 		return nil
 	}
+
 	arr, ok := val.([]any)
 	if !ok {
 		return nil
 	}
+
 	return arr
 }
 
@@ -523,10 +564,12 @@ func stringVal(m map[string]any, key string) string {
 	if !ok {
 		return ""
 	}
+
 	s, ok := v.(string)
 	if !ok {
 		return ""
 	}
+
 	return s
 }
 
@@ -535,6 +578,7 @@ func parseTime(s string) time.Time {
 	if s == "" {
 		return time.Time{}
 	}
+
 	for _, layout := range []string{
 		time.RFC3339,
 		time.RFC3339Nano,
@@ -545,5 +589,6 @@ func parseTime(s string) time.Time {
 			return t
 		}
 	}
+
 	return time.Time{}
 }

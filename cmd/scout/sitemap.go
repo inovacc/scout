@@ -47,13 +47,16 @@ var sitemapExtractCmd = &cobra.Command{
 		outputDir, _ := cmd.Flags().GetString("output")
 
 		browserOpts := append(baseOpts(cmd), scout.WithBridge(), scout.WithTimeout(30*time.Second))
+
 		browser, err := scout.New(browserOpts...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.SitemapOption
+
 		opts = append(opts, scout.WithSitemapMaxDepth(depth))
 		opts = append(opts, scout.WithSitemapMaxPages(maxPages))
 		opts = append(opts, scout.WithSitemapDelay(delay))
@@ -61,21 +64,27 @@ var sitemapExtractCmd = &cobra.Command{
 		if len(domains) > 0 {
 			opts = append(opts, scout.WithSitemapAllowedDomains(domains...))
 		}
+
 		if domDepth != 50 {
 			opts = append(opts, scout.WithSitemapDOMDepth(domDepth))
 		}
+
 		if selector != "" {
 			opts = append(opts, scout.WithSitemapSelector(selector))
 		}
+
 		if mainOnly {
 			opts = append(opts, scout.WithSitemapMainOnly())
 		}
+
 		if skipJSON {
 			opts = append(opts, scout.WithSitemapSkipJSON())
 		}
+
 		if skipMD {
 			opts = append(opts, scout.WithSitemapSkipMarkdown())
 		}
+
 		if outputDir != "" {
 			opts = append(opts, scout.WithSitemapOutputDir(outputDir))
 		}
@@ -90,6 +99,7 @@ var sitemapExtractCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(result)
 		}
 

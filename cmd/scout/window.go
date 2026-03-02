@@ -26,9 +26,11 @@ var windowGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
@@ -43,6 +45,7 @@ var windowGetCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), resp.GetResult())
+
 		return nil
 	},
 }

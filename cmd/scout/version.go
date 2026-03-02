@@ -21,6 +21,7 @@ var versionCmd = &cobra.Command{
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "scout %s\n", Version)
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  go:   %s\n", runtime.Version())
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  os:   %s/%s\n", runtime.GOOS, runtime.GOARCH)
+
 		return nil
 	},
 }

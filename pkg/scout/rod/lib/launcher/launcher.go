@@ -20,14 +20,16 @@ import (
 )
 
 // DefaultUserDataDirPrefix is the base directory for browser user data.
-// Resolves to ~/.scout/sessions/user-data on all platforms.
+// Resolves to ~/.scout/sessions on all platforms. Each session is a UUID
+// subdirectory containing both browser data and a scout.pid metadata file.
 var DefaultUserDataDirPrefix = defaultUserDataDirPrefix()
 
 func defaultUserDataDirPrefix() string {
 	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, ".scout", "sessions", "user-data")
+		return filepath.Join(home, ".scout", "sessions")
 	}
-	return filepath.Join(os.TempDir(), "scout", "sessions", "user-data")
+
+	return filepath.Join(os.TempDir(), "scout", "sessions")
 }
 
 // Launcher is a helper to launch browser binary smartly.
@@ -104,17 +106,21 @@ func New() *Launcher {
 	if defaults.Show {
 		delete(defaultFlags, flags.Headless)
 	}
+
 	if defaults.Devtools {
 		defaultFlags["auto-open-devtools-for-tabs"] = nil
 	}
+
 	if inContainer {
 		defaultFlags[flags.NoSandbox] = nil
 	}
+
 	if defaults.Proxy != "" {
 		defaultFlags[flags.ProxyServer] = []string{defaults.Proxy}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	return &Launcher{
 		ctx:       ctx,
 		ctxCancel: cancel,
@@ -157,6 +163,7 @@ func NewAppMode(u string) *Launcher {
 		Headless(false).
 		Delete("no-startup-window").
 		Delete("enable-automation")
+
 	return l
 }
 
@@ -166,6 +173,7 @@ func (l *Launcher) Context(ctx context.Context) *Launcher {
 	l.ctx = ctx
 	l.parser.Context(ctx)
 	l.ctxCancel = cancel
+
 	return l
 }
 
@@ -177,6 +185,7 @@ func (l *Launcher) Context(ctx context.Context) *Launcher {
 func (l *Launcher) Set(name flags.Flag, values ...string) *Launcher {
 	name.Check()
 	l.Flags[name.NormalizeFlag()] = values
+
 	return l
 }
 
@@ -185,6 +194,7 @@ func (l *Launcher) Get(name flags.Flag) string {
 	if list, has := l.GetFlags(name); has {
 		return list[0]
 	}
+
 	return ""
 }
 
@@ -206,6 +216,7 @@ func (l *Launcher) Append(name flags.Flag, values ...string) *Launcher {
 	if !has {
 		flags = []string{}
 	}
+
 	return l.Set(name, append(flags, values...)...)
 }
 
@@ -231,6 +242,7 @@ func (l *Launcher) Headless(enable bool) *Launcher {
 	if enable {
 		return l.Set(flags.Headless)
 	}
+
 	return l.Delete(flags.Headless)
 }
 
@@ -239,6 +251,7 @@ func (l *Launcher) HeadlessNew(enable bool) *Launcher {
 	if enable {
 		return l.Set(flags.Headless, "new")
 	}
+
 	return l.Delete(flags.Headless)
 }
 
@@ -251,6 +264,7 @@ func (l *Launcher) NoSandbox(enable bool) *Launcher {
 	if enable {
 		return l.Set(flags.NoSandbox)
 	}
+
 	return l.Delete(flags.NoSandbox)
 }
 
@@ -277,6 +291,7 @@ func (l *Launcher) Devtools(autoOpenForTabs bool) *Launcher {
 	if autoOpenForTabs {
 		return l.Set("auto-open-devtools-for-tabs")
 	}
+
 	return l.Delete("auto-open-devtools-for-tabs")
 }
 
@@ -289,6 +304,7 @@ func (l *Launcher) IgnoreCerts(pks []crypto.PublicKey) error {
 		if err != nil {
 			return fmt.Errorf("certSPKI: %w", err)
 		}
+
 		spkis = append(spkis, string(spki))
 	}
 
@@ -306,6 +322,7 @@ func (l *Launcher) UserDataDir(dir string) *Launcher {
 	} else {
 		l.Set(flags.UserDataDir, dir)
 	}
+
 	return l
 }
 
@@ -318,6 +335,7 @@ func (l *Launcher) ProfileDir(dir string) *Launcher {
 	} else {
 		l.Set(flags.ProfileDir, dir)
 	}
+
 	return l
 }
 
@@ -364,6 +382,7 @@ func (l *Launcher) StartURL(u string) *Launcher {
 // FormatArgs returns the formatted arg list for cli.
 func (l *Launcher) FormatArgs() []string {
 	execArgs := []string{}
+
 	for k, v := range l.Flags {
 		if k == flags.Arguments {
 			continue
@@ -377,6 +396,7 @@ func (l *Launcher) FormatArgs() []string {
 		if k == flags.UserDataDir {
 			abs, err := filepath.Abs(v[0])
 			utils.E(err)
+
 			v[0] = abs
 		}
 
@@ -384,11 +404,13 @@ func (l *Launcher) FormatArgs() []string {
 		if v != nil {
 			str += "=" + strings.Join(v, ",")
 		}
+
 		execArgs = append(execArgs, str)
 	}
 
 	execArgs = append(execArgs, l.Flags[flags.Arguments]...)
 	sort.Strings(execArgs)
+
 	return execArgs
 }
 
@@ -405,6 +427,7 @@ func (l *Launcher) Logger(w io.Writer) *Launcher {
 func (l *Launcher) MustLaunch() string {
 	u, err := l.Launch()
 	utils.E(err)
+
 	return u
 }
 
@@ -447,6 +470,7 @@ func (l *Launcher) Launch() (string, error) {
 
 	go func() {
 		_ = cmd.Wait()
+
 		close(l.exit)
 	}()
 
@@ -502,6 +526,7 @@ func (l *Launcher) getBin() (string, error) {
 		l.browser.Context = l.ctx
 		return l.browser.Get()
 	}
+
 	return bin, nil
 }
 
@@ -513,6 +538,7 @@ func (l *Launcher) getURL() (u string, err error) {
 	case <-l.exit:
 		err = l.parser.Err()
 	}
+
 	return
 }
 
@@ -532,6 +558,7 @@ func (l *Launcher) Kill() {
 	}
 
 	killGroup(l.PID())
+
 	p, err := os.FindProcess(l.PID())
 	if err == nil {
 		_ = p.Kill()

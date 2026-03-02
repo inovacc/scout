@@ -37,6 +37,7 @@ func AddKey(key string, shiftedKey string, code string, keyCode int, location in
 				keyMapShifted[rs] = KeyInfo{shiftedKey, code, keyCode, location}
 				keyShiftedMap[r] = rs
 			}
+
 			return r
 		}
 	}
@@ -52,6 +53,7 @@ func (k Key) Info() KeyInfo {
 	if k, has := keyMap[k]; has {
 		return k
 	}
+
 	if k, has := keyMapShifted[k]; has {
 		return k
 	}
@@ -93,6 +95,7 @@ func (k Key) Modifier() int {
 	case 16:
 		return ModifierShift
 	}
+
 	return 0
 }
 
@@ -106,6 +109,7 @@ func (k Key) Encode(t proto.InputDispatchKeyEventType, modifiers int) *proto.Inp
 	info := k.Info()
 	l := gson.Int(info.Location)
 	keypad := false
+
 	if info.Location == 3 {
 		l = nil
 		keypad = true

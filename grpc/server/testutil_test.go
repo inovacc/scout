@@ -42,6 +42,7 @@ func setupTestServer(t *testing.T) *testEnv {
 	}
 
 	go func() { _ = grpcServer.Serve(lis) }()
+
 	t.Cleanup(grpcServer.Stop)
 
 	// gRPC client
@@ -52,6 +53,7 @@ func setupTestServer(t *testing.T) *testEnv {
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
+
 	t.Cleanup(func() { _ = conn.Close() })
 
 	return &testEnv{
@@ -79,10 +81,11 @@ func (e *testEnv) createSession(t *testing.T) string {
 	t.Cleanup(func() {
 		ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel2()
-		_, _ = e.client.DestroySession(ctx2, &pb.SessionRequest{SessionId: resp.SessionId})
+
+		_, _ = e.client.DestroySession(ctx2, &pb.SessionRequest{SessionId: resp.GetSessionId()})
 	})
 
-	return resp.SessionId
+	return resp.GetSessionId()
 }
 
 // navigate is a shorthand to navigate and wait stable.
@@ -112,6 +115,7 @@ func registerFixtureRoutes(mux *http.ServeMux) {
 			http.NotFound(w, r)
 			return
 		}
+
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprint(w, `<!DOCTYPE html>
 <html><head><title>Test Page</title></head>
@@ -161,6 +165,7 @@ func registerFixtureRoutes(mux *http.ServeMux) {
 	// Form submit endpoint
 	mux.HandleFunc("/submit", func(w http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
+
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprintf(w, `<!DOCTYPE html>
 <html><head><title>Submitted</title></head>

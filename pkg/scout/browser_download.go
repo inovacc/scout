@@ -125,14 +125,17 @@ func ListDownloadedBrowsers() ([]string, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
+
 		return nil, fmt.Errorf("scout: read browsers dir: %w", err)
 	}
 
 	var browsers []string
+
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
+
 		browsers = append(browsers, entry.Name())
 	}
 
@@ -150,10 +153,12 @@ func latestBraveVersion(ctx context.Context) (string, error) {
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
 	client := &http.Client{Timeout: 30 * time.Second}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("scout: fetch brave version: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -179,6 +184,7 @@ func latestBraveVersion(ctx context.Context) (string, error) {
 // braveAssetName returns the zip filename for the current platform and version.
 func braveAssetName(version string) string {
 	key := runtime.GOOS + "_" + runtime.GOARCH
+
 	pattern, ok := braveAssets[key]
 	if !ok {
 		return ""
@@ -205,10 +211,12 @@ func downloadFile(ctx context.Context, url string) ([]byte, error) {
 	}
 
 	client := &http.Client{Timeout: browserDownloadTimeout}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -237,6 +245,7 @@ func extractZipArchive(data []byte, destDir string) error {
 			if err := os.MkdirAll(target, 0o755); err != nil {
 				return fmt.Errorf("create dir %s: %w", f.Name, err)
 			}
+
 			continue
 		}
 

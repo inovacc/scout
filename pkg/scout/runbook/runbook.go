@@ -114,6 +114,7 @@ func resolveSelector(sel string, selectors map[string]string) (string, error) {
 
 	// Preserve sibling prefix
 	prefix := ""
+
 	s := sel
 	if len(s) > 0 && s[0] == '+' {
 		prefix = "+"
@@ -123,6 +124,7 @@ func resolveSelector(sel string, selectors map[string]string) (string, error) {
 	// Check for $name reference (with optional @attr suffix)
 	if len(s) > 0 && s[0] == '$' {
 		name := s[1:]
+
 		attrSuffix := ""
 		if idx := strings.Index(name, "@"); idx >= 0 {
 			attrSuffix = name[idx:]
@@ -152,6 +154,7 @@ func (r *Runbook) resolveAllSelectors() error {
 		if err != nil {
 			return err
 		}
+
 		r.WaitFor = resolved
 	}
 
@@ -162,6 +165,7 @@ func (r *Runbook) resolveAllSelectors() error {
 			if err != nil {
 				return err
 			}
+
 			r.Items.Container = resolved
 		}
 
@@ -170,6 +174,7 @@ func (r *Runbook) resolveAllSelectors() error {
 			if err != nil {
 				return fmt.Errorf("runbook: field %q: %w", name, err)
 			}
+
 			r.Items.Fields[name] = resolved
 		}
 	}
@@ -180,6 +185,7 @@ func (r *Runbook) resolveAllSelectors() error {
 		if err != nil {
 			return err
 		}
+
 		r.Pagination.NextSelector = resolved
 	}
 
@@ -190,6 +196,7 @@ func (r *Runbook) resolveAllSelectors() error {
 			if err != nil {
 				return fmt.Errorf("runbook: step %d: %w", i, err)
 			}
+
 			r.Steps[i].Selector = resolved
 		}
 	}
@@ -212,12 +219,15 @@ func (r *Runbook) Validate() error {
 		if r.URL == "" {
 			return fmt.Errorf("runbook: extract runbook requires url")
 		}
+
 		if r.Items == nil {
 			return fmt.Errorf("runbook: extract runbook requires items")
 		}
+
 		if r.Items.Container == "" {
 			return fmt.Errorf("runbook: items.container is required")
 		}
+
 		if len(r.Items.Fields) == 0 {
 			return fmt.Errorf("runbook: items.fields is required")
 		}
@@ -225,6 +235,7 @@ func (r *Runbook) Validate() error {
 		if len(r.Steps) == 0 {
 			return fmt.Errorf("runbook: automate runbook requires steps")
 		}
+
 		for i, step := range r.Steps {
 			if step.Action == "" {
 				return fmt.Errorf("runbook: step %d missing action", i)

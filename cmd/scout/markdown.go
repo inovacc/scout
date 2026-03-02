@@ -33,12 +33,14 @@ var markdownCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(urlFlag)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -47,9 +49,11 @@ var markdownCmd = &cobra.Command{
 		if mainOnly {
 			opts = append(opts, scout.WithMainContentOnly())
 		}
+
 		if noImages {
 			opts = append(opts, scout.WithIncludeImages(false))
 		}
+
 		if noLinks {
 			opts = append(opts, scout.WithIncludeLinks(false))
 		}
@@ -65,11 +69,14 @@ var markdownCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Written to %s\n", dest)
+
 			return nil
 		}
 
 		_, _ = fmt.Fprint(cmd.OutOrStdout(), md)
+
 		return nil
 	},
 }

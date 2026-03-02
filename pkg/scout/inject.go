@@ -18,6 +18,7 @@ func WithInjectJS(paths ...string) Option {
 				o.injectErr = fmt.Errorf("scout: inject: read %s: %w", p, err)
 				return
 			}
+
 			if len(data) > 0 {
 				o.injectScripts = append(o.injectScripts, string(data))
 			}
@@ -34,13 +35,16 @@ func WithInjectDir(dir string) Option {
 			o.injectErr = fmt.Errorf("scout: inject: glob %s: %w", dir, err)
 			return
 		}
+
 		sort.Strings(matches)
+
 		for _, m := range matches {
 			data, err := os.ReadFile(m)
 			if err != nil {
 				o.injectErr = fmt.Errorf("scout: inject: read %s: %w", m, err)
 				return
 			}
+
 			if len(data) > 0 {
 				o.injectScripts = append(o.injectScripts, string(data))
 			}

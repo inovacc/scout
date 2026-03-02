@@ -1,268 +1,318 @@
 package scout
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
-	"sync"
+	"strings"
 	"time"
-
-	"github.com/google/uuid"
 )
+
+// sessionsDir is the function that returns the base directory for session data.
+// It is a variable so tests can override it.
+var sessionsDir = defaultSessionsDir
+
+func defaultSessionsDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return filepath.Join(os.TempDir(), "scout", "sessions")
+	}
+
+	return filepath.Join(home, ".scout", "sessions")
+}
 
 // SessionsDir returns the base directory for session data: ~/.scout/sessions.
 // This is cross-platform: it uses os.UserHomeDir which resolves to
 // %USERPROFILE% on Windows, $HOME on Unix/macOS.
 func SessionsDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		// Fallback to temp dir if home is unavailable.
-		return filepath.Join(os.TempDir(), "scout", "sessions")
-	}
-	return filepath.Join(home, ".scout", "sessions")
+	return sessionsDir()
 }
 
-// SessionUserDataDir returns the user-data subdirectory under SessionsDir.
-func SessionUserDataDir() string {
-	return filepath.Join(SessionsDir(), "user-data")
+// SessionInfo holds all metadata for a browser session, stored as scout.pid
+// inside the session's data directory.
+type SessionInfo struct {
+	ScoutPID   int       `json:"scout_pid"`
+	BrowserPID int       `json:"browser_pid"`
+	Reusable   bool      `json:"reusable"`
+	CreatedAt  time.Time `json:"created_at"`
+	LastUsed   time.Time `json:"last_used"`
+	Headless   bool      `json:"headless"`
+	Browser    string    `json:"browser"`
+	DomainHash string    `json:"domain_hash,omitempty"`
+	Domain     string    `json:"domain,omitempty"`
 }
 
-// SessionPIDDir returns the pids subdirectory under SessionsDir.
-func SessionPIDDir() string {
-	return filepath.Join(SessionsDir(), "pids")
+// SessionListing pairs a session ID with its directory and info.
+type SessionListing struct {
+	ID   string
+	Dir  string
+	Info *SessionInfo
 }
 
-// SessionEntry represents a tracked browser session.
-type SessionEntry struct {
-	ID        string    `json:"id"`
-	DataDir   string    `json:"data_dir"`
-	CreatedAt time.Time `json:"created_at"`
-	LastUsed  time.Time `json:"last_used"`
-	Browser   string    `json:"browser"`
-	Headless  bool      `json:"headless"`
-	URLs      []string  `json:"urls,omitempty"`
-	Reusable  bool      `json:"reusable"`
+// SessionDir returns the directory for a given session ID.
+func SessionDir(id string) string {
+	return filepath.Join(SessionsDir(), id)
 }
 
-// SessionTracker manages session entries persisted to track.json.
-type SessionTracker struct {
-	Sessions []SessionEntry `json:"sessions"`
-	path     string
-	mu       sync.Mutex
-}
-
-// defaultTrackPath returns the default path for track.json.
-func defaultTrackPath() string {
-	return filepath.Join(SessionsDir(), "track.json")
-}
-
-// LoadTracker reads or creates the session tracker from the default track.json location.
-func LoadTracker() (*SessionTracker, error) {
-	return LoadTrackerFrom(defaultTrackPath())
-}
-
-// LoadTrackerFrom reads or creates a session tracker from the given path.
-func LoadTrackerFrom(path string) (*SessionTracker, error) {
-	t := &SessionTracker{path: path}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return t, nil
-		}
-		return nil, fmt.Errorf("scout: read track.json: %w", err)
-	}
-
-	if err := json.Unmarshal(data, t); err != nil {
-		return nil, fmt.Errorf("scout: parse track.json: %w", err)
-	}
-
-	return t, nil
-}
-
-// Register adds a new session entry and saves to disk.
-func (t *SessionTracker) Register(entry SessionEntry) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	t.Sessions = append(t.Sessions, entry)
-	return t.save()
-}
-
-// Update modifies an existing session entry by ID.
-func (t *SessionTracker) Update(id string, fn func(*SessionEntry)) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	for i := range t.Sessions {
-		if t.Sessions[i].ID == id {
-			fn(&t.Sessions[i])
-			return t.save()
-		}
-	}
-
-	return fmt.Errorf("scout: session %s not found", id)
-}
-
-// FindReusable returns a matching reusable session, or nil if none found.
-func (t *SessionTracker) FindReusable(browser string, headless bool) *SessionEntry {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	for i := range t.Sessions {
-		e := &t.Sessions[i]
-		if e.Reusable && e.Browser == browser && e.Headless == headless {
-			return e
-		}
-	}
-
-	return nil
-}
-
-// Remove deletes a session entry by ID and saves to disk.
-func (t *SessionTracker) Remove(id string) error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	for i := range t.Sessions {
-		if t.Sessions[i].ID == id {
-			t.Sessions = append(t.Sessions[:i], t.Sessions[i+1:]...)
-			return t.save()
-		}
-	}
-
-	return nil
-}
-
-// Save writes the tracker to disk.
-func (t *SessionTracker) Save() error {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	return t.save()
-}
-
-func (t *SessionTracker) save() error {
-	dir := filepath.Dir(t.path)
+// WriteSessionInfo writes the session info as JSON to <SessionsDir>/<id>/scout.pid.
+func WriteSessionInfo(id string, info *SessionInfo) error {
+	dir := SessionDir(id)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("scout: create track dir: %w", err)
+		return fmt.Errorf("scout: create session dir: %w", err)
 	}
 
-	data, err := json.MarshalIndent(t, "", "  ")
+	data, err := json.MarshalIndent(info, "", "  ")
 	if err != nil {
-		return fmt.Errorf("scout: marshal track.json: %w", err)
+		return fmt.Errorf("scout: marshal session info: %w", err)
 	}
 
-	if err := os.WriteFile(t.path, data, 0o644); err != nil {
-		return fmt.Errorf("scout: write track.json: %w", err)
-	}
-
-	return nil
+	return os.WriteFile(filepath.Join(dir, "scout.pid"), data, 0o644)
 }
 
-// Prune removes entries whose DataDir no longer exists on disk.
-func (t *SessionTracker) Prune() (int, error) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	var kept []SessionEntry
-	pruned := 0
-
-	for _, e := range t.Sessions {
-		if _, err := os.Stat(e.DataDir); err == nil {
-			kept = append(kept, e)
-		} else {
-			pruned++
-		}
+// ReadSessionInfo reads the session info from <SessionsDir>/<id>/scout.pid.
+func ReadSessionInfo(id string) (*SessionInfo, error) {
+	data, err := os.ReadFile(filepath.Join(SessionDir(id), "scout.pid"))
+	if err != nil {
+		return nil, err
 	}
 
-	t.Sessions = kept
-	if pruned > 0 {
-		if err := t.save(); err != nil {
-			return pruned, err
-		}
+	var info SessionInfo
+	if err := json.Unmarshal(data, &info); err != nil {
+		return nil, fmt.Errorf("scout: parse session info: %w", err)
 	}
 
-	return pruned, nil
+	return &info, nil
 }
 
-// Scan discovers UUID v7 directories in the user-data dir that are not yet
-// tracked and adds them to the tracker. It also reads the PID file if present.
-func (t *SessionTracker) Scan() (int, error) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
+// RemoveSessionInfo removes the scout.pid file from a session directory.
+func RemoveSessionInfo(id string) {
+	_ = os.Remove(filepath.Join(SessionDir(id), "scout.pid"))
+}
 
-	userDataDir := SessionUserDataDir()
-	entries, err := os.ReadDir(userDataDir)
+// ListSessions reads all <dir>/scout.pid files under SessionsDir.
+func ListSessions() ([]SessionListing, error) {
+	sessDir := SessionsDir()
+
+	entries, err := os.ReadDir(sessDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return 0, nil
+			return nil, nil
 		}
-		return 0, fmt.Errorf("scout: scan user-data: %w", err)
+
+		return nil, fmt.Errorf("scout: read sessions dir: %w", err)
 	}
 
-	// Build set of already-tracked IDs.
-	tracked := make(map[string]struct{}, len(t.Sessions))
-	for _, s := range t.Sessions {
-		tracked[s.ID] = struct{}{}
-	}
-
-	added := 0
-	pidDir := SessionPIDDir()
+	var result []SessionListing
 
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue
 		}
+
 		name := e.Name()
 
-		// Validate it's a UUID.
-		if _, err := uuid.Parse(name); err != nil {
+		info, err := ReadSessionInfo(name)
+		if err != nil {
 			continue
 		}
 
-		if _, exists := tracked[name]; exists {
+		result = append(result, SessionListing{
+			ID:   name,
+			Dir:  filepath.Join(sessDir, name),
+			Info: info,
+		})
+	}
+
+	return result, nil
+}
+
+// FindSessionByDomain looks up a session by domain hash directory name.
+// Since the dir name IS the domain hash, this is a direct path check — no scanning.
+func FindSessionByDomain(rawURL string) *SessionListing {
+	hash := DomainHash(rawURL)
+	if hash == "" {
+		return nil
+	}
+
+	info, err := ReadSessionInfo(hash)
+	if err != nil {
+		return nil
+	}
+
+	return &SessionListing{
+		ID:   hash,
+		Dir:  SessionDir(hash),
+		Info: info,
+	}
+}
+
+// FindReusableSession scans session dirs for a matching reusable session.
+func FindReusableSession(browser string, headless bool) *SessionListing {
+	sessions, err := ListSessions()
+	if err != nil {
+		return nil
+	}
+
+	for i := range sessions {
+		info := sessions[i].Info
+		if info.Reusable && info.Browser == browser && info.Headless == headless {
+			return &sessions[i]
+		}
+	}
+
+	return nil
+}
+
+// CleanOrphans scans SessionsDir for sessions where the scout process is dead
+// but the browser process is still running, and kills the orphaned browser.
+// Returns the number of orphaned browsers killed.
+func CleanOrphans() (int, error) {
+	sessions, err := ListSessions()
+	if err != nil {
+		return 0, err
+	}
+
+	killed := 0
+
+	for _, s := range sessions {
+		if s.Info.ScoutPID == 0 || s.Info.BrowserPID == 0 {
 			continue
 		}
 
-		dataDir := filepath.Join(userDataDir, name)
-		info, _ := e.Info()
-		created := time.Now()
-		if info != nil {
-			created = info.ModTime()
+		if processAlive(s.Info.ScoutPID) {
+			continue
 		}
 
-		entry := SessionEntry{
-			ID:        name,
-			DataDir:   dataDir,
-			CreatedAt: created,
-			LastUsed:  created,
-			Browser:   "chrome",
-			Headless:  true,
+		if processAlive(s.Info.BrowserPID) {
+			if p, err := os.FindProcess(s.Info.BrowserPID); err == nil {
+				_ = p.Kill()
+			}
+
+			killed++
 		}
 
-		// Read PID if available.
-		if pidData, err := os.ReadFile(filepath.Join(pidDir, name)); err == nil {
-			if pid, err := strconv.Atoi(string(pidData)); err == nil {
-				// Check if process is still running.
-				if p, err := os.FindProcess(pid); err == nil {
-					_ = p
-					entry.Reusable = false
-				}
+		RemoveSessionInfo(s.ID)
+	}
+
+	return killed, nil
+}
+
+// DefaultOrphanCheckInterval is the default interval for periodic orphan checks.
+const DefaultOrphanCheckInterval = 2 * time.Minute
+
+// StartOrphanWatchdog starts a background goroutine that periodically calls
+// CleanOrphans to kill dangling browser processes whose scout owner has died.
+// It stops when the done channel is closed. Returns immediately.
+func StartOrphanWatchdog(interval time.Duration, done <-chan struct{}) {
+	if interval <= 0 {
+		interval = DefaultOrphanCheckInterval
+	}
+
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				_, _ = CleanOrphans()
 			}
 		}
+	}()
+}
 
-		t.Sessions = append(t.Sessions, entry)
-		added++
+// RootDomain extracts the root domain from a URL, stripping subdomains.
+// e.g. "https://sub.admin.mysite.com/path" → "mysite.com"
+// e.g. "https://app.mysite.co.uk/path" → "mysite.co.uk"
+func RootDomain(rawURL string) string {
+	if rawURL == "" {
+		return ""
+	}
+	// Ensure scheme for url.Parse.
+	if !strings.Contains(rawURL, "://") {
+		rawURL = "https://" + rawURL
 	}
 
-	if added > 0 {
-		if err := t.save(); err != nil {
-			return added, err
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+
+	host := u.Hostname()
+	if host == "" {
+		return ""
+	}
+
+	// Handle IP addresses — no root domain extraction.
+	if net := strings.TrimRight(host, "."); strings.ContainsAny(net, ":") || isIP(net) {
+		return host
+	}
+
+	parts := strings.Split(host, ".")
+	if len(parts) <= 2 {
+		return host
+	}
+
+	// Handle two-part TLDs: co.uk, com.br, co.jp, etc.
+	twoPartTLDs := map[string]bool{
+		"co.uk": true, "co.jp": true, "co.kr": true, "co.nz": true, "co.za": true,
+		"com.br": true, "com.au": true, "com.cn": true, "com.mx": true, "com.ar": true,
+		"com.tr": true, "com.tw": true, "com.sg": true, "com.hk": true, "com.my": true,
+		"org.uk": true, "org.au": true, "net.au": true, "net.br": true,
+		"co.in": true, "co.id": true, "co.th": true,
+	}
+
+	lastTwo := strings.Join(parts[len(parts)-2:], ".")
+	if twoPartTLDs[lastTwo] && len(parts) >= 3 {
+		return strings.Join(parts[len(parts)-3:], ".")
+	}
+
+	return strings.Join(parts[len(parts)-2:], ".")
+}
+
+func isIP(s string) bool {
+	for _, c := range s {
+		if c != '.' && (c < '0' || c > '9') {
+			return false
 		}
 	}
 
-	return added, nil
+	return strings.Contains(s, ".")
+}
+
+// DomainHash returns a short SHA-256 hash (first 16 hex chars) of the root domain.
+func DomainHash(rawURL string) string {
+	root := RootDomain(rawURL)
+	if root == "" {
+		return ""
+	}
+
+	h := sha256.Sum256([]byte(root))
+
+	return hex.EncodeToString(h[:12]) // 12 bytes = 16 hex chars, enough for a short unique ID with low collision risk.
+}
+
+// SessionHash returns a deterministic hash for a session directory name.
+// If rawURL is provided, it hashes the root domain. Otherwise, it returns
+// a hash of the label (e.g. "default", browser name, etc.).
+func SessionHash(rawURL, label string) string {
+	if rawURL != "" {
+		if h := DomainHash(rawURL); h != "" {
+			return h
+		}
+	}
+
+	if label == "" {
+		label = "default"
+	}
+
+	h := sha256.Sum256([]byte(label))
+
+	return hex.EncodeToString(h[:12])
 }

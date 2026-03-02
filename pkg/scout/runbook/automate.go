@@ -23,6 +23,7 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 		}
 
 		var err error
+
 		switch step.Action {
 		case "navigate":
 			if page == nil {
@@ -30,6 +31,7 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 				if err != nil {
 					return result, fmt.Errorf("runbook: step %d navigate: %w", i, err)
 				}
+
 				err = page.WaitLoad()
 			} else {
 				err = page.Navigate(step.URL)
@@ -42,6 +44,7 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 			if page == nil {
 				return result, fmt.Errorf("runbook: step %d click: no page open", i)
 			}
+
 			el, findErr := page.Element(step.Selector)
 			if findErr != nil {
 				err = findErr
@@ -53,6 +56,7 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 			if page == nil {
 				return result, fmt.Errorf("runbook: step %d type: no page open", i)
 			}
+
 			el, findErr := page.Element(step.Selector)
 			if findErr != nil {
 				err = findErr
@@ -64,23 +68,27 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 			if page == nil {
 				return result, fmt.Errorf("runbook: step %d wait: no page open", i)
 			}
+
 			_, err = page.Element(step.Selector)
 
 		case "screenshot":
 			if page == nil {
 				return result, fmt.Errorf("runbook: step %d screenshot: no page open", i)
 			}
+
 			var data []byte
 			if step.FullPage {
 				data, err = page.FullScreenshot()
 			} else {
 				data, err = page.Screenshot()
 			}
+
 			if err == nil {
 				name := step.Name
 				if name == "" {
 					name = fmt.Sprintf("step_%d", i)
 				}
+
 				result.Screenshots[name] = data
 			}
 
@@ -88,17 +96,20 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 			if page == nil {
 				return result, fmt.Errorf("runbook: step %d extract: no page open", i)
 			}
+
 			elements, findErr := page.Elements(step.Selector)
 			if findErr != nil {
 				err = findErr
 			} else {
 				var texts []string
+
 				for _, el := range elements {
 					text, textErr := el.Text()
 					if textErr == nil {
 						texts = append(texts, text)
 					}
 				}
+
 				if step.As != "" {
 					result.Variables[step.As] = texts
 				}
@@ -108,6 +119,7 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 			if page == nil {
 				return result, fmt.Errorf("runbook: step %d eval: no page open", i)
 			}
+
 			evalResult, evalErr := page.Eval(step.Script)
 			if evalErr != nil {
 				err = evalErr
@@ -119,6 +131,7 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 			if page == nil {
 				return result, fmt.Errorf("runbook: step %d key: no page open", i)
 			}
+
 			key := mapKeyName(step.Text)
 			err = page.KeyPress(key)
 
@@ -150,6 +163,7 @@ func mapKeyName(name string) input.Key {
 		if len(name) == 1 {
 			return input.Key(name[0])
 		}
+
 		return 0
 	}
 }

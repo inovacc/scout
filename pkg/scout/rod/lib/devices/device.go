@@ -35,6 +35,7 @@ type ScreenSize struct {
 func (device Device) Landscape() Device {
 	d := device
 	d.landscape = true
+
 	return d
 }
 
@@ -44,8 +45,11 @@ func (device Device) MetricsEmulation() *proto.EmulationSetDeviceMetricsOverride
 		return nil
 	}
 
-	var screen ScreenSize
-	var orientation *proto.EmulationScreenOrientation
+	var (
+		screen      ScreenSize
+		orientation *proto.EmulationScreenOrientation
+	)
+
 	if device.landscape {
 		screen = device.Screen.Horizontal
 		orientation = &proto.EmulationScreenOrientation{

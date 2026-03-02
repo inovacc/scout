@@ -125,6 +125,7 @@ func (b *Browser) SitemapExtract(startURL string, opts ...SitemapOption) (*Sitem
 	if err != nil {
 		return nil, fmt.Errorf("scout: sitemap: new page: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	bridge, err := page.Bridge(WithQueryTimeout(15 * time.Second))
@@ -133,6 +134,7 @@ func (b *Browser) SitemapExtract(startURL string, opts ...SitemapOption) (*Sitem
 	}
 
 	visited := &visitedSet{urls: make(map[string]bool)}
+
 	type queueItem struct {
 		url   string
 		depth int
@@ -162,12 +164,14 @@ func (b *Browser) SitemapExtract(startURL string, opts ...SitemapOption) (*Sitem
 		if err := page.Navigate(item.url); err != nil {
 			sp.Error = err.Error()
 			result.Pages = append(result.Pages, sp)
+
 			continue
 		}
 
 		if err := page.WaitLoad(); err != nil {
 			sp.Error = err.Error()
 			result.Pages = append(result.Pages, sp)
+
 			continue
 		}
 
@@ -177,6 +181,7 @@ func (b *Browser) SitemapExtract(startURL string, opts ...SitemapOption) (*Sitem
 		if err := waitBridgeReady(bridge, 5*time.Second); err != nil {
 			sp.Error = err.Error()
 			result.Pages = append(result.Pages, sp)
+
 			continue
 		}
 
@@ -185,6 +190,7 @@ func (b *Browser) SitemapExtract(startURL string, opts ...SitemapOption) (*Sitem
 		if o.selector != "" {
 			domOpts = append(domOpts, WithDOMSelector(o.selector))
 		}
+
 		if o.domDepth != 50 {
 			domOpts = append(domOpts, WithDOMDepth(o.domDepth))
 		}
@@ -205,6 +211,7 @@ func (b *Browser) SitemapExtract(startURL string, opts ...SitemapOption) (*Sitem
 			if o.selector != "" {
 				mdOpts = append(mdOpts, WithDOMSelector(o.selector))
 			}
+
 			if o.mainOnly {
 				mdOpts = append(mdOpts, WithDOMMainOnly())
 			}
@@ -337,17 +344,18 @@ func writeSitemapIndex(outputDir string, result *SitemapResult) {
 	// index.md — all pages' markdown concatenated.
 	var sb strings.Builder
 	sb.WriteString("# Sitemap Extract\n\n")
-	sb.WriteString(fmt.Sprintf("Start URL: %s\n", result.StartURL))
-	sb.WriteString(fmt.Sprintf("Total pages: %d\n\n", result.Total))
+	fmt.Fprintf(&sb, "Start URL: %s\n", result.StartURL)
+	fmt.Fprintf(&sb, "Total pages: %d\n\n", result.Total)
 
 	for _, p := range result.Pages {
-		sb.WriteString(fmt.Sprintf("---\n\n## %s\n\n", p.URL))
+		fmt.Fprintf(&sb, "---\n\n## %s\n\n", p.URL)
+
 		if p.Title != "" {
-			sb.WriteString(fmt.Sprintf("**Title:** %s\n\n", p.Title))
+			fmt.Fprintf(&sb, "**Title:** %s\n\n", p.Title)
 		}
 
 		if p.Error != "" {
-			sb.WriteString(fmt.Sprintf("**Error:** %s\n\n", p.Error))
+			fmt.Fprintf(&sb, "**Error:** %s\n\n", p.Error)
 		}
 
 		if p.Markdown != "" {

@@ -3,6 +3,7 @@ package runbook
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -52,6 +53,7 @@ func SampleExtract(browser *scout.Browser, r *Runbook) ([]map[string]any, error)
 		for k, v := range item {
 			m[k] = v
 		}
+
 		result[i] = m
 	}
 
@@ -93,6 +95,7 @@ func FixRunbook(browser *scout.Browser, r *Runbook) (*Runbook, []string, error) 
 	counts := SelectorHealthCheck(page, selectors)
 
 	var broken []string
+
 	for name, count := range counts {
 		if count == 0 {
 			broken = append(broken, name)
@@ -112,6 +115,7 @@ func FixRunbook(browser *scout.Browser, r *Runbook) (*Runbook, []string, error) 
 
 	// Build a lookup from field purpose to candidate selectors from analysis.
 	fieldCandidates := make(map[string]FieldCandidate)
+
 	for _, c := range analysis.Containers {
 		for _, f := range c.Fields {
 			fieldCandidates[f.Name] = f
@@ -126,6 +130,7 @@ func FixRunbook(browser *scout.Browser, r *Runbook) (*Runbook, []string, error) 
 
 	// Deep-copy the runbook so we don't mutate the original.
 	fixed := copyRunbook(r)
+
 	var changes []string
 
 	for _, name := range broken {
@@ -140,18 +145,21 @@ func FixRunbook(browser *scout.Browser, r *Runbook) (*Runbook, []string, error) 
 					if fixed.WaitFor == oldSel {
 						fixed.WaitFor = newSel
 					}
+
 					changes = append(changes, fmt.Sprintf("container: changed selector from %q to %q", oldSel, newSel))
 				}
 			}
 
 		case strings.HasPrefix(name, "field:"):
 			fieldName := strings.TrimPrefix(name, "field:")
+
 			purpose := guessPurpose(fieldName)
 			if cand, ok := fieldCandidates[purpose]; ok {
 				newSel := cand.Selector
 				if cand.Attr != "" {
 					newSel += "@" + cand.Attr
 				}
+
 				if newSel != oldSel {
 					fixed.Items.Fields[fieldName] = newSel
 					changes = append(changes, fmt.Sprintf("field %q: changed selector from %q to %q", fieldName, oldSel, newSel))
@@ -224,10 +232,10 @@ func copyRunbook(r *Runbook) *Runbook {
 
 	if r.Items != nil {
 		items := *r.Items
+
 		items.Fields = make(map[string]string, len(r.Items.Fields))
-		for k, v := range r.Items.Fields {
-			items.Fields[k] = v
-		}
+		maps.Copy(items.Fields, r.Items.Fields)
+
 		cp.Items = &items
 	}
 
@@ -243,9 +251,7 @@ func copyRunbook(r *Runbook) *Runbook {
 
 	if len(r.Selectors) > 0 {
 		cp.Selectors = make(map[string]string, len(r.Selectors))
-		for k, v := range r.Selectors {
-			cp.Selectors[k] = v
-		}
+		maps.Copy(cp.Selectors, r.Selectors)
 	}
 
 	return &cp

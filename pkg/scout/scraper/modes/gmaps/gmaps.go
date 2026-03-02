@@ -58,9 +58,11 @@ func (p *gmapsProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	if err != nil {
 		return nil, fmt.Errorf("gmaps: capture session: eval url: %w", err)
 	}
+
 	currentURL := result.String()
 
 	now := time.Now()
+
 	return &auth.Session{
 		Provider:  "gmaps",
 		Version:   "1",
@@ -102,8 +104,10 @@ func (m *GMapsMode) AuthProvider() scraper.AuthProvider { return &m.provider }
 func (m *GMapsMode) Scrape(ctx context.Context, session scraper.SessionData, opts scraper.ScrapeOptions) (<-chan scraper.Result, error) {
 	// Session can be nil for public Maps scraping.
 	var gmapsSession *auth.Session
+
 	if session != nil {
 		var ok bool
+
 		gmapsSession, ok = session.(*auth.Session)
 		if !ok {
 			return nil, fmt.Errorf("gmaps: scrape: invalid session type")
@@ -226,6 +230,7 @@ func (m *GMapsMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 						if opts.Limit > 0 && count >= opts.Limit {
 							return
 						}
+
 						if opts.Progress != nil {
 							opts.Progress(scraper.Progress{
 								Phase:   "scraping",
@@ -248,10 +253,12 @@ func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
+
 	set := make(map[string]struct{}, len(targets))
 	for _, t := range targets {
 		set[strings.ToLower(strings.TrimSpace(t))] = struct{}{}
 	}
+
 	return set
 }
 
@@ -267,6 +274,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 	}
 
 	url := ev.Response.URL
+
 	body := ev.Response.Body
 	if body == "" {
 		return nil
@@ -355,9 +363,11 @@ func parseBusinessProfile(body string) *scraper.Result {
 	ratingPattern := `"rating":`
 	if ratingIdx := strings.Index(body, ratingPattern); ratingIdx >= 0 {
 		ratingStart := ratingIdx + len(ratingPattern)
+
 		ratingEnd := strings.IndexAny(body[ratingStart:], ",}")
 		if ratingEnd > 0 {
 			ratingStr := body[ratingStart : ratingStart+ratingEnd]
+
 			var rating float64
 			if _, err := fmt.Sscanf(ratingStr, "%f", &rating); err == nil {
 				profile.Rating = rating
@@ -392,6 +402,7 @@ func parseReviews(body string) []scraper.Result {
 
 	// Simple pattern matching for review text.
 	reviewPattern := `"review":"([^"]+)"`
+
 	idx := 0
 	for {
 		foundIdx := strings.Index(body[idx:], reviewPattern)
@@ -401,6 +412,7 @@ func parseReviews(body string) []scraper.Result {
 
 		actualIdx := idx + foundIdx
 		textStart := actualIdx + len(reviewPattern) - 1
+
 		textEnd := strings.Index(body[textStart+11:], `"`)
 		if textEnd < 0 {
 			idx = actualIdx + 1
@@ -431,6 +443,7 @@ func parsePhotos(body string) []scraper.Result {
 
 	// Simple pattern matching for photo URLs.
 	photoPattern := `"url":"(https://[^"]+)"`
+
 	idx := 0
 	for {
 		foundIdx := strings.Index(body[idx:], photoPattern)
@@ -440,6 +453,7 @@ func parsePhotos(body string) []scraper.Result {
 
 		actualIdx := idx + foundIdx
 		urlStart := actualIdx + len(photoPattern) - 1
+
 		urlEnd := strings.Index(body[urlStart+7:], `"`)
 		if urlEnd < 0 {
 			idx = actualIdx + 1

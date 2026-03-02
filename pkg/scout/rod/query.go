@@ -32,6 +32,7 @@ func (els Elements) First() *Element {
 	if els.Empty() {
 		return nil
 	}
+
 	return els[0]
 }
 
@@ -40,6 +41,7 @@ func (els Elements) Last() *Element {
 	if els.Empty() {
 		return nil
 	}
+
 	return els[len(els)-1]
 }
 
@@ -56,6 +58,7 @@ func (ps Pages) First() *Page {
 	if ps.Empty() {
 		return nil
 	}
+
 	return ps[0]
 }
 
@@ -64,6 +67,7 @@ func (ps Pages) Last() *Page {
 	if ps.Empty() {
 		return nil
 	}
+
 	return ps[len(ps)-1]
 }
 
@@ -79,10 +83,12 @@ func (ps Pages) Find(selector string) (*Page, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		if has {
 			return page, nil
 		}
 	}
+
 	return nil, &PageNotFoundError{}
 }
 
@@ -93,11 +99,13 @@ func (ps Pages) FindByURL(jsRegex string) (*Page, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		url := res.Value.String()
 		if regexp.MustCompile(jsRegex).MatchString(url) {
 			return page, nil
 		}
 	}
+
 	return nil, &PageNotFoundError{}
 }
 
@@ -107,9 +115,11 @@ func (p *Page) Has(selector string) (bool, *Element, error) {
 	if errors.Is(err, &ElementNotFoundError{}) {
 		return false, nil, nil
 	}
+
 	if err != nil {
 		return false, nil, err
 	}
+
 	return true, el.Sleeper(p.sleeper), nil
 }
 
@@ -119,9 +129,11 @@ func (p *Page) HasX(selector string) (bool, *Element, error) {
 	if errors.Is(err, &ElementNotFoundError{}) {
 		return false, nil, nil
 	}
+
 	if err != nil {
 		return false, nil, err
 	}
+
 	return true, el.Sleeper(p.sleeper), nil
 }
 
@@ -131,9 +143,11 @@ func (p *Page) HasR(selector, jsRegex string) (bool, *Element, error) {
 	if errors.Is(err, &ElementNotFoundError{}) {
 		return false, nil, nil
 	}
+
 	if err != nil {
 		return false, nil, err
 	}
+
 	return true, el.Sleeper(p.sleeper), nil
 }
 
@@ -160,12 +174,15 @@ func (p *Page) ElementX(xPath string) (*Element, error) {
 // By default, it will retry until the js function doesn't return null.
 // To customize the retry logic, check the examples of Page.Sleeper.
 func (p *Page) ElementByJS(opts *EvalOptions) (*Element, error) {
-	var res *proto.RuntimeRemoteObject
-	var err error
+	var (
+		res *proto.RuntimeRemoteObject
+		err error
+	)
 
 	removeTrace := func() {}
 	err = utils.Retry(p.ctx, p.sleeper(), func() (bool, error) {
 		remove := p.tryTraceQuery(opts)
+
 		removeTrace()
 		removeTrace = remove
 
@@ -180,7 +197,9 @@ func (p *Page) ElementByJS(opts *EvalOptions) (*Element, error) {
 
 		return true, nil
 	})
+
 	removeTrace()
+
 	if err != nil {
 		return nil, err
 	}
@@ -224,10 +243,12 @@ func (p *Page) ElementsByJS(opts *EvalOptions) (Elements, error) {
 	}
 
 	elemList := Elements{}
+
 	for _, obj := range list.Result {
 		if obj.Name == "__proto__" || obj.Name == "length" {
 			continue
 		}
+
 		val := obj.Value
 
 		if val.Subtype != proto.RuntimeRemoteObjectSubtypeNode {
@@ -284,6 +305,7 @@ func (p *Page) Search(query string) (*SearchResult, error) {
 				errors.Is(err, cdp.ErrSearchSessionNotFound) {
 				return false, nil
 			}
+
 			return true, err
 		}
 
@@ -345,6 +367,7 @@ func (s *SearchResult) Get(i, l int) (Elements, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		list = append(list, el)
 	}
 
@@ -383,6 +406,7 @@ func (rc *RaceContext) ElementFunc(fn func(*Page) (*Element, error)) *RaceContex
 	rc.branches = append(rc.branches, &raceBranch{
 		condition: fn,
 	})
+
 	return rc
 }
 
@@ -421,7 +445,9 @@ func (rc *RaceContext) Search(query string) *RaceContext {
 		if err != nil {
 			return nil, err
 		}
+
 		res.Release()
+
 		return res.First, nil
 	})
 }
@@ -437,6 +463,7 @@ func (rc *RaceContext) Handle(callback func(*Element) error) *RaceContext {
 // Do the race.
 func (rc *RaceContext) Do() (*Element, error) {
 	var el *Element
+
 	err := utils.Retry(rc.page.ctx, rc.page.sleeper(), func() (stop bool, err error) {
 		for _, branch := range rc.branches {
 			bEl, err := branch.condition(rc.page.Sleeper(NotFoundSleeper))
@@ -446,13 +473,16 @@ func (rc *RaceContext) Do() (*Element, error) {
 				if branch.callback != nil {
 					err = branch.callback(el)
 				}
+
 				return true, err
 			} else if !errors.Is(err, &ElementNotFoundError{}) {
 				return true, err
 			}
 		}
+
 		return
 	})
+
 	return el, err
 }
 
@@ -462,6 +492,7 @@ func (el *Element) Has(selector string) (bool, *Element, error) {
 	if errors.Is(err, &ElementNotFoundError{}) {
 		return false, nil, nil
 	}
+
 	return err == nil, el, err
 }
 
@@ -471,6 +502,7 @@ func (el *Element) HasX(selector string) (bool, *Element, error) {
 	if errors.Is(err, &ElementNotFoundError{}) {
 		return false, nil, nil
 	}
+
 	return err == nil, el, err
 }
 
@@ -480,6 +512,7 @@ func (el *Element) HasR(selector, jsRegex string) (bool, *Element, error) {
 	if errors.Is(err, &ElementNotFoundError{}) {
 		return false, nil, nil
 	}
+
 	return err == nil, el, err
 }
 
@@ -504,6 +537,7 @@ func (el *Element) ElementByJS(opts *EvalOptions) (*Element, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return e.Sleeper(el.sleeper), nil
 }
 

@@ -69,6 +69,7 @@ ws.onmessage = function(e) { document.title = "ws:" + e.data; ws.close(); };
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+
 			defer func() { _ = conn.Close() }()
 
 			// Write upgrade response.
@@ -94,8 +95,10 @@ ws.onmessage = function(e) { document.title = "ws:" + e.data; ws.close(); };
 // wsAcceptKey computes the Sec-WebSocket-Accept value per RFC 6455.
 func wsAcceptKey(key string) string {
 	const magic = "258EAFA5-E914-47DA-95CA-5AB5DC587D11"
+
 	h := sha1.New()
 	_, _ = h.Write([]byte(key + magic))
+
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
@@ -110,18 +113,20 @@ func wsReadFrame(r *bufio.Reader) error {
 	length := int(header[1] & 0x7F)
 	masked := header[1]&0x80 != 0
 
-	switch {
-	case length == 126:
+	switch length {
+	case 126:
 		ext := make([]byte, 2)
 		if _, err := r.Read(ext); err != nil {
 			return err
 		}
+
 		length = int(binary.BigEndian.Uint16(ext))
-	case length == 127:
+	case 127:
 		ext := make([]byte, 8)
 		if _, err := r.Read(ext); err != nil {
 			return err
 		}
+
 		length = int(binary.BigEndian.Uint64(ext))
 	}
 
@@ -170,6 +175,7 @@ func TestSessionHijackerCapturesHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	hijacker, err := page.NewSessionHijacker()
@@ -188,6 +194,7 @@ func TestSessionHijackerCapturesHTTP(t *testing.T) {
 
 	// Collect events with timeout.
 	var events []HijackEvent
+
 	timeout := time.After(3 * time.Second)
 
 	for {
@@ -196,6 +203,7 @@ func TestSessionHijackerCapturesHTTP(t *testing.T) {
 			if !ok {
 				goto done
 			}
+
 			events = append(events, ev)
 			// We expect at least a request + response for the page and the API fetch.
 			if len(events) >= 4 {
@@ -205,6 +213,7 @@ func TestSessionHijackerCapturesHTTP(t *testing.T) {
 			goto done
 		}
 	}
+
 done:
 
 	if len(events) == 0 {
@@ -212,15 +221,18 @@ done:
 	}
 
 	var hasRequest, hasResponse bool
+
 	for _, ev := range events {
 		switch ev.Type {
 		case HijackEventRequest:
 			hasRequest = true
+
 			if ev.Request == nil {
 				t.Error("request event has nil Request")
 			}
 		case HijackEventResponse:
 			hasResponse = true
+
 			if ev.Response == nil {
 				t.Error("response event has nil Response")
 			}
@@ -230,6 +242,7 @@ done:
 	if !hasRequest {
 		t.Error("expected at least one request event")
 	}
+
 	if !hasResponse {
 		t.Error("expected at least one response event")
 	}
@@ -245,6 +258,7 @@ func TestSessionHijackerURLFilter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	// Only capture requests matching *hijack-api*
@@ -263,6 +277,7 @@ func TestSessionHijackerURLFilter(t *testing.T) {
 	}
 
 	var events []HijackEvent
+
 	timeout := time.After(3 * time.Second)
 
 	for {
@@ -271,11 +286,13 @@ func TestSessionHijackerURLFilter(t *testing.T) {
 			if !ok {
 				goto done
 			}
+
 			events = append(events, ev)
 		case <-timeout:
 			goto done
 		}
 	}
+
 done:
 
 	// All captured events should be for the API URL only.
@@ -303,6 +320,7 @@ func TestSessionHijackerWebSocket(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	hijacker, err := page.NewSessionHijacker()
@@ -331,6 +349,7 @@ drain:
 			if !ok {
 				break drain
 			}
+
 			events = append(events, ev)
 		default:
 			break drain
@@ -338,6 +357,7 @@ drain:
 	}
 
 	var hasWSOpened, hasWSSent, hasWSReceived, hasWSClosed bool
+
 	for _, ev := range events {
 		switch ev.Type {
 		case HijackWSOpened:
@@ -354,12 +374,15 @@ drain:
 	if !hasWSOpened {
 		t.Error("expected ws.opened event")
 	}
+
 	if !hasWSSent {
 		t.Error("expected ws.sent event")
 	}
+
 	if !hasWSReceived {
 		t.Error("expected ws.received event")
 	}
+
 	if !hasWSClosed {
 		t.Error("expected ws.closed event")
 	}
@@ -375,6 +398,7 @@ func TestSessionHijackerStopIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	hijacker, err := page.NewSessionHijacker()
@@ -418,6 +442,7 @@ func TestSessionHijackerBodyCapture(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	hijacker, err := page.NewSessionHijacker(WithHijackBodyCapture())
@@ -435,6 +460,7 @@ func TestSessionHijackerBodyCapture(t *testing.T) {
 	}
 
 	var events []HijackEvent
+
 	timeout := time.After(3 * time.Second)
 
 	for {
@@ -443,14 +469,17 @@ func TestSessionHijackerBodyCapture(t *testing.T) {
 			if !ok {
 				goto done
 			}
+
 			events = append(events, ev)
 		case <-timeout:
 			goto done
 		}
 	}
+
 done:
 
 	foundBody := false
+
 	for _, ev := range events {
 		if ev.Type == HijackEventResponse && ev.Response != nil && ev.Response.Body != "" {
 			foundBody = true
@@ -476,12 +505,14 @@ func TestSessionHijackerWithAutoAttach(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(srv.URL + "/hijack-page")
 	if err != nil {
 		t.Fatalf("NewPage() error: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	hijacker := page.Hijacker()

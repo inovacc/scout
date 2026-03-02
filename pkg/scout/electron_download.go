@@ -56,10 +56,12 @@ func latestElectronVersion(ctx context.Context) (string, error) {
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
 	client := &http.Client{Timeout: 30 * time.Second}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("scout: fetch electron version: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -84,6 +86,7 @@ func latestElectronVersion(ctx context.Context) (string, error) {
 // electronAssetName returns the zip filename for the current platform and version.
 func electronAssetName(version string) string {
 	key := runtime.GOOS + "_" + runtime.GOARCH
+
 	pattern, ok := electronAssets[key]
 	if !ok {
 		return ""

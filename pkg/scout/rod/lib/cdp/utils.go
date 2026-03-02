@@ -25,6 +25,7 @@ func (d *tlsDialer) DialContext(_ context.Context, network, address string) (net
 func MustConnectWS(wsURL string) WebSocketable {
 	ws := &WebSocket{}
 	utils.E(ws.Connect(context.Background(), wsURL, nil))
+
 	return ws
 }
 
@@ -32,15 +33,18 @@ func MustConnectWS(wsURL string) WebSocketable {
 func MustStartWithURL(ctx context.Context, u string, h http.Header) *Client {
 	c, err := StartWithURL(ctx, u, h)
 	utils.E(err)
+
 	return c
 }
 
 // StartWithURL helper to connect to the u with the default websocket lib.
 func StartWithURL(ctx context.Context, u string, h http.Header) (*Client, error) {
 	ws := &WebSocket{}
+
 	err := ws.Connect(ctx, u, h)
 	if err != nil {
 		return nil, err
 	}
+
 	return New().Start(ws), nil
 }

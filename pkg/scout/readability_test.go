@@ -10,10 +10,12 @@ import (
 
 func parseHTML(t *testing.T, s string) *html.Node {
 	t.Helper()
+
 	doc, err := html.Parse(strings.NewReader(s))
 	if err != nil {
 		t.Fatalf("parse HTML: %v", err)
 	}
+
 	return doc
 }
 
@@ -46,6 +48,7 @@ func TestScoreNode_Tags(t *testing.T) {
 			// Add text child so text length doesn't dominate
 			n.AppendChild(&html.Node{Type: html.TextNode, Data: strings.Repeat("word ", 20)})
 			score := scoreNode(n)
+
 			switch tt.wantSign {
 			case 1:
 				if score <= 0 {
@@ -78,6 +81,7 @@ func TestScoreNode_PositiveClassID(t *testing.T) {
 				Attr:     []html.Attribute{{Key: "class", Val: p}},
 			}
 			n.AppendChild(&html.Node{Type: html.TextNode, Data: strings.Repeat("word ", 20)})
+
 			score := scoreNode(n)
 			if score <= 0 {
 				t.Errorf("class %q should boost score, got %d", p, score)
@@ -97,6 +101,7 @@ func TestScoreNode_NegativeClassID(t *testing.T) {
 				Attr:     []html.Attribute{{Key: "class", Val: p}},
 			}
 			n.AppendChild(&html.Node{Type: html.TextNode, Data: "short"})
+
 			score := scoreNode(n)
 			if score >= 0 {
 				t.Errorf("class %q should penalize score, got %d", p, score)
@@ -112,6 +117,7 @@ func TestScoreNode_ShortText(t *testing.T) {
 		Data:     "div",
 	}
 	n.AppendChild(&html.Node{Type: html.TextNode, Data: "hi"})
+
 	score := scoreNode(n)
 	if score > 0 {
 		t.Errorf("short text should penalize, got %d", score)
@@ -170,9 +176,11 @@ func TestGetAttr(t *testing.T) {
 	if got := getAttr(n, "class"); got != "main-content" {
 		t.Errorf("got %q", got)
 	}
+
 	if got := getAttr(n, "id"); got != "article" {
 		t.Errorf("got %q", got)
 	}
+
 	if got := getAttr(n, "missing"); got != "" {
 		t.Errorf("got %q for missing attr", got)
 	}
@@ -202,6 +210,7 @@ func TestExtractMainContent(t *testing.T) {
 
 func TestExtractMainContent_EmptyDoc(t *testing.T) {
 	doc := &html.Node{Type: html.DocumentNode}
+
 	result := extractMainContent(doc)
 	if result != doc {
 		t.Error("empty doc should return doc itself")

@@ -110,6 +110,7 @@ func (b *Browser) GitHubExtractRepoInfo(owner, repo string, opts ...GitHubExtrac
 	if err != nil {
 		return nil, fmt.Errorf("scout: github: navigate repo: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -182,26 +183,32 @@ func (b *Browser) GitHubExtractRepoInfo(owner, repo string, opts ...GitHubExtrac
 		Name:  repo,
 	}
 
-	if m, ok := result.Value.(map[string]interface{}); ok {
+	if m, ok := result.Value.(map[string]any); ok {
 		if v, ok := m["description"].(string); ok {
 			r.Description = v
 		}
+
 		if v, ok := m["stars"].(float64); ok {
 			r.Stars = int(v)
 		}
+
 		if v, ok := m["forks"].(float64); ok {
 			r.Forks = int(v)
 		}
+
 		if v, ok := m["language"].(string); ok {
 			r.Language = v
 		}
+
 		if v, ok := m["license"].(string); ok {
 			r.License = v
 		}
+
 		if v, ok := m["last_updated"].(string); ok {
 			r.LastUpdated = v
 		}
-		if topics, ok := m["topics"].([]interface{}); ok {
+
+		if topics, ok := m["topics"].([]any); ok {
 			for _, t := range topics {
 				if s, ok := t.(string); ok {
 					r.Topics = append(r.Topics, s)
@@ -243,6 +250,7 @@ func (b *Browser) GitHubExtractIssues(owner, repo string, opts ...GitHubExtractO
 	}
 
 	stateQuery := "is%3Aopen"
+
 	switch cfg.state {
 	case "closed":
 		stateQuery = "is%3Aclosed"
@@ -256,6 +264,7 @@ func (b *Browser) GitHubExtractIssues(owner, repo string, opts ...GitHubExtractO
 	if err != nil {
 		return nil, fmt.Errorf("scout: github: navigate issues: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -321,7 +330,9 @@ func (b *Browser) GitHubExtractIssues(owner, repo string, opts ...GitHubExtractO
 			if issues[i].Number == 0 {
 				continue
 			}
+
 			issueURL := fmt.Sprintf("%s/%s/%s/issues/%d", baseHost, owner, repo, issues[i].Number)
+
 			body, bodyErr := b.fetchGitHubBody(issueURL)
 			if bodyErr == nil {
 				issues[i].Body = body
@@ -349,6 +360,7 @@ func (b *Browser) GitHubExtractPRs(owner, repo string, opts ...GitHubExtractOpti
 	}
 
 	stateQuery := "is%3Aopen"
+
 	switch cfg.state {
 	case "closed":
 		stateQuery = "is%3Aclosed"
@@ -362,6 +374,7 @@ func (b *Browser) GitHubExtractPRs(owner, repo string, opts ...GitHubExtractOpti
 	if err != nil {
 		return nil, fmt.Errorf("scout: github: navigate prs: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -434,7 +447,9 @@ func (b *Browser) GitHubExtractPRs(owner, repo string, opts ...GitHubExtractOpti
 			if prs[i].Number == 0 {
 				continue
 			}
+
 			prURL := fmt.Sprintf("%s/%s/%s/pull/%d", baseHost, owner, repo, prs[i].Number)
+
 			body, bodyErr := b.fetchGitHubBody(prURL)
 			if bodyErr == nil {
 				prs[i].Body = body
@@ -467,6 +482,7 @@ func (b *Browser) GitHubExtractReleases(owner, repo string, opts ...GitHubExtrac
 	if err != nil {
 		return nil, fmt.Errorf("scout: github: navigate releases: %w", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -474,6 +490,7 @@ func (b *Browser) GitHubExtractReleases(owner, repo string, opts ...GitHubExtrac
 	}
 
 	includeBody := cfg.includeBody
+
 	result, err := page.Eval(fmt.Sprintf(`(includeBody) => {
 		const items = [];
 		const sections = document.querySelectorAll('[data-testid="release-card"], .release, section[aria-label]');
@@ -523,35 +540,43 @@ func (b *Browser) GitHubExtractReleases(owner, repo string, opts ...GitHubExtrac
 	}
 
 	var releases []GitHubExtractRelease
-	if arr, ok := result.Value.([]interface{}); ok {
+
+	if arr, ok := result.Value.([]any); ok {
 		for _, item := range arr {
-			m, ok := item.(map[string]interface{})
+			m, ok := item.(map[string]any)
 			if !ok {
 				continue
 			}
+
 			rel := GitHubExtractRelease{}
 			if v, ok := m["tag"].(string); ok {
 				rel.Tag = v
 			}
+
 			if v, ok := m["name"].(string); ok {
 				rel.Name = v
 			}
+
 			if v, ok := m["published_at"].(string); ok {
 				rel.PublishedAt = v
 			}
+
 			if v, ok := m["author"].(string); ok {
 				rel.Author = v
 			}
+
 			if v, ok := m["body"].(string); ok && v != "" {
 				rel.Body = v
 			}
-			if assets, ok := m["assets"].([]interface{}); ok {
+
+			if assets, ok := m["assets"].([]any); ok {
 				for _, a := range assets {
 					if s, ok := a.(string); ok {
 						rel.Assets = append(rel.Assets, s)
 					}
 				}
 			}
+
 			releases = append(releases, rel)
 		}
 	}
@@ -562,45 +587,57 @@ func (b *Browser) GitHubExtractReleases(owner, repo string, opts ...GitHubExtrac
 // parseGitHubExtractIssues converts an EvalResult into a slice of GitHubExtractIssue.
 func parseGitHubExtractIssues(result *EvalResult, isPR bool) []GitHubExtractIssue {
 	var issues []GitHubExtractIssue
-	arr, ok := result.Value.([]interface{})
+
+	arr, ok := result.Value.([]any)
 	if !ok {
 		return nil
 	}
+
 	for _, item := range arr {
-		m, ok := item.(map[string]interface{})
+		m, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
+
 		issue := GitHubExtractIssue{IsPR: isPR}
 		if v, ok := m["number"].(float64); ok {
 			issue.Number = int(v)
 		}
+
 		if v, ok := m["title"].(string); ok {
 			issue.Title = v
 		}
+
 		if v, ok := m["state"].(string); ok {
 			issue.State = v
 		}
+
 		if v, ok := m["author"].(string); ok {
 			issue.Author = v
 		}
+
 		if v, ok := m["created_at"].(string); ok {
 			issue.CreatedAt = v
 		}
+
 		if v, ok := m["comments"].(float64); ok {
 			issue.Comments = int(v)
 		}
+
 		if v, ok := m["is_pr"].(bool); ok {
 			issue.IsPR = v
 		}
-		if labels, ok := m["labels"].([]interface{}); ok {
+
+		if labels, ok := m["labels"].([]any); ok {
 			for _, l := range labels {
 				if s, ok := l.(string); ok {
 					issue.Labels = append(issue.Labels, s)
 				}
 			}
 		}
+
 		issues = append(issues, issue)
 	}
+
 	return issues
 }

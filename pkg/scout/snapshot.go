@@ -59,7 +59,7 @@ func (p *Page) SnapshotWithOptions(opts ...SnapshotOption) (string, error) {
 
 	gen := snapshotGeneration.Add(1)
 
-	configMap := map[string]interface{}{
+	configMap := map[string]any{
 		"generation":       gen,
 		"maxDepth":         cfg.maxDepth,
 		"interactableOnly": cfg.interactableOnly,
@@ -93,8 +93,10 @@ func (p *Page) snapshotIframes(gen int64, cfg *snapshotConfig) string {
 	}
 
 	var parts []string
+
 	for _, iframe := range iframes {
 		src, _ := iframe.Attribute("src")
+
 		srcLabel := ""
 		if src != nil {
 			srcLabel = *src
@@ -106,7 +108,7 @@ func (p *Page) snapshotIframes(gen int64, cfg *snapshotConfig) string {
 			continue
 		}
 
-		iframeCfg := map[string]interface{}{
+		iframeCfg := map[string]any{
 			"generation":       gen,
 			"maxDepth":         cfg.maxDepth,
 			"interactableOnly": cfg.interactableOnly,
@@ -128,10 +130,12 @@ func (p *Page) snapshotIframes(gen int64, cfg *snapshotConfig) string {
 
 		// Indent iframe content by 2 extra spaces and add header
 		var lines []string
+
 		lines = append(lines, fmt.Sprintf("  - [iframe src=%q]", srcLabel))
-		for _, line := range strings.Split(frameSnap, "\n") {
+		for line := range strings.SplitSeq(frameSnap, "\n") {
 			lines = append(lines, "    "+line)
 		}
+
 		parts = append(parts, strings.Join(lines, "\n"))
 	}
 
@@ -191,6 +195,7 @@ func (p *Page) ElementByRef(ref string) (*Element, error) {
 
 	// Use CSS attribute selector to find the element via rod.
 	selector := fmt.Sprintf(`[data-scout-ref="%s"]`, ref)
+
 	rodEl, err := p.page.Element(selector)
 	if err != nil {
 		return nil, fmt.Errorf("scout: element by ref %q: %w", ref, err)

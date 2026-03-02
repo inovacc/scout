@@ -52,6 +52,7 @@ setTimeout(function() {
 
 func TestChallengeSolver_NilBrowser(t *testing.T) {
 	cs := NewChallengeSolver(nil)
+
 	err := cs.Solve(nil)
 	if err == nil {
 		t.Fatal("expected error for nil browser/page")
@@ -60,6 +61,7 @@ func TestChallengeSolver_NilBrowser(t *testing.T) {
 
 func TestChallengeSolver_Register(t *testing.T) {
 	b := newTestBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -75,6 +77,7 @@ func TestChallengeSolver_Register(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -90,6 +93,7 @@ func TestChallengeSolver_Register(t *testing.T) {
 
 func TestChallengeSolver_NoChallenge(t *testing.T) {
 	b := newTestBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -99,6 +103,7 @@ func TestChallengeSolver_NoChallenge(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -110,6 +115,7 @@ func TestChallengeSolver_NoChallenge(t *testing.T) {
 
 func TestChallengeSolver_CloudflareWait(t *testing.T) {
 	b := newTestBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -119,6 +125,7 @@ func TestChallengeSolver_CloudflareWait(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -137,6 +144,7 @@ func TestChallengeSolver_CloudflareWait(t *testing.T) {
 
 func TestChallengeSolver_SolveAll_MaxRetries(t *testing.T) {
 	b := newTestBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -150,6 +158,7 @@ func TestChallengeSolver_SolveAll_MaxRetries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatal(err)
 	}
@@ -158,6 +167,7 @@ func TestChallengeSolver_SolveAll_MaxRetries(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error after max retries")
 	}
+
 	if testing.Verbose() {
 		t.Logf("got expected error: %v", err)
 	}
@@ -165,6 +175,7 @@ func TestChallengeSolver_SolveAll_MaxRetries(t *testing.T) {
 
 func TestNavigateWithBypass_NilSolver(t *testing.T) {
 	b := newTestBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -191,12 +202,14 @@ func TestSolverOptions(t *testing.T) {
 	}
 
 	WithSolverTimeout(10 * time.Second)(o)
+
 	if o.timeout != 10*time.Second {
 		t.Fatalf("expected timeout 10s, got %v", o.timeout)
 	}
 
 	svc := NewTwoCaptchaService("test-key")
 	WithSolverService(svc)(o)
+
 	if len(o.services) != 1 {
 		t.Fatalf("expected 1 service, got %d", len(o.services))
 	}
@@ -204,8 +217,10 @@ func TestSolverOptions(t *testing.T) {
 
 func TestCaptchaSolverService_Interface(t *testing.T) {
 	// Verify both services implement the interface at compile time.
-	var _ CaptchaSolverService = (*TwoCaptchaService)(nil)
-	var _ CaptchaSolverService = (*CapSolverService)(nil)
+	var (
+		_ CaptchaSolverService = (*TwoCaptchaService)(nil)
+		_ CaptchaSolverService = (*CapSolverService)(nil)
+	)
 
 	tc := NewTwoCaptchaService("key")
 	if tc.Name() != "2captcha" {

@@ -15,6 +15,7 @@ func webSearchTestRoutes(mux *http.ServeMux) {
 	// Fake Google SERP with 3 results pointing to local pages
 	mux.HandleFunc("/ws-serp", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
+
 		host := r.Host
 		_, _ = fmt.Fprintf(w, `<!DOCTYPE html>
 <html><head><title>test - Google Search</title></head>
@@ -70,6 +71,7 @@ func webSearchTestRoutes(mux *http.ServeMux) {
 func TestWebSearch_NoFetch(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	// Override search to use local SERP
@@ -77,6 +79,7 @@ func TestWebSearch_NoFetch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -97,6 +100,7 @@ func TestWebSearch_NoFetch(t *testing.T) {
 		if r.Title == "" {
 			t.Error("title should not be empty")
 		}
+
 		if r.URL == "" {
 			t.Error("URL should not be empty")
 		}
@@ -106,6 +110,7 @@ func TestWebSearch_NoFetch(t *testing.T) {
 func TestWebSearch_WithFetch(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	// Parse SERP to get result URLs, then test fetch
@@ -116,6 +121,7 @@ func TestWebSearch_WithFetch(t *testing.T) {
 
 	if err := page.WaitLoad(); err != nil {
 		_ = page.Close()
+
 		t.Fatalf("WaitLoad: %v", err)
 	}
 
@@ -144,6 +150,7 @@ func TestWebSearch_WithFetch(t *testing.T) {
 func TestWebSearch_MainContent(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	content, err := b.WebFetch(srv.URL+"/ws-page1", WithFetchMode("markdown"), WithFetchMainContent())
@@ -159,6 +166,7 @@ func TestWebSearch_MainContent(t *testing.T) {
 func TestWebSearch_MaxFetch(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	// Parse SERP
@@ -166,10 +174,13 @@ func TestWebSearch_MaxFetch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		_ = page.Close()
+
 		t.Fatalf("WaitLoad: %v", err)
 	}
+
 	results, _ := googleParser.parse(page, "test", Google)
 	_ = page.Close()
 
@@ -196,12 +207,14 @@ func TestWebSearch_MaxFetch(t *testing.T) {
 func TestWebSearch_Cache(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	old := globalFetchCache.entries
 	globalFetchCache.mu.Lock()
 	globalFetchCache.entries = make(map[string]*fetchCacheEntry)
 	globalFetchCache.mu.Unlock()
+
 	defer func() {
 		globalFetchCache.mu.Lock()
 		globalFetchCache.entries = old
@@ -228,6 +241,7 @@ func TestWebSearch_Cache(t *testing.T) {
 func TestWebSearch_FetchErrorIsolation(t *testing.T) {
 	srv := newTestServer()
 	defer srv.Close()
+
 	b := newTestBrowser(t)
 
 	urls := []string{
@@ -255,76 +269,92 @@ func TestWebSearchOption_Defaults(t *testing.T) {
 	if o.engine != Google {
 		t.Errorf("engine = %d, want Google", o.engine)
 	}
+
 	if o.maxPages != 1 {
 		t.Errorf("maxPages = %d, want 1", o.maxPages)
 	}
+
 	if o.maxFetch != 5 {
 		t.Errorf("maxFetch = %d, want 5", o.maxFetch)
 	}
+
 	if o.concurrency != 3 {
 		t.Errorf("concurrency = %d, want 3", o.concurrency)
 	}
+
 	if o.fetchMode != "" {
 		t.Errorf("fetchMode = %q, want empty", o.fetchMode)
 	}
 
 	// Test all option functions
 	WithWebSearchEngine(Bing)(o)
+
 	if o.engine != Bing {
 		t.Error("WithWebSearchEngine failed")
 	}
 
 	WithWebSearchMaxPages(3)(o)
+
 	if o.maxPages != 3 {
 		t.Error("WithWebSearchMaxPages failed")
 	}
 
 	WithWebSearchLanguage("en")(o)
+
 	if o.language != "en" {
 		t.Error("WithWebSearchLanguage failed")
 	}
 
 	WithWebSearchRegion("us")(o)
+
 	if o.region != "us" {
 		t.Error("WithWebSearchRegion failed")
 	}
 
 	WithWebSearchFetch("markdown")(o)
+
 	if o.fetchMode != "markdown" {
 		t.Error("WithWebSearchFetch failed")
 	}
 
 	WithWebSearchMainContent()(o)
+
 	if !o.mainOnly {
 		t.Error("WithWebSearchMainContent failed")
 	}
 
 	WithWebSearchMaxFetch(10)(o)
+
 	if o.maxFetch != 10 {
 		t.Error("WithWebSearchMaxFetch failed")
 	}
 
 	WithWebSearchConcurrency(5)(o)
+
 	if o.concurrency != 5 {
 		t.Error("WithWebSearchConcurrency failed")
 	}
 
 	WithWebSearchCache(2 * time.Minute)(o)
+
 	if o.cacheTTL != 2*time.Minute {
 		t.Error("WithWebSearchCache failed")
 	}
 
 	WithSearchDomain("example.com")(o)
+
 	if o.domain != "example.com" {
 		t.Error("WithSearchDomain failed")
 	}
 
 	WithSearchExcludeDomain("spam.com", "ads.com")(o)
+
 	if len(o.excludeDomains) != 2 {
 		t.Error("WithSearchExcludeDomain failed")
 	}
 
 	WithSearchEngines("google", "bing", "duckduckgo")(o)
+
 	if len(o.engines) != 3 {
 		t.Errorf("WithSearchEngines: got %d engines, want 3", len(o.engines))
 	}
@@ -345,6 +375,7 @@ func TestWebSearch_ExcludeDomain(t *testing.T) {
 	WithSearchExcludeDomain("pinterest.com", "quora.com")(o)
 
 	q := buildSearchQuery("go tutorials", o)
+
 	want := "go tutorials -site:pinterest.com -site:quora.com"
 	if q != want {
 		t.Errorf("got %q, want %q", q, want)
@@ -357,6 +388,7 @@ func TestWebSearch_DomainAndExcludeCombined(t *testing.T) {
 	WithSearchExcludeDomain("gist.github.com")(o)
 
 	q := buildSearchQuery("scout", o)
+
 	want := "scout site:github.com -site:gist.github.com"
 	if q != want {
 		t.Errorf("got %q, want %q", q, want)
@@ -390,6 +422,7 @@ func TestWebSearch_MultiEngine_RRF(t *testing.T) {
 	if merged[0].URL != "http://b.com" {
 		t.Errorf("first result = %q, want http://b.com", merged[0].URL)
 	}
+
 	if merged[1].URL != "http://a.com" {
 		t.Errorf("second result = %q, want http://a.com", merged[1].URL)
 	}
@@ -415,6 +448,7 @@ func TestWebSearch_MultiEngine_RRF(t *testing.T) {
 		if seen[item.URL] {
 			t.Errorf("duplicate URL in merged results: %s", item.URL)
 		}
+
 		seen[item.URL] = true
 	}
 }
@@ -430,6 +464,7 @@ func TestWebSearch_MultiEngine_SingleResult(t *testing.T) {
 	if len(merged) != 1 {
 		t.Fatalf("got %d, want 1", len(merged))
 	}
+
 	if merged[0].RRFScore == 0 {
 		t.Error("RRF score should be set even for single engine")
 	}
@@ -443,11 +478,13 @@ func TestWebSearch_RecentOption(t *testing.T) {
 	}
 
 	WithSearchRecent(24 * time.Hour)(o)
+
 	if o.recentDuration != 24*time.Hour {
 		t.Errorf("recentDuration = %v, want 24h", o.recentDuration)
 	}
 
 	WithSearchRecent(7 * 24 * time.Hour)(o)
+
 	if o.recentDuration != 7*24*time.Hour {
 		t.Errorf("recentDuration = %v, want 7d", o.recentDuration)
 	}
@@ -516,15 +553,19 @@ func TestWebSearch_RecentQueryModifier(t *testing.T) {
 func TestWebSearch_EnginesParsing(t *testing.T) {
 	o := webSearchDefaults()
 	WithSearchEngines("Google", "BING", "DDG", "invalid")(o)
+
 	if len(o.engines) != 3 {
 		t.Errorf("got %d engines, want 3 (invalid should be skipped)", len(o.engines))
 	}
+
 	if o.engines[0] != Google {
 		t.Error("first engine should be Google")
 	}
+
 	if o.engines[1] != Bing {
 		t.Error("second engine should be Bing")
 	}
+
 	if o.engines[2] != DuckDuckGo {
 		t.Error("third engine should be DuckDuckGo")
 	}

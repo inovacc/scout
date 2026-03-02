@@ -18,21 +18,27 @@ func TestScreenRecorder_NilPage(t *testing.T) {
 	if err := r.Start(); err == nil {
 		t.Error("expected error from nil Start")
 	}
+
 	if err := r.Stop(); err != nil {
 		t.Errorf("expected nil error from nil Stop, got %v", err)
 	}
+
 	if r.Frames() != nil {
 		t.Error("expected nil frames")
 	}
+
 	if r.FrameCount() != 0 {
 		t.Error("expected 0 frame count")
 	}
+
 	if r.Duration() != 0 {
 		t.Error("expected 0 duration")
 	}
+
 	if err := r.ExportGIF(&bytes.Buffer{}); err == nil {
 		t.Error("expected error from nil ExportGIF")
 	}
+
 	if err := r.ExportFrames(t.TempDir()); err == nil {
 		t.Error("expected error from nil ExportFrames")
 	}
@@ -43,6 +49,7 @@ func TestScreenRecorder_Options(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(ts.URL)
 	if err != nil {
 		t.Fatalf("new page: %v", err)
@@ -55,12 +62,15 @@ func TestScreenRecorder_Options(t *testing.T) {
 	if r == nil {
 		t.Fatal("expected non-nil recorder")
 	}
+
 	if r.opts.quality != 50 {
 		t.Errorf("quality = %d, want 50", r.opts.quality)
 	}
+
 	if r.opts.maxWidth != 640 {
 		t.Errorf("maxWidth = %d, want 640", r.opts.maxWidth)
 	}
+
 	if r.opts.maxHeight != 480 {
 		t.Errorf("maxHeight = %d, want 480", r.opts.maxHeight)
 	}
@@ -69,10 +79,13 @@ func TestScreenRecorder_Options(t *testing.T) {
 func TestScreenRecorder_OptionsClamp(t *testing.T) {
 	var o screenRecordOpts
 	WithRecordQuality(0)(&o)
+
 	if o.quality != 1 {
 		t.Errorf("quality clamped to %d, want 1", o.quality)
 	}
+
 	WithRecordQuality(200)(&o)
+
 	if o.quality != 100 {
 		t.Errorf("quality clamped to %d, want 100", o.quality)
 	}
@@ -83,6 +96,7 @@ func TestScreenRecorder_StartStop(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(ts.URL)
 	if err != nil {
 		t.Fatalf("new page: %v", err)
@@ -108,6 +122,7 @@ func TestScreenRecorder_DoubleStop(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(ts.URL)
 	if err != nil {
 		t.Fatalf("new page: %v", err)
@@ -121,6 +136,7 @@ func TestScreenRecorder_DoubleStop(t *testing.T) {
 	if err := r.Stop(); err != nil {
 		t.Fatalf("first stop: %v", err)
 	}
+
 	if err := r.Stop(); err != nil {
 		t.Fatalf("second stop should be idempotent: %v", err)
 	}
@@ -131,6 +147,7 @@ func TestScreenRecorder_ExportGIF(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(ts.URL)
 	if err != nil {
 		t.Fatalf("new page: %v", err)
@@ -145,6 +162,7 @@ func TestScreenRecorder_ExportGIF(t *testing.T) {
 	_ = page.WaitLoad()
 	_ = page.Navigate(ts.URL + "/page2")
 	_ = page.WaitLoad()
+
 	time.Sleep(500 * time.Millisecond)
 
 	if err := r.Stop(); err != nil {
@@ -177,6 +195,7 @@ func TestScreenRecorder_ExportFrames(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(ts.URL)
 	if err != nil {
 		t.Fatalf("new page: %v", err)
@@ -188,6 +207,7 @@ func TestScreenRecorder_ExportFrames(t *testing.T) {
 	}
 
 	_ = page.WaitLoad()
+
 	time.Sleep(500 * time.Millisecond)
 
 	if err := r.Stop(); err != nil {
@@ -220,6 +240,7 @@ func TestScreenRecorder_Duration(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
+
 	page, err := b.NewPage(ts.URL)
 	if err != nil {
 		t.Fatalf("new page: %v", err)
@@ -231,6 +252,7 @@ func TestScreenRecorder_Duration(t *testing.T) {
 	}
 
 	_ = page.WaitLoad()
+
 	time.Sleep(600 * time.Millisecond)
 
 	if err := r.Stop(); err != nil {

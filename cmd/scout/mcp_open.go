@@ -56,6 +56,7 @@ Examples:
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(url)
@@ -75,6 +76,7 @@ Examples:
 		<-sig
 
 		_, _ = fmt.Fprintln(os.Stderr, "\nClosing browser...")
+
 		return nil
 	},
 }

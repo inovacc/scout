@@ -40,6 +40,7 @@ func init() {
 		})
 
 		var webfetchFailCount atomic.Int32
+
 		mux.HandleFunc("/webfetch-flaky", func(w http.ResponseWriter, _ *http.Request) {
 			n := webfetchFailCount.Add(1)
 			if n <= 2 {
@@ -54,8 +55,10 @@ func init() {
 				}
 				// Fallback: 500
 				http.Error(w, "server error", http.StatusInternalServerError)
+
 				return
 			}
+
 			w.Header().Set("Content-Type", "text/html")
 			_, _ = fmt.Fprint(w, `<!DOCTYPE html><html><head><title>Flaky OK</title></head><body><p>Success</p></body></html>`)
 		})
@@ -72,6 +75,7 @@ func init() {
 func TestWebFetch_FullMode(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	result, err := b.WebFetch(ts.URL + "/webfetch")
@@ -82,21 +86,27 @@ func TestWebFetch_FullMode(t *testing.T) {
 	if result.Title != "WebFetch Test Page" {
 		t.Errorf("title = %q, want %q", result.Title, "WebFetch Test Page")
 	}
+
 	if result.Markdown == "" {
 		t.Error("markdown should not be empty in full mode")
 	}
+
 	if result.Meta == nil {
 		t.Error("meta should not be nil in full mode")
 	}
+
 	if len(result.Links) == 0 {
 		t.Error("links should not be empty in full mode")
 	}
+
 	if result.HTML != "" {
 		t.Error("html should be empty unless WithFetchHTML is set")
 	}
+
 	if result.URL != ts.URL+"/webfetch" {
 		t.Errorf("url = %q, want %q", result.URL, ts.URL+"/webfetch")
 	}
+
 	if result.FetchedAt.IsZero() {
 		t.Error("fetched_at should be set")
 	}
@@ -105,6 +115,7 @@ func TestWebFetch_FullMode(t *testing.T) {
 func TestWebFetch_MarkdownMode(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	result, err := b.WebFetch(ts.URL+"/webfetch", WithFetchMode("markdown"))
@@ -115,9 +126,11 @@ func TestWebFetch_MarkdownMode(t *testing.T) {
 	if result.Markdown == "" {
 		t.Error("markdown should not be empty")
 	}
+
 	if result.Meta != nil {
 		t.Error("meta should be nil in markdown mode")
 	}
+
 	if len(result.Links) > 0 {
 		t.Error("links should be empty in markdown mode")
 	}
@@ -126,6 +139,7 @@ func TestWebFetch_MarkdownMode(t *testing.T) {
 func TestWebFetch_MarkdownMainOnly(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	result, err := b.WebFetch(ts.URL+"/webfetch", WithFetchMode("markdown"), WithFetchMainContent())
@@ -141,6 +155,7 @@ func TestWebFetch_MarkdownMainOnly(t *testing.T) {
 func TestWebFetch_HTMLMode(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	result, err := b.WebFetch(ts.URL+"/webfetch", WithFetchMode("html"))
@@ -151,6 +166,7 @@ func TestWebFetch_HTMLMode(t *testing.T) {
 	if result.HTML == "" {
 		t.Error("html should not be empty in html mode")
 	}
+
 	if !strings.Contains(result.HTML, "<article>") {
 		t.Error("html should contain raw HTML")
 	}
@@ -159,6 +175,7 @@ func TestWebFetch_HTMLMode(t *testing.T) {
 func TestWebFetch_TextMode(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	result, err := b.WebFetch(ts.URL+"/webfetch", WithFetchMode("text"))
@@ -174,6 +191,7 @@ func TestWebFetch_TextMode(t *testing.T) {
 func TestWebFetch_LinksMode(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	result, err := b.WebFetch(ts.URL+"/webfetch", WithFetchMode("links"))
@@ -187,11 +205,13 @@ func TestWebFetch_LinksMode(t *testing.T) {
 
 	// Check deduplication: /page1 appears twice in HTML but should appear once
 	count := 0
+
 	for _, l := range result.Links {
 		if l == "/page1" {
 			count++
 		}
 	}
+
 	if count != 1 {
 		t.Errorf("/page1 appears %d times, want 1 (dedup)", count)
 	}
@@ -200,6 +220,7 @@ func TestWebFetch_LinksMode(t *testing.T) {
 func TestWebFetch_MetaMode(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	result, err := b.WebFetch(ts.URL+"/webfetch", WithFetchMode("meta"))
@@ -210,9 +231,11 @@ func TestWebFetch_MetaMode(t *testing.T) {
 	if result.Meta == nil {
 		t.Fatal("meta should not be nil")
 	}
+
 	if result.Meta.Description != "A test page for webfetch" {
 		t.Errorf("description = %q, want %q", result.Meta.Description, "A test page for webfetch")
 	}
+
 	if result.Markdown != "" {
 		t.Error("markdown should be empty in meta mode")
 	}
@@ -221,6 +244,7 @@ func TestWebFetch_MetaMode(t *testing.T) {
 func TestWebFetch_FullWithHTML(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	result, err := b.WebFetch(ts.URL+"/webfetch", WithFetchHTML())
@@ -231,6 +255,7 @@ func TestWebFetch_FullWithHTML(t *testing.T) {
 	if result.HTML == "" {
 		t.Error("html should not be empty when WithFetchHTML is set")
 	}
+
 	if result.Markdown == "" {
 		t.Error("markdown should still be populated in full mode")
 	}
@@ -239,6 +264,7 @@ func TestWebFetch_FullWithHTML(t *testing.T) {
 func TestWebFetch_Cache(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	url := ts.URL + "/webfetch-minimal"
@@ -248,6 +274,7 @@ func TestWebFetch_Cache(t *testing.T) {
 	globalFetchCache.mu.Lock()
 	globalFetchCache.entries = make(map[string]*fetchCacheEntry)
 	globalFetchCache.mu.Unlock()
+
 	defer func() {
 		globalFetchCache.mu.Lock()
 		globalFetchCache.entries = old
@@ -281,6 +308,7 @@ func TestFetchCache_Expiry(t *testing.T) {
 	if !ok {
 		t.Fatal("expected cache hit")
 	}
+
 	if got.Title != "Test" {
 		t.Errorf("title = %q, want %q", got.Title, "Test")
 	}
@@ -297,6 +325,7 @@ func TestFetchCache_Expiry(t *testing.T) {
 func TestWebFetchBatch(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	urls := []string{
@@ -314,6 +343,7 @@ func TestWebFetchBatch(t *testing.T) {
 	if results[0].URL != urls[0] {
 		t.Errorf("result 0 url = %q, want %q", results[0].URL, urls[0])
 	}
+
 	if results[1].URL != urls[1] {
 		t.Errorf("result 1 url = %q, want %q", results[1].URL, urls[1])
 	}
@@ -321,6 +351,7 @@ func TestWebFetchBatch(t *testing.T) {
 	if results[0].Title != "WebFetch Test Page" {
 		t.Errorf("result 0 title = %q, want %q", results[0].Title, "WebFetch Test Page")
 	}
+
 	if results[1].Title != "Minimal Page" {
 		t.Errorf("result 1 title = %q, want %q", results[1].Title, "Minimal Page")
 	}
@@ -329,6 +360,7 @@ func TestWebFetchBatch(t *testing.T) {
 func TestWebFetchBatch_ErrorIsolation(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	urls := []string{
@@ -346,6 +378,7 @@ func TestWebFetchBatch_ErrorIsolation(t *testing.T) {
 	if results[0] == nil {
 		t.Fatal("result 0 should not be nil")
 	}
+
 	if results[0].Title != "" {
 		t.Errorf("bad url title = %q, want empty", results[0].Title)
 	}
@@ -359,6 +392,7 @@ func TestWebFetchBatch_ErrorIsolation(t *testing.T) {
 func TestWebFetch_RedirectChain(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	result, err := b.WebFetch(ts.URL + "/webfetch-redirect")
@@ -369,12 +403,15 @@ func TestWebFetch_RedirectChain(t *testing.T) {
 	if len(result.RedirectChain) < 2 {
 		t.Fatalf("RedirectChain length = %d, want >= 2", len(result.RedirectChain))
 	}
+
 	if result.RedirectChain[0] != ts.URL+"/webfetch-redirect" {
 		t.Errorf("RedirectChain[0] = %q, want %q", result.RedirectChain[0], ts.URL+"/webfetch-redirect")
 	}
+
 	if !strings.HasSuffix(result.RedirectChain[1], "/webfetch") {
 		t.Errorf("RedirectChain[1] = %q, want suffix /webfetch", result.RedirectChain[1])
 	}
+
 	if result.Title != "WebFetch Test Page" {
 		t.Errorf("title = %q, want %q", result.Title, "WebFetch Test Page")
 	}
@@ -383,6 +420,7 @@ func TestWebFetch_RedirectChain(t *testing.T) {
 func TestWebFetch_NoRedirectChain(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	result, err := b.WebFetch(ts.URL + "/webfetch")
@@ -399,11 +437,13 @@ func TestWebFetch_RetryOption(t *testing.T) {
 	o := webFetchDefaults()
 
 	WithFetchRetries(3)(o)
+
 	if o.retries != 3 {
 		t.Errorf("retries = %d, want 3", o.retries)
 	}
 
 	WithFetchRetryDelay(500 * time.Millisecond)(o)
+
 	if o.retryDelay != 500*time.Millisecond {
 		t.Errorf("retryDelay = %v, want 500ms", o.retryDelay)
 	}
@@ -424,6 +464,7 @@ func TestWebFetch_RetryOnError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for unreachable URL")
 	}
+
 	if !strings.Contains(err.Error(), "scout: webfetch:") {
 		t.Errorf("error = %q, want scout: webfetch: prefix", err.Error())
 	}
@@ -432,12 +473,14 @@ func TestWebFetch_RetryOnError(t *testing.T) {
 func TestExtractPageLinks_Dedup(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	page, err := b.NewPage(ts.URL + "/webfetch")
 	if err != nil {
 		t.Fatalf("NewPage failed: %v", err)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {

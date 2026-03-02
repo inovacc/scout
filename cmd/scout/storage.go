@@ -38,15 +38,18 @@ var storageGetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
 		}
 
 		st := storageType(cmd)
+
 		resp, err := client.Eval(context.Background(), &pb.EvalRequest{
 			SessionId: sessionID,
 			Script:    fmt.Sprintf(`%s.getItem(%q)`, st, args[0]),
@@ -56,6 +59,7 @@ var storageGetCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), resp.GetResult())
+
 		return nil
 	},
 }
@@ -69,15 +73,18 @@ var storageSetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
 		}
 
 		st := storageType(cmd)
+
 		_, err = client.Eval(context.Background(), &pb.EvalRequest{
 			SessionId: sessionID,
 			Script:    fmt.Sprintf(`%s.setItem(%q, %q)`, st, args[0], args[1]),
@@ -87,6 +94,7 @@ var storageSetCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "stored")
+
 		return nil
 	},
 }
@@ -99,15 +107,18 @@ var storageListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
 		}
 
 		st := storageType(cmd)
+
 		resp, err := client.Eval(context.Background(), &pb.EvalRequest{
 			SessionId: sessionID,
 			Script:    fmt.Sprintf(`JSON.stringify(Object.keys(%s))`, st),
@@ -117,6 +128,7 @@ var storageListCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), resp.GetResult())
+
 		return nil
 	},
 }
@@ -129,15 +141,18 @@ var storageClearCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		sessionID, err := resolveSession(sessionFlag)
 		if err != nil {
 			return err
 		}
 
 		st := storageType(cmd)
+
 		_, err = client.Eval(context.Background(), &pb.EvalRequest{
 			SessionId: sessionID,
 			Script:    fmt.Sprintf(`%s.clear()`, st),
@@ -147,6 +162,7 @@ var storageClearCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "storage cleared")
+
 		return nil
 	},
 }

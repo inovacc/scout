@@ -188,6 +188,7 @@ func TestDetectSwagger(t *testing.T) {
 			if err != nil {
 				t.Fatalf("navigate: %v", err)
 			}
+
 			if err := page.WaitLoad(); err != nil {
 				t.Fatalf("wait load: %v", err)
 			}
@@ -205,6 +206,7 @@ func TestDetectSwagger(t *testing.T) {
 					t.Errorf("expected spec URL, got empty")
 				}
 			}
+
 			if !tt.detected && specURL != "" {
 				t.Errorf("expected no detection, got %q", specURL)
 			}
@@ -222,6 +224,7 @@ func TestExtractSwagger(t *testing.T) {
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("wait load: %v", err)
 	}
@@ -234,32 +237,40 @@ func TestExtractSwagger(t *testing.T) {
 	if spec.Version != "3.0.3" {
 		t.Errorf("version = %q, want 3.0.3", spec.Version)
 	}
+
 	if spec.Info.Title != "Pet Store API" {
 		t.Errorf("title = %q, want Pet Store API", spec.Info.Title)
 	}
+
 	if len(spec.Paths) == 0 {
 		t.Fatal("expected paths, got none")
 	}
+
 	if len(spec.Schemas) == 0 {
 		t.Fatal("expected schemas, got none")
 	}
+
 	if len(spec.Security) == 0 {
 		t.Fatal("expected security definitions, got none")
 	}
+
 	if spec.Raw == nil {
 		t.Error("expected raw spec with WithSwaggerRaw(true)")
 	}
 
 	// Verify specific path
 	found := false
+
 	for _, p := range spec.Paths {
-		if p.Path == "/pets" && p.Method == "GET" {
+		if p.Path == "/pets" && p.Method == http.MethodGet {
 			found = true
+
 			if p.OperationID != "listPets" {
 				t.Errorf("operationId = %q, want listPets", p.OperationID)
 			}
 		}
 	}
+
 	if !found {
 		t.Error("expected GET /pets path")
 	}
@@ -275,6 +286,7 @@ func TestExtractSwaggerEndpointsOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("wait load: %v", err)
 	}
@@ -287,6 +299,7 @@ func TestExtractSwaggerEndpointsOnly(t *testing.T) {
 	if len(spec.Paths) == 0 {
 		t.Fatal("expected paths")
 	}
+
 	if spec.Schemas != nil {
 		t.Error("expected nil schemas with endpoints only")
 	}
@@ -333,6 +346,7 @@ func TestParseSwagger20(t *testing.T) {
 	}`
 
 	cfg := swaggerDefaults()
+
 	spec, err := parseSwaggerSpec("https://test.com/swagger.json", []byte(raw), cfg)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
@@ -341,18 +355,23 @@ func TestParseSwagger20(t *testing.T) {
 	if spec.Version != "2.0" {
 		t.Errorf("version = %q, want 2.0", spec.Version)
 	}
+
 	if len(spec.Servers) == 0 {
 		t.Fatal("expected server from host/basePath")
 	}
+
 	if spec.Servers[0].URL != "https://api.test.com/api" {
 		t.Errorf("server url = %q, want https://api.test.com/api", spec.Servers[0].URL)
 	}
+
 	if len(spec.Paths) != 1 {
 		t.Errorf("paths count = %d, want 1", len(spec.Paths))
 	}
+
 	if len(spec.Schemas) != 1 {
 		t.Errorf("schemas count = %d, want 1", len(spec.Schemas))
 	}
+
 	if len(spec.Security) != 1 {
 		t.Errorf("security count = %d, want 1", len(spec.Security))
 	}
@@ -360,6 +379,7 @@ func TestParseSwagger20(t *testing.T) {
 
 func TestParseSwaggerSpec_Invalid(t *testing.T) {
 	cfg := swaggerDefaults()
+
 	_, err := parseSwaggerSpec("", []byte("not json"), cfg)
 	if err == nil {
 		t.Error("expected error for invalid JSON")

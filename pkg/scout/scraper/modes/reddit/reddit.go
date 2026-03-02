@@ -64,6 +64,7 @@ func (p *redditProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 	}
 
 	tokens := make(map[string]string)
+
 	for _, c := range cookies {
 		switch c.Name {
 		case "reddit_session", "token_v2", "edgebucket", "loid":
@@ -86,17 +87,19 @@ func (p *redditProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 	}`)
 
 	localStorage := make(map[string]string)
+
 	if err == nil && lsResult != nil {
 		raw := lsResult.String()
 		// Parse the JSON string manually to populate localStorage.
 		raw = strings.Trim(raw, "\"")
 		if raw != "{}" && raw != "" {
 			// Simple key-value extraction; non-critical if it fails.
-			pairs := strings.Split(strings.Trim(raw, "{}"), ",")
-			for _, pair := range pairs {
+			pairs := strings.SplitSeq(strings.Trim(raw, "{}"), ",")
+			for pair := range pairs {
 				kv := strings.SplitN(pair, ":", 2)
 				if len(kv) == 2 {
 					k := strings.Trim(kv[0], ` "`)
+
 					v := strings.Trim(kv[1], ` "`)
 					if k != "" {
 						localStorage[k] = v
@@ -129,6 +132,7 @@ func (p *redditProvider) ValidateSession(_ context.Context, session *auth.Sessio
 	}
 
 	_, hasSession := session.Tokens["reddit_session"]
+
 	_, hasToken := session.Tokens["token_v2"]
 	if !hasSession && !hasToken {
 		return fmt.Errorf("reddit: validate session: no reddit_session or token_v2 token found")
@@ -149,6 +153,7 @@ func (m *RedditMode) AuthProvider() scraper.AuthProvider {
 	if m.provider == nil {
 		m.provider = &redditProvider{}
 	}
+
 	return m.provider
 }
 
@@ -158,8 +163,10 @@ func (m *RedditMode) Scrape(ctx context.Context, session scraper.SessionData, op
 	results := make(chan scraper.Result, 64)
 
 	var authSession *auth.Session
+
 	if session != nil {
 		var ok bool
+
 		authSession, ok = session.(*auth.Session)
 		if !ok {
 			close(results)
@@ -199,10 +206,12 @@ func (m *RedditMode) scrapeTargets(ctx context.Context, browser *scout.Browser, 
 	}
 
 	emitted := 0
+
 	for _, target := range targets {
 		if ctx.Err() != nil {
 			return
 		}
+
 		if opts.Limit > 0 && emitted >= opts.Limit {
 			return
 		}
@@ -212,6 +221,7 @@ func (m *RedditMode) scrapeTargets(ctx context.Context, browser *scout.Browser, 
 			m.emitProgress(opts.Progress, "error", fmt.Sprintf("failed to scrape r/%s: %v", target, err))
 			continue
 		}
+
 		emitted += n
 	}
 }
@@ -220,6 +230,7 @@ func (m *RedditMode) scrapeTargets(ctx context.Context, browser *scout.Browser, 
 func (m *RedditMode) scrapeSubreddit(ctx context.Context, browser *scout.Browser, session *auth.Session, subreddit string, opts scraper.ScrapeOptions, results chan<- scraper.Result, remaining int) (int, error) {
 	url := "https://www.reddit.com"
 	source := "frontpage"
+
 	if subreddit != "" {
 		url = fmt.Sprintf("https://www.reddit.com/r/%s/", subreddit)
 		source = "r/" + subreddit
@@ -361,10 +372,12 @@ func (m *RedditMode) extractPosts(ctx context.Context, page *scout.Page, source 
 	}
 
 	emitted := 0
+
 	for _, p := range posts {
 		if ctx.Err() != nil {
 			return emitted, nil
 		}
+
 		if limit > 0 && emitted >= limit {
 			return emitted, nil
 		}
@@ -385,6 +398,7 @@ func (m *RedditMode) extractPosts(ctx context.Context, page *scout.Page, source 
 				"comment_count": commentCount,
 			},
 		}
+
 		emitted++
 	}
 
@@ -481,6 +495,7 @@ func parseScore(s string) (int, error) {
 func parseJSONArray[T any](raw string, out *[]T) error {
 	raw = strings.Trim(raw, "\"")
 	raw = strings.ReplaceAll(raw, `\"`, `"`)
+
 	return json.Unmarshal([]byte(raw), out)
 }
 
@@ -488,5 +503,6 @@ func parseJSONArray[T any](raw string, out *[]T) error {
 func parseJSONObject[T any](raw string, out *T) error {
 	raw = strings.Trim(raw, "\"")
 	raw = strings.ReplaceAll(raw, `\"`, `"`)
+
 	return json.Unmarshal([]byte(raw), out)
 }

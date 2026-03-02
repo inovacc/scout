@@ -53,13 +53,17 @@ type Browser struct {
 	// fpRot manages automatic fingerprint rotation across NewPage calls.
 	fpRot *fingerprintRotator
 
-	// sessionTracker and sessionID track this browser's session in track.json.
-	sessionTracker *SessionTracker
-	sessionID      string
+	// sessionID tracks this browser's session directory under ~/.scout/sessions/.
+	sessionID string
 }
 
 // New creates and connects a new headless browser with the given options.
 func New(opts ...Option) (*Browser, error) {
+	// Clean up orphaned browsers on startup.
+	_, _ = CleanOrphans()
+
+	// Periodic orphan watchdog is started after browser creation (below).
+
 	o := defaults()
 	for _, fn := range opts {
 		fn(o)
@@ -80,6 +84,7 @@ func New(opts ...Option) (*Browser, error) {
 		if err != nil {
 			return nil, fmt.Errorf("scout: vpn: connect: %w", err)
 		}
+
 		if dp, ok := o.vpnProvider.(*DirectProxy); ok {
 			o.proxy = dp.ProxyURL()
 			if dp.username != "" && o.proxyAuth == nil {
@@ -98,6 +103,7 @@ func New(opts ...Option) (*Browser, error) {
 	if o.electronCDP != "" {
 		// Connect to running Electron app via CDP.
 		var resolveErr error
+
 		u, resolveErr = lookupElectronCDP(o.electronCDP)
 		if resolveErr != nil {
 			return nil, fmt.Errorf("scout: resolve electron CDP: %w", resolveErr)
@@ -105,6 +111,7 @@ func New(opts ...Option) (*Browser, error) {
 	} else if o.electronApp != "" {
 		// Launch Electron app with CDP debugging.
 		var err error
+
 		u, l, err = launchElectron(o)
 		if err != nil {
 			return nil, err
@@ -125,6 +132,7 @@ func New(opts ...Option) (*Browser, error) {
 		}
 	} else {
 		var err error
+
 		u, l, err = launchLocal(o)
 		if err != nil {
 			return nil, err
@@ -149,6 +157,7 @@ func New(opts ...Option) (*Browser, error) {
 	// Set up proxy authentication handler if configured.
 	if o.proxyAuth != nil {
 		wait := b.HandleAuth(o.proxyAuth.username, o.proxyAuth.password)
+
 		go func() { _ = wait() }()
 	}
 
@@ -170,21 +179,25 @@ func New(opts ...Option) (*Browser, error) {
 		if o.webmcpAutoDiscover {
 			br.webmcpRegistry = NewWebMCPRegistry()
 		}
+
 		if o.bridge && o.bridgePort != 0 {
 			if err := br.startBridgeServer(); err != nil {
 				_ = ctx.Close()
 				return nil, err
 			}
 		}
+
 		if o.autoFreeInterval > 0 {
 			br.startAutoFree(AutoFreeConfig{
 				Interval:  o.autoFreeInterval,
 				OnRecycle: o.autoFreeCallback,
 			})
 		}
+
 		if o.vpnRotation != nil && o.vpnProvider != nil {
 			br.vpnRot = newVPNRotator(o.vpnProvider, *o.vpnRotation)
 		}
+
 		if o.fpRotation != nil {
 			br.fpRot = newFingerprintRotator(*o.fpRotation)
 		}
@@ -194,6 +207,9 @@ func New(opts ...Option) (*Browser, error) {
 			br.registerSession()
 		}
 
+		// Periodic orphan watchdog — kills dangling browsers whose scout died.
+		StartOrphanWatchdog(DefaultOrphanCheckInterval, br.done)
+
 		return br, nil
 	}
 
@@ -201,21 +217,25 @@ func New(opts ...Option) (*Browser, error) {
 	if o.webmcpAutoDiscover {
 		br.webmcpRegistry = NewWebMCPRegistry()
 	}
+
 	if o.bridge && o.bridgePort != 0 {
 		if err := br.startBridgeServer(); err != nil {
 			_ = b.Close()
 			return nil, err
 		}
 	}
+
 	if o.autoFreeInterval > 0 {
 		br.startAutoFree(AutoFreeConfig{
 			Interval:  o.autoFreeInterval,
 			OnRecycle: o.autoFreeCallback,
 		})
 	}
+
 	if o.vpnRotation != nil && o.vpnProvider != nil {
 		br.vpnRot = newVPNRotator(o.vpnProvider, *o.vpnRotation)
 	}
+
 	if o.fpRotation != nil {
 		br.fpRot = newFingerprintRotator(*o.fpRotation)
 	}
@@ -225,34 +245,46 @@ func New(opts ...Option) (*Browser, error) {
 		br.registerSession()
 	}
 
+	// Periodic orphan watchdog — kills dangling browsers whose scout died.
+	StartOrphanWatchdog(DefaultOrphanCheckInterval, br.done)
+
 	return br, nil
 }
 
 // launchLocal starts a local browser process and returns the CDP WebSocket URL and launcher.
 func launchLocal(o *options) (string, *launcher.Launcher, error) {
-	// Session reuse: resolve data dir from explicit session ID or find a matching one.
+	// Session reuse: resolve data dir from explicit session ID, domain hash, or auto-find.
 	if o.userDataDir == "" {
 		if o.sessionID != "" {
-			// Explicit session ID — look up in track.json.
-			if tracker, err := LoadTracker(); err == nil {
-				for _, s := range tracker.Sessions {
-					if s.ID == o.sessionID {
-						o.userDataDir = s.DataDir
-						break
-					}
-				}
-			}
+			// Explicit session ID — data dir is SessionsDir/<id>.
+			o.userDataDir = SessionDir(o.sessionID)
 		} else if o.reusableSession {
 			// Auto-find a matching reusable session.
-			if tracker, err := LoadTracker(); err == nil {
-				browserName := string(o.browserType)
-				if browserName == "" {
-					browserName = "chrome"
-				}
-				if found := tracker.FindReusable(browserName, o.headless); found != nil {
-					o.userDataDir = found.DataDir
-				}
+			browserName := string(o.browserType)
+			if browserName == "" {
+				browserName = "chrome"
 			}
+
+			if found := FindReusableSession(browserName, o.headless); found != nil {
+				o.userDataDir = found.Dir
+				o.sessionID = found.ID
+			}
+		}
+	}
+
+	// Always use a deterministic hash dir — never let launcher generate UUID.
+	if o.userDataDir == "" {
+		browserName := string(o.browserType)
+		if browserName == "" {
+			browserName = "chrome"
+		}
+
+		hash := SessionHash(o.targetURL, browserName)
+		o.userDataDir = SessionDir(hash)
+		o.sessionID = hash
+		// If scout.pid already exists, this is a reuse.
+		if _, err := ReadSessionInfo(hash); err == nil {
+			o.reusableSession = true
 		}
 	}
 
@@ -325,6 +357,7 @@ func launchLocal(o *options) (string, *launcher.Launcher, error) {
 		if err != nil {
 			return "", nil, err
 		}
+
 		o.extensions = append(o.extensions, dir)
 	}
 
@@ -375,6 +408,7 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 			} else {
 				b.opts.proxy = fmt.Sprintf("%s://%s:%d", conn.Protocol, conn.Server.Host, conn.Port)
 			}
+
 			if err := b.recycleBrowser(); err != nil {
 				return nil, fmt.Errorf("scout: vpn: rotate: recycle: %w", err)
 			}
@@ -460,6 +494,7 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 		if b.opts.userAgentMetadata != nil {
 			override.UserAgentMetadata = b.opts.userAgentMetadata
 		}
+
 		if err := rodPage.SetUserAgent(override); err != nil {
 			return nil, fmt.Errorf("scout: set user agent: %w", err)
 		}
@@ -500,18 +535,22 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 	// Auto-attach session hijacker if enabled.
 	if b.opts.hijack {
 		var hijackOpts []HijackOption
+
 		if b.opts.hijackFilter != nil {
 			if len(b.opts.hijackFilter.URLPatterns) > 0 {
 				hijackOpts = append(hijackOpts, WithHijackURLFilter(b.opts.hijackFilter.URLPatterns...))
 			}
+
 			if b.opts.hijackFilter.CaptureBody {
 				hijackOpts = append(hijackOpts, WithHijackBodyCapture())
 			}
 		}
+
 		hijacker, hijackErr := p.NewSessionHijacker(hijackOpts...)
 		if hijackErr != nil {
 			return nil, fmt.Errorf("scout: auto-hijack: %w", hijackErr)
 		}
+
 		p.hijacker = hijacker
 	}
 
@@ -558,6 +597,7 @@ func (b *Browser) Version() (string, error) {
 	}
 
 	b.version = v.Product
+
 	return b.version, nil
 }
 
@@ -569,6 +609,7 @@ func (b *Browser) Close() error {
 	}
 
 	var closeErr error
+
 	b.closeOnce.Do(func() {
 		// 1. Signal the autofree goroutine to stop.
 		select {
@@ -603,25 +644,32 @@ func (b *Browser) Close() error {
 			b.browser = nil
 		}
 
-		// 6. Remove PID file.
+		// 6. Update session info: clear PIDs or remove entirely.
 		if b.sessionID != "" {
-			_ = os.Remove(filepath.Join(SessionPIDDir(), b.sessionID))
+			if b.opts.reusableSession {
+				// Preserve session dir, clear PIDs and update last_used.
+				if info, err := ReadSessionInfo(b.sessionID); err == nil {
+					info.ScoutPID = 0
+					info.BrowserPID = 0
+					info.LastUsed = time.Now()
+					_ = WriteSessionInfo(b.sessionID, info)
+				}
+			} else {
+				RemoveSessionInfo(b.sessionID)
+			}
 		}
 
 		// 7. Kill process tree and clean up temp user-data-dir.
 		if b.launcher != nil {
 			b.launcher.Kill()
 
-			if b.opts.reusableSession && b.sessionTracker != nil && b.sessionID != "" {
-				// Preserve data dir: update last_used.
-				_ = b.sessionTracker.Update(b.sessionID, func(e *SessionEntry) {
-					e.LastUsed = time.Now()
-				})
+			if b.opts.reusableSession && b.sessionID != "" {
 				// Do NOT call Cleanup() — it would delete the data dir.
 			} else {
-				// Non-reusable: clean up data dir but keep entry in tracker.
+				// Non-reusable: clean up data dir.
 				go b.launcher.Cleanup()
 			}
+
 			b.launcher = nil
 		}
 
@@ -631,6 +679,7 @@ func (b *Browser) Close() error {
 	if closeErr != nil {
 		return fmt.Errorf("scout: close browser: %w", closeErr)
 	}
+
 	return nil
 }
 
@@ -640,6 +689,7 @@ func (b *Browser) WebMCPRegistry() *WebMCPRegistry {
 	if b == nil {
 		return nil
 	}
+
 	return b.webmcpRegistry
 }
 
@@ -649,10 +699,11 @@ func (b *Browser) BridgeServer() *BridgeServer {
 	if b == nil {
 		return nil
 	}
+
 	return b.bridgeServer
 }
 
-// registerSession registers this browser's data directory in the session tracker.
+// registerSession writes a scout.pid file into this browser's session directory.
 func (b *Browser) registerSession() {
 	if b.launcher == nil {
 		return
@@ -665,56 +716,42 @@ func (b *Browser) registerSession() {
 
 	sessionID := filepath.Base(dataDir)
 
-	// Check if this is a reused session (already registered).
-	tracker, err := LoadTracker()
-	if err != nil {
-		return
-	}
-
 	browserName := string(b.opts.browserType)
 	if browserName == "" {
 		browserName = "chrome"
 	}
 
-	if existing := tracker.FindReusable(browserName, b.opts.headless); existing != nil && existing.DataDir == dataDir {
-		// Reusing existing session — just update last_used.
-		_ = tracker.Update(existing.ID, func(e *SessionEntry) {
-			e.LastUsed = time.Now()
-		})
-		b.sessionTracker = tracker
-		b.sessionID = existing.ID
+	// Check if reusing an existing session.
+	if existing, err := ReadSessionInfo(sessionID); err == nil {
+		existing.LastUsed = time.Now()
+		existing.ScoutPID = os.Getpid()
 
-		// Write PID file for reused session.
-		if pid := b.launcher.PID(); pid != 0 {
-			pidDir := SessionPIDDir()
-			if err := os.MkdirAll(pidDir, 0o755); err == nil {
-				_ = os.WriteFile(filepath.Join(pidDir, existing.ID), []byte(strconv.Itoa(pid)), 0o644)
-			}
+		existing.BrowserPID = b.launcher.PID()
+		if existing.DomainHash == "" && b.opts.targetURL != "" {
+			existing.DomainHash = DomainHash(b.opts.targetURL)
+			existing.Domain = RootDomain(b.opts.targetURL)
 		}
+
+		_ = WriteSessionInfo(sessionID, existing)
+		b.sessionID = sessionID
+
 		return
 	}
 
-	entry := SessionEntry{
-		ID:        sessionID,
-		DataDir:   dataDir,
-		CreatedAt: time.Now(),
-		LastUsed:  time.Now(),
-		Browser:   browserName,
-		Headless:  b.opts.headless,
-		Reusable:  b.opts.reusableSession,
+	info := &SessionInfo{
+		ScoutPID:   os.Getpid(),
+		BrowserPID: b.launcher.PID(),
+		Reusable:   b.opts.reusableSession,
+		CreatedAt:  time.Now(),
+		LastUsed:   time.Now(),
+		Headless:   b.opts.headless,
+		Browser:    browserName,
+		DomainHash: DomainHash(b.opts.targetURL),
+		Domain:     RootDomain(b.opts.targetURL),
 	}
 
-	_ = tracker.Register(entry)
-	b.sessionTracker = tracker
+	_ = WriteSessionInfo(sessionID, info)
 	b.sessionID = sessionID
-
-	// Write PID file to ~/.scout/sessions/pids/<uuid>.
-	if pid := b.launcher.PID(); pid != 0 {
-		pidDir := SessionPIDDir()
-		if err := os.MkdirAll(pidDir, 0o755); err == nil {
-			_ = os.WriteFile(filepath.Join(pidDir, sessionID), []byte(strconv.Itoa(pid)), 0o644)
-		}
-	}
 }
 
 // SessionID returns the UUID v7 session identifier for this browser instance.
@@ -722,16 +759,20 @@ func (b *Browser) SessionID() string {
 	if b == nil {
 		return ""
 	}
+
 	return b.sessionID
 }
 
 // startBridgeServer initializes and starts the bridge WebSocket server.
 func (b *Browser) startBridgeServer() error {
 	addr := fmt.Sprintf("127.0.0.1:%d", b.opts.bridgePort)
+
 	s := NewBridgeServer(addr)
 	if err := s.Start(); err != nil {
 		return fmt.Errorf("scout: bridge server: %w", err)
 	}
+
 	b.bridgeServer = s
+
 	return nil
 }

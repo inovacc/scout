@@ -60,6 +60,7 @@ func (el *Element) Focus() error {
 	}
 
 	_, err = el.Evaluate(Eval(`() => this.focus()`).ByUser())
+
 	return err
 }
 
@@ -67,6 +68,7 @@ func (el *Element) Focus() error {
 // window if it's not already within the visible area.
 func (el *Element) ScrollIntoView() error {
 	defer el.tryTrace(TraceTypeInput, "scroll into view")()
+
 	el.page.browser.trySlowMotion()
 
 	err := el.WaitStableRAF()
@@ -94,7 +96,9 @@ func (el *Element) MoveMouseOut() error {
 	if err != nil {
 		return err
 	}
+
 	box := shape.Box()
+
 	return el.page.Mouse.MoveTo(proto.NewPoint(box.X+box.Width, box.Y))
 }
 
@@ -161,12 +165,12 @@ func (el *Element) Interactable() (pt *proto.Point, err error) {
 	pt = shape.OnePointInside()
 	if pt == nil {
 		err = &InvisibleShapeError{el}
-		return
+		return pt, err
 	}
 
 	scroll, err := el.page.root.Context(el.ctx).Eval(`() => ({ x: window.scrollX, y: window.scrollY })`)
 	if err != nil {
-		return
+		return pt, err
 	}
 
 	elAtPoint, err := el.page.Context(el.ctx).ElementFromPoint(
@@ -177,18 +181,20 @@ func (el *Element) Interactable() (pt *proto.Point, err error) {
 		if errors.Is(err, cdp.ErrNodeNotFoundAtPos) {
 			err = &InvisibleShapeError{el}
 		}
-		return
+
+		return pt, err
 	}
 
 	isParent, err := el.ContainsElement(elAtPoint)
 	if err != nil {
-		return
+		return pt, err
 	}
 
 	if !isParent {
 		err = &CoveredError{elAtPoint}
 	}
-	return
+
+	return pt, err
 }
 
 // Shape of the DOM element content. The shape is a group of 4-sides polygons.
@@ -209,6 +215,7 @@ func (el *Element) Type(keys ...input.Key) error {
 	if err != nil {
 		return err
 	}
+
 	return el.page.Context(el.ctx).Keyboard.Type(keys...)
 }
 
@@ -232,9 +239,11 @@ func (el *Element) SelectText(regex string) error {
 	}
 
 	defer el.tryTrace(TraceTypeInput, "select text: "+regex)()
+
 	el.page.browser.trySlowMotion()
 
 	_, err = el.Evaluate(evalHelper(js.SelectText, regex).ByUser())
+
 	return err
 }
 
@@ -247,9 +256,11 @@ func (el *Element) SelectAllText() error {
 	}
 
 	defer el.tryTrace(TraceTypeInput, "select all text")()
+
 	el.page.browser.trySlowMotion()
 
 	_, err = el.Evaluate(evalHelper(js.SelectAllText).ByUser())
+
 	return err
 }
 
@@ -276,6 +287,7 @@ func (el *Element) Input(text string) error {
 
 	err = el.page.Context(el.ctx).InsertText(text)
 	_, _ = el.Evaluate(evalHelper(js.InputEvent).ByUser())
+
 	return err
 }
 
@@ -301,6 +313,7 @@ func (el *Element) InputTime(t time.Time) error {
 	defer el.tryTrace(TraceTypeInput, "input "+t.String())()
 
 	_, err = el.Evaluate(evalHelper(js.InputTime, t.UnixNano()/1e6).ByUser())
+
 	return err
 }
 
@@ -325,6 +338,7 @@ func (el *Element) InputColor(color string) error {
 	defer el.tryTrace(TraceTypeInput, "input "+color)()
 
 	_, err = el.Evaluate(evalHelper(js.InputColor, color))
+
 	return err
 }
 
@@ -344,15 +358,18 @@ func (el *Element) Select(selectors []string, selected bool, t SelectorType) err
 	}
 
 	defer el.tryTrace(TraceTypeInput, fmt.Sprintf(`select "%s"`, strings.Join(selectors, "; ")))()
+
 	el.page.browser.trySlowMotion()
 
 	res, err := el.Evaluate(evalHelper(js.Select, selectors, selected, t).ByUser())
 	if err != nil {
 		return err
 	}
+
 	if !res.Value.Bool() {
 		return &ElementNotFoundError{}
 	}
+
 	return nil
 }
 
@@ -362,6 +379,7 @@ func (el *Element) Matches(selector string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return res.Value.Bool(), nil
 }
 
@@ -379,6 +397,7 @@ func (el *Element) Attribute(name string) (*string, error) {
 	}
 
 	s := attr.Value.Str()
+
 	return &s, nil
 }
 
@@ -400,6 +419,7 @@ func (el *Element) Disabled() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return prop.Bool(), nil
 }
 
@@ -408,6 +428,7 @@ func (el *Element) SetFiles(paths []string) error {
 	absPaths := utils.AbsolutePaths(paths)
 
 	defer el.tryTrace(TraceTypeInput, fmt.Sprintf("set files: %v", absPaths))()
+
 	el.page.browser.trySlowMotion()
 
 	err := proto.DOMSetFileInputFiles{
@@ -430,6 +451,7 @@ func (el *Element) Describe(depth int, pierce bool) (*proto.DOMNode, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return val.Node, nil
 }
 
@@ -444,6 +466,7 @@ func (el *Element) ShadowRoot() (*Element, error) {
 	if len(node.ShadowRoots) == 0 {
 		return nil, &NoShadowRootError{el}
 	}
+
 	id := node.ShadowRoots[0].BackendNodeID
 
 	shadowNode, err := proto.DOMResolveNode{BackendNodeID: id}.Call(el)
@@ -476,6 +499,7 @@ func (el *Element) ContainsElement(target *Element) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return res.Value.Bool(), nil
 }
 
@@ -485,6 +509,7 @@ func (el *Element) Text() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return str.Value.String(), nil
 }
 
@@ -494,6 +519,7 @@ func (el *Element) HTML() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return res.OuterHTML, nil
 }
 
@@ -503,13 +529,16 @@ func (el *Element) Visible() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return res.Value.Bool(), nil
 }
 
 // WaitLoad for element like <img>.
 func (el *Element) WaitLoad() error {
 	defer el.tryTrace(TraceTypeWait, "load")()
+
 	_, err := el.Evaluate(evalHelper(js.WaitLoad).ByPromise())
+
 	return err
 }
 
@@ -538,15 +567,19 @@ func (el *Element) WaitStable(d time.Duration) error {
 		case <-el.ctx.Done():
 			return el.ctx.Err()
 		}
+
 		current, err := el.Shape()
 		if err != nil {
 			return err
 		}
+
 		if reflect.DeepEqual(shape, current) {
 			break
 		}
+
 		shape = current
 	}
+
 	return nil
 }
 
@@ -562,6 +595,7 @@ func (el *Element) WaitStableRAF() error {
 	defer el.tryTrace(TraceTypeWait, "stable RAF")()
 
 	var shape *proto.DOMGetContentQuadsResult
+
 	page := el.page.Context(el.ctx)
 
 	for {
@@ -574,11 +608,14 @@ func (el *Element) WaitStableRAF() error {
 		if err != nil {
 			return err
 		}
+
 		if reflect.DeepEqual(shape, current) {
 			break
 		}
+
 		shape = current
 	}
+
 	return nil
 }
 
@@ -599,8 +636,10 @@ func (el *Element) WaitInteractable() (pt *proto.Point, err error) {
 		if errors.Is(err, &CoveredError{}) {
 			return false, nil
 		}
+
 		return true, err
 	})
+
 	return
 }
 
@@ -646,6 +685,7 @@ func (el *Element) CanvasToImage(format string, quality float64) ([]byte, error)
 	}
 
 	_, bin := parseDataURI(res.Value.Str())
+
 	return bin, nil
 }
 
@@ -716,16 +756,17 @@ func (el *Element) Remove() error {
 	if err != nil {
 		return err
 	}
+
 	return el.Release()
 }
 
 // Call implements the [proto.Client].
-func (el *Element) Call(ctx context.Context, sessionID, methodName string, params interface{}) (res []byte, err error) {
+func (el *Element) Call(ctx context.Context, sessionID, methodName string, params any) (res []byte, err error) {
 	return el.page.Call(ctx, sessionID, methodName, params)
 }
 
 // Eval is a shortcut for [Element.Evaluate] with AwaitPromise, ByValue and AutoExp set to true.
-func (el *Element) Eval(js string, params ...interface{}) (*proto.RuntimeRemoteObject, error) {
+func (el *Element) Eval(js string, params ...any) (*proto.RuntimeRemoteObject, error) {
 	return el.Evaluate(Eval(js, params...).ByPromise())
 }
 
@@ -750,5 +791,6 @@ func (el *Element) GetXPath(optimized bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return str.Value.String(), nil
 }

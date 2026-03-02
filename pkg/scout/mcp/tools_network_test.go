@@ -16,6 +16,7 @@ func newNetworkTestServer() *httptest.Server {
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><title>Net</title></head><body><p>ok</p></body></html>`))
 	})
+
 	return httptest.NewServer(mux)
 }
 
@@ -33,6 +34,7 @@ func TestCookieToolGetEmpty(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("cookie get: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -56,6 +58,7 @@ func TestHeaderTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("header: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -79,6 +82,7 @@ func TestBlockTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("block: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})

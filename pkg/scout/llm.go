@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -98,9 +99,11 @@ func (p *Page) pageIntelligenceContext() string {
 		if fw.Version != "" {
 			desc += " " + fw.Version
 		}
+
 		if fw.SPA {
 			desc += " (SPA)"
 		}
+
 		parts = append(parts, "Framework: "+desc)
 	}
 
@@ -109,6 +112,7 @@ func (p *Page) pageIntelligenceContext() string {
 		if ri.Hydrated {
 			desc += ", hydrated"
 		}
+
 		parts = append(parts, "Render mode: "+desc)
 	}
 
@@ -124,11 +128,14 @@ func joinStrings(parts []string, sep string) string {
 	if len(parts) == 0 {
 		return ""
 	}
-	result := parts[0]
+
+	var result strings.Builder
+	result.WriteString(parts[0])
 	for _, p := range parts[1:] {
-		result += sep + p
+		result.WriteString(sep + p)
 	}
-	return result
+
+	return result.String()
 }
 
 // ExtractWithLLM sends the page content to an LLM with the given prompt and returns the response.
@@ -142,13 +149,17 @@ func (p *Page) ExtractWithLLM(prompt string, opts ...LLMOption) (string, error) 
 		return "", fmt.Errorf("scout: extract-llm: no LLM provider set (use WithLLMProvider)")
 	}
 
-	var md string
-	var err error
+	var (
+		md  string
+		err error
+	)
+
 	if o.mainOnly {
 		md, err = p.MarkdownContent()
 	} else {
 		md, err = p.Markdown()
 	}
+
 	if err != nil {
 		return "", fmt.Errorf("scout: extract-llm: get markdown: %w", err)
 	}

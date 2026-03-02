@@ -16,11 +16,14 @@ import (
 // newTestBrowser creates a headless browser for testing. Skips if unavailable.
 func newTestBrowser(t *testing.T) *scout.Browser {
 	t.Helper()
+
 	b, err := scout.New(scout.WithHeadless(true), scout.WithNoSandbox(), scout.WithoutBridge())
 	if err != nil {
 		t.Skipf("browser unavailable: %v", err)
 	}
+
 	t.Cleanup(func() { b.Close() })
+
 	return b
 }
 
@@ -117,12 +120,15 @@ func TestParse_ExtractRunbook(t *testing.T) {
 	if r.Name != "test_extract" {
 		t.Errorf("name = %q, want %q", r.Name, "test_extract")
 	}
+
 	if r.Type != "extract" {
 		t.Errorf("type = %q, want %q", r.Type, "extract")
 	}
+
 	if r.Items.Container != ".item" {
 		t.Errorf("container = %q, want %q", r.Items.Container, ".item")
 	}
+
 	if len(r.Items.Fields) != 2 {
 		t.Errorf("fields count = %d, want 2", len(r.Items.Fields))
 	}
@@ -148,9 +154,11 @@ func TestParse_AutomateRunbook(t *testing.T) {
 	if r.Type != "automate" {
 		t.Errorf("type = %q, want %q", r.Type, "automate")
 	}
+
 	if len(r.Steps) != 3 {
 		t.Errorf("steps count = %d, want 3", len(r.Steps))
 	}
+
 	if r.Steps[0].Action != "navigate" {
 		t.Errorf("step 0 action = %q, want %q", r.Steps[0].Action, "navigate")
 	}
@@ -242,9 +250,11 @@ func TestParse_Pagination(t *testing.T) {
 	if r.Pagination == nil {
 		t.Fatal("pagination should not be nil")
 	}
+
 	if r.Pagination.Strategy != "click" {
 		t.Errorf("strategy = %q, want %q", r.Pagination.Strategy, "click")
 	}
+
 	if r.Pagination.MaxPages != 3 {
 		t.Errorf("max_pages = %d, want 3", r.Pagination.MaxPages)
 	}
@@ -300,6 +310,7 @@ func TestMapKeyName(t *testing.T) {
 func TestLoadFile_Valid(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "runbook.json")
+
 	data := []byte(`{"version":"1","name":"test","type":"extract","url":"https://x.com","items":{"container":".c","fields":{"a":"b"}}}`)
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		t.Fatal(err)
@@ -309,6 +320,7 @@ func TestLoadFile_Valid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadFile failed: %v", err)
 	}
+
 	if r.Name != "test" {
 		t.Errorf("name = %q, want %q", r.Name, "test")
 	}
@@ -323,6 +335,7 @@ func TestLoadFile_NotFound(t *testing.T) {
 
 func TestLoadFile_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
+
 	path := filepath.Join(dir, "bad.json")
 	if err := os.WriteFile(path, []byte(`{bad`), 0644); err != nil {
 		t.Fatal(err)
@@ -338,6 +351,7 @@ func TestLoadFile_InvalidJSON(t *testing.T) {
 
 func TestRun_UnknownType(t *testing.T) {
 	r := &Runbook{Version: "1", Name: "test", Type: "bogus"}
+
 	_, err := Apply(context.Background(), nil, r)
 	if err == nil {
 		t.Error("expected error for unknown type")
@@ -349,6 +363,7 @@ func TestRun_UnknownType(t *testing.T) {
 func TestRunExtract_BasicFields(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -365,9 +380,11 @@ func TestRunExtract_BasicFields(t *testing.T) {
 	if len(result.Items) != 3 {
 		t.Fatalf("items count = %d, want 3", len(result.Items))
 	}
+
 	if result.Items[0]["title"] != "Item A" {
 		t.Errorf("item 0 title = %q, want %q", result.Items[0]["title"], "Item A")
 	}
+
 	if result.Items[1]["link"] != "/b" {
 		t.Errorf("item 1 link = %q, want %q", result.Items[1]["link"], "/b")
 	}
@@ -376,6 +393,7 @@ func TestRunExtract_BasicFields(t *testing.T) {
 func TestRunExtract_SiblingField(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -401,6 +419,7 @@ func TestRunExtract_SiblingField(t *testing.T) {
 func TestRunExtract_SiblingAttribute(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -426,6 +445,7 @@ func TestRunExtract_SiblingAttribute(t *testing.T) {
 func TestRunExtract_WaitFor(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -443,6 +463,7 @@ func TestRunExtract_WaitFor(t *testing.T) {
 	if len(result.Items) != 1 {
 		t.Fatalf("items count = %d, want 1", len(result.Items))
 	}
+
 	if result.Items[0]["title"] != "Waited" {
 		t.Errorf("title = %q, want %q", result.Items[0]["title"], "Waited")
 	}
@@ -451,6 +472,7 @@ func TestRunExtract_WaitFor(t *testing.T) {
 func TestRunExtract_PaginationClick(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -472,9 +494,11 @@ func TestRunExtract_PaginationClick(t *testing.T) {
 	if len(result.Items) != 2 {
 		t.Fatalf("items count = %d, want 2", len(result.Items))
 	}
+
 	if result.Items[0]["title"] != "Page1 Item" {
 		t.Errorf("item 0 = %q, want %q", result.Items[0]["title"], "Page1 Item")
 	}
+
 	if result.Items[1]["title"] != "Page2 Item" {
 		t.Errorf("item 1 = %q, want %q", result.Items[1]["title"], "Page2 Item")
 	}
@@ -483,6 +507,7 @@ func TestRunExtract_PaginationClick(t *testing.T) {
 func TestRunExtract_PaginationScroll(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -509,6 +534,7 @@ func TestRunExtract_PaginationScroll(t *testing.T) {
 func TestRunExtract_Deduplication(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -535,6 +561,7 @@ func TestRunExtract_Deduplication(t *testing.T) {
 func TestRunExtract_ContainerNotFound(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -556,6 +583,7 @@ func TestRunExtract_ContainerNotFound(t *testing.T) {
 func TestRunExtract_ContextCancelled(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -598,6 +626,7 @@ func TestAdvancePage_ClickNoSelector(t *testing.T) {
 func TestRunAutomate_NavigateTypeClick(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -623,6 +652,7 @@ func TestRunAutomate_NavigateTypeClick(t *testing.T) {
 func TestRunAutomate_Screenshot(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -642,6 +672,7 @@ func TestRunAutomate_Screenshot(t *testing.T) {
 	if len(result.Screenshots["viewport"]) == 0 {
 		t.Error("viewport screenshot is empty")
 	}
+
 	if len(result.Screenshots["full"]) == 0 {
 		t.Error("full page screenshot is empty")
 	}
@@ -650,6 +681,7 @@ func TestRunAutomate_Screenshot(t *testing.T) {
 func TestRunAutomate_ScreenshotDefaultName(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -673,6 +705,7 @@ func TestRunAutomate_ScreenshotDefaultName(t *testing.T) {
 func TestRunAutomate_Extract(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -692,9 +725,11 @@ func TestRunAutomate_Extract(t *testing.T) {
 	if !ok {
 		t.Fatalf("infos variable type = %T, want []string", result.Variables["infos"])
 	}
+
 	if len(infos) != 2 {
 		t.Fatalf("infos count = %d, want 2", len(infos))
 	}
+
 	if infos[0] != "hello" || infos[1] != "world" {
 		t.Errorf("infos = %v, want [hello world]", infos)
 	}
@@ -703,6 +738,7 @@ func TestRunAutomate_Extract(t *testing.T) {
 func TestRunAutomate_Eval(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -729,6 +765,7 @@ func TestRunAutomate_Eval(t *testing.T) {
 func TestRunAutomate_Wait(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -748,6 +785,7 @@ func TestRunAutomate_Wait(t *testing.T) {
 func TestRunAutomate_Key(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -774,6 +812,7 @@ func TestRunAutomate_NoPageErrors(t *testing.T) {
 				Version: "1", Name: "nopage", Type: "automate",
 				Steps: []Step{{Action: action, Selector: "#x", Text: "x", Script: "1"}},
 			}
+
 			_, err := Apply(context.Background(), b, r)
 			if err == nil {
 				t.Errorf("expected error for %s without page", action)
@@ -785,6 +824,7 @@ func TestRunAutomate_NoPageErrors(t *testing.T) {
 func TestRunAutomate_UnknownAction(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -804,6 +844,7 @@ func TestRunAutomate_UnknownAction(t *testing.T) {
 func TestRunAutomate_ContextCancelled(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -826,6 +867,7 @@ func TestRunAutomate_ContextCancelled(t *testing.T) {
 func TestRunAutomate_NavigateExistingPage(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	r := &Runbook{
@@ -848,6 +890,7 @@ func TestRunAutomate_NavigateExistingPage(t *testing.T) {
 func TestRun_ExtractEndToEnd(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	data := fmt.Sprintf(`{
@@ -874,6 +917,7 @@ func TestRun_ExtractEndToEnd(t *testing.T) {
 	if len(result.Items) != 3 {
 		t.Fatalf("items = %d, want 3", len(result.Items))
 	}
+
 	if result.Items[2]["price"] != "$30" {
 		t.Errorf("item 2 price = %q, want %q", result.Items[2]["price"], "$30")
 	}
@@ -882,6 +926,7 @@ func TestRun_ExtractEndToEnd(t *testing.T) {
 func TestRun_AutomateEndToEnd(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	data := fmt.Sprintf(`{
@@ -941,18 +986,23 @@ func TestParse_NamedSelectors(t *testing.T) {
 	if r.WaitFor != ".product" {
 		t.Errorf("wait_for = %q, want %q", r.WaitFor, ".product")
 	}
+
 	if r.Items.Container != ".product" {
 		t.Errorf("container = %q, want %q", r.Items.Container, ".product")
 	}
+
 	if r.Items.Fields["name"] != "h2" {
 		t.Errorf("fields[name] = %q, want %q", r.Items.Fields["name"], "h2")
 	}
+
 	if r.Items.Fields["url"] != "a@href" {
 		t.Errorf("fields[url] = %q, want %q", r.Items.Fields["url"], "a@href")
 	}
+
 	if r.Items.Fields["price"] != ".price" {
 		t.Errorf("fields[price] = %q, want %q (should be unchanged)", r.Items.Fields["price"], ".price")
 	}
+
 	if r.Items.Fields["total"] != "+h2" {
 		t.Errorf("fields[total] = %q, want %q", r.Items.Fields["total"], "+h2")
 	}
@@ -998,6 +1048,7 @@ func TestParse_NamedSelectorsInSteps(t *testing.T) {
 	if r.Steps[1].Selector != "#email" {
 		t.Errorf("step[1].selector = %q, want %q", r.Steps[1].Selector, "#email")
 	}
+
 	if r.Steps[2].Selector != "#submit" {
 		t.Errorf("step[2].selector = %q, want %q", r.Steps[2].Selector, "#submit")
 	}
@@ -1029,6 +1080,7 @@ func TestParse_NamedSelectorsInPagination(t *testing.T) {
 	if r.Items.Container != ".card" {
 		t.Errorf("container = %q, want %q", r.Items.Container, ".card")
 	}
+
 	if r.Pagination.NextSelector != "a.next-page" {
 		t.Errorf("next_selector = %q, want %q", r.Pagination.NextSelector, "a.next-page")
 	}
@@ -1037,6 +1089,7 @@ func TestParse_NamedSelectorsInPagination(t *testing.T) {
 func TestRun_ExtractWithNamedSelectors(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	data := fmt.Sprintf(`{
@@ -1075,6 +1128,7 @@ func TestRun_ExtractWithNamedSelectors(t *testing.T) {
 	if result.Items[0]["title"] != "Item A" {
 		t.Errorf("items[0].title = %q, want %q", result.Items[0]["title"], "Item A")
 	}
+
 	if result.Items[0]["url"] != "/a" {
 		t.Errorf("items[0].url = %q, want %q", result.Items[0]["url"], "/a")
 	}

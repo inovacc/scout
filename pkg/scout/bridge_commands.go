@@ -32,12 +32,14 @@ func (s *BridgeServer) QueryDOM(pageID, selector string, all bool) ([]map[string
 
 	if all {
 		elems, _ := result["elements"].([]any)
+
 		out := make([]map[string]any, 0, len(elems))
 		for _, e := range elems {
 			if m, ok := e.(map[string]any); ok {
 				out = append(out, m)
 			}
 		}
+
 		return out, nil
 	}
 
@@ -197,6 +199,7 @@ func (s *BridgeServer) GetClipboard(pageID string) (string, error) {
 	}
 
 	text, _ := result["text"].(string)
+
 	return text, nil
 }
 
@@ -248,12 +251,14 @@ func (s *BridgeServer) ListTabs() ([]map[string]any, error) {
 	}
 
 	tabs, _ := result["tabs"].([]any)
+
 	out := make([]map[string]any, 0, len(tabs))
 	for _, t := range tabs {
 		if m, ok := t.(map[string]any); ok {
 			out = append(out, m)
 		}
 	}
+
 	return out, nil
 }
 
@@ -309,12 +314,14 @@ func (s *BridgeServer) ConsoleMessages(pageID string) ([]map[string]any, error) 
 	}
 
 	msgs, _ := result["messages"].([]any)
+
 	out := make([]map[string]any, 0, len(msgs))
 	for _, m := range msgs {
 		if entry, ok := m.(map[string]any); ok {
 			out = append(out, entry)
 		}
 	}
+
 	return out, nil
 }
 

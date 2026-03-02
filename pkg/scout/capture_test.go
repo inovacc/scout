@@ -42,35 +42,45 @@ func TestSaveLoadCredentials(t *testing.T) {
 	if loaded.URL != creds.URL {
 		t.Errorf("URL = %q, want %q", loaded.URL, creds.URL)
 	}
+
 	if loaded.FinalURL != creds.FinalURL {
 		t.Errorf("FinalURL = %q, want %q", loaded.FinalURL, creds.FinalURL)
 	}
+
 	if !loaded.CapturedAt.Equal(creds.CapturedAt) {
 		t.Errorf("CapturedAt = %v, want %v", loaded.CapturedAt, creds.CapturedAt)
 	}
+
 	if loaded.Browser.Product != creds.Browser.Product {
 		t.Errorf("Browser.Product = %q, want %q", loaded.Browser.Product, creds.Browser.Product)
 	}
+
 	if loaded.Browser.Platform != creds.Browser.Platform {
 		t.Errorf("Browser.Platform = %q, want %q", loaded.Browser.Platform, creds.Browser.Platform)
 	}
+
 	if loaded.Browser.Arch != creds.Browser.Arch {
 		t.Errorf("Browser.Arch = %q, want %q", loaded.Browser.Arch, creds.Browser.Arch)
 	}
+
 	if loaded.UserAgent != creds.UserAgent {
 		t.Errorf("UserAgent = %q, want %q", loaded.UserAgent, creds.UserAgent)
 	}
+
 	if len(loaded.Cookies) != len(creds.Cookies) {
 		t.Fatalf("Cookies len = %d, want %d", len(loaded.Cookies), len(creds.Cookies))
 	}
+
 	for i, c := range loaded.Cookies {
 		if c.Name != creds.Cookies[i].Name || c.Value != creds.Cookies[i].Value {
 			t.Errorf("Cookie[%d] = %s=%s, want %s=%s", i, c.Name, c.Value, creds.Cookies[i].Name, creds.Cookies[i].Value)
 		}
 	}
+
 	if loaded.LocalStorage["token"] != "bearer-abc" {
 		t.Errorf("LocalStorage[token] = %q, want %q", loaded.LocalStorage["token"], "bearer-abc")
 	}
+
 	if loaded.SessionStorage["tab_id"] != "42" {
 		t.Errorf("SessionStorage[tab_id] = %q, want %q", loaded.SessionStorage["tab_id"], "42")
 	}
@@ -92,12 +102,15 @@ func TestToSessionState(t *testing.T) {
 	if state.URL != creds.FinalURL {
 		t.Errorf("URL = %q, want %q (FinalURL)", state.URL, creds.FinalURL)
 	}
+
 	if len(state.Cookies) != 1 || state.Cookies[0].Name != "session" {
 		t.Errorf("Cookies = %+v, want single cookie named 'session'", state.Cookies)
 	}
+
 	if state.LocalStorage["key1"] != "val1" {
 		t.Errorf("LocalStorage[key1] = %q, want %q", state.LocalStorage["key1"], "val1")
 	}
+
 	if state.SessionStorage["key2"] != "val2" {
 		t.Errorf("SessionStorage[key2] = %q, want %q", state.SessionStorage["key2"], "val2")
 	}

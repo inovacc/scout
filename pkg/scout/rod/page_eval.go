@@ -36,14 +36,14 @@ type EvalOptions struct {
 	// When the arg.Name exists in the page's cache, it reuse the cache without sending
 	// the definition to the browser again.
 	// Useful when you need to eval a huge js expression many times.
-	JSArgs []interface{}
+	JSArgs []any
 
 	// Whether execution should be treated as initiated by user in the UI.
 	UserGesture bool
 }
 
 // Eval creates a [EvalOptions] with ByValue set to true.
-func Eval(js string, args ...interface{}) *EvalOptions {
+func Eval(js string, args ...any) *EvalOptions {
 	return &EvalOptions{
 		ByValue:      true,
 		AwaitPromise: false,
@@ -54,10 +54,10 @@ func Eval(js string, args ...interface{}) *EvalOptions {
 	}
 }
 
-func evalHelper(fn *js.Function, args ...interface{}) *EvalOptions {
+func evalHelper(fn *js.Function, args ...any) *EvalOptions {
 	return &EvalOptions{
 		ByValue: true,
-		JSArgs:  append([]interface{}{fn}, args...),
+		JSArgs:  append([]any{fn}, args...),
 		JS:      fmt.Sprintf(`function (f /* %s */, ...args) { return f.apply(this, args) }`, fn.Name),
 	}
 }
@@ -73,6 +73,7 @@ func (e *EvalOptions) String() string {
 	if e.ThisObj != nil {
 		thisStr = e.ThisObj.Description
 	}
+
 	if len(args) > 0 {
 		if f, ok := args[0].(*js.Function); ok {
 			fn = "rod." + f.Name
@@ -115,7 +116,7 @@ func (e *EvalOptions) formatToJSFunc() string {
 }
 
 // Eval is a shortcut for [Page.Evaluate] with AwaitPromise, ByValue set to true.
-func (p *Page) Eval(js string, args ...interface{}) (*proto.RuntimeRemoteObject, error) {
+func (p *Page) Eval(js string, args ...any) (*proto.RuntimeRemoteObject, error) {
 	return p.Evaluate(Eval(js, args...).ByPromise())
 }
 
@@ -142,6 +143,7 @@ func (p *Page) Evaluate(opts *EvalOptions) (res *proto.RuntimeRemoteObject, err 
 
 			continue
 		}
+
 		return
 	}
 }
@@ -183,33 +185,36 @@ func (p *Page) evaluate(opts *EvalOptions) (*proto.RuntimeRemoteObject, error) {
 
 // Expose fn to the page's window object with the name. The exposure survives reloads.
 // Call stop to unbind the fn.
-func (p *Page) Expose(name string, fn func(gson.JSON) (interface{}, error)) (stop func() error, err error) {
+func (p *Page) Expose(name string, fn func(gson.JSON) (any, error)) (stop func() error, err error) {
 	bind := "_" + utils.RandString(8)
 
 	err = proto.RuntimeAddBinding{Name: bind}.Call(p)
 	if err != nil {
-		return
+		return stop, err
 	}
 
 	_, err = p.Evaluate(Eval(js.ExposeFunc.Definition, name, bind))
 	if err != nil {
-		return
+		return stop, err
 	}
 
 	code := fmt.Sprintf(`(%s)("%s", "%s")`, js.ExposeFunc.Definition, name, bind)
+
 	remove, err := p.EvalOnNewDocument(code)
 	if err != nil {
-		return
+		return stop, err
 	}
 
 	p, cancel := p.WithCancel()
 
 	stop = func() error {
 		defer cancel()
+
 		err := remove()
 		if err != nil {
 			return err
 		}
+
 		return proto.RuntimeRemoveBinding{Name: bind}.Call(p)
 	}
 
@@ -222,11 +227,12 @@ func (p *Page) Expose(name string, fn func(gson.JSON) (interface{}, error)) (sto
 		}
 	})()
 
-	return
+	return stop, err
 }
 
 func (p *Page) formatArgs(opts *EvalOptions) ([]*proto.RuntimeCallArgument, error) {
 	formatted := []*proto.RuntimeCallArgument{}
+
 	for _, arg := range opts.JSArgs {
 		if obj, ok := arg.(*proto.RuntimeRemoteObject); ok { // remote object
 			formatted = append(formatted, &proto.RuntimeCallArgument{ObjectID: obj.ObjectID})
@@ -235,6 +241,7 @@ func (p *Page) formatArgs(opts *EvalOptions) ([]*proto.RuntimeCallArgument, erro
 			if err != nil {
 				return nil, err
 			}
+
 			formatted = append(formatted, &proto.RuntimeCallArgument{ObjectID: id})
 		} else { // plain json data
 			formatted = append(formatted, &proto.RuntimeCallArgument{Value: gson.New(arg)})
@@ -260,6 +267,7 @@ func (p *Page) ensureJSHelper(fn *js.Function) (proto.RuntimeRemoteObjectID, err
 		if err != nil {
 			return "", err
 		}
+
 		fnID = res.Result.ObjectID
 		p.setHelper(jsCtxID, js.Functions.Name, fnID)
 	}
@@ -310,6 +318,7 @@ func (p *Page) getHelper(jsCtxID proto.RuntimeRemoteObjectID, name string) (prot
 	}
 
 	id, ok := list[name]
+
 	return id, ok
 }
 
@@ -343,6 +352,7 @@ func (p *Page) getJSCtxID() (proto.RuntimeRemoteObjectID, error) {
 		p.helpersLock.Lock()
 		p.helpers = nil
 		p.helpersLock.Unlock()
+
 		return *p.jsCtxID, nil
 	}
 
@@ -361,6 +371,7 @@ func (p *Page) getJSCtxID() (proto.RuntimeRemoteObjectID, error) {
 	p.helpersLock.Unlock()
 	id, err := p.jsCtxIDByObjectID(obj.Object.ObjectID)
 	*p.jsCtxID = id
+
 	return *p.jsCtxID, err
 }
 

@@ -36,6 +36,7 @@ func GenerateIdentity() (*Identity, error) {
 	}
 
 	serialMax := new(big.Int).Lsh(big.NewInt(1), 128)
+
 	serial, err := rand.Int(rand.Reader, serialMax)
 	if err != nil {
 		return nil, fmt.Errorf("identity: generate serial: %w", err)
@@ -64,10 +65,12 @@ func GenerateIdentity() (*Identity, error) {
 	}
 
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+
 	keyBytes, err := x509.MarshalECPrivateKey(priv)
 	if err != nil {
 		return nil, fmt.Errorf("identity: marshal key: %w", err)
 	}
+
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
 
 	tlsCert, err := tls.X509KeyPair(certPEM, keyPEM)
@@ -107,7 +110,9 @@ func ValidateDeviceID(id string) bool {
 	if len(raw) != 56 {
 		return false
 	}
+
 	_, err := unluhnify(raw)
+
 	return err == nil
 }
 
@@ -117,6 +122,7 @@ func ShortID(id string) string {
 	if len(clean) >= 7 {
 		return clean[:7]
 	}
+
 	return clean
 }
 
@@ -140,6 +146,7 @@ func SaveIdentity(id *Identity, dir string) error {
 	if err != nil {
 		return fmt.Errorf("identity: marshal key: %w", err)
 	}
+
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
 	if err := os.WriteFile(filepath.Join(dir, "key.pem"), keyPEM, 0o600); err != nil {
 		return fmt.Errorf("identity: write key: %w", err)

@@ -42,6 +42,7 @@ func newAnalysisTestServer() *httptest.Server {
   <a href="/">Home</a>
 </body></html>`))
 	})
+
 	return httptest.NewServer(mux)
 }
 
@@ -59,6 +60,7 @@ func TestDetectTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("detect: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -99,6 +101,7 @@ func TestCrawlTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("crawl: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -122,12 +125,14 @@ func TestCrawlTool(t *testing.T) {
 
 	// Verify the start URL is in results.
 	found := false
+
 	for _, e := range entries {
 		if e.URL == ts.URL+"/" {
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		t.Errorf("expected start URL %s in crawl results: %v", ts.URL+"/", entries)
 	}
@@ -141,9 +146,11 @@ func TestCrawlToolMissingURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("crawl: %v", err)
 	}
+
 	if !result.IsError {
 		t.Error("expected error for missing url")
 	}
+
 	text := result.Content[0].(*mcp.TextContent).Text
 	if text != "url is required" {
 		t.Errorf("expected 'url is required', got: %s", text)

@@ -49,12 +49,15 @@ func TestOpenAIProviderComplete(t *testing.T) {
 		if req.Model != "test-model" {
 			t.Errorf("model = %q, want %q", req.Model, "test-model")
 		}
+
 		if len(req.Messages) != 2 {
 			t.Fatalf("messages len = %d, want 2", len(req.Messages))
 		}
+
 		if req.Messages[0].Role != "system" {
 			t.Errorf("first message role = %q, want %q", req.Messages[0].Role, "system")
 		}
+
 		if req.Messages[1].Role != "user" {
 			t.Errorf("second message role = %q, want %q", req.Messages[1].Role, "user")
 		}
@@ -133,6 +136,7 @@ func TestOpenAIProviderExtraHeaders(t *testing.T) {
 				}{Content: "ok"}},
 			},
 		}
+
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)
 	}))
@@ -157,21 +161,25 @@ func TestOpenAIOptions(t *testing.T) {
 	o := defaultOpenAIOptions()
 
 	WithOpenAIBaseURL("https://custom.api.com")(o)
+
 	if o.baseURL != "https://custom.api.com" {
 		t.Errorf("baseURL = %q", o.baseURL)
 	}
 
 	WithOpenAIKey("my-key")(o)
+
 	if o.apiKey != "my-key" {
 		t.Errorf("apiKey = %q", o.apiKey)
 	}
 
 	WithOpenAIModel("gpt-4")(o)
+
 	if o.model != "gpt-4" {
 		t.Errorf("model = %q", o.model)
 	}
 
 	WithOpenAIAuthHeader("X-API-Key", "")(o)
+
 	if o.authHeader != "X-API-Key" {
 		t.Errorf("authHeader = %q", o.authHeader)
 	}
@@ -186,6 +194,7 @@ func TestNewOpenRouterProvider(t *testing.T) {
 	if p.Name() != "openrouter" {
 		t.Errorf("Name() = %q, want %q", p.Name(), "openrouter")
 	}
+
 	if p.model != "meta-llama/llama-3-8b" {
 		t.Errorf("model = %q", p.model)
 	}
@@ -200,6 +209,7 @@ func TestNewDeepSeekProvider(t *testing.T) {
 	if p.Name() != "deepseek" {
 		t.Errorf("Name() = %q", p.Name())
 	}
+
 	if p.model != "deepseek-chat" {
 		t.Errorf("model = %q, want %q", p.model, "deepseek-chat")
 	}
@@ -214,6 +224,7 @@ func TestNewGeminiProvider(t *testing.T) {
 	if p.Name() != "gemini" {
 		t.Errorf("Name() = %q", p.Name())
 	}
+
 	if p.model != "gemini-2.0-flash" {
 		t.Errorf("model = %q, want %q", p.model, "gemini-2.0-flash")
 	}

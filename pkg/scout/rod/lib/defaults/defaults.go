@@ -85,6 +85,7 @@ var envParsers = map[string]func(string){
 	},
 	"slow": func(v string) {
 		var err error
+
 		Slow, err = time.ParseDuration(v)
 		if err != nil {
 			msg := "invalid value for \"slow\": " + err.Error() +
@@ -162,6 +163,7 @@ func parseFlag(args []string) {
 	reg := regexp.MustCompile(`^--?scout$`)
 	regEq := regexp.MustCompile(`^--?scout=(.*)$`)
 	opts := ""
+
 	for i, arg := range args {
 		if reg.MatchString(arg) && i+1 < len(args) {
 			opts = args[i+1]
@@ -198,6 +200,7 @@ func parse(options string) {
 		if f == nil {
 			panic("unknown scout env option: " + n)
 		}
+
 		f(v)
 	}
 }

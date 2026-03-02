@@ -29,6 +29,7 @@ var searchCmd = &cobra.Command{
 		region, _ := cmd.Flags().GetString("region")
 
 		var searchEngine scout.SearchEngine
+
 		switch strings.ToLower(engine) {
 		case "google":
 			searchEngine = scout.Google
@@ -44,14 +45,18 @@ var searchCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.SearchOption
+
 		opts = append(opts, scout.WithSearchEngine(searchEngine))
+
 		opts = append(opts, scout.WithSearchMaxPages(maxPages))
 		if language != "" {
 			opts = append(opts, scout.WithSearchLanguage(language))
 		}
+
 		if region != "" {
 			opts = append(opts, scout.WithSearchRegion(region))
 		}
@@ -65,6 +70,7 @@ var searchCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(results) //nolint:musttag
 		}
 

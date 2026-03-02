@@ -55,6 +55,7 @@ func (p *discordProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	localStorage := make(map[string]string)
+
 	if localStorageData, ok := localStorageResult.Value.(map[string]any); ok {
 		for k, v := range localStorageData {
 			if str, ok := v.(string); ok {
@@ -70,6 +71,7 @@ func (p *discordProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	sessionStorage := make(map[string]string)
+
 	if sessionStorageData, ok := sessionStorageResult.Value.(map[string]any); ok {
 		for k, v := range sessionStorageData {
 			if str, ok := v.(string); ok {
@@ -156,6 +158,7 @@ func (m *DiscordMode) Scrape(ctx context.Context, session scraper.SessionData, o
 	if opts.Stealth {
 		browserOpts = append(browserOpts, scout.WithStealth())
 	}
+
 	if opts.Timeout > 0 {
 		browserOpts = append(browserOpts, scout.WithTimeout(opts.Timeout))
 	}
@@ -181,6 +184,7 @@ func (m *DiscordMode) Scrape(ctx context.Context, session scraper.SessionData, o
 
 	// Inject the token into localStorage before navigating.
 	tokenJS := fmt.Sprintf(`localStorage.setItem("token", %q)`, `"`+token+`"`)
+
 	if err := page.Navigate("https://discord.com/app"); err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("discord: scrape: navigate app: %w", err)
@@ -209,15 +213,20 @@ func (m *DiscordMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		// If a guild ID is provided as first target, navigate there.
 		target = "https://discord.com/channels/" + opts.Targets[0]
 	}
+
 	if err := page.Navigate(target); err != nil {
 		hijacker.Stop()
+
 		_ = browser.Close()
+
 		return nil, fmt.Errorf("discord: scrape: navigate channels: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
 		hijacker.Stop()
+
 		_ = browser.Close()
+
 		return nil, fmt.Errorf("discord: scrape: wait load: %w", err)
 	}
 
@@ -282,6 +291,7 @@ func (m *DiscordMode) parseResponse(url, body string, results chan<- scraper.Res
 	if idx == nil {
 		return 0
 	}
+
 	resourcePath := url[idx[1]:]
 
 	// Remove query parameters.
@@ -361,10 +371,12 @@ func (m *DiscordMode) parseMessages(body, source string, results chan<- scraper.
 		if err2 := json.Unmarshal([]byte(body), &single); err2 != nil {
 			return 0
 		}
+
 		msgs = []discordMessage{single}
 	}
 
 	count := 0
+
 	for _, msg := range msgs {
 		ts, _ := time.Parse(time.RFC3339, msg.Timestamp)
 
@@ -382,6 +394,7 @@ func (m *DiscordMode) parseMessages(body, source string, results chan<- scraper.
 				"message_type": msg.Type,
 			},
 		}
+
 		count++
 
 		if opts.Limit > 0 && count >= opts.Limit {
@@ -399,10 +412,12 @@ func (m *DiscordMode) parseChannels(body, source string, results chan<- scraper.
 		if err2 := json.Unmarshal([]byte(body), &single); err2 != nil {
 			return 0
 		}
+
 		channels = []discordChannel{single}
 	}
 
 	count := 0
+
 	for _, ch := range channels {
 		results <- scraper.Result{
 			Type:      scraper.ResultChannel,
@@ -417,6 +432,7 @@ func (m *DiscordMode) parseChannels(body, source string, results chan<- scraper.
 				"guild_id":     ch.GuildID,
 			},
 		}
+
 		count++
 	}
 
@@ -430,6 +446,7 @@ func (m *DiscordMode) parseMembers(body, source string, results chan<- scraper.R
 	}
 
 	count := 0
+
 	for _, member := range members {
 		joined, _ := time.Parse(time.RFC3339, member.Joined)
 
@@ -444,6 +461,7 @@ func (m *DiscordMode) parseMembers(body, source string, results chan<- scraper.R
 				"roles": member.Roles,
 			},
 		}
+
 		count++
 	}
 
@@ -469,6 +487,7 @@ func (m *DiscordMode) parseThreads(body, source string, results chan<- scraper.R
 
 func (m *DiscordMode) emitThreads(threads []discordThread, source string, results chan<- scraper.Result) int {
 	count := 0
+
 	for _, t := range threads {
 		results <- scraper.Result{
 			Type:      scraper.ResultThread,
@@ -482,6 +501,7 @@ func (m *DiscordMode) emitThreads(threads []discordThread, source string, result
 				"guild_id":  t.GuildID,
 			},
 		}
+
 		count++
 	}
 
@@ -495,6 +515,7 @@ func (m *DiscordMode) parsePins(body, source string, results chan<- scraper.Resu
 	}
 
 	count := 0
+
 	for _, msg := range msgs {
 		ts, _ := time.Parse(time.RFC3339, msg.Timestamp)
 
@@ -511,6 +532,7 @@ func (m *DiscordMode) parsePins(body, source string, results chan<- scraper.Resu
 				"author_id":  msg.Author.ID,
 			},
 		}
+
 		count++
 	}
 
@@ -544,9 +566,11 @@ func authorName(a discordAuthor) string {
 	if a.GlobalName != "" {
 		return a.GlobalName
 	}
+
 	if a.Discriminator != "" && a.Discriminator != "0" {
 		return a.Username + "#" + a.Discriminator
 	}
+
 	return a.Username
 }
 
@@ -557,6 +581,7 @@ func containsSegment(parts []string, segment string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -565,12 +590,14 @@ func endsWith(parts []string, segments ...string) bool {
 	if len(parts) < len(segments) {
 		return false
 	}
+
 	tail := parts[len(parts)-len(segments):]
 	for i, s := range segments {
 		if tail[i] != s {
 			return false
 		}
 	}
+
 	return true
 }
 

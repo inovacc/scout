@@ -23,6 +23,7 @@ func registerAnalysisTools(server *mcp.Server, state *mcpState) {
 		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
 			return errResult(err.Error())
 		}
+
 		if args.URL == "" {
 			return errResult("url is required")
 		}
@@ -36,6 +37,7 @@ func registerAnalysisTools(server *mcp.Server, state *mcpState) {
 		if args.MaxDepth != nil {
 			maxDepth = *args.MaxDepth
 		}
+
 		maxPages := 50
 		if args.MaxPages != nil {
 			maxPages = *args.MaxPages
@@ -89,12 +91,15 @@ func registerAnalysisTools(server *mcp.Server, state *mcpState) {
 		if fw, err := page.DetectFrameworks(); err == nil {
 			result.Frameworks = fw
 		}
+
 		if pwa, err := page.DetectPWA(); err == nil {
 			result.PWA = pwa
 		}
+
 		if rm, err := page.DetectRenderMode(); err == nil {
 			result.RenderMode = rm
 		}
+
 		if ts, err := page.DetectTechStack(); err == nil {
 			result.TechStack = ts
 		}

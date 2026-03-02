@@ -10,7 +10,7 @@ import (
 
 // TryError error.
 type TryError struct {
-	Value interface{}
+	Value any
 	Stack string
 }
 
@@ -26,6 +26,7 @@ func (e *TryError) Unwrap() error {
 	if err, ok := e.Value.(error); ok {
 		return err
 	}
+
 	return fmt.Errorf("%v", e.Value)
 }
 

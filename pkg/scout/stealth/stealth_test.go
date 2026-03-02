@@ -28,6 +28,7 @@ func newTestBrowser(t *testing.T) *rod.Browser {
 	}
 
 	t.Cleanup(func() { _ = b.Close() })
+
 	return b
 }
 
@@ -37,11 +38,13 @@ func newTestServer() *httptest.Server {
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><title>Test</title></head><body><canvas id="c" width="100" height="100"></canvas></body></html>`))
 	})
+
 	return httptest.NewServer(mux)
 }
 
 func TestStealth_WebdriverHidden(t *testing.T) {
 	b := newTestBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -53,6 +56,7 @@ func TestStealth_WebdriverHidden(t *testing.T) {
 	if err := p.Navigate(ts.URL); err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	_ = p.WaitLoad()
 
 	result := p.MustEval(`() => navigator.webdriver`)
@@ -63,6 +67,7 @@ func TestStealth_WebdriverHidden(t *testing.T) {
 
 func TestStealth_ChromeObject(t *testing.T) {
 	b := newTestBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -74,6 +79,7 @@ func TestStealth_ChromeObject(t *testing.T) {
 	if err := p.Navigate(ts.URL); err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	_ = p.WaitLoad()
 
 	// Stealth should ensure window.chrome exists (bot detectors check for it)
@@ -85,6 +91,7 @@ func TestStealth_ChromeObject(t *testing.T) {
 
 func TestStealth_CanvasNoise(t *testing.T) {
 	b := newTestBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -106,9 +113,11 @@ func TestStealth_CanvasNoise(t *testing.T) {
 	if err != nil {
 		t.Fatalf("stealth page 1: %v", err)
 	}
+
 	if err := p1.Navigate(ts.URL); err != nil {
 		t.Fatalf("navigate p1: %v", err)
 	}
+
 	_ = p1.WaitLoad()
 	data1 := p1.MustEval(drawJS).String()
 
@@ -116,9 +125,11 @@ func TestStealth_CanvasNoise(t *testing.T) {
 	if err != nil {
 		t.Fatalf("stealth page 2: %v", err)
 	}
+
 	if err := p2.Navigate(ts.URL); err != nil {
 		t.Fatalf("navigate p2: %v", err)
 	}
+
 	_ = p2.WaitLoad()
 	data2 := p2.MustEval(drawJS).String()
 
@@ -129,6 +140,7 @@ func TestStealth_CanvasNoise(t *testing.T) {
 
 func TestStealth_WebGLVendor(t *testing.T) {
 	b := newTestBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -140,6 +152,7 @@ func TestStealth_WebGLVendor(t *testing.T) {
 	if err := p.Navigate(ts.URL); err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	_ = p.WaitLoad()
 
 	result := p.MustEval(`() => {
@@ -155,6 +168,7 @@ func TestStealth_WebGLVendor(t *testing.T) {
 	if vendor == "" {
 		t.Skip("WebGL not available in this environment")
 	}
+
 	if vendor != "Intel Inc." {
 		t.Errorf("expected vendor 'Intel Inc.', got %q", vendor)
 	}
@@ -162,6 +176,7 @@ func TestStealth_WebGLVendor(t *testing.T) {
 
 func TestStealth_ExtraJS_Applied(t *testing.T) {
 	b := newTestBrowser(t)
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -173,6 +188,7 @@ func TestStealth_ExtraJS_Applied(t *testing.T) {
 	if err := p.Navigate(ts.URL); err != nil {
 		t.Fatalf("navigate: %v", err)
 	}
+
 	_ = p.WaitLoad()
 
 	// Verify that ExtraJS was injected without errors by checking one of its effects:

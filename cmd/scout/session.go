@@ -16,8 +16,7 @@ import (
 func init() {
 	rootCmd.AddCommand(sessionCmd)
 	sessionCmd.AddCommand(sessionCreateCmd, sessionDestroyCmd, sessionListCmd, sessionUseCmd,
-		sessionTrackListCmd, sessionTrackPruneCmd, sessionTrackCleanCmd, sessionTrackRmCmd,
-		sessionTrackScanCmd)
+		sessionDirListCmd, sessionDirPruneCmd, sessionDirCleanCmd, sessionDirRmCmd)
 
 	sessionCreateCmd.Flags().Bool("headless", true, "run browser in headless mode")
 	sessionCreateCmd.Flags().Bool("stealth", false, "enable anti-bot-detection stealth mode")
@@ -57,13 +56,16 @@ var sessionCreateCmd = &cobra.Command{
 			if err := ensureDaemon(addr); err != nil {
 				return err
 			}
+
 			client, conn, err = getClient(addr)
 		} else {
 			client, conn, err = getClientTLS(addr)
 		}
+
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		headless, _ := cmd.Flags().GetBool("headless")
@@ -81,7 +83,9 @@ var sessionCreateCmd = &cobra.Command{
 		profilePath, _ := cmd.Flags().GetString("profile")
 		if profilePath != "" {
 			decrypt, _ := cmd.Flags().GetBool("decrypt")
+
 			var prof *scout.UserProfile
+
 			if decrypt {
 				passphrase, _ := cmd.Flags().GetString("passphrase")
 				if passphrase == "" {
@@ -90,10 +94,12 @@ var sessionCreateCmd = &cobra.Command{
 						return err
 					}
 				}
+
 				prof, err = scout.LoadProfileEncrypted(profilePath, passphrase)
 			} else {
 				prof, err = scout.LoadProfile(profilePath)
 			}
+
 			if err != nil {
 				return fmt.Errorf("scout: session create: load profile: %w", err)
 			}
@@ -102,9 +108,11 @@ var sessionCreateCmd = &cobra.Command{
 			if !cmd.Flags().Changed("user-agent") && prof.Identity.UserAgent != "" {
 				userAgent = prof.Identity.UserAgent
 			}
+
 			if !cmd.Flags().Changed("proxy") && prof.Proxy != "" {
 				proxy = prof.Proxy
 			}
+
 			if !cmd.Flags().Changed("stealth") && prof.Browser.Type == "brave" {
 				stealth = true
 			}
@@ -153,6 +161,7 @@ var sessionDestroyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		defer func() { _ = conn.Close() }()
 
 		all, _ := cmd.Flags().GetBool("all")
@@ -165,12 +174,15 @@ var sessionDestroyCmd = &cobra.Command{
 				} else {
 					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Destroyed: %s\n", id)
 				}
+
 				untrackSession(id)
 			}
+
 			return nil
 		}
 
 		sessionFlag, _ := cmd.Flags().GetString("session")
+
 		var id string
 		if len(args) > 0 {
 			id = args[0]
@@ -188,6 +200,7 @@ var sessionDestroyCmd = &cobra.Command{
 
 		untrackSession(id)
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Destroyed: %s\n", id)
+
 		return nil
 	},
 }
@@ -207,11 +220,13 @@ var sessionListCmd = &cobra.Command{
 		}
 
 		currentID, _ := resolveSession("")
+
 		for _, id := range ids {
 			marker := "  "
 			if id == currentID {
 				marker = "* "
 			}
+
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s%s\n", marker, id)
 		}
 
@@ -229,89 +244,116 @@ var sessionUseCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Active session: %s\n", args[0])
+
 		return nil
 	},
 }
 
-// --- track.json session management commands ---
+// --- session directory management commands ---
 
-var sessionTrackListCmd = &cobra.Command{
-	Use:   "track-list",
-	Short: "List all sessions tracked in track.json (local data dirs)",
+var sessionDirListCmd = &cobra.Command{
+	Use:   "list-local",
+	Short: "List all local session directories with scout.pid metadata",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		tracker, err := scout.LoadTracker()
+		sessions, err := scout.ListSessions()
 		if err != nil {
 			return err
 		}
 
-		// Auto-scan for untracked UUID dirs.
-		if added, _ := tracker.Scan(); added > 0 {
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "(discovered %d untracked session(s))\n", added)
-		}
-
-		if len(tracker.Sessions) == 0 {
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No tracked sessions in track.json.")
+		if len(sessions) == 0 {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No local sessions.")
 			return nil
 		}
 
-		for _, s := range tracker.Sessions {
+		for _, s := range sessions {
 			reusable := ""
-			if s.Reusable {
+			if s.Info.Reusable {
 				reusable = " [reusable]"
 			}
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s  %s  %s  headless=%v%s  last_used=%s\n",
-				s.ID, s.Browser, s.DataDir, s.Headless, reusable,
-				s.LastUsed.Format("2006-01-02 15:04:05"))
+
+			domain := ""
+			if s.Info.Domain != "" {
+				domain = fmt.Sprintf("  domain=%s", s.Info.Domain)
+			}
+
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s  %s  headless=%v%s%s  last_used=%s\n",
+				s.ID, s.Info.Browser, s.Info.Headless, reusable, domain,
+				s.Info.LastUsed.Format("2006-01-02 15:04:05"))
 		}
 
 		return nil
 	},
 }
 
-var sessionTrackPruneCmd = &cobra.Command{
-	Use:   "track-prune",
-	Short: "Remove stale entries from track.json (data dir no longer exists)",
+var sessionDirPruneCmd = &cobra.Command{
+	Use:   "prune",
+	Short: "Remove session dirs that have no scout.pid or are empty",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		tracker, err := scout.LoadTracker()
+		sessDir := scout.SessionsDir()
+
+		entries, err := os.ReadDir(sessDir)
 		if err != nil {
+			if os.IsNotExist(err) {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No sessions directory.")
+				return nil
+			}
+
 			return err
 		}
 
-		pruned, err := tracker.Prune()
-		if err != nil {
-			return err
+		pruned := 0
+
+		for _, e := range entries {
+			if !e.IsDir() {
+				continue
+			}
+
+			pidPath := filepath.Join(sessDir, e.Name(), "scout.pid")
+			if _, err := os.Stat(pidPath); os.IsNotExist(err) {
+				if err := os.RemoveAll(filepath.Join(sessDir, e.Name())); err != nil {
+					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: remove %s: %v\n", e.Name(), err)
+					continue
+				}
+
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Pruned: %s (no scout.pid)\n", e.Name())
+				pruned++
+			}
 		}
 
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Pruned %d stale session(s).\n", pruned)
+		if pruned == 0 {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Nothing to prune.")
+		}
+
 		return nil
 	},
 }
 
-var sessionTrackCleanCmd = &cobra.Command{
-	Use:   "track-clean",
-	Short: "Delete all non-reusable session data directories",
+var sessionDirCleanCmd = &cobra.Command{
+	Use:   "clean",
+	Short: "Delete all non-reusable session directories",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		tracker, err := scout.LoadTracker()
+		sessions, err := scout.ListSessions()
 		if err != nil {
 			return err
 		}
 
-		var toRemove []scout.SessionEntry
-		for _, s := range tracker.Sessions {
-			if !s.Reusable {
-				toRemove = append(toRemove, s)
+		cleaned := 0
+
+		for _, s := range sessions {
+			if s.Info.Reusable {
+				continue
 			}
+
+			if err := os.RemoveAll(s.Dir); err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: remove %s: %v\n", s.Dir, err)
+				continue
+			}
+
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Cleaned: %s (%s)\n", s.ID, s.Dir)
+			cleaned++
 		}
 
-		for _, s := range toRemove {
-			if err := os.RemoveAll(s.DataDir); err != nil {
-				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: remove %s: %v\n", s.DataDir, err)
-			}
-			_ = tracker.Remove(s.ID)
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Cleaned: %s (%s)\n", s.ID, s.DataDir)
-		}
-
-		if len(toRemove) == 0 {
+		if cleaned == 0 {
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No non-reusable sessions to clean.")
 		}
 
@@ -319,59 +361,24 @@ var sessionTrackCleanCmd = &cobra.Command{
 	},
 }
 
-var sessionTrackRmCmd = &cobra.Command{
-	Use:   "track-rm <id>",
-	Short: "Remove a specific session and its data directory",
+var sessionDirRmCmd = &cobra.Command{
+	Use:   "rm <id>",
+	Short: "Remove a specific session directory",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		tracker, err := scout.LoadTracker()
-		if err != nil {
-			return err
-		}
-
 		id := args[0]
+		dir := scout.SessionDir(id)
 
-		// Find the entry to get the data dir.
-		var dataDir string
-		for _, s := range tracker.Sessions {
-			if s.ID == id {
-				dataDir = s.DataDir
-				break
-			}
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			return fmt.Errorf("session %s not found", id)
 		}
 
-		if dataDir == "" {
-			return fmt.Errorf("session %s not found in track.json", id)
+		if err := os.RemoveAll(dir); err != nil {
+			return fmt.Errorf("remove session dir: %w", err)
 		}
 
-		if err := os.RemoveAll(dataDir); err != nil {
-			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: remove data dir: %v\n", err)
-		}
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed session %s\n", id)
 
-		if err := tracker.Remove(id); err != nil {
-			return err
-		}
-
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed session %s and data dir %s\n", id, dataDir)
-		return nil
-	},
-}
-
-var sessionTrackScanCmd = &cobra.Command{
-	Use:   "track-scan",
-	Short: "Discover untracked UUID data dirs and add them to track.json",
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		tracker, err := scout.LoadTracker()
-		if err != nil {
-			return err
-		}
-
-		added, err := tracker.Scan()
-		if err != nil {
-			return err
-		}
-
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Discovered %d new session(s).\n", added)
 		return nil
 	},
 }

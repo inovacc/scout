@@ -93,13 +93,16 @@ func SelectorHealthCheck(page *scout.Page, selectors map[string]string) map[stri
 			counts[name] = 0
 			continue
 		}
+
 		elems, err := page.Elements(css)
 		if err != nil {
 			counts[name] = 0
 			continue
 		}
+
 		counts[name] = len(elems)
 	}
+
 	return counts
 }
 
@@ -112,6 +115,7 @@ func collectSelectors(r *Runbook) map[string]string {
 		if r.Items.Container != "" {
 			sels["container"] = r.Items.Container
 		}
+
 		for name, sel := range r.Items.Fields {
 			sels["field:"+name] = sel
 		}
@@ -144,5 +148,6 @@ func selectorToCSS(sel string) string {
 	if idx := strings.Index(s, "@"); idx >= 0 {
 		s = s[:idx]
 	}
+
 	return strings.TrimSpace(s)
 }

@@ -61,13 +61,16 @@ func Discover(ctx context.Context) (<-chan Peer, error) {
 
 	go func() {
 		defer close(peers)
+
 		for entry := range entries {
 			var deviceID string
+
 			for _, txt := range entry.Text {
 				if len(txt) > 9 && txt[:9] == "deviceid=" {
 					deviceID = txt[9:]
 				}
 			}
+
 			if deviceID == "" {
 				continue
 			}

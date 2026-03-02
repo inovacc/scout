@@ -34,10 +34,12 @@ var recordCmd = &cobra.Command{
 		framesDir, _ := cmd.Flags().GetString("frames")
 
 		opts := baseOpts(cmd)
+
 		b, err := scout.New(opts...)
 		if err != nil {
 			return fmt.Errorf("scout: record: %w", err)
 		}
+
 		defer func() { _ = b.Close() }()
 
 		page, err := b.NewPage(url)
@@ -83,11 +85,13 @@ var recordCmd = &cobra.Command{
 			if err := rec.ExportFrames(framesDir); err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "frames exported to %s\n", framesDir)
 		}
 
 		// Export GIF.
 		defaultName := fmt.Sprintf("recording_%d.gif", time.Now().Unix())
+
 		outFile, _ := cmd.Flags().GetString("output")
 		if outFile == "" {
 			outFile = defaultName
@@ -101,6 +105,7 @@ var recordCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: record: create file: %w", err)
 		}
+
 		defer func() { _ = f.Close() }()
 
 		if err := rec.ExportGIF(f); err != nil {
@@ -108,6 +113,7 @@ var recordCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "GIF exported: %s\n", outFile)
+
 		return nil
 	},
 }

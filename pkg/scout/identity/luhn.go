@@ -20,6 +20,7 @@ func codepoint32(b byte) int {
 func luhn32(s string) (rune, error) {
 	factor := 1
 	sum := 0
+
 	const n = 32
 
 	for i := range s {
@@ -27,17 +28,21 @@ func luhn32(s string) (rune, error) {
 		if codepoint == -1 {
 			return 0, fmt.Errorf("digit %q not valid in alphabet %q", s[i], luhnBase32)
 		}
+
 		addend := factor * codepoint
 		if factor == 2 {
 			factor = 1
 		} else {
 			factor = 2
 		}
+
 		addend = (addend / n) + (addend % n)
 		sum += addend
 	}
+
 	remainder := sum % n
 	checkCodepoint := (n - remainder) % n
+
 	return rune(luhnBase32[checkCodepoint]), nil
 }
 
@@ -49,15 +54,19 @@ func luhnify(s string) (string, error) {
 	}
 
 	res := make([]byte, 4*(13+1))
+
 	for i := range 4 {
 		p := s[i*13 : (i+1)*13]
 		copy(res[i*(13+1):], p)
+
 		l, err := luhn32(p)
 		if err != nil {
 			return "", err
 		}
+
 		res[(i+1)*13+i] = byte(l)
 	}
+
 	return string(res), nil
 }
 
@@ -69,30 +78,37 @@ func unluhnify(s string) (string, error) {
 	}
 
 	res := make([]byte, 52)
+
 	for i := range 4 {
 		p := s[i*(13+1) : (i+1)*(13+1)-1]
 		copy(res[i*13:], p)
+
 		l, err := luhn32(p)
 		if err != nil {
 			return "", err
 		}
+
 		if s[(i+1)*14-1] != byte(l) {
 			return "", fmt.Errorf("%q: check digit incorrect", s)
 		}
 	}
+
 	return string(res), nil
 }
 
 // chunkify splits a string into groups of 7 separated by dashes.
 func chunkify(s string) string {
 	chunks := len(s) / 7
+
 	res := make([]byte, chunks*(7+1)-1)
 	for i := range chunks {
 		if i > 0 {
 			res[i*(7+1)-1] = '-'
 		}
+
 		copy(res[i*(7+1):], s[i*7:(i+1)*7])
 	}
+
 	return string(res)
 }
 
@@ -104,5 +120,6 @@ func unchunkify(s string) string {
 			out = append(out, s[i])
 		}
 	}
+
 	return string(out)
 }

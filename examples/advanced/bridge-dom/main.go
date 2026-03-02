@@ -22,6 +22,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer func() { _ = browser.Close() }()
 
 	result, err := browser.SitemapExtract("https://quotes.toscrape.com",

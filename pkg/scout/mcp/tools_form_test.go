@@ -27,6 +27,7 @@ func newFormTestServer() *httptest.Server {
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write([]byte(`<!DOCTYPE html><html><body><h1>OK</h1></body></html>`))
 	})
+
 	return httptest.NewServer(mux)
 }
 
@@ -45,6 +46,7 @@ func TestFormDetectTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("form_detect: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -52,10 +54,12 @@ func TestFormDetectTool(t *testing.T) {
 	}
 
 	text := result.Content[0].(*mcp.TextContent).Text
+
 	var forms []json.RawMessage
 	if err := json.Unmarshal([]byte(text), &forms); err != nil {
 		t.Fatalf("unmarshal forms: %v", err)
 	}
+
 	if len(forms) == 0 {
 		t.Error("expected at least one form")
 	}
@@ -65,6 +69,7 @@ func TestFormDetectTool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("form_detect with selector: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		t.Fatalf("form_detect selector error: %s", text)
@@ -88,6 +93,7 @@ func TestFormFillTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("form_fill: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})
@@ -114,6 +120,7 @@ func TestFormSubmitTool(t *testing.T) {
 		skipIfNoBrowser(t, err)
 		t.Fatalf("form_submit: %v", err)
 	}
+
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
 		skipIfNoBrowser(t, &toolErr{text})

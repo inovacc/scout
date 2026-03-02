@@ -31,12 +31,17 @@ type ImgProcessor interface {
 type jpegProcessor struct{}
 
 func (p jpegProcessor) Encode(img image.Image, opt *ImgOption) ([]byte, error) {
-	var buf bytes.Buffer
-	var jpegOpt *jpeg.Options
+	var (
+		buf     bytes.Buffer
+		jpegOpt *jpeg.Options
+	)
+
 	if opt != nil {
 		jpegOpt = &jpeg.Options{Quality: opt.Quality}
 	}
+
 	err := jpeg.Encode(&buf, img, jpegOpt)
+
 	return buf.Bytes(), err
 }
 
@@ -48,7 +53,9 @@ type pngProcessor struct{}
 
 func (p pngProcessor) Encode(img image.Image, _ *ImgOption) ([]byte, error) {
 	var buf bytes.Buffer
+
 	err := png.Encode(&buf, img)
+
 	return buf.Bytes(), err
 }
 
@@ -75,6 +82,7 @@ func SplicePngVertical(files []ImgWithBox, format proto.PageCaptureScreenshotFor
 	if len(files) == 0 {
 		return nil, nil
 	}
+
 	if len(files) == 1 {
 		return files[0].Img, nil
 	}
@@ -87,6 +95,7 @@ func SplicePngVertical(files []ImgWithBox, format proto.PageCaptureScreenshotFor
 	}
 
 	var images []image.Image
+
 	for _, file := range files {
 		img, err := processor.Decode(bytes.NewReader(file.Img))
 		if err != nil {
@@ -94,6 +103,7 @@ func SplicePngVertical(files []ImgWithBox, format proto.PageCaptureScreenshotFor
 		}
 
 		images = append(images, img)
+
 		if file.Box != nil {
 			width = file.Box.Dx()
 			height += file.Box.Dy()
@@ -106,6 +116,7 @@ func SplicePngVertical(files []ImgWithBox, format proto.PageCaptureScreenshotFor
 	spliceImg := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	var destY int
+
 	for i, file := range files {
 		img := images[i]
 		bounds := img.Bounds()
@@ -113,7 +124,9 @@ func SplicePngVertical(files []ImgWithBox, format proto.PageCaptureScreenshotFor
 		if file.Box != nil {
 			bounds = *file.Box
 		}
+
 		start := bounds.Min
+
 		end := bounds.Max
 		for y := start.Y; y < end.Y; y++ {
 			for x := start.X; x < end.X; x++ {

@@ -95,6 +95,7 @@ func GenerateWithAI(browser *scout.Browser, url string, opts ...AIRunbookOption)
 	if err != nil {
 		return generateFallback(browser, url)
 	}
+
 	defer func() { _ = page.Close() }()
 
 	if err := page.WaitLoad(); err != nil {
@@ -111,6 +112,7 @@ func GenerateWithAI(browser *scout.Browser, url string, opts ...AIRunbookOption)
 	if err != nil {
 		return generateFallback(browser, url)
 	}
+
 	htmlSample := fmt.Sprintf("%v", htmlResult.Value)
 
 	// Get rule-based analysis as context
@@ -125,10 +127,12 @@ func GenerateWithAI(browser *scout.Browser, url string, opts ...AIRunbookOption)
 	systemPrompt := runbookSchemaPrompt
 
 	var userParts []string
+
 	userParts = append(userParts, fmt.Sprintf("Generate a runbook for: %s", url))
 	if cfg.goal != "" {
 		userParts = append(userParts, fmt.Sprintf("\nGoal: %s", cfg.goal))
 	}
+
 	userParts = append(userParts, fmt.Sprintf("\n\nRule-based analysis of the page:\n%s", string(analysisJSON)))
 	userParts = append(userParts, fmt.Sprintf("\n\nHTML sample (first 5000 chars):\n%s", htmlSample))
 
@@ -203,6 +207,7 @@ func generateFallback(browser *scout.Browser, url string) (*Runbook, error) {
 	if err != nil {
 		return nil, fmt.Errorf("runbook: ai fallback: analyze: %w", err)
 	}
+
 	return fallbackFromAnalysis(analysis)
 }
 
@@ -214,13 +219,15 @@ func fallbackFromAnalysis(analysis *SiteAnalysis) (*Runbook, error) {
 // stripJSONFencing removes markdown code fences from a JSON response.
 func stripJSONFencing(s string) string {
 	s = strings.TrimSpace(s)
-	if strings.HasPrefix(s, "```json") {
-		s = strings.TrimPrefix(s, "```json")
-	} else if strings.HasPrefix(s, "```") {
-		s = strings.TrimPrefix(s, "```")
+	if after, ok := strings.CutPrefix(s, "```json"); ok {
+		s = after
+	} else if after, ok := strings.CutPrefix(s, "```"); ok {
+		s = after
 	}
-	if strings.HasSuffix(s, "```") {
-		s = strings.TrimSuffix(s, "```")
+
+	if before, ok := strings.CutSuffix(s, "```"); ok {
+		s = before
 	}
+
 	return strings.TrimSpace(s)
 }

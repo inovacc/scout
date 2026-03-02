@@ -9,5 +9,6 @@ func has(arr []string, str string) bool {
 			return true
 		}
 	}
+
 	return false
 }

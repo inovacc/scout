@@ -27,6 +27,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer func() { _ = browser.Close() }()
 
 	bs := browser.BridgeServer()
@@ -59,5 +60,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	fmt.Println(string(data))
 }

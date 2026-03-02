@@ -71,7 +71,9 @@ var authLoginCmd = &cobra.Command{
 
 		go func() {
 			<-sigCh
+
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "\ninterrupted, capturing session before exit...")
+
 			cancel()
 		}()
 
@@ -139,7 +141,9 @@ This is the generic "launch browser and capture everything" flow.`,
 
 		go func() {
 			<-sigCh
+
 			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "\ncapturing session data...")
+
 			cancel()
 		}()
 

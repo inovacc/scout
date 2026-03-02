@@ -30,6 +30,7 @@ func TestBraveAssetName(t *testing.T) {
 
 	for _, tt := range tests {
 		key := tt.goos + "_" + tt.goarch
+
 		pattern, ok := braveAssets[key]
 		if !ok {
 			t.Errorf("no asset pattern for %s", key)
@@ -45,6 +46,7 @@ func TestBraveAssetName(t *testing.T) {
 
 func TestBraveBinPath(t *testing.T) {
 	got := braveBinPath()
+
 	expected, ok := braveBins[runtime.GOOS]
 	if !ok {
 		expected = "brave"
@@ -57,6 +59,7 @@ func TestBraveBinPath(t *testing.T) {
 
 func TestBraveAssetNameCurrentPlatform(t *testing.T) {
 	name := braveAssetName("1.0.0")
+
 	key := runtime.GOOS + "_" + runtime.GOARCH
 	if _, ok := braveAssets[key]; ok && name == "" {
 		t.Errorf("braveAssetName returned empty for supported platform %s", key)
@@ -66,6 +69,7 @@ func TestBraveAssetNameCurrentPlatform(t *testing.T) {
 func TestLatestBraveVersion(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]string{"tag_name": "v1.87.188"}
+
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)
 	}))
@@ -82,6 +86,7 @@ func TestLatestBraveVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	var release struct {
@@ -113,6 +118,7 @@ func TestExtractZipArchive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if string(data) != "hello world" {
 		t.Errorf("test.txt = %q, want %q", string(data), "hello world")
 	}
@@ -121,6 +127,7 @@ func TestExtractZipArchive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if string(data) != "nested content" {
 		t.Errorf("subdir/file.txt = %q, want %q", string(data), "nested content")
 	}
@@ -174,6 +181,7 @@ func searchSubstring(s, substr string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -182,6 +190,7 @@ func createTestZip(t *testing.T, files map[string]string) []byte {
 	t.Helper()
 
 	var buf bytes.Buffer
+
 	zw := zip.NewWriter(&buf)
 
 	for name, content := range files {
@@ -189,6 +198,7 @@ func createTestZip(t *testing.T, files map[string]string) []byte {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if _, err := w.Write([]byte(content)); err != nil {
 			t.Fatal(err)
 		}

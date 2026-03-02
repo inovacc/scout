@@ -13,10 +13,10 @@ import (
 
 // Request to send to browser.
 type Request struct {
-	ID        int         `json:"id"`
-	SessionID string      `json:"sessionId,omitempty"`
-	Method    string      `json:"method"`
-	Params    interface{} `json:"params,omitempty"`
+	ID        int    `json:"id"`
+	SessionID string `json:"sessionId,omitempty"`
+	Method    string `json:"method"`
+	Params    any    `json:"params,omitempty"`
 }
 
 // Response from browser.
@@ -84,7 +84,7 @@ type result struct {
 }
 
 // Call a method and wait for its response.
-func (cdp *Client) Call(ctx context.Context, sessionID, method string, params interface{}) ([]byte, error) {
+func (cdp *Client) Call(ctx context.Context, sessionID, method string, params any) ([]byte, error) {
 	req := &Request{
 		ID:        int(atomic.AddUint64(&cdp.count, 1)),
 		SessionID: sessionID,
@@ -99,6 +99,7 @@ func (cdp *Client) Call(ctx context.Context, sessionID, method string, params in
 
 	done := make(chan result)
 	once := sync.Once{}
+
 	cdp.pending.Store(req.ID, func(res result) {
 		once.Do(func() {
 			select {
@@ -134,29 +135,35 @@ func (cdp *Client) consumeMessages() {
 	for {
 		data, err := cdp.ws.Read()
 		if err != nil {
-			cdp.pending.Range(func(_, val interface{}) bool {
+			cdp.pending.Range(func(_, val any) bool {
 				val.(func(result))(result{err: err}) //nolint: forcetypeassert
 				return true
 			})
+
 			return
 		}
 
 		var id struct {
 			ID int `json:"id"`
 		}
+
 		err = json.Unmarshal(data, &id)
 		utils.E(err)
 
 		if id.ID == 0 {
 			var evt Event
+
 			err := json.Unmarshal(data, &evt)
 			utils.E(err)
 			cdp.logger.Println(&evt)
+
 			cdp.event <- &evt
+
 			continue
 		}
 
 		var res Response
+
 		err = json.Unmarshal(data, &res)
 		utils.E(err)
 
@@ -166,6 +173,7 @@ func (cdp *Client) consumeMessages() {
 		if !ok {
 			continue
 		}
+
 		if res.Error == nil {
 			val.(func(result))(result{res.Result, nil}) //nolint: forcetypeassert
 		} else {

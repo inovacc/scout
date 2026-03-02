@@ -48,6 +48,7 @@ func (ws *WebSocket) Connect(ctx context.Context, wsURL string, header http.Head
 
 	ws.conn = conn
 	ws.r = bufio.NewReader(conn)
+
 	return ws.handshake(ctx, u, header)
 }
 
@@ -63,6 +64,7 @@ func (ws *WebSocket) initDialer(u *url.URL) {
 
 	if u.Scheme == "wss" {
 		ws.Dialer = &tlsDialer{}
+
 		if u.Port() == "" {
 			u.Host += ":443"
 		}
@@ -79,6 +81,7 @@ func (ws *WebSocket) Send(msg []byte) error {
 	if err != nil {
 		_ = ws.Close()
 	}
+
 	return err
 }
 
@@ -89,6 +92,7 @@ func (ws *WebSocket) send(msg []byte) error {
 
 	size := len(msg)
 	fieldLen := 0
+
 	switch {
 	case size <= 125:
 		header[1] |= byte(size)
@@ -117,6 +121,7 @@ func (ws *WebSocket) send(msg []byte) error {
 	copy(data[i+6:], msg)
 
 	_, err := ws.conn.Write(data)
+
 	return err
 }
 
@@ -127,6 +132,7 @@ func (ws *WebSocket) Read() ([]byte, error) {
 		_ = ws.Close()
 		return nil, err
 	}
+
 	return b, nil
 }
 
@@ -168,6 +174,7 @@ func (ws *WebSocket) read() ([]byte, error) {
 
 	data := make([]byte, size)
 	_, err = io.ReadFull(ws.r, data)
+
 	return data, err
 }
 
@@ -203,6 +210,7 @@ func (ws *WebSocket) handshake(ctx context.Context, u *url.URL, header http.Head
 	}}).WithContext(ctx)
 
 	secKey := defaultSecKey
+
 	for k, vs := range header {
 		switch {
 		case k == "Host" && len(vs) > 0:
@@ -224,10 +232,12 @@ func (ws *WebSocket) handshake(ctx context.Context, u *url.URL, header http.Head
 	if err != nil {
 		return err
 	}
+
 	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode != http.StatusSwitchingProtocols || !verifyWebSocketAccept(res.Header, secKey) {
 		body, _ := io.ReadAll(res.Body)
+
 		return &BadHandshakeError{
 			Status: res.Status,
 			Body:   string(body),

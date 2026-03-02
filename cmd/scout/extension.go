@@ -47,6 +47,7 @@ var extDownloadCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Downloaded: %s v%s\n  ID:   %s\n  Path: %s\n", info.Name, info.Version, info.ID, info.Path)
+
 		return nil
 	},
 }
@@ -63,6 +64,7 @@ var extRemoveCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed extension %s\n", id)
+
 		return nil
 	},
 }
@@ -98,12 +100,14 @@ Navigates to the given URL (or chrome://extensions) and blocks until Ctrl+C.`,
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(urlFlag)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -112,6 +116,7 @@ Navigates to the given URL (or chrome://extensions) and blocks until Ctrl+C.`,
 
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer stop()
+
 		<-ctx.Done()
 
 		return nil
@@ -140,16 +145,19 @@ Optionally capture a screenshot and list detected extensions.`,
 		timeout, _ := cmd.Flags().GetDuration("timeout")
 
 		opts := append(baseOpts(cmd), scout.WithTimeout(timeout), scout.WithExtension(paths...))
+
 		browser, err := scout.New(opts...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(urlFlag)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -159,10 +167,12 @@ Optionally capture a screenshot and list detected extensions.`,
 			if err != nil {
 				return fmt.Errorf("scout: screenshot: %w", err)
 			}
+
 			dest, err := writeOutput(cmd, data, screenshotFile)
 			if err != nil {
 				return err
 			}
+
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Screenshot saved to %s\n", dest)
 		}
 
@@ -184,10 +194,11 @@ Optionally capture a screenshot and list detected extensions.`,
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Loaded extensions:")
+
 		val := result.Value
-		if arr, ok := val.([]interface{}); ok {
+		if arr, ok := val.([]any); ok {
 			for _, item := range arr {
-				if m, ok := item.(map[string]interface{}); ok {
+				if m, ok := item.(map[string]any); ok {
 					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  - %s (id: %s, version: %s, enabled: %v)\n",
 						m["name"], m["id"], m["version"], m["enabled"])
 				}
@@ -212,6 +223,7 @@ var extListCmd = &cobra.Command{
 			if len(localExts) == 0 {
 				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  (none)")
 			}
+
 			for _, ext := range localExts {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  - %s v%s (id: %s)\n", ext.Name, ext.Version, ext.ID)
 			}
@@ -223,12 +235,14 @@ var extListCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
+
 		defer func() { _ = browser.Close() }()
 
 		page, err := browser.NewPage(urlFlag)
 		if err != nil {
 			return fmt.Errorf("scout: navigate: %w", err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("scout: wait load: %w", err)
 		}
@@ -250,13 +264,15 @@ var extListCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "\nBrowser extensions:")
+
 		val := result.Value
-		if arr, ok := val.([]interface{}); ok {
+		if arr, ok := val.([]any); ok {
 			if len(arr) == 0 {
 				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  (none)")
 			}
+
 			for _, item := range arr {
-				if m, ok := item.(map[string]interface{}); ok {
+				if m, ok := item.(map[string]any); ok {
 					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  - %s (id: %s, version: %s, enabled: %v)\n",
 						m["name"], m["id"], m["version"], m["enabled"])
 				}

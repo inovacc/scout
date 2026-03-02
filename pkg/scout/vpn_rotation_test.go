@@ -29,14 +29,18 @@ func (m *mockVPNProvider) Servers(_ context.Context) ([]VPNServer, error) {
 func (m *mockVPNProvider) Connect(_ context.Context, country string) (*VPNConnection, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
 	if m.connectErr != nil {
 		return nil, m.connectErr
 	}
+
 	m.connectCalls = append(m.connectCalls, country)
+
 	host := country + ".mock.vpn"
 	if country == "" {
 		host = "auto.mock.vpn"
 	}
+
 	return &VPNConnection{
 		Server:   VPNServer{Host: host, Country: country},
 		Protocol: "socks5",
@@ -47,7 +51,9 @@ func (m *mockVPNProvider) Connect(_ context.Context, country string) (*VPNConnec
 func (m *mockVPNProvider) Disconnect(_ context.Context) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
 	m.disconnects++
+
 	return nil
 }
 
@@ -61,13 +67,16 @@ func TestVPNRotator_New(t *testing.T) {
 		Countries: []string{"us", "de", "jp"},
 		PerPage:   true,
 	}
+
 	r := newVPNRotator(p, cfg)
 	if r == nil {
 		t.Fatal("expected non-nil rotator")
 	}
+
 	if len(r.countries) != 3 {
 		t.Fatalf("expected 3 countries, got %d", len(r.countries))
 	}
+
 	if r.index != 0 {
 		t.Fatalf("expected index 0, got %d", r.index)
 	}
@@ -76,6 +85,7 @@ func TestVPNRotator_New(t *testing.T) {
 func TestVPNRotator_New_EmptyCountries(t *testing.T) {
 	p := &mockVPNProvider{}
 	cfg := VPNRotationConfig{PerPage: true}
+
 	r := newVPNRotator(p, cfg)
 	if len(r.countries) != 1 || r.countries[0] != "" {
 		t.Fatalf("expected single empty country, got %v", r.countries)
@@ -103,6 +113,7 @@ func TestVPNRotator_ShouldRotate_Interval(t *testing.T) {
 
 	// Wait for interval to elapse.
 	time.Sleep(60 * time.Millisecond)
+
 	if !r.shouldRotate() {
 		t.Fatal("expected shouldRotate=true after interval elapsed")
 	}
@@ -133,7 +144,7 @@ func TestVPNRotator_Next_SingleCountry(t *testing.T) {
 	r := newVPNRotator(&mockVPNProvider{}, VPNRotationConfig{
 		Countries: []string{"br"},
 	})
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		if got := r.next(); got != "br" {
 			t.Fatalf("call %d: expected %q, got %q", i, "br", got)
 		}
@@ -151,9 +162,11 @@ func TestVPNRotator_RotateIfNeeded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if conn == nil {
 		t.Fatal("expected non-nil connection")
 	}
+
 	if conn.Server.Country != "us" {
 		t.Fatalf("expected country us, got %q", conn.Server.Country)
 	}
@@ -163,6 +176,7 @@ func TestVPNRotator_RotateIfNeeded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if conn.Server.Country != "de" {
 		t.Fatalf("expected country de, got %q", conn.Server.Country)
 	}
@@ -176,10 +190,12 @@ func TestVPNRotator_RotateIfNeeded_NoRotation(t *testing.T) {
 	r := newVPNRotator(&mockVPNProvider{}, VPNRotationConfig{
 		Interval: 1 * time.Hour, // Won't trigger.
 	})
+
 	conn, err := r.rotateIfNeeded(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if conn != nil {
 		t.Fatal("expected nil connection when no rotation needed")
 	}
@@ -187,10 +203,12 @@ func TestVPNRotator_RotateIfNeeded_NoRotation(t *testing.T) {
 
 func TestVPNRotator_RotateIfNeeded_NilRotator(t *testing.T) {
 	var r *vpnRotator
+
 	conn, err := r.rotateIfNeeded(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if conn != nil {
 		t.Fatal("expected nil connection for nil rotator")
 	}
@@ -204,6 +222,7 @@ func TestVPNRotator_RotateIfNeeded_ConnectError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
+
 	if conn != nil {
 		t.Fatal("expected nil connection on error")
 	}

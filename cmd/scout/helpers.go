@@ -101,6 +101,7 @@ func stealthOpts(cmd *cobra.Command) []scout.Option {
 	if s {
 		return []scout.Option{scout.WithStealth()}
 	}
+
 	return nil
 }
 
@@ -116,9 +117,11 @@ func baseOpts(cmd *cobra.Command) []scout.Option {
 	if v, _ := cmd.Flags().GetString("electron-app"); v != "" {
 		opts = append(opts, scout.WithElectronApp(v))
 	}
+
 	if v, _ := cmd.Flags().GetString("electron-version"); v != "" {
 		opts = append(opts, scout.WithElectronVersion(v))
 	}
+
 	if v, _ := cmd.Flags().GetString("electron-cdp"); v != "" {
 		opts = append(opts, scout.WithElectronCDP(v))
 	}

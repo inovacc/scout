@@ -260,6 +260,7 @@ func (b *Bridge) Query(method string, params any) (json.RawMessage, error) {
 	id := fmt.Sprintf("q_%d_%d", time.Now().UnixNano(), rand.IntN(10000)) //nolint:gosec
 
 	ch := make(chan json.RawMessage, 1)
+
 	b.mu.Lock()
 	b.queries[id] = ch
 	b.mu.Unlock()
@@ -355,6 +356,7 @@ func (b *Bridge) DOM(opts ...DOMOption) (*DOMNode, error) {
 	if o.selector != "" {
 		params["selector"] = o.selector
 	}
+
 	if o.depth != 50 {
 		params["depth"] = o.depth
 	}
@@ -395,6 +397,7 @@ func (b *Bridge) DOMMarkdown(opts ...DOMOption) (string, error) {
 	if o.selector != "" {
 		params["selector"] = o.selector
 	}
+
 	if o.mainOnly {
 		params["mainOnly"] = true
 	}
@@ -479,6 +482,7 @@ func (b *Bridge) MonitorDOMChanges(opts ...map[string]any) (<-chan DOMChangeSumm
 		if err := json.Unmarshal(data, &summary); err != nil {
 			return
 		}
+
 		select {
 		case ch <- summary:
 		default:

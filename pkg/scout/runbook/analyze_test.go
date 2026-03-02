@@ -10,6 +10,7 @@ import (
 
 func newAnalyzeServer(t *testing.T) *httptest.Server {
 	t.Helper()
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/analyze-listing", func(w http.ResponseWriter, _ *http.Request) {
@@ -82,6 +83,7 @@ Types can satisfy interfaces from other packages without modification.</p>
 func TestAnalyzeSite_Listing(t *testing.T) {
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	analysis, err := AnalyzeSite(context.Background(), b, ts.URL+"/analyze-listing")
@@ -111,6 +113,7 @@ func TestAnalyzeSite_Listing(t *testing.T) {
 	for _, f := range top.Fields {
 		fieldNames[f.Name] = true
 	}
+
 	if !fieldNames["title"] {
 		t.Error("expected 'title' field")
 	}
@@ -119,6 +122,7 @@ func TestAnalyzeSite_Listing(t *testing.T) {
 func TestAnalyzeSite_Form(t *testing.T) {
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	analysis, err := AnalyzeSite(context.Background(), b, ts.URL+"/analyze-form")
@@ -143,6 +147,7 @@ func TestAnalyzeSite_Form(t *testing.T) {
 func TestAnalyzeSite_Article(t *testing.T) {
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	analysis, err := AnalyzeSite(context.Background(), b, ts.URL+"/analyze-article")
@@ -158,6 +163,7 @@ func TestAnalyzeSite_Article(t *testing.T) {
 func TestAnalyzeSite_Pagination(t *testing.T) {
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	analysis, err := AnalyzeSite(context.Background(), b, ts.URL+"/analyze-paginated")
@@ -177,6 +183,7 @@ func TestAnalyzeSite_Pagination(t *testing.T) {
 func TestAnalyzeSite_Metadata(t *testing.T) {
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	analysis, err := AnalyzeSite(context.Background(), b, ts.URL+"/analyze-listing")
@@ -187,6 +194,7 @@ func TestAnalyzeSite_Metadata(t *testing.T) {
 	if analysis.Metadata["title"] != "Product Listing" {
 		t.Errorf("metadata title = %q, want %q", analysis.Metadata["title"], "Product Listing")
 	}
+
 	if analysis.Metadata["description"] != "Browse our products" {
 		t.Errorf("metadata description = %q, want %q", analysis.Metadata["description"], "Browse our products")
 	}
@@ -195,6 +203,7 @@ func TestAnalyzeSite_Metadata(t *testing.T) {
 func TestGenerateRunbook_Extract(t *testing.T) {
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	analysis, err := AnalyzeSite(context.Background(), b, ts.URL+"/gen-listing")
@@ -210,15 +219,19 @@ func TestGenerateRunbook_Extract(t *testing.T) {
 	if r.Type != "extract" {
 		t.Errorf("type = %q, want %q", r.Type, "extract")
 	}
+
 	if r.Items == nil {
 		t.Fatal("items should not be nil")
 	}
+
 	if r.Items.Container == "" {
 		t.Error("container should not be empty")
 	}
+
 	if len(r.Items.Fields) == 0 {
 		t.Error("fields should not be empty")
 	}
+
 	if r.Version != "1" {
 		t.Errorf("version = %q, want %q", r.Version, "1")
 	}
@@ -227,6 +240,7 @@ func TestGenerateRunbook_Extract(t *testing.T) {
 func TestGenerateRunbook_Automate(t *testing.T) {
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	analysis, err := AnalyzeSite(context.Background(), b, ts.URL+"/analyze-form")
@@ -242,6 +256,7 @@ func TestGenerateRunbook_Automate(t *testing.T) {
 	if r.Type != "automate" {
 		t.Errorf("type = %q, want %q", r.Type, "automate")
 	}
+
 	if len(r.Steps) == 0 {
 		t.Error("steps should not be empty")
 	}
@@ -255,6 +270,7 @@ func TestGenerateRunbook_Automate(t *testing.T) {
 func TestGenerateRunbook_ForceType(t *testing.T) {
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	analysis, err := AnalyzeSite(context.Background(), b, ts.URL+"/analyze-form")
@@ -283,6 +299,7 @@ func TestGenerateRunbook_ForceType(t *testing.T) {
 func TestGenerateRunbook_Validate(t *testing.T) {
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	analysis, err := AnalyzeSite(context.Background(), b, ts.URL+"/gen-listing")
@@ -303,6 +320,7 @@ func TestGenerateRunbook_Validate(t *testing.T) {
 func TestGenerateRunbook_RunEndToEnd(t *testing.T) {
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
+
 	b := newTestBrowser(t)
 
 	analysis, err := AnalyzeSite(context.Background(), b, ts.URL+"/gen-listing")

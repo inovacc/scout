@@ -7,16 +7,20 @@ import (
 
 func TestDirectProxy_NewAndConnect(t *testing.T) {
 	dp := NewDirectProxy("proxy.example.com", 1080)
+
 	conn, err := dp.Connect(context.Background(), "")
 	if err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
+
 	if conn.Protocol != "socks5" {
 		t.Errorf("protocol = %q, want socks5", conn.Protocol)
 	}
+
 	if conn.Port != 1080 {
 		t.Errorf("port = %d, want 1080", conn.Port)
 	}
+
 	if conn.Server.Host != "proxy.example.com:1080" {
 		t.Errorf("host = %q, want proxy.example.com:1080", conn.Server.Host)
 	}
@@ -24,10 +28,12 @@ func TestDirectProxy_NewAndConnect(t *testing.T) {
 
 func TestDirectProxy_Scheme(t *testing.T) {
 	dp := NewDirectProxy("proxy.example.com", 8080, WithDirectProxyScheme("https"))
+
 	conn, err := dp.Connect(context.Background(), "us")
 	if err != nil {
 		t.Fatalf("Connect: %v", err)
 	}
+
 	if conn.Protocol != "https" {
 		t.Errorf("protocol = %q, want https", conn.Protocol)
 	}
@@ -38,6 +44,7 @@ func TestDirectProxy_Auth(t *testing.T) {
 		WithDirectProxyAuth("user", "pass"),
 	)
 	url := dp.ProxyURL()
+
 	want := "socks5://user:pass@proxy.example.com:1080"
 	if url != want {
 		t.Errorf("ProxyURL = %q, want %q", url, want)
@@ -47,6 +54,7 @@ func TestDirectProxy_Auth(t *testing.T) {
 func TestDirectProxy_ProxyURL_NoAuth(t *testing.T) {
 	dp := NewDirectProxy("proxy.example.com", 1080)
 	url := dp.ProxyURL()
+
 	want := "socks5://proxy.example.com:1080"
 	if url != want {
 		t.Errorf("ProxyURL = %q, want %q", url, want)
@@ -55,13 +63,16 @@ func TestDirectProxy_ProxyURL_NoAuth(t *testing.T) {
 
 func TestDirectProxy_Servers(t *testing.T) {
 	dp := NewDirectProxy("proxy.example.com", 1080)
+
 	servers, err := dp.Servers(context.Background())
 	if err != nil {
 		t.Fatalf("Servers: %v", err)
 	}
+
 	if len(servers) != 1 {
 		t.Fatalf("len(servers) = %d, want 1", len(servers))
 	}
+
 	if servers[0].Host != "proxy.example.com:1080" {
 		t.Errorf("host = %q", servers[0].Host)
 	}
@@ -69,13 +80,16 @@ func TestDirectProxy_Servers(t *testing.T) {
 
 func TestDirectProxy_Status(t *testing.T) {
 	dp := NewDirectProxy("proxy.example.com", 1080)
+
 	st, err := dp.Status(context.Background())
 	if err != nil {
 		t.Fatalf("Status: %v", err)
 	}
+
 	if !st.Connected {
 		t.Error("expected connected=true")
 	}
+
 	if st.Connection == nil {
 		t.Fatal("expected non-nil connection")
 	}
@@ -93,12 +107,15 @@ func TestDirectProxy_NilSafety(t *testing.T) {
 	if _, err := dp.Servers(context.Background()); err == nil {
 		t.Error("expected error for nil Servers")
 	}
+
 	if _, err := dp.Connect(context.Background(), ""); err == nil {
 		t.Error("expected error for nil Connect")
 	}
+
 	if _, err := dp.Status(context.Background()); err == nil {
 		t.Error("expected error for nil Status")
 	}
+
 	if url := dp.ProxyURL(); url != "" {
 		t.Errorf("expected empty ProxyURL for nil, got %q", url)
 	}
@@ -116,6 +133,7 @@ func TestVPNServer_Fields(t *testing.T) {
 	if s.Country != "US" {
 		t.Errorf("Country = %q", s.Country)
 	}
+
 	if len(s.Tags) != 2 {
 		t.Errorf("Tags len = %d", len(s.Tags))
 	}
@@ -129,6 +147,7 @@ func TestVPNRotationConfig(t *testing.T) {
 	if len(cfg.Countries) != 3 {
 		t.Errorf("Countries len = %d", len(cfg.Countries))
 	}
+
 	if !cfg.PerPage {
 		t.Error("expected PerPage=true")
 	}
@@ -162,6 +181,7 @@ func TestVPN_DirectProxy_Integration(t *testing.T) {
 	if err != nil {
 		t.Skipf("browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	// Verify VPN status
@@ -203,6 +223,7 @@ func TestVPN_RotationConfig_Integration(t *testing.T) {
 	if err != nil {
 		t.Skipf("browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	if b.vpnRot == nil {

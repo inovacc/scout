@@ -77,6 +77,7 @@ func TestWaitFrameworkReady_React(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Element: %v", err)
 	}
+
 	text, err := el.Text()
 	if err != nil {
 		t.Fatalf("Text: %v", err)
@@ -140,6 +141,7 @@ func TestWaitFrameworkReady_Fallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Element: %v", err)
 	}
+
 	text, err := el.Text()
 	if err != nil {
 		t.Fatalf("Text: %v", err)
@@ -152,6 +154,7 @@ func TestWaitFrameworkReady_Fallback(t *testing.T) {
 
 func TestWaitFrameworkReady_NilPage(t *testing.T) {
 	var p *Page
+
 	err := p.WaitFrameworkReady()
 	if err == nil {
 		t.Fatal("expected error for nil page")
@@ -169,6 +172,7 @@ func TestWithSmartWait(t *testing.T) {
 	}
 
 	WithSmartWait()(opts)
+
 	if !opts.smartWait {
 		t.Fatal("smartWait should be true after WithSmartWait()")
 	}
@@ -182,6 +186,7 @@ func TestWithSmartWait_NewPage(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
+
 	defer func() { _ = b.Close() }()
 
 	// SmartWait should auto-run WaitFrameworkReady on NewPage
@@ -194,6 +199,7 @@ func TestWithSmartWait_NewPage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Element: %v", err)
 	}
+
 	text, err := el.Text()
 	if err != nil {
 		t.Fatalf("Text: %v", err)

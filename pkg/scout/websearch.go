@@ -141,10 +141,12 @@ func WithSearchRecent(d time.Duration) WebSearchOption {
 // k=60 is the standard constant. Results are sorted by RRF score descending.
 func rrfMerge(engineResults [][]WebSearchItem) []WebSearchItem {
 	const k = 60.0
+
 	type scored struct {
 		item  WebSearchItem
 		score float64
 	}
+
 	scores := make(map[string]*scored)
 	order := make([]string, 0)
 
@@ -154,6 +156,7 @@ func rrfMerge(engineResults [][]WebSearchItem) []WebSearchItem {
 			if rank <= 0 {
 				rank = 1
 			}
+
 			s, ok := scores[item.URL]
 			if !ok {
 				cp := item
@@ -162,6 +165,7 @@ func rrfMerge(engineResults [][]WebSearchItem) []WebSearchItem {
 				scores[item.URL] = s
 				order = append(order, item.URL)
 			}
+
 			s.score += 1.0 / (k + rank)
 		}
 	}
@@ -187,14 +191,17 @@ func rrfMerge(engineResults [][]WebSearchItem) []WebSearchItem {
 
 // buildSearchQuery applies domain filters to the base query.
 func buildSearchQuery(query string, o *webSearchOptions) string {
-	q := query
+	var q strings.Builder
+	q.WriteString(query)
 	if o.domain != "" {
-		q += " site:" + o.domain
+		q.WriteString(" site:" + o.domain)
 	}
+
 	for _, d := range o.excludeDomains {
-		q += " -site:" + d
+		q.WriteString(" -site:" + d)
 	}
-	return q
+
+	return q.String()
 }
 
 // WebSearch performs a search query and optionally fetches result pages.
@@ -215,19 +222,23 @@ func (b *Browser) WebSearch(query string, opts ...WebSearchOption) (*WebSearchRe
 
 	// Build base search options (shared across engines)
 	var baseSearchOpts []SearchOption
+
 	baseSearchOpts = append(baseSearchOpts, WithSearchMaxPages(o.maxPages))
 	if o.language != "" {
 		baseSearchOpts = append(baseSearchOpts, WithSearchLanguage(o.language))
 	}
+
 	if o.region != "" {
 		baseSearchOpts = append(baseSearchOpts, WithSearchRegion(o.region))
 	}
+
 	if o.recentDuration > 0 {
 		baseSearchOpts = append(baseSearchOpts, WithSearchRecentDuration(o.recentDuration))
 	}
 
 	// Search each engine sequentially and collect results
 	var engineResults [][]WebSearchItem
+
 	for _, eng := range engines {
 		opts := make([]SearchOption, len(baseSearchOpts))
 		copy(opts, baseSearchOpts)
@@ -247,6 +258,7 @@ func (b *Browser) WebSearch(query string, opts ...WebSearchOption) (*WebSearchRe
 				Position: r.Position,
 			}
 		}
+
 		engineResults = append(engineResults, items)
 	}
 
@@ -260,10 +272,7 @@ func (b *Browser) WebSearch(query string, opts ...WebSearchOption) (*WebSearchRe
 
 	// Fetch result pages if requested
 	if o.fetchMode != "" && len(items) > 0 {
-		fetchCount := o.maxFetch
-		if fetchCount > len(items) {
-			fetchCount = len(items)
-		}
+		fetchCount := min(o.maxFetch, len(items))
 
 		concurrency := o.concurrency
 		if concurrency <= 0 {
@@ -271,31 +280,39 @@ func (b *Browser) WebSearch(query string, opts ...WebSearchOption) (*WebSearchRe
 		}
 
 		var fetchOpts []WebFetchOption
+
 		fetchOpts = append(fetchOpts, WithFetchMode(o.fetchMode))
 		if o.mainOnly {
 			fetchOpts = append(fetchOpts, WithFetchMainContent())
 		}
+
 		if o.cacheTTL > 0 {
 			fetchOpts = append(fetchOpts, WithFetchCache(o.cacheTTL))
 		}
 
 		var wg sync.WaitGroup
+
 		sem := make(chan struct{}, concurrency)
 
 		for i := 0; i < fetchCount; i++ {
 			wg.Add(1)
+
 			go func(idx int) {
 				defer wg.Done()
+
 				sem <- struct{}{}
+
 				defer func() { <-sem }()
 
 				content, fetchErr := b.WebFetch(items[idx].URL, fetchOpts...)
 				if fetchErr != nil {
 					return // leave Content nil on error
 				}
+
 				items[idx].Content = content
 			}(i)
 		}
+
 		wg.Wait()
 	}
 

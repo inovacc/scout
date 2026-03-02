@@ -80,6 +80,7 @@ func (p *outlookProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		if err != nil {
 			continue
 		}
+
 		val := result.String()
 		if val != "" {
 			localStorage[key] = val
@@ -88,6 +89,7 @@ func (p *outlookProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 			if short == key {
 				short = strings.TrimPrefix(key, "Token")
 			}
+
 			tokens[short] = val
 		}
 	}
@@ -104,6 +106,7 @@ func (p *outlookProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		if err != nil {
 			continue
 		}
+
 		val := result.String()
 		if val != "" {
 			sessionStorage[key] = val
@@ -169,6 +172,7 @@ func (m *OutlookMode) Scrape(ctx context.Context, session scraper.SessionData, o
 	if !ok {
 		return nil, fmt.Errorf("outlook: scrape: invalid session type")
 	}
+
 	if typedSession == nil {
 		return nil, fmt.Errorf("outlook: scrape: nil session")
 	}
@@ -284,9 +288,11 @@ func (m *OutlookMode) run(ctx context.Context, session *auth.Session, opts scrap
 		if !strings.HasPrefix(target, "http") {
 			targetURL = "https://outlook.live.com/mail/" + strings.TrimPrefix(target, "/")
 		}
+
 		if err := page.Navigate(targetURL); err != nil {
 			return fmt.Errorf("outlook: navigate target %q: %w", target, err)
 		}
+
 		if err := page.WaitLoad(); err != nil {
 			return fmt.Errorf("outlook: wait load target %q: %w", target, err)
 		}
@@ -294,6 +300,7 @@ func (m *OutlookMode) run(ctx context.Context, session *auth.Session, opts scrap
 
 	// Process intercepted events until context cancellation or limit reached.
 	count := 0
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -302,14 +309,18 @@ func (m *OutlookMode) run(ctx context.Context, session *auth.Session, opts scrap
 			if !ok {
 				return nil
 			}
+
 			if ev.Response == nil || ev.Response.Body == "" {
 				continue
 			}
+
 			emitted := m.parseResponse(ev.Response, results)
+
 			count += emitted
 			if opts.Limit > 0 && count >= opts.Limit {
 				return nil
 			}
+
 			if opts.Progress != nil {
 				opts.Progress(scraper.Progress{
 					Phase:   "intercepting",
@@ -358,6 +369,7 @@ func (m *OutlookMode) parseResponse(resp *scout.CapturedResponse, results chan<-
 			Metadata:  map[string]any{"raw_endpoint": true},
 			Raw:       raw,
 		}
+
 		count++
 	}
 
@@ -368,11 +380,13 @@ func (m *OutlookMode) parseResponse(resp *scout.CapturedResponse, results chan<-
 func (m *OutlookMode) parseFolders(data map[string]any, results chan<- scraper.Result) int {
 	items := extractArray(data, "value")
 	count := 0
+
 	for _, item := range items {
 		folder, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
+
 		results <- scraper.Result{
 			Type:      scraper.ResultChannel,
 			Source:    "outlook",
@@ -387,8 +401,10 @@ func (m *OutlookMode) parseFolders(data map[string]any, results chan<- scraper.R
 			},
 			Raw: folder,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -398,7 +414,9 @@ func (m *OutlookMode) parseEmails(data map[string]any, url string, results chan<
 	if items == nil {
 		items = extractArray(data, "messages")
 	}
+
 	count := 0
+
 	for _, item := range items {
 		email, ok := item.(map[string]any)
 		if !ok {
@@ -406,6 +424,7 @@ func (m *OutlookMode) parseEmails(data map[string]any, url string, results chan<
 		}
 
 		author := ""
+
 		if from, ok := email["from"].(map[string]any); ok {
 			if emailAddr, ok := from["emailAddress"].(map[string]any); ok {
 				author = stringVal(emailAddr, "address")
@@ -413,6 +432,7 @@ func (m *OutlookMode) parseEmails(data map[string]any, url string, results chan<
 		}
 
 		var toAddrs []string
+
 		if toRecipients, ok := email["toRecipients"].([]any); ok {
 			for _, recipient := range toRecipients {
 				if recMap, ok := recipient.(map[string]any); ok {
@@ -424,6 +444,7 @@ func (m *OutlookMode) parseEmails(data map[string]any, url string, results chan<
 		}
 
 		subject := stringVal(email, "subject")
+
 		var bodyContent string
 		if body, ok := email["body"].(map[string]any); ok {
 			bodyContent = stringVal(body, "content")
@@ -446,8 +467,10 @@ func (m *OutlookMode) parseEmails(data map[string]any, url string, results chan<
 			},
 			Raw: email,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -457,7 +480,9 @@ func (m *OutlookMode) parseContacts(data map[string]any, results chan<- scraper.
 	if items == nil {
 		items = extractArray(data, "contacts")
 	}
+
 	count := 0
+
 	for _, item := range items {
 		contact, ok := item.(map[string]any)
 		if !ok {
@@ -465,6 +490,7 @@ func (m *OutlookMode) parseContacts(data map[string]any, results chan<- scraper.
 		}
 
 		var emails []string
+
 		if emailAddrs, ok := contact["emailAddresses"].([]any); ok {
 			for _, e := range emailAddrs {
 				if eMap, ok := e.(map[string]any); ok {
@@ -490,8 +516,10 @@ func (m *OutlookMode) parseContacts(data map[string]any, results chan<- scraper.
 			},
 			Raw: contact,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -499,6 +527,7 @@ func (m *OutlookMode) parseContacts(data map[string]any, results chan<- scraper.
 func (m *OutlookMode) parseMeetings(data map[string]any, results chan<- scraper.Result) int {
 	items := extractArray(data, "value")
 	count := 0
+
 	for _, item := range items {
 		meeting, ok := item.(map[string]any)
 		if !ok {
@@ -506,6 +535,7 @@ func (m *OutlookMode) parseMeetings(data map[string]any, results chan<- scraper.
 		}
 
 		var attendees []string
+
 		if attendeesArr, ok := meeting["attendees"].([]any); ok {
 			for _, att := range attendeesArr {
 				if attMap, ok := att.(map[string]any); ok {
@@ -534,8 +564,10 @@ func (m *OutlookMode) parseMeetings(data map[string]any, results chan<- scraper.
 			},
 			Raw: meeting,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -543,6 +575,7 @@ func (m *OutlookMode) parseMeetings(data map[string]any, results chan<- scraper.
 func (m *OutlookMode) parseGraphEmails(data map[string]any, url string, results chan<- scraper.Result) int {
 	items := extractArray(data, "value")
 	count := 0
+
 	for _, item := range items {
 		email, ok := item.(map[string]any)
 		if !ok {
@@ -550,6 +583,7 @@ func (m *OutlookMode) parseGraphEmails(data map[string]any, url string, results 
 		}
 
 		author := ""
+
 		if from, ok := email["from"].(map[string]any); ok {
 			if emailAddr, ok := from["emailAddress"].(map[string]any); ok {
 				author = stringVal(emailAddr, "address")
@@ -557,6 +591,7 @@ func (m *OutlookMode) parseGraphEmails(data map[string]any, url string, results 
 		}
 
 		subject := stringVal(email, "subject")
+
 		var bodyContent string
 		if body, ok := email["bodyPreview"].(string); ok {
 			bodyContent = body
@@ -577,8 +612,10 @@ func (m *OutlookMode) parseGraphEmails(data map[string]any, url string, results 
 			},
 			Raw: email,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -586,6 +623,7 @@ func (m *OutlookMode) parseGraphEmails(data map[string]any, url string, results 
 func (m *OutlookMode) parseGraphEvents(data map[string]any, results chan<- scraper.Result) int {
 	items := extractArray(data, "value")
 	count := 0
+
 	for _, item := range items {
 		event, ok := item.(map[string]any)
 		if !ok {
@@ -606,8 +644,10 @@ func (m *OutlookMode) parseGraphEvents(data map[string]any, results chan<- scrap
 			},
 			Raw: event,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -615,6 +655,7 @@ func (m *OutlookMode) parseGraphEvents(data map[string]any, results chan<- scrap
 func (m *OutlookMode) parseGraphContacts(data map[string]any, results chan<- scraper.Result) int {
 	items := extractArray(data, "value")
 	count := 0
+
 	for _, item := range items {
 		contact, ok := item.(map[string]any)
 		if !ok {
@@ -635,8 +676,10 @@ func (m *OutlookMode) parseGraphContacts(data map[string]any, results chan<- scr
 			},
 			Raw: contact,
 		}
+
 		count++
 	}
+
 	return count
 }
 
@@ -646,10 +689,12 @@ func extractArray(data map[string]any, key string) []any {
 	if !ok {
 		return nil
 	}
+
 	arr, ok := val.([]any)
 	if !ok {
 		return nil
 	}
+
 	return arr
 }
 
@@ -659,10 +704,12 @@ func stringVal(m map[string]any, key string) string {
 	if !ok {
 		return ""
 	}
+
 	s, ok := v.(string)
 	if !ok {
 		return ""
 	}
+
 	return s
 }
 
@@ -671,6 +718,7 @@ func parseTime(s string) time.Time {
 	if s == "" {
 		return time.Time{}
 	}
+
 	for _, layout := range []string{
 		time.RFC3339,
 		time.RFC3339Nano,
@@ -681,5 +729,6 @@ func parseTime(s string) time.Time {
 			return t
 		}
 	}
+
 	return time.Time{}
 }
