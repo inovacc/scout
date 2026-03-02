@@ -24,7 +24,7 @@ func TestNewDefaults(t *testing.T) {
 	if !l.Has(flags.UserDataDir) {
 		t.Fatal("expected user-data-dir set by default")
 	}
-	if l.Has(flags.Flag("rod-leakless")) {
+	if l.Has(flags.Flag("scout-leakless")) {
 		t.Fatal("leakless flag should not be set")
 	}
 }
@@ -176,9 +176,9 @@ func TestFormatArgs(t *testing.T) {
 		if a == "--disable-gpu" {
 			found = true
 		}
-		// rod- prefixed flags should be excluded
-		if strings.HasPrefix(a, "--rod-") {
-			t.Fatalf("rod- flag leaked into args: %s", a)
+		// scout- prefixed flags should be excluded
+		if strings.HasPrefix(a, "--scout-") {
+			t.Fatalf("scout- flag leaked into args: %s", a)
 		}
 	}
 	if !found {
@@ -186,12 +186,12 @@ func TestFormatArgs(t *testing.T) {
 	}
 }
 
-func TestFormatArgsExcludesRodFlags(t *testing.T) {
+func TestFormatArgsExcludesScoutFlags(t *testing.T) {
 	l := New()
 	args := l.FormatArgs()
 	for _, a := range args {
-		if strings.HasPrefix(a, "--rod-") {
-			t.Fatalf("rod- flag should not appear in CLI args: %s", a)
+		if strings.HasPrefix(a, "--scout-") {
+			t.Fatalf("scout- flag should not appear in CLI args: %s", a)
 		}
 	}
 }

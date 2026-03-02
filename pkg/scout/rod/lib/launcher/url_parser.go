@@ -77,7 +77,7 @@ func (r *URLParser) Err() error {
 	msg := "[launcher] Failed to get the debug url: "
 
 	if strings.Contains(r.Buffer, "error while loading shared libraries") {
-		msg = "[launcher] Failed to launch the browser, the doc might help https://go-rod.github.io/#/compatibility?id=os: "
+		msg = "[launcher] Failed to launch the browser, the doc might help https://github.com/inovacc/scout#installation: "
 	}
 
 	return errors.New(msg + r.Buffer)
