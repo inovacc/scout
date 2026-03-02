@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+
+	"github.com/inovacc/scout/internal/flags"
+	"github.com/inovacc/scout/internal/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +18,21 @@ Commands communicate with a background gRPC daemon for session persistence,
 or run standalone for one-shot operations.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if err := flags.ExportFlagsToEnv(); err != nil {
+			return nil // non-fatal
+		}
+		if flags.ShouldIgnoreCommand(cmd.Name()) {
+			return nil
+		}
+		log := logger.Init(cmd.Name())
+		if log.IsActive() {
+			stdout, stderr := log.StartExecution(cmd.Name(), args, cmd.OutOrStdout(), cmd.ErrOrStderr())
+			cmd.SetOut(stdout)
+			cmd.SetErr(stderr)
+		}
+		return nil
+	},
 }
 
 func init() {
@@ -35,6 +54,18 @@ func init() {
 	rootCmd.PersistentFlags().String("electron-cdp", "", "CDP endpoint of running Electron app")
 }
 
+func Execute() {
+	err := rootCmd.Execute()
+	log := logger.Get()
+	if log != nil && log.IsActive() {
+		log.EndExecution(err)
+		_ = log.Close()
+	}
+	if err != nil {
+		os.Exit(1)
+	}
+}
+
 func main() {
-	cobra.CheckErr(rootCmd.Execute())
+	Execute()
 }
