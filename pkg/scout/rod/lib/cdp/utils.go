@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
 // Dialer interface for WebSocket connection.

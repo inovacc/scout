@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
 type (

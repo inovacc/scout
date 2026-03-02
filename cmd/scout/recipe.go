@@ -10,7 +10,7 @@ import (
 
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/recipe"
-	"github.com/inovacc/scout/recipes"
+	"github.com/inovacc/scout/pkg/scout/recipes"
 	"github.com/spf13/cobra"
 )
 

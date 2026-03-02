@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod"
-	"github.com/inovacc/scout/pkg/rod/lib/input"
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 )
 
 // Element wraps a rod element with a simplified API.

@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/inovacc/scout/pkg/rod/lib/input"
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
 )
 
 // newTestBrowser creates a headless browser for testing. Skips if unavailable.

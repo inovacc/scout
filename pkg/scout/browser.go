@@ -7,10 +7,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/inovacc/scout/pkg/rod"
-	"github.com/inovacc/scout/pkg/rod/lib/launcher"
-	"github.com/inovacc/scout/pkg/rod/lib/launcher/flags"
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher/flags"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 	"github.com/inovacc/scout/pkg/scout/stealth"
 )
 

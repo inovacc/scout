@@ -3,8 +3,8 @@
 package stealth
 
 import (
-	"github.com/inovacc/scout/pkg/rod"
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 )
 
 // Page creates a stealth page that can't be detected as bot.

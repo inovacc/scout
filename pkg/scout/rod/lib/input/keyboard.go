@@ -2,7 +2,7 @@
 package input
 
 import (
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 	"github.com/ysmood/gson"
 )
 

@@ -6,10 +6,10 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/inovacc/scout/pkg/rod/lib/cdp"
-	"github.com/inovacc/scout/pkg/rod/lib/js"
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/cdp"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/js"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
 // SelectorType enum.

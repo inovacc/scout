@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inovacc/scout/scraper"
+	"github.com/inovacc/scout/pkg/scout/scraper"
 )
 
 // UserProfile represents a portable browser identity that can be saved,

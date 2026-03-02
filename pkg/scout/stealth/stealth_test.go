@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/inovacc/scout/pkg/rod"
-	"github.com/inovacc/scout/pkg/rod/lib/launcher"
+	"github.com/inovacc/scout/pkg/scout/rod"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher"
 )
 
 func newTestBrowser(t *testing.T) *rod.Browser {

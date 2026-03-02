@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
 // Trace is the default of rod.Browser.Trace .

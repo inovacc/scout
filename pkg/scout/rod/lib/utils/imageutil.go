@@ -8,7 +8,7 @@ import (
 	"image/png"
 	"io"
 
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 )
 
 // ImgWithBox is a image with a box, if the box is nil, it means the whole image.

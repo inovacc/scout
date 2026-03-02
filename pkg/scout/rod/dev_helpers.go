@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod/lib/assets"
-	"github.com/inovacc/scout/pkg/rod/lib/js"
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/assets"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/js"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
 // TraceType for logger.

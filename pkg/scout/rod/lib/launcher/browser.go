@@ -16,8 +16,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod/lib/defaults"
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/defaults"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 	"github.com/ysmood/fetchup"
 )
 

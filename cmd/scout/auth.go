@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/inovacc/scout/scraper/auth"
+	"github.com/inovacc/scout/pkg/scout/scraper/auth"
 	"github.com/spf13/cobra"
 )
 

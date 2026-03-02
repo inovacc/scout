@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
-	"github.com/inovacc/scout/pkg/rod/lib/utils"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 	"github.com/ysmood/gson"
 )
 

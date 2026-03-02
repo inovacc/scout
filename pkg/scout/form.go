@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod"
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 )
 
 // FormField describes a single field within an HTML form.

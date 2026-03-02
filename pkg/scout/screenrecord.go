@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod/lib/proto"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 )
 
 // ════════════════════════ Screen Record Types ════════════════════════

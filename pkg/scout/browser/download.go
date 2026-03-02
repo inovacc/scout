@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inovacc/scout/pkg/rod/lib/launcher"
+	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher"
 )
 
 // downloadTimeout is the HTTP timeout for downloading browser archives.
