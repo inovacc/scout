@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/inovacc/scout/internal/flags"
 	"github.com/inovacc/scout/internal/logger"
@@ -52,6 +53,7 @@ func init() {
 	rootCmd.PersistentFlags().String("electron-app", "", "path to Electron app directory or binary")
 	rootCmd.PersistentFlags().String("electron-version", "", "Electron version to download (e.g. v33.2.0)")
 	rootCmd.PersistentFlags().String("electron-cdp", "", "CDP endpoint of running Electron app")
+	rootCmd.PersistentFlags().Duration("idle-timeout", 5*time.Minute, "auto-shutdown after inactivity (0 to disable)")
 }
 
 func Execute() {
