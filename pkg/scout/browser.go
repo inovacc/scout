@@ -3,10 +3,12 @@ package scout
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/inovacc/scout/pkg/scout/rod"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher"
@@ -49,6 +51,10 @@ type Browser struct {
 
 	// fpRot manages automatic fingerprint rotation across NewPage calls.
 	fpRot *fingerprintRotator
+
+	// sessionTracker and sessionID track this browser's session in track.json.
+	sessionTracker *SessionTracker
+	sessionID      string
 }
 
 // New creates and connects a new headless browser with the given options.
@@ -181,6 +187,12 @@ func New(opts ...Option) (*Browser, error) {
 		if o.fpRotation != nil {
 			br.fpRot = newFingerprintRotator(*o.fpRotation)
 		}
+
+		// Register session in tracker for local launches.
+		if l != nil {
+			br.registerSession()
+		}
+
 		return br, nil
 	}
 
@@ -206,11 +218,30 @@ func New(opts ...Option) (*Browser, error) {
 	if o.fpRotation != nil {
 		br.fpRot = newFingerprintRotator(*o.fpRotation)
 	}
+
+	// Register session in tracker for local launches.
+	if l != nil {
+		br.registerSession()
+	}
+
 	return br, nil
 }
 
 // launchLocal starts a local browser process and returns the CDP WebSocket URL and launcher.
 func launchLocal(o *options) (string, *launcher.Launcher, error) {
+	// Session reuse: try to find and reuse an existing session data dir.
+	if o.reusableSession && o.userDataDir == "" {
+		if tracker, err := LoadTracker(); err == nil {
+			browserName := string(o.browserType)
+			if browserName == "" {
+				browserName = "chrome"
+			}
+			if found := tracker.FindReusable(browserName, o.headless); found != nil {
+				o.userDataDir = found.DataDir
+			}
+		}
+	}
+
 	l := launcher.New().HeadlessNew(o.headless)
 
 	if o.execPath != "" {
@@ -561,7 +592,20 @@ func (b *Browser) Close() error {
 		// 6. Kill process tree and clean up temp user-data-dir.
 		if b.launcher != nil {
 			b.launcher.Kill()
-			go b.launcher.Cleanup()
+
+			if b.opts.reusableSession && b.sessionTracker != nil && b.sessionID != "" {
+				// Preserve data dir: update last_used.
+				_ = b.sessionTracker.Update(b.sessionID, func(e *SessionEntry) {
+					e.LastUsed = time.Now()
+				})
+				// Do NOT call Cleanup() — it would delete the data dir.
+			} else {
+				// Non-reusable: remove from tracker and clean up.
+				if b.sessionTracker != nil && b.sessionID != "" {
+					_ = b.sessionTracker.Remove(b.sessionID)
+				}
+				go b.launcher.Cleanup()
+			}
 			b.launcher = nil
 		}
 
@@ -590,6 +634,63 @@ func (b *Browser) BridgeServer() *BridgeServer {
 		return nil
 	}
 	return b.bridgeServer
+}
+
+// registerSession registers this browser's data directory in the session tracker.
+func (b *Browser) registerSession() {
+	if b.launcher == nil {
+		return
+	}
+
+	dataDir := b.launcher.Get(flags.UserDataDir)
+	if dataDir == "" {
+		return
+	}
+
+	sessionID := filepath.Base(dataDir)
+
+	// Check if this is a reused session (already registered).
+	tracker, err := LoadTracker()
+	if err != nil {
+		return
+	}
+
+	browserName := string(b.opts.browserType)
+	if browserName == "" {
+		browserName = "chrome"
+	}
+
+	if existing := tracker.FindReusable(browserName, b.opts.headless); existing != nil && existing.DataDir == dataDir {
+		// Reusing existing session — just update last_used.
+		_ = tracker.Update(existing.ID, func(e *SessionEntry) {
+			e.LastUsed = time.Now()
+		})
+		b.sessionTracker = tracker
+		b.sessionID = existing.ID
+		return
+	}
+
+	entry := SessionEntry{
+		ID:        sessionID,
+		DataDir:   dataDir,
+		CreatedAt: time.Now(),
+		LastUsed:  time.Now(),
+		Browser:   browserName,
+		Headless:  b.opts.headless,
+		Reusable:  b.opts.reusableSession,
+	}
+
+	_ = tracker.Register(entry)
+	b.sessionTracker = tracker
+	b.sessionID = sessionID
+}
+
+// SessionID returns the UUID v7 session identifier for this browser instance.
+func (b *Browser) SessionID() string {
+	if b == nil {
+		return ""
+	}
+	return b.sessionID
 }
 
 // startBridgeServer initializes and starts the bridge WebSocket server.

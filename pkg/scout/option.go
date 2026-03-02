@@ -73,6 +73,7 @@ type options struct {
 	electronApp        string // path to Electron app dir or packaged binary
 	electronVersion    string // Electron version to download (e.g. "v33.2.0")
 	electronCDP        string // CDP endpoint of running Electron app
+	reusableSession    bool   // enable session reuse via track.json
 }
 
 func defaults() *options {
@@ -389,4 +390,11 @@ func WithElectronVersion(version string) Option {
 // WithElectronCDP connects to an already-running Electron app via its CDP endpoint.
 func WithElectronCDP(endpoint string) Option {
 	return func(o *options) { o.electronCDP = endpoint }
+}
+
+// WithReusableSession enables session reuse via track.json. When enabled,
+// the browser data directory is preserved after close and can be reused
+// by subsequent browser instances with matching browser type and headless mode.
+func WithReusableSession() Option {
+	return func(o *options) { o.reusableSession = true }
 }
