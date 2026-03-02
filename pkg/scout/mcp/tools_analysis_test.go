@@ -63,7 +63,7 @@ func TestDetectTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("detect error: %s", text)
 	}
 
@@ -104,7 +104,7 @@ func TestCrawlTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("crawl error: %s", text)
 	}
 

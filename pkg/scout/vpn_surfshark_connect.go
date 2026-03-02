@@ -49,7 +49,7 @@ func (b *Browser) ConnectVPN(_ context.Context, conn *VPNConnection, username, p
 	}
 
 	// Set up proxy authentication using rod's HandleAuth (uses CDP Fetch.AuthRequired).
-	waitAuth := b.browser.HandleAuth(username, password)
+	waitAuth := b.browser.HandleAuth(username, password) //nolint:contextcheck
 	b.vpn.authCancel = waitAuth
 
 	b.vpn.conn = conn

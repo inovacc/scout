@@ -189,7 +189,7 @@ func registerFixtureRoutes(mux *http.ServeMux) {
 	// Recorder asset
 	mux.HandleFunc("/recorder-asset", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"status":"ok"}`)
+		_, _ = fmt.Fprint(w, `{"status":"ok"}`)
 	})
 
 	// Page that fetches an asset (for HAR recording)

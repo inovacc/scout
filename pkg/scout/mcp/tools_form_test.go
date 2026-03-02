@@ -49,7 +49,7 @@ func TestFormDetectTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("form_detect error: %s", text)
 	}
 
@@ -96,7 +96,7 @@ func TestFormFillTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("form_fill error: %s", text)
 	}
 
@@ -123,7 +123,7 @@ func TestFormSubmitTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("form_submit error: %s", text)
 	}
 

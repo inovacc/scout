@@ -9,7 +9,7 @@ import (
 
 // solveCaptchaWithLLM takes a screenshot of the CAPTCHA area and sends it to
 // an LLM provider for solving. Works for simple text/image CAPTCHAs.
-func solveCaptchaWithLLM(page *Page, provider LLMProvider, challenge ChallengeInfo) error {
+func solveCaptchaWithLLM(page *Page, provider LLMProvider, challenge ChallengeInfo) error { //nolint:unused
 	if page == nil || page.page == nil {
 		return fmt.Errorf("scout: challenge: captcha-llm: nil page")
 	}
@@ -149,6 +149,6 @@ func solveHCaptcha(page *Page, _ ChallengeInfo) error {
 
 // solveRecaptchaAudio is a stub for audio-based reCAPTCHA solving.
 // Audio solving requires external speech-to-text services and is not implemented.
-func solveRecaptchaAudio(_ *Page) error {
+func solveRecaptchaAudio(_ *Page) error { //nolint:unused
 	return fmt.Errorf("scout: challenge: recaptcha-audio: not implemented, requires external speech-to-text service")
 }

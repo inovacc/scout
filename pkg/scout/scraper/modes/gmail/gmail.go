@@ -309,7 +309,7 @@ type gmailAPIResponse struct {
 	Response [][]any `json:"response"`
 }
 
-type gmailThread struct {
+type gmailThread struct { //nolint:unused
 	ID       string
 	Emails   []gmailEmail
 	Labels   []string
@@ -317,7 +317,7 @@ type gmailThread struct {
 	Archived bool
 }
 
-type gmailEmail struct {
+type gmailEmail struct { //nolint:unused
 	ID        string
 	From      string
 	To        string

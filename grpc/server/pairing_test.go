@@ -9,7 +9,7 @@ import (
 	identity2 "github.com/inovacc/scout/pkg/scout/identity"
 )
 
-func newTestPairingServer(t *testing.T) (*PairingServer, *identity2.Identity) {
+func newTestPairingServer(t *testing.T) (*PairingServer, *identity2.Identity) { //nolint:unparam
 	t.Helper()
 
 	serverID, err := identity2.GenerateIdentity()

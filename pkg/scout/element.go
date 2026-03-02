@@ -266,7 +266,7 @@ func (e *Element) Visible() (bool, error) {
 func (e *Element) Interactable() (bool, error) {
 	_, err := e.element.Interactable()
 	if err != nil {
-		return false, nil
+		return false, nil //nolint:nilerr
 	}
 
 	return true, nil

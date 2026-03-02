@@ -204,23 +204,23 @@ func (m *JiraMode) Scrape(ctx context.Context, session scraper.SessionData, opts
 
 	page, err := browser.NewPage(jiraSession.URL)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("jira: scrape: new page: %w", err)
 	}
 
 	if err := page.SetCookies(jiraSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("jira: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("jira: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("jira: scrape: wait load: %w", err)
 	}
 
@@ -232,7 +232,7 @@ func (m *JiraMode) Scrape(ctx context.Context, session scraper.SessionData, opts
 		scout.WithHijackBodyCapture(),
 	)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("jira: scrape: create hijacker: %w", err)
 	}
 

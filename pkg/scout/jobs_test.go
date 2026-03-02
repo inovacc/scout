@@ -2,7 +2,6 @@ package scout
 
 import (
 	"context"
-	"fmt"
 	"testing"
 )
 

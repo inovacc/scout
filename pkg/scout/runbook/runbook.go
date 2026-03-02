@@ -21,7 +21,7 @@ type Runbook struct {
 	Items      *ItemSpec         `json:"items,omitempty"`
 	Pagination *Pagination       `json:"pagination,omitempty"`
 	Steps      []Step            `json:"steps,omitempty"`
-	Output     Output            `json:"output,omitempty"`
+	Output     Output            `json:"output,omitempty"` //nolint:modernize // omitzero may break JSON compat
 	Warnings   []string          `json:"warnings,omitempty"`
 }
 

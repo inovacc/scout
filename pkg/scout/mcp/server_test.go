@@ -550,7 +550,7 @@ func TestServeSSEListenError(t *testing.T) {
 	}
 }
 
-// toolErr wraps a string as an error for skipIfNoBrowser.
+// toolError wraps a string as an error for skipIfNoBrowser.
 type toolError struct{ msg string }
 
 func (e *toolError) Error() string { return e.msg }

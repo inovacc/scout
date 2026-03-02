@@ -146,7 +146,8 @@ func TestGitHubExtractRepoInfo(t *testing.T) {
 			// We navigate to the mock page by using baseURL that points to the test route
 			// Since the method constructs URL as baseURL/owner/repo, we use a trick:
 			// set baseURL to ts.URL and serve on the constructed path
-			opts := []GitHubExtractOption{withGitHubExtractBaseURL(ts.URL + "/extract-github-repo#")}
+			opts := make([]GitHubExtractOption, 0, 1+len(tt.opts))
+			opts = append(opts, withGitHubExtractBaseURL(ts.URL+"/extract-github-repo#"))
 			opts = append(opts, tt.opts...)
 
 			repo, err := b.GitHubExtractRepoInfo("myowner", "myrepo", opts...)

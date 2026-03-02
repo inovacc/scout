@@ -66,7 +66,7 @@ func TestStorageTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("storage set error: %s", text)
 	}
 
@@ -194,7 +194,7 @@ func TestHarTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("har export error: %s", text)
 	}
 
@@ -244,7 +244,7 @@ func TestSwaggerTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		// Swagger extraction may fail on simple JSON endpoints; log and skip.
 		t.Skipf("swagger extraction not supported in test env: %s", text)
 	}

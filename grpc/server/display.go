@@ -122,7 +122,7 @@ func PrintServerTable(w io.Writer, info ServerInfo, peers []ConnectedPeer) {
 	_, _ = fmt.Fprintf(w, "└%s┘\n", strings.Repeat("─", width))
 }
 
-func printKV(w io.Writer, width int, key, value string) {
+func printKV(w io.Writer, width int, key, value string) { //nolint:unparam
 	_, _ = fmt.Fprintf(w, "│ %-12s │ %-*s│\n", key, width-16, value)
 }
 

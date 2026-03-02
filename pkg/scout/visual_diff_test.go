@@ -25,7 +25,7 @@ func makePNG(w, h int, c color.Color) []byte {
 }
 
 // makePNGWithBlock creates a PNG with a colored block at the given position.
-func makePNGWithBlock(w, h int, bg, block color.Color, bx, by, bw, bh int) []byte {
+func makePNGWithBlock(w, h int, bg, block color.Color, bx, by, bw, bh int) []byte { //nolint:unparam
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	for y := range h {
 		for x := range w {

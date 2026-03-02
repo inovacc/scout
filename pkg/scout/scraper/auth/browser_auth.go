@@ -70,6 +70,7 @@ func BrowserAuth(ctx context.Context, provider Provider, opts BrowserAuthOptions
 	}
 
 	defer func() { _ = browser.Close() }()
+
 	loginURL := provider.LoginURL()
 
 	page, err := browser.NewPage(loginURL)
@@ -149,6 +150,7 @@ func BrowserCapture(ctx context.Context, targetURL string, opts BrowserAuthOptio
 	}
 
 	defer func() { _ = browser.Close() }()
+
 	page, err := browser.NewPage(targetURL)
 	if err != nil {
 		return nil, fmt.Errorf("auth: open page: %w", err)

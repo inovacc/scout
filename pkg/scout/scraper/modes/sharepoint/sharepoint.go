@@ -340,7 +340,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 
 // SharePoint API response structures.
 
-type spAPIResponse struct {
+type spAPIResponse struct { //nolint:unused
 	OData string `json:"@odata.type"`
 	Error *struct {
 		Code    string `json:"code"`

@@ -315,7 +315,7 @@ var ddgParser = serpParser{
 	},
 }
 
-func (sp *serpParser) parse(page *Page, query string, engine SearchEngine) (*SearchResults, error) {
+func (sp *serpParser) parse(page *Page, query string, engine SearchEngine) (*SearchResults, error) { //nolint:unparam
 	sr := &SearchResults{
 		Query:  query,
 		Engine: engine,
@@ -324,7 +324,7 @@ func (sp *serpParser) parse(page *Page, query string, engine SearchEngine) (*Sea
 	// Extract results
 	resultEls, err := page.Elements(sp.resultSelector)
 	if err != nil {
-		return sr, nil
+		return sr, nil //nolint:nilerr
 	}
 
 	position := 1

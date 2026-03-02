@@ -66,6 +66,7 @@ func ElectronSession(ctx context.Context, opts ElectronOptions) (*Session, error
 	}
 
 	defer func() { _ = browser.Close() }()
+
 	pages, err := browser.Pages()
 	if err != nil {
 		return nil, fmt.Errorf("auth: electron: list pages: %w", err)
