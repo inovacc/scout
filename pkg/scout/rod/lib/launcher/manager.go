@@ -144,7 +144,7 @@ func NewManager() *Manager {
 			for f, allowed := range allowedPath {
 				p := l.Get(f)
 				if p != "" && !strings.HasPrefix(p, allowed) {
-					b := []byte(fmt.Sprintf("[rod-manager] not allowed %s path: %s (use --allow-all to disable the protection)", f, p))
+					b := []byte(fmt.Sprintf("[scout-manager] not allowed %s path: %s (use --allow-all to disable the protection)", f, p))
 					w.Header().Add("Content-Length", fmt.Sprintf("%d", len(b)))
 					w.WriteHeader(http.StatusBadRequest)
 					utils.E(w.Write(b))
