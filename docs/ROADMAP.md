@@ -50,6 +50,9 @@
 | Phase | Feature | Status |
 |-------|---------|--------|
 | 43 | Launcher `browser.json` manifest (per-platform revisions, zip names, download hosts, auto-update via LAST_CHANGE) | Planned |
+| 44 | Session Reuse & Reset — `WithReusableSession()` persists browser data dir across runs (cookies, localStorage, service workers); `WithTargetURL()` routes sessions by domain hash; `scout session reset [id]` wipes session data cleanly; `scout session reset --all` clears everything; essential for React/Vue/Angular dev flows with HMR/auto-refresh; orphan watchdog auto-cleans dead sessions | Planned |
+| 45 | Site Health Checker — `scout test-site <url>` crawls entire site following links and clicking interactive elements; detects broken links (404s), console errors, JS exceptions, network failures; session reuse for iterative dev testing; generates structured report (JSON/table) with severity levels and source locations | Planned |
+| 46 | REPL Mode & Cloud Upload — `scout repl` interactive browser shell with tab-completion, history, live page context (eval, navigate, extract, screenshot inline); auto-upload scraper/runbook results to Google Drive or OneDrive via API; configurable output sinks | Planned |
 
 ### Remaining Work
 

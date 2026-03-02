@@ -4,25 +4,31 @@ package launcher
 import (
 	"context"
 	"crypto"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
-	"github.com/google/uuid"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/defaults"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher/flags"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
 // DefaultUserDataDirPrefix is the base directory for browser user data.
-// Resolves to ~/.scout/sessions on all platforms. Each session is a UUID
+// Resolves to ~/.scout/sessions on all platforms. Each session is a hash-based
 // subdirectory containing both browser data and a scout.pid metadata file.
 var DefaultUserDataDirPrefix = defaultUserDataDirPrefix()
+
+// launcherSeq is used to generate unique directory names per launcher instance.
+var launcherSeq atomic.Int64
 
 func defaultUserDataDirPrefix() string {
 	if home, err := os.UserHomeDir(); err == nil {
@@ -60,7 +66,9 @@ type Launcher struct {
 func New() *Launcher {
 	dir := defaults.Dir
 	if dir == "" {
-		dir = filepath.Join(DefaultUserDataDirPrefix, uuid.Must(uuid.NewV7()).String())
+		seq := launcherSeq.Add(1)
+		h := sha256.Sum256([]byte(strconv.Itoa(os.Getpid()) + "-" + strconv.FormatInt(seq, 10) + "-" + strconv.FormatInt(time.Now().UnixNano(), 10)))
+		dir = filepath.Join(DefaultUserDataDirPrefix, hex.EncodeToString(h[:12]))
 	}
 
 	defaultFlags := map[flags.Flag][]string{
