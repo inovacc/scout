@@ -19,7 +19,7 @@ import (
 )
 
 // DefaultUserDataDirPrefix ...
-var DefaultUserDataDirPrefix = filepath.Join(os.TempDir(), "rod", "user-data")
+var DefaultUserDataDirPrefix = filepath.Join(os.TempDir(), "scout", "user-data")
 
 // Launcher is a helper to launch browser binary smartly.
 type Launcher struct {
@@ -360,7 +360,7 @@ func (l *Launcher) FormatArgs() []string {
 			continue
 		}
 
-		if strings.HasPrefix(string(k), "rod-") {
+		if strings.HasPrefix(string(k), "scout-") {
 			continue
 		}
 
