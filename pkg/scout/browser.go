@@ -230,15 +230,28 @@ func New(opts ...Option) (*Browser, error) {
 
 // launchLocal starts a local browser process and returns the CDP WebSocket URL and launcher.
 func launchLocal(o *options) (string, *launcher.Launcher, error) {
-	// Session reuse: try to find and reuse an existing session data dir.
-	if o.reusableSession && o.userDataDir == "" {
-		if tracker, err := LoadTracker(); err == nil {
-			browserName := string(o.browserType)
-			if browserName == "" {
-				browserName = "chrome"
+	// Session reuse: resolve data dir from explicit session ID or find a matching one.
+	if o.userDataDir == "" {
+		if o.sessionID != "" {
+			// Explicit session ID — look up in track.json.
+			if tracker, err := LoadTracker(); err == nil {
+				for _, s := range tracker.Sessions {
+					if s.ID == o.sessionID {
+						o.userDataDir = s.DataDir
+						break
+					}
+				}
 			}
-			if found := tracker.FindReusable(browserName, o.headless); found != nil {
-				o.userDataDir = found.DataDir
+		} else if o.reusableSession {
+			// Auto-find a matching reusable session.
+			if tracker, err := LoadTracker(); err == nil {
+				browserName := string(o.browserType)
+				if browserName == "" {
+					browserName = "chrome"
+				}
+				if found := tracker.FindReusable(browserName, o.headless); found != nil {
+					o.userDataDir = found.DataDir
+				}
 			}
 		}
 	}
@@ -592,7 +605,7 @@ func (b *Browser) Close() error {
 
 		// 6. Remove PID file.
 		if b.sessionID != "" {
-			_ = os.Remove(filepath.Join(os.TempDir(), "scout", "pids", b.sessionID))
+			_ = os.Remove(filepath.Join(SessionPIDDir(), b.sessionID))
 		}
 
 		// 7. Kill process tree and clean up temp user-data-dir.
@@ -606,10 +619,7 @@ func (b *Browser) Close() error {
 				})
 				// Do NOT call Cleanup() — it would delete the data dir.
 			} else {
-				// Non-reusable: remove from tracker and clean up.
-				if b.sessionTracker != nil && b.sessionID != "" {
-					_ = b.sessionTracker.Remove(b.sessionID)
-				}
+				// Non-reusable: clean up data dir but keep entry in tracker.
 				go b.launcher.Cleanup()
 			}
 			b.launcher = nil
@@ -676,7 +686,7 @@ func (b *Browser) registerSession() {
 
 		// Write PID file for reused session.
 		if pid := b.launcher.PID(); pid != 0 {
-			pidDir := filepath.Join(os.TempDir(), "scout", "pids")
+			pidDir := SessionPIDDir()
 			if err := os.MkdirAll(pidDir, 0o755); err == nil {
 				_ = os.WriteFile(filepath.Join(pidDir, existing.ID), []byte(strconv.Itoa(pid)), 0o644)
 			}
@@ -698,9 +708,9 @@ func (b *Browser) registerSession() {
 	b.sessionTracker = tracker
 	b.sessionID = sessionID
 
-	// Write PID file to temp/scout/pids/<uuid>.
+	// Write PID file to ~/.scout/sessions/pids/<uuid>.
 	if pid := b.launcher.PID(); pid != 0 {
-		pidDir := filepath.Join(os.TempDir(), "scout", "pids")
+		pidDir := SessionPIDDir()
 		if err := os.MkdirAll(pidDir, 0o755); err == nil {
 			_ = os.WriteFile(filepath.Join(pidDir, sessionID), []byte(strconv.Itoa(pid)), 0o644)
 		}

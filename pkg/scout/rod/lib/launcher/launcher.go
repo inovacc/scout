@@ -19,8 +19,16 @@ import (
 	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
 )
 
-// DefaultUserDataDirPrefix ...
-var DefaultUserDataDirPrefix = filepath.Join(os.TempDir(), "scout", "user-data")
+// DefaultUserDataDirPrefix is the base directory for browser user data.
+// Resolves to ~/.scout/sessions/user-data on all platforms.
+var DefaultUserDataDirPrefix = defaultUserDataDirPrefix()
+
+func defaultUserDataDirPrefix() string {
+	if home, err := os.UserHomeDir(); err == nil {
+		return filepath.Join(home, ".scout", "sessions", "user-data")
+	}
+	return filepath.Join(os.TempDir(), "scout", "sessions", "user-data")
+}
 
 // Launcher is a helper to launch browser binary smartly.
 type Launcher struct {

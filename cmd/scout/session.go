@@ -16,7 +16,8 @@ import (
 func init() {
 	rootCmd.AddCommand(sessionCmd)
 	sessionCmd.AddCommand(sessionCreateCmd, sessionDestroyCmd, sessionListCmd, sessionUseCmd,
-		sessionTrackListCmd, sessionTrackPruneCmd, sessionTrackCleanCmd, sessionTrackRmCmd)
+		sessionTrackListCmd, sessionTrackPruneCmd, sessionTrackCleanCmd, sessionTrackRmCmd,
+		sessionTrackScanCmd)
 
 	sessionCreateCmd.Flags().Bool("headless", true, "run browser in headless mode")
 	sessionCreateCmd.Flags().Bool("stealth", false, "enable anti-bot-detection stealth mode")
@@ -243,6 +244,11 @@ var sessionTrackListCmd = &cobra.Command{
 			return err
 		}
 
+		// Auto-scan for untracked UUID dirs.
+		if added, _ := tracker.Scan(); added > 0 {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "(discovered %d untracked session(s))\n", added)
+		}
+
 		if len(tracker.Sessions) == 0 {
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No tracked sessions in track.json.")
 			return nil
@@ -347,6 +353,25 @@ var sessionTrackRmCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed session %s and data dir %s\n", id, dataDir)
+		return nil
+	},
+}
+
+var sessionTrackScanCmd = &cobra.Command{
+	Use:   "track-scan",
+	Short: "Discover untracked UUID data dirs and add them to track.json",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		tracker, err := scout.LoadTracker()
+		if err != nil {
+			return err
+		}
+
+		added, err := tracker.Scan()
+		if err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Discovered %d new session(s).\n", added)
 		return nil
 	},
 }
