@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/inovacc/scout/pkg/scout/rod"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher"
@@ -21,6 +22,10 @@ type Browser struct {
 	browser  *rod.Browser
 	opts     *options
 	launcher *launcher.Launcher // nil for remote CDP connections
+
+	// closeOnce ensures Close() is idempotent and safe for concurrent use.
+	closeOnce sync.Once
+	closed    atomic.Bool
 
 	// AutoFree fields for periodic browser recycling.
 	mu       sync.Mutex
@@ -498,40 +503,60 @@ func (b *Browser) Version() (string, error) {
 }
 
 // Close shuts down the browser and kills any orphan child processes.
-// It is nil-safe and idempotent.
+// It is nil-safe, idempotent, and safe for concurrent use.
 func (b *Browser) Close() error {
-	if b == nil || b.browser == nil {
+	if b == nil {
 		return nil
 	}
 
-	// Signal the autofree goroutine to stop.
-	select {
-	case <-b.done:
-		// Already closed.
-	default:
-		close(b.done)
+	var closeErr error
+	b.closeOnce.Do(func() {
+		// 1. Signal the autofree goroutine to stop.
+		select {
+		case <-b.done:
+		default:
+			close(b.done)
+		}
+
+		// 2. Stop the bridge WebSocket server if running.
+		if b.bridgeServer != nil {
+			_ = b.bridgeServer.Stop()
+			b.bridgeServer = nil
+		}
+
+		// 3. Stop VPN rotator and disconnect VPN auth handler.
+		b.vpnRot = nil
+		if b.vpn != nil {
+			b.vpn.mu.Lock()
+			if b.vpn.authCancel != nil {
+				_ = b.vpn.authCancel()
+				b.vpn.authCancel = nil
+			}
+			b.vpn.mu.Unlock()
+		}
+
+		// 4. Stop fingerprint rotator.
+		b.fpRot = nil
+
+		// 5. Close CDP connection.
+		if b.browser != nil {
+			closeErr = b.browser.Close()
+			b.browser = nil
+		}
+
+		// 6. Kill process tree and clean up temp user-data-dir.
+		if b.launcher != nil {
+			b.launcher.Kill()
+			go b.launcher.Cleanup()
+			b.launcher = nil
+		}
+
+		b.closed.Store(true)
+	})
+
+	if closeErr != nil {
+		return fmt.Errorf("scout: close browser: %w", closeErr)
 	}
-
-	// Stop the bridge WebSocket server if running.
-	if b.bridgeServer != nil {
-		_ = b.bridgeServer.Stop()
-		b.bridgeServer = nil
-	}
-
-	err := b.browser.Close()
-
-	// Best-effort zombie cleanup: kill the process tree even if CDP close failed.
-	if b.launcher != nil {
-		b.launcher.Kill()
-		b.launcher = nil
-	}
-
-	b.browser = nil
-
-	if err != nil {
-		return fmt.Errorf("scout: close browser: %w", err)
-	}
-
 	return nil
 }
 
