@@ -9,7 +9,7 @@ import (
 func TestExtractWithLLMReview(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
@@ -44,7 +44,7 @@ func TestExtractWithLLMReview(t *testing.T) {
 func TestExtractWithLLMReviewNoReviewer(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
@@ -77,7 +77,7 @@ func TestExtractWithLLMReviewNoReviewer(t *testing.T) {
 func TestExtractWithLLMReviewWithWorkspace(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
@@ -138,7 +138,7 @@ func TestExtractWithLLMReviewWithWorkspace(t *testing.T) {
 func TestExtractWithLLMReviewExtractError(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
@@ -176,7 +176,7 @@ func TestExtractWithLLMReviewExtractError(t *testing.T) {
 func TestExtractWithLLMReviewReviewError(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
@@ -219,7 +219,7 @@ func TestExtractWithLLMReviewReviewError(t *testing.T) {
 func TestExtractWithLLMReviewNoProvider(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {
@@ -270,7 +270,7 @@ func TestReviewOptions(t *testing.T) {
 func TestReviewPromptContainsContext(t *testing.T) {
 	ts := newTestServer()
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
+	defer ts.Close()
 
 	page, err := b.NewPage(ts.URL + "/markdown")
 	if err != nil {

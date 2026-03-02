@@ -59,7 +59,6 @@ func TestWaitFrameworkReady_React(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(srv.URL + "/wait-react")
 	if err != nil {
@@ -93,7 +92,6 @@ func TestWaitFrameworkReady_Angular(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(srv.URL + "/wait-angular")
 	if err != nil {
@@ -123,7 +121,6 @@ func TestWaitFrameworkReady_Fallback(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(srv.URL + "/wait-plain")
 	if err != nil {

@@ -33,7 +33,7 @@ func TestWaitSafe_Normal(t *testing.T) {
 }
 
 func TestBrowserClose_NoZombies(t *testing.T) {
-	b := newTestBrowser(t)
+	b := newOwnedTestBrowser(t)
 
 	// Verify Close returns no error and is idempotent.
 	if err := b.Close(); err != nil {

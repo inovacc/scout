@@ -2,10 +2,8 @@ package scout
 
 import (
 	"fmt"
-	"os/exec"
 	"regexp"
 	"sort"
-	"strings"
 )
 
 // DetectedBrowser represents a browser found on the system.
@@ -71,16 +69,6 @@ func ParseBrowserVersion(output string) string {
 	// Fallback: try to find any version-like pattern (X.Y.Z).
 	re2 := regexp.MustCompile(`(\d+\.\d+\.\d+)`)
 	return re2.FindString(output)
-}
-
-// probeBrowserVersion runs "<path> --version" and parses the version string.
-func probeBrowserVersion(path string) string {
-	out, err := exec.Command(path, "--version").Output()
-	if err != nil {
-		return ""
-	}
-
-	return ParseBrowserVersion(strings.TrimSpace(string(out)))
 }
 
 // WithAutoDetect picks the best available browser (Chrome > Brave > Edge > Chromium).

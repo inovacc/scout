@@ -56,7 +56,6 @@ func TestHelperTableExtract(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/inject-helpers")
 	if err != nil {
@@ -93,7 +92,6 @@ func TestHelperShadowQuery(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/inject-helpers")
 	if err != nil {
@@ -125,7 +123,6 @@ func TestHelperClickAll(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/inject-helpers")
 	if err != nil {
@@ -154,7 +151,6 @@ func TestInjectAllHelpers(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/inject-helpers")
 	if err != nil {
@@ -244,7 +240,6 @@ func TestInjectTemplate_NotFound(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/inject-helpers")
 	if err != nil {
@@ -262,7 +257,6 @@ func TestInjectTemplate_ExtractList(t *testing.T) {
 	defer ts.Close()
 
 	b := newTestBrowser(t)
-	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage(ts.URL + "/inject-helpers")
 	if err != nil {

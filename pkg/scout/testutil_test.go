@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"sync"
 	"testing"
 )
 
@@ -90,7 +92,35 @@ setTimeout(() => {
 	return httptest.NewServer(mux)
 }
 
+var (
+	sharedBrowser     *Browser
+	sharedBrowserOnce sync.Once
+	sharedBrowserErr  error
+)
+
+// newTestBrowser returns a shared browser instance for tests.
+// Do NOT call Close() on the returned browser — it is managed by TestMain.
 func newTestBrowser(t *testing.T) *Browser {
+	t.Helper()
+
+	sharedBrowserOnce.Do(func() {
+		sharedBrowser, sharedBrowserErr = New(
+			WithHeadless(true),
+			WithNoSandbox(),
+			WithTimeout(30e9), // 30s
+		)
+	})
+
+	if sharedBrowserErr != nil {
+		t.Skipf("skipping: browser unavailable: %v", sharedBrowserErr)
+	}
+
+	return sharedBrowser
+}
+
+// newOwnedTestBrowser creates a dedicated browser instance that the caller owns.
+// Use this when the test needs to call Close() or modify browser state.
+func newOwnedTestBrowser(t *testing.T) *Browser {
 	t.Helper()
 
 	b, err := New(
@@ -105,4 +135,14 @@ func newTestBrowser(t *testing.T) *Browser {
 	t.Cleanup(func() { _ = b.Close() })
 
 	return b
+}
+
+func TestMain(m *testing.M) {
+	code := m.Run()
+
+	if sharedBrowser != nil {
+		_ = sharedBrowser.Close()
+	}
+
+	os.Exit(code)
 }

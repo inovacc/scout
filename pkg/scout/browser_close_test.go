@@ -8,7 +8,7 @@ import (
 )
 
 func TestBrowserCloseConcurrent(t *testing.T) {
-	b := newTestBrowser(t)
+	b := newOwnedTestBrowser(t)
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
