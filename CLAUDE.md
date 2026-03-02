@@ -70,6 +70,11 @@ Import: `github.com/inovacc/scout/pkg/scout`. Core does NOT import gRPC or Cobra
 - **Session hijacking**: `Page.NewSessionHijacker(opts...)` captures real-time HTTP + WebSocket traffic via CDP events. `HijackEvent` discriminated union with `CapturedRequest`/`CapturedResponse`/`WebSocketFrame`. Auto-attach via `WithSessionHijack()`. Channel-based: `hijacker.Events()` returns `<-chan HijackEvent`. Filter with `WithHijackURLFilter()`, capture bodies with `WithHijackBodyCapture()`. gRPC: `StartHijack`/`StopHijack`/`StreamHijack` RPCs. CLI: `scout hijack watch <url>`.
 - **Electron support**: `WithElectronApp(path)`, `WithElectronVersion(ver)`, `WithElectronCDP(endpoint)`. Auto-downloads Electron runtime to `~/.cache/scout/electron/`. CLI: `--electron-app`, `--electron-version`, `--electron-cdp` flags.
 - **Command logging**: `scout logger --path <dir>` enables KSUID-based log files with stdout/stderr capture. `internal/flags/` persists feature flags in `~/.cache/scout/`. `internal/logger/` writes structured JSON logs via `slog`. Root `PersistentPreRunE` auto-captures all command output.
+- **Session reset**: `ResetSession(id)` and `ResetAllSessions()` in `session_track.go`. CLI: `scout session reset [id]`, `scout session reset --all`. Kills browser process and removes session dir.
+- **Health check**: `Browser.HealthCheck(url, opts...)` crawls site detecting broken links, console errors, JS exceptions, network failures. CLI: `scout test-site <url> [--depth N] [--concurrency N] [--click] [--json] [--timeout 30s]`.
+- **REPL mode**: `scout repl [url]` standalone local browser shell with 20 commands (navigate, eval, click, type, extract, screenshot, markdown, cookies, tabs, health, etc.). No daemon required.
+- **Page gather**: `Browser.Gather(url, opts...)` one-shot page intelligence collector. Returns DOM, HAR, links, screenshots, cookies, metadata, console log, frameworks, accessibility snapshot. CLI: `scout gather <url>` with `--html`, `--har`, `--screenshot`, `--links`, etc.
+- **Cloud upload**: `Uploader` with OAuth2 for Google Drive and OneDrive. CLI: `scout upload auth --sink gdrive`, `scout upload file <path>`, `scout upload status`. Config in `~/.scout/upload.json`.
 
 ## Dependencies
 

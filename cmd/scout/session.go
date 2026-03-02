@@ -16,7 +16,9 @@ import (
 func init() {
 	rootCmd.AddCommand(sessionCmd)
 	sessionCmd.AddCommand(sessionCreateCmd, sessionDestroyCmd, sessionListCmd, sessionUseCmd,
-		sessionDirListCmd, sessionDirPruneCmd, sessionDirCleanCmd, sessionDirRmCmd)
+		sessionDirListCmd, sessionDirPruneCmd, sessionDirCleanCmd, sessionDirRmCmd, sessionResetCmd)
+
+	sessionResetCmd.Flags().Bool("all", false, "reset all sessions")
 
 	sessionCreateCmd.Flags().Bool("headless", true, "run browser in headless mode")
 	sessionCreateCmd.Flags().Bool("stealth", false, "enable anti-bot-detection stealth mode")
@@ -378,6 +380,37 @@ var sessionDirRmCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed session %s\n", id)
+
+		return nil
+	},
+}
+
+var sessionResetCmd = &cobra.Command{
+	Use:   "reset [id]",
+	Short: "Reset (delete) session data directories",
+	Long:  "Removes session browser data and scout.pid. Kills browser process if still running.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		all, _ := cmd.Flags().GetBool("all")
+		if all {
+			n, err := scout.ResetAllSessions()
+			if err != nil {
+				return fmt.Errorf("scout: reset all sessions: %w", err)
+			}
+
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Reset %d session(s)\n", n)
+
+			return nil
+		}
+
+		if len(args) == 0 {
+			return fmt.Errorf("session ID required (or use --all)")
+		}
+
+		if err := scout.ResetSession(args[0]); err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Reset session: %s\n", args[0])
 
 		return nil
 	},

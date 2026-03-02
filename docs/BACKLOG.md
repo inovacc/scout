@@ -36,10 +36,11 @@
 | ~~HAR export~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.27.0) — HijackRecorder with ExportHAR()~~ |
 | ~~Cookie jar persistence~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — SaveCookiesToFile/LoadCookiesFromFile~~ |
 | ~~Multi-tab orchestration~~ | ~~P3~~ | ~~Large~~ | ~~Done — TabGroup with Do/DoAll/DoParallel/Broadcast/Navigate/Wait/Collect~~ |
-| Auto-upload results to GDrive/OneDrive | P2 | Medium | Export scraper/runbook results directly to Google Drive or OneDrive via API; configurable output sink |
-| Session reuse & clean reset | P1 | Medium | `WithReusableSession()` persists browser state across runs (essential for React/HMR flows); `scout session reset` clears all session data cleanly |
-| REPL mode | P2 | Medium | Interactive browser REPL (`scout repl`) with live page context, tab-completion, history; supports eval, navigate, extract, screenshot inline |
-| Site health checker / test page | P1 | Large | `scout test-site <url>` — crawls a site following all links, clicks interactive elements, detects broken links (404s), console errors, JS exceptions, network failures; generates a clear report with severity levels; essential for React/Vue/Angular dev workflows with hot-reload session reuse |
+| ~~Auto-upload results to GDrive/OneDrive~~ | ~~P2~~ | ~~Medium~~ | ~~Done — `scout upload auth/file/status` with OAuth2 for Google Drive and OneDrive~~ |
+| ~~Session reuse & clean reset~~ | ~~P1~~ | ~~Medium~~ | ~~Done — `WithReusableSession()`, `WithTargetURL()`, domain-hash routing, `scout session reset [id\|--all]`~~ |
+| ~~REPL mode~~ | ~~P2~~ | ~~Medium~~ | ~~Done — `scout repl [url]` interactive local browser shell with 20 commands~~ |
+| ~~Site health checker / test page~~ | ~~P1~~ | ~~Large~~ | ~~Done — `scout test-site <url>` with crawl, console/JS/network error detection, JSON/table report~~ |
+| Page gather | P1 | Medium | `scout gather <url>` — one-shot page intelligence: DOM state, HAR, links, screenshots, cookies, metadata in structured output |
 | PDF form filling | P3 | Medium | Fill interactive PDF forms via browser rendering |
 | ~~Visual regression testing~~ | ~~P3~~ | ~~Large~~ | ~~Done (v0.28.0) — VisualDiff with threshold, color tolerance, diff image overlay~~ |
 
