@@ -168,7 +168,7 @@ By default runs all detectors. Use flags to select specific checks.`,
 		}
 
 		if format == "json" {
-			data, _ := json.MarshalIndent(result, "", "  ")
+			data, _ := json.MarshalIndent(result, "", "  ") //nolint:errchkjson
 			_, _ = fmt.Fprintln(w, string(data))
 		}
 

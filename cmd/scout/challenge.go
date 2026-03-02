@@ -41,7 +41,7 @@ var challengeDetectCmd = &cobra.Command{
 
 		format, _ := cmd.Flags().GetString("format")
 		if format == "json" {
-			data, _ := json.MarshalIndent(challenges, "", "  ")
+			data, _ := json.MarshalIndent(challenges, "", "  ") //nolint:errchkjson
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
 		} else {
 			if len(challenges) == 0 {

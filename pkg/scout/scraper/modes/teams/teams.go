@@ -34,6 +34,7 @@ func (p *teamsProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 
 	// Check for the main app layout element that indicates a logged-in state.
 	el, err := page.Element(`[data-tid="app-layout"]`)
+
 	if err == nil && el != nil {
 		return true, nil
 	}
@@ -54,6 +55,7 @@ func (p *teamsProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("teams: capture session: cookies: %w", err)
 	}
@@ -71,6 +73,7 @@ func (p *teamsProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 
 	for _, key := range tokenKeys {
 		result, err := page.Eval(fmt.Sprintf(`() => localStorage.getItem(%q)`, key))
+
 		if err != nil {
 			continue
 		}
@@ -177,6 +180,7 @@ func (m *TeamsMode) run(ctx context.Context, session *auth.Session, opts scraper
 	}
 
 	b, err := scout.New(browserOpts...)
+
 	if err != nil {
 		return fmt.Errorf("teams: create browser: %w", err)
 	}
@@ -184,12 +188,14 @@ func (m *TeamsMode) run(ctx context.Context, session *auth.Session, opts scraper
 	defer func() { _ = b.Close() }()
 
 	page, err := b.NewPage("about:blank")
+
 	if err != nil {
 		return fmt.Errorf("teams: new page: %w", err)
 	}
 
 	// Restore session cookies.
 	if len(session.Cookies) > 0 {
+
 		if err := page.SetCookies(session.Cookies...); err != nil {
 			return fmt.Errorf("teams: restore cookies: %w", err)
 		}
@@ -217,12 +223,14 @@ func (m *TeamsMode) run(ctx context.Context, session *auth.Session, opts scraper
 	}
 
 	hijacker, err := page.NewSessionHijacker(hijackOpts...)
+
 	if err != nil {
 		return fmt.Errorf("teams: create hijacker: %w", err)
 	}
 	defer hijacker.Stop()
 
 	// Navigate to Teams.
+
 	if err := page.Navigate("https://teams.microsoft.com"); err != nil {
 		return fmt.Errorf("teams: navigate: %w", err)
 	}
@@ -288,6 +296,7 @@ func (m *TeamsMode) parseResponse(resp *scout.CapturedResponse, results chan<- s
 	count := 0
 
 	var raw map[string]any
+
 	if err := json.Unmarshal([]byte(resp.Body), &raw); err != nil {
 		return 0
 	}

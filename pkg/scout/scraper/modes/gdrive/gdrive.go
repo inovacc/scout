@@ -29,6 +29,7 @@ func (p *gdriveProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return false, fmt.Errorf("gdrive: detect auth: eval url: %w", err)
 	}
@@ -40,12 +41,14 @@ func (p *gdriveProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool
 
 	// Check for Google Drive specific elements.
 	_, err = page.Element("[data-tooltip=\"My Drive\"]")
+
 	if err == nil {
 		return true, nil
 	}
 
 	// Alternative selector for My Drive element.
 	_, err = page.Element(".a-Ja-c")
+
 	if err == nil {
 		return true, nil
 	}
@@ -59,11 +62,13 @@ func (p *gdriveProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("gdrive: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return nil, fmt.Errorf("gdrive: capture session: eval url: %w", err)
 	}
@@ -87,6 +92,7 @@ func (p *gdriveProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 		} catch(e) {}
 		return '{}';
 	}`)
+
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -175,11 +181,13 @@ func (m *GDriveMode) Scrape(ctx context.Context, session scraper.SessionData, op
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("gdrive: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage("https://drive.google.com/drive/my-drive")
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("gdrive: scrape: new page: %w", err)
@@ -204,6 +212,7 @@ func (m *GDriveMode) Scrape(ctx context.Context, session scraper.SessionData, op
 	hijacker, err := page.NewSessionHijacker(scout.WithHijackURLFilter("*drive.google.com*", "*clients6.google.com*", "*content.googleapis.com*"),
 		scout.WithHijackBodyCapture(),
 	)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("gdrive: scrape: create hijacker: %w", err)
@@ -312,6 +321,7 @@ func parseFilesList(body string, targetSet map[string]struct{}) []scraper.Result
 	var resp struct {
 		Files []gdFile `json:"files"`
 	}
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -325,7 +335,7 @@ func parseFilesList(body string, targetSet map[string]struct{}) []scraper.Result
 			for _, parent := range f.Parents {
 				if _, ok := targetSet[strings.ToLower(parent)]; ok {
 					found = true
-					break
+					break //nolint:errcheck
 				}
 			}
 
@@ -369,7 +379,8 @@ func parseFilesList(body string, targetSet map[string]struct{}) []scraper.Result
 
 // parseFileGet handles individual file metadata responses.
 func parseFileGet(body string) []scraper.Result {
-	var f gdFile
+	var f gdFile //nolint:errcheck
+
 	if err := json.Unmarshal([]byte(body), &f); err != nil {
 		return nil
 	}
@@ -414,6 +425,7 @@ func parseFolderList(body string, targetSet map[string]struct{}) []scraper.Resul
 		TeamDrives []gdFolder `json:"teamDrives,omitempty"`
 		Drives     []gdFolder `json:"drives,omitempty"`
 	}
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -451,6 +463,7 @@ func parsePermissions(body string) []scraper.Result {
 	var resp struct {
 		Permissions []gdPermission `json:"permissions"`
 	}
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -483,6 +496,7 @@ func parseComments(body string) []scraper.Result {
 	var resp struct {
 		Comments []gdComment `json:"comments"`
 	}
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -569,6 +583,7 @@ func parseGoogleTimestamp(ts string) time.Time {
 
 	// Google Drive uses RFC3339 format (e.g. "2024-02-28T10:30:45.123Z").
 	t, err := time.Parse(time.RFC3339, ts)
+
 	if err != nil {
 		return time.Time{}
 	}

@@ -261,7 +261,7 @@ var clientCmd = &cobra.Command{
 	},
 }
 
-func executeREPLCommand(cmd *cobra.Command, ctx context.Context, inst *instance, c string, parts []string) {
+func executeREPLCommand(cmd *cobra.Command, ctx context.Context, inst *instance, c string, parts []string) { //nolint:maintidx
 	prefix := ""
 	if inst.label != "" {
 		prefix = fmt.Sprintf("[%s] ", inst.label)

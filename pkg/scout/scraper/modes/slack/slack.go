@@ -28,6 +28,7 @@ func (p *slackProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return false, fmt.Errorf("slack: detect auth: eval url: %w", err)
 	}
@@ -39,6 +40,7 @@ func (p *slackProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 
 	// Check for workspace primary view element.
 	_, err = page.Element(".p-workspace__primary_view")
+
 	if err == nil {
 		return true, nil
 	}
@@ -52,11 +54,13 @@ func (p *slackProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("slack: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return nil, fmt.Errorf("slack: capture session: eval url: %w", err)
 	}
@@ -74,6 +78,7 @@ func (p *slackProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" {
@@ -94,6 +99,7 @@ func (p *slackProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		tok := tokenResult.String()
 		if tok != "" && (strings.HasPrefix(tok, "xoxc-") || strings.HasPrefix(tok, "xoxs-")) {
@@ -175,11 +181,13 @@ func (m *SlackMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("slack: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(slackSession.URL)
+
 	if err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("slack: scrape: new page: %w", err)
@@ -205,6 +213,7 @@ func (m *SlackMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		scout.WithHijackURLFilter("*/api/*"),
 		scout.WithHijackBodyCapture(),
 	)
+
 	if err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("slack: scrape: create hijacker: %w", err)
@@ -332,6 +341,7 @@ type slackTopic struct {
 
 func parseChannelsList(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp channelsListResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil || !resp.OK {
 		return nil
 	}
@@ -399,6 +409,7 @@ type slackFile struct {
 
 func parseConversationHistory(body string, targetSet map[string]struct{}) []scraper.Result { //nolint:unparam
 	var resp historyResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil || !resp.OK {
 		return nil
 	}
@@ -476,6 +487,7 @@ type slackUserProfile struct {
 
 func parseUsersList(body string) []scraper.Result {
 	var resp usersListResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil || !resp.OK {
 		return nil
 	}
@@ -509,6 +521,7 @@ type filesListResponse struct {
 
 func parseFilesList(body string) []scraper.Result {
 	var resp filesListResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil || !resp.OK {
 		return nil
 	}

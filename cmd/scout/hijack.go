@@ -110,7 +110,7 @@ var hijackWatchCmd = &cobra.Command{
 					}
 				}
 
-				_ = enc.Encode(ev)
+				_ = enc.Encode(ev) //nolint:errchkjson
 
 			case <-sigCh:
 				signal.Stop(sigCh)

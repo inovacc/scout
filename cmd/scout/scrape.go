@@ -138,7 +138,7 @@ var scrapeAuthCmd = &cobra.Command{
 
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "session saved to %s\n", savePath)
 		} else {
-			data, _ := json.MarshalIndent(session, "", "  ")
+			data, _ := json.MarshalIndent(session, "", "  ") //nolint:errchkjson
 			_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
 		}
 
@@ -226,7 +226,7 @@ var scrapeRunCmd = &cobra.Command{
 		count := 0
 
 		for result := range results {
-			_ = enc.Encode(result)
+			_ = enc.Encode(result) //nolint:errchkjson
 			count++
 		}
 

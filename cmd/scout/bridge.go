@@ -359,7 +359,7 @@ var bridgeEventsCmd = &cobra.Command{
 			for {
 				select {
 				case evt := <-bs.Events():
-					data, _ := json.Marshal(evt)
+					data, _ := json.Marshal(evt) //nolint:errchkjson
 					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
 				case <-sigCh:
 					return nil
@@ -435,7 +435,7 @@ var bridgeQueryCmd = &cobra.Command{
 			return err
 		}
 
-		data, _ := json.MarshalIndent(results, "", "  ")
+		data, _ := json.MarshalIndent(results, "", "  ") //nolint:errchkjson
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
 
 		return nil
@@ -645,7 +645,7 @@ var bridgeTabsCmd = &cobra.Command{
 			return err
 		}
 
-		data, _ := json.MarshalIndent(tabs, "", "  ")
+		data, _ := json.MarshalIndent(tabs, "", "  ") //nolint:errchkjson
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
 
 		return nil
@@ -777,7 +777,7 @@ var bridgeWSSendCmd = &cobra.Command{
 			return err
 		}
 
-		data, _ := json.MarshalIndent(resp, "", "  ")
+		data, _ := json.MarshalIndent(resp, "", "  ") //nolint:errchkjson
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
 
 		return nil
@@ -918,7 +918,7 @@ var bridgeFramesCmd = &cobra.Command{
 			return err
 		}
 
-		data, _ := json.MarshalIndent(frames, "", "  ")
+		data, _ := json.MarshalIndent(frames, "", "  ") //nolint:errchkjson
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s\n", string(data))
 
 		return nil

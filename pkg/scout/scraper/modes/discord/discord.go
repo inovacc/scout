@@ -32,6 +32,7 @@ func (p *discordProvider) DetectAuth(_ context.Context, page *scout.Page) (bool,
 	}
 
 	url, err := page.URL()
+
 	if err != nil {
 		return false, fmt.Errorf("discord: detect auth: %w", err)
 	}
@@ -45,12 +46,14 @@ func (p *discordProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("discord: capture session: cookies: %w", err)
 	}
 
 	// Extract localStorage values via Eval
 	localStorageResult, err := page.Eval("() => { try { return Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)])) } catch(e) { return {} } }")
+
 	if err != nil {
 		return nil, fmt.Errorf("discord: capture session: local storage: %w", err)
 	}
@@ -67,6 +70,7 @@ func (p *discordProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 
 	// Extract sessionStorage values via Eval
 	sessionStorageResult, err := page.Eval("() => { try { return Object.fromEntries(Object.keys(sessionStorage).map(k => [k, sessionStorage.getItem(k)])) } catch(e) { return {} } }")
+
 	if err != nil {
 		return nil, fmt.Errorf("discord: capture session: session storage: %w", err)
 	}
@@ -82,6 +86,7 @@ func (p *discordProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	url, err := page.URL()
+
 	if err != nil {
 		return nil, fmt.Errorf("discord: capture session: url: %w", err)
 	}
@@ -165,18 +170,21 @@ func (m *DiscordMode) Scrape(ctx context.Context, session scraper.SessionData, o
 	}
 
 	browser, err := scout.New(browserOpts...)
+
 	if err != nil {
 		return nil, fmt.Errorf("discord: scrape: browser: %w", err)
 	}
 
 	// Restore cookies on the Discord domain.
 	page, err := browser.NewPage("about:blank")
+
 	if err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("discord: scrape: new page: %w", err)
 	}
 
 	if len(authSession.Cookies) > 0 {
+
 		if err := page.SetCookies(authSession.Cookies...); err != nil {
 			_ = browser.Close()
 			return nil, fmt.Errorf("discord: scrape: set cookies: %w", err)
@@ -203,6 +211,7 @@ func (m *DiscordMode) Scrape(ctx context.Context, session scraper.SessionData, o
 	}
 
 	hijacker, err := page.NewSessionHijacker(hijackOpts...)
+
 	if err != nil {
 		_ = browser.Close()
 		return nil, fmt.Errorf("discord: scrape: hijacker: %w", err)
@@ -366,9 +375,11 @@ type discordThread struct {
 func (m *DiscordMode) parseMessages(body, source string, results chan<- scraper.Result, opts scraper.ScrapeOptions) int {
 	// Messages can come as an array or a single object.
 	var msgs []discordMessage
+
 	if err := json.Unmarshal([]byte(body), &msgs); err != nil {
 		// Try single message.
 		var single discordMessage
+
 		if err2 := json.Unmarshal([]byte(body), &single); err2 != nil {
 			return 0
 		}
@@ -408,8 +419,10 @@ func (m *DiscordMode) parseMessages(body, source string, results chan<- scraper.
 
 func (m *DiscordMode) parseChannels(body, source string, results chan<- scraper.Result) int {
 	var channels []discordChannel
+
 	if err := json.Unmarshal([]byte(body), &channels); err != nil {
 		var single discordChannel
+
 		if err2 := json.Unmarshal([]byte(body), &single); err2 != nil {
 			return 0
 		}
@@ -442,6 +455,7 @@ func (m *DiscordMode) parseChannels(body, source string, results chan<- scraper.
 
 func (m *DiscordMode) parseMembers(body, source string, results chan<- scraper.Result) int {
 	var members []discordMember
+
 	if err := json.Unmarshal([]byte(body), &members); err != nil {
 		return 0
 	}
@@ -474,11 +488,13 @@ func (m *DiscordMode) parseThreads(body, source string, results chan<- scraper.R
 	var wrapper struct {
 		Threads []discordThread `json:"threads"`
 	}
+
 	if err := json.Unmarshal([]byte(body), &wrapper); err == nil && len(wrapper.Threads) > 0 {
 		return m.emitThreads(wrapper.Threads, source, results)
 	}
 
 	var threads []discordThread
+
 	if err := json.Unmarshal([]byte(body), &threads); err != nil {
 		return 0
 	}
@@ -511,6 +527,7 @@ func (m *DiscordMode) emitThreads(threads []discordThread, source string, result
 
 func (m *DiscordMode) parsePins(body, source string, results chan<- scraper.Result) int {
 	var msgs []discordMessage
+
 	if err := json.Unmarshal([]byte(body), &msgs); err != nil {
 		return 0
 	}
@@ -542,6 +559,7 @@ func (m *DiscordMode) parsePins(body, source string, results chan<- scraper.Resu
 
 func (m *DiscordMode) parseUser(body, source string, results chan<- scraper.Result) int {
 	var user discordAuthor
+
 	if err := json.Unmarshal([]byte(body), &user); err != nil {
 		return 0
 	}

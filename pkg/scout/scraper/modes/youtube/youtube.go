@@ -29,6 +29,7 @@ func (p *youtubeProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return false, fmt.Errorf("youtube: detect auth: eval url: %w", err)
 	}
@@ -37,12 +38,14 @@ func (p *youtubeProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 	if strings.Contains(url, "youtube.com") {
 		// Check for avatar button indicating logged-in state.
 		_, err = page.Element("#avatar-btn")
+
 		if err == nil {
 			return true, nil
 		}
 
 		// Alternative: check for account button.
 		_, err = page.Element("button[aria-label='Account']")
+
 		if err == nil {
 			return true, nil
 		}
@@ -57,11 +60,13 @@ func (p *youtubeProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("youtube: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return nil, fmt.Errorf("youtube: capture session: eval url: %w", err)
 	}
@@ -85,6 +90,7 @@ func (p *youtubeProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return '{}';
 	}`)
+
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -115,6 +121,7 @@ func (p *youtubeProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return JSON.stringify(tokens);
 	}`)
+
 	if err == nil {
 		raw := tokenResult.String()
 		if raw != "" && raw != "{}" {
@@ -193,11 +200,13 @@ func (m *YouTubeMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("youtube: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage("https://www.youtube.com")
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("youtube: scrape: new page: %w", err)
@@ -223,6 +232,7 @@ func (m *YouTubeMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHijackURLFilter("*/youtube.com/youtubei/*", "*/youtube.com/api/*"),
 		scout.WithHijackBodyCapture(),
 	)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("youtube: scrape: create hijacker: %w", err)
@@ -417,6 +427,7 @@ type playlistRenderer struct {
 
 func parseSearchResults(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp searchResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -454,6 +465,7 @@ func parseSearchResults(body string, targetSet map[string]struct{}) []scraper.Re
 
 func parseBrowseResults(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp browseResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}

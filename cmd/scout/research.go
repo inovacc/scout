@@ -132,7 +132,7 @@ Supported LLM providers: ollama, openai, anthropic, openrouter, deepseek, gemini
 
 		outFile, _ := cmd.Flags().GetString("output")
 		if outFile != "" {
-			data, _ := json.MarshalIndent(result, "", "  ")
+			data, _ := json.MarshalIndent(result, "", "  ") //nolint:errchkjson
 
 			dest, writeErr := writeOutput(cmd, data, "research.json")
 			if writeErr != nil {

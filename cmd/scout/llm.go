@@ -243,7 +243,7 @@ func outputJobResult(cmd *cobra.Command, result *scout.LLMJobResult) error {
 
 	outFile, _ := cmd.Flags().GetString("output")
 	if outFile != "" {
-		data, _ := json.MarshalIndent(result, "", "  ")
+		data, _ := json.MarshalIndent(result, "", "  ") //nolint:errchkjson
 
 		dest, err := writeOutput(cmd, data, "extract-ai.json")
 		if err != nil {
@@ -604,7 +604,7 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 }
 
 // createProvider kept for backward compatibility.
-func createProvider(name, model, host string) (scout.LLMProvider, error) {
+func createProvider(name, model, host string) (scout.LLMProvider, error) { //nolint:unused
 	return createProviderFull(name, model, "", "", host)
 }
 

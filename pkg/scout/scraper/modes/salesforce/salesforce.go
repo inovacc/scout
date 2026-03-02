@@ -29,6 +29,7 @@ func (p *salesforceProvider) DetectAuth(ctx context.Context, page *scout.Page) (
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return false, fmt.Errorf("salesforce: detect auth: eval url: %w", err)
 	}
@@ -41,6 +42,7 @@ func (p *salesforceProvider) DetectAuth(ctx context.Context, page *scout.Page) (
 
 	// Check for Aura framework element which indicates logged-in Lightning Experience.
 	_, err = page.Element("[data-aura-rendered-by]")
+
 	if err == nil {
 		return true, nil
 	}
@@ -54,11 +56,13 @@ func (p *salesforceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("salesforce: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return nil, fmt.Errorf("salesforce: capture session: eval url: %w", err)
 	}
@@ -81,6 +85,7 @@ func (p *salesforceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		tok := tokenResult.String()
 		if tok != "" {
@@ -98,6 +103,7 @@ func (p *salesforceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		inst := instanceResult.String()
 		if inst != "" {
@@ -121,6 +127,7 @@ func (p *salesforceProvider) CaptureSession(ctx context.Context, page *scout.Pag
 		} catch(e) {}
 		return '{}';
 	}`)
+
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -197,11 +204,13 @@ func (m *SalesforceMode) Scrape(ctx context.Context, session scraper.SessionData
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("salesforce: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(sfSession.URL)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("salesforce: scrape: new page: %w", err)
@@ -227,6 +236,7 @@ func (m *SalesforceMode) Scrape(ctx context.Context, session scraper.SessionData
 		scout.WithHijackURLFilter("*/services/data/*", "*/aura*", "*/ui-api/*"),
 		scout.WithHijackBodyCapture(),
 	)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("salesforce: scrape: create hijacker: %w", err)
@@ -366,6 +376,7 @@ func parseLeadsResponse(body string, targetSet map[string]struct{}) []scraper.Re
 	}
 
 	var resp salesforceAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -373,6 +384,7 @@ func parseLeadsResponse(body string, targetSet map[string]struct{}) []scraper.Re
 	results := make([]scraper.Result, 0, len(resp.Records))
 	for _, recordRaw := range resp.Records {
 		var lead leadRecord
+
 		if err := json.Unmarshal(recordRaw, &lead); err != nil {
 			continue
 		}
@@ -427,6 +439,7 @@ func parseContactsResponse(body string, targetSet map[string]struct{}) []scraper
 	}
 
 	var resp salesforceAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -434,6 +447,7 @@ func parseContactsResponse(body string, targetSet map[string]struct{}) []scraper
 	results := make([]scraper.Result, 0, len(resp.Records))
 	for _, recordRaw := range resp.Records {
 		var contact contactRecord
+
 		if err := json.Unmarshal(recordRaw, &contact); err != nil {
 			continue
 		}
@@ -486,6 +500,7 @@ func parseOpportunitiesResponse(body string, targetSet map[string]struct{}) []sc
 	}
 
 	var resp salesforceAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -493,6 +508,7 @@ func parseOpportunitiesResponse(body string, targetSet map[string]struct{}) []sc
 	results := make([]scraper.Result, 0, len(resp.Records))
 	for _, recordRaw := range resp.Records {
 		var opp opportunityRecord
+
 		if err := json.Unmarshal(recordRaw, &opp); err != nil {
 			continue
 		}
@@ -546,6 +562,7 @@ func parseAccountsResponse(body string, targetSet map[string]struct{}) []scraper
 	}
 
 	var resp salesforceAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -553,6 +570,7 @@ func parseAccountsResponse(body string, targetSet map[string]struct{}) []scraper
 	results := make([]scraper.Result, 0, len(resp.Records))
 	for _, recordRaw := range resp.Records {
 		var account accountRecord
+
 		if err := json.Unmarshal(recordRaw, &account); err != nil {
 			continue
 		}
@@ -598,6 +616,7 @@ type reportRecord struct {
 func parseReportsResponse(body string, targetSet map[string]struct{}) []scraper.Result {
 	// Reports are handled by ID or type; check targetSet for report identifiers.
 	var resp salesforceAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -605,6 +624,7 @@ func parseReportsResponse(body string, targetSet map[string]struct{}) []scraper.
 	results := make([]scraper.Result, 0, len(resp.Records))
 	for _, recordRaw := range resp.Records {
 		var report reportRecord
+
 		if err := json.Unmarshal(recordRaw, &report); err != nil {
 			continue
 		}
@@ -656,6 +676,7 @@ func parseTasksResponse(body string, targetSet map[string]struct{}) []scraper.Re
 	}
 
 	var resp salesforceAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -663,6 +684,7 @@ func parseTasksResponse(body string, targetSet map[string]struct{}) []scraper.Re
 	results := make([]scraper.Result, 0, len(resp.Records))
 	for _, recordRaw := range resp.Records {
 		var task taskRecord
+
 		if err := json.Unmarshal(recordRaw, &task); err != nil {
 			continue
 		}
@@ -706,9 +728,11 @@ type uiAPIRecord struct {
 func parseUIAPIResponse(body string, targetSet map[string]struct{}) []scraper.Result {
 	// UI API responses are more generic; try to parse as array or single object.
 	var items []uiAPIRecord
+
 	if err := json.Unmarshal([]byte(body), &items); err != nil {
 		// Try single object.
 		var single uiAPIRecord
+
 		if err := json.Unmarshal([]byte(body), &single); err != nil {
 			return nil
 		}
@@ -769,6 +793,7 @@ func parseSalesforceTimestamp(ts string) time.Time {
 	// Salesforce returns ISO 8601 timestamps like "2026-02-28T10:30:45.000+0000".
 	// time.RFC3339Nano handles most variations.
 	t, err := time.Parse(time.RFC3339Nano, ts)
+
 	if err != nil {
 		// Try a simpler format if RFC3339Nano fails.
 		t, _ = time.Parse("2006-01-02T15:04:05", ts)
