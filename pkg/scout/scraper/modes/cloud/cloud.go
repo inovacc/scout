@@ -28,6 +28,7 @@ func (p *cloudProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return false, fmt.Errorf("cloud: detect auth: eval url: %w", err)
 	}
@@ -53,11 +54,13 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("cloud: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return nil, fmt.Errorf("cloud: capture session: eval url: %w", err)
 	}
@@ -78,6 +81,7 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
+
 		if err == nil {
 			userInfo := awsUserResult.String()
 			if userInfo != "" {
@@ -98,6 +102,7 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
+
 		if err == nil {
 			sessionData := sessionTokenResult.String()
 			if sessionData != "" {
@@ -119,6 +124,7 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
+
 		if err == nil {
 			osid := gcpOsidResult.String()
 			if osid != "" {
@@ -134,6 +140,7 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
+
 		if err == nil {
 			gcpData := gcpDataResult.String()
 			if gcpData != "" {
@@ -155,6 +162,7 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
+
 		if err == nil {
 			azureToken := azureTokenResult.String()
 			if azureToken != "" {
@@ -173,6 +181,7 @@ func (p *cloudProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 			} catch(e) {}
 			return '';
 		}`)
+
 		if err == nil {
 			azureSub := azureSubResult.String()
 			if azureSub != "" {
@@ -283,37 +292,40 @@ func (m *CloudMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 	browser, err := scout.New(scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("cloud: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(cloudSession.URL)
+
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("cloud: scrape: new page: %w", err)
 	}
 
 	if err := page.SetCookies(cloudSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("cloud: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("cloud: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("cloud: scrape: wait load: %w", err)
 	}
 
 	hijacker, err := page.NewSessionHijacker(scout.WithHijackURLFilter("*"),
 		scout.WithHijackBodyCapture(),
 	)
+
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("cloud: scrape: create hijacker: %w", err)
 	}
 
@@ -427,6 +439,7 @@ func parseHijackEvent(ev scout.HijackEvent, targetSet map[string]struct{}) []scr
 // parseAWSEC2 extracts EC2 instances from AWS API responses.
 func parseAWSEC2(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp map[string]any
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -489,6 +502,7 @@ func parseAWSInstance(inst map[string]any, targetSet map[string]struct{}) *scrap
 // parseAWSS3 extracts S3 buckets from AWS API responses.
 func parseAWSS3(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp map[string]any
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -536,6 +550,7 @@ func parseAWSS3(body string, targetSet map[string]struct{}) []scraper.Result {
 // parseAWSIAM extracts IAM users and roles from AWS API responses.
 func parseAWSIAM(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp map[string]any
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -621,6 +636,7 @@ func parseAWSIAM(body string, targetSet map[string]struct{}) []scraper.Result {
 // parseAWSPricing extracts pricing information from AWS pricing API.
 func parseAWSPricing(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp map[string]any
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -648,6 +664,7 @@ func parseAWSPricing(body string, targetSet map[string]struct{}) []scraper.Resul
 // parseGCPResources extracts GCP resources from Google Cloud API responses.
 func parseGCPResources(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp map[string]any
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -693,6 +710,7 @@ func parseGCPResources(body string, targetSet map[string]struct{}) []scraper.Res
 // parseGCPProjects extracts GCP projects from Google Cloud Resource Manager API.
 func parseGCPProjects(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp map[string]any
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -743,6 +761,7 @@ func parseGCPProjects(body string, targetSet map[string]struct{}) []scraper.Resu
 // parseAzureResources extracts Azure resources from Azure Management API.
 func parseAzureResources(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp map[string]any
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -797,6 +816,7 @@ func parseAzureResources(body string, targetSet map[string]struct{}) []scraper.R
 // parseAzureAPI extracts data from Azure portal API responses.
 func parseAzureAPI(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp map[string]any
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}

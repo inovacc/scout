@@ -28,6 +28,7 @@ func (p *notionProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return false, fmt.Errorf("notion: detect auth: eval url: %w", err)
 	}
@@ -39,12 +40,14 @@ func (p *notionProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool
 
 	// Check for Notion sidebar element indicating authenticated state.
 	_, err = page.Element(`.notion-sidebar`)
+
 	if err == nil {
 		return true, nil
 	}
 
 	// Fallback: check for any element with sidebar in class name.
 	_, err = page.Element(`[class*="sidebar"]`)
+
 	if err == nil {
 		return true, nil
 	}
@@ -58,11 +61,13 @@ func (p *notionProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("notion: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return nil, fmt.Errorf("notion: capture session: eval url: %w", err)
 	}
@@ -91,6 +96,7 @@ func (p *notionProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		tok := lsTokenResult.String()
 		if tok != "" && strings.Contains(tok, "_") {
@@ -106,6 +112,7 @@ func (p *notionProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		uid := userIDResult.String()
 		if uid != "" {
@@ -123,6 +130,7 @@ func (p *notionProvider) CaptureSession(ctx context.Context, page *scout.Page) (
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		wsName := wsNameResult.String()
 		if wsName != "" {
@@ -200,11 +208,13 @@ func (m *NotionMode) Scrape(ctx context.Context, session scraper.SessionData, op
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("notion: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage("https://www.notion.so")
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("notion: scrape: new page: %w", err)
@@ -231,6 +241,7 @@ func (m *NotionMode) Scrape(ctx context.Context, session scraper.SessionData, op
 		scout.WithHijackURLFilter("*msgstore.www.notion.so*"),
 		scout.WithHijackBodyCapture(),
 	)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("notion: scrape: create hijacker: %w", err)
@@ -367,6 +378,7 @@ type queryCollectionPagesResponse struct {
 // parseGetPageAsNested extracts pages from getPageAsNested response.
 func parseGetPageAsNested(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp getPageAsNestedResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -407,6 +419,7 @@ func parseGetPageAsNested(body string, targetSet map[string]struct{}) []scraper.
 // parseQueryCollection extracts pages from queryCollection response.
 func parseQueryCollection(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp queryCollectionResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -447,6 +460,7 @@ func parseQueryCollection(body string, targetSet map[string]struct{}) []scraper.
 // parseGetRecordValues extracts records from getRecordValues response.
 func parseGetRecordValues(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp getRecordValuesResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -483,6 +497,7 @@ func parseGetRecordValues(body string, targetSet map[string]struct{}) []scraper.
 // parseLoadPageChunk extracts blocks from loadPageChunk response.
 func parseLoadPageChunk(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp loadPageChunkResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -523,6 +538,7 @@ func parseLoadPageChunk(body string, targetSet map[string]struct{}) []scraper.Re
 // parseQueryCollectionPages extracts pages from queryCollectionPages response.
 func parseQueryCollectionPages(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp queryCollectionPagesResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}

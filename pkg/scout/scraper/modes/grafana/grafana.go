@@ -28,6 +28,7 @@ func (p *grafanaProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return false, fmt.Errorf("grafana: detect auth: eval url: %w", err)
 	}
@@ -39,6 +40,7 @@ func (p *grafanaProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 
 	// Check for Grafana dashboard container element.
 	_, err = page.Element(".dashboard-container")
+
 	if err == nil {
 		return true, nil
 	}
@@ -52,11 +54,13 @@ func (p *grafanaProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("grafana: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return nil, fmt.Errorf("grafana: capture session: eval url: %w", err)
 	}
@@ -74,6 +78,7 @@ func (p *grafanaProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" {
@@ -93,6 +98,7 @@ func (p *grafanaProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		tok := tokenResult.String()
 		if tok != "" {
@@ -199,11 +205,13 @@ func (m *GrafanaMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("grafana: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(grafanaSession.URL)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("grafana: scrape: new page: %w", err)
@@ -229,6 +237,7 @@ func (m *GrafanaMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHijackURLFilter("*/api/*"),
 		scout.WithHijackBodyCapture(),
 	)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("grafana: scrape: create hijacker: %w", err)
@@ -360,6 +369,7 @@ type grafanaDashboard struct {
 
 func parseDashboardsList(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp dashboardListResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -422,6 +432,7 @@ type grafanaPanel struct {
 
 func parseDashboardDetail(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp dashboardDetailResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -496,6 +507,7 @@ type grafanaDatasource struct {
 
 func parseDatasourcesList(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp []grafanaDatasource
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -544,6 +556,7 @@ type grafanaAlert struct {
 
 func parseAlertsList(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp alertsListResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -593,6 +606,7 @@ type grafanaSearchResult struct {
 
 func parseSearchResults(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp searchResultsResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -651,6 +665,7 @@ type grafanaQueryResult struct {
 
 func parsePanelQuery(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp panelQueryResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -694,6 +709,7 @@ type grafanaAnnotation struct {
 
 func parseAnnotations(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp annotationsResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}

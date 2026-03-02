@@ -29,6 +29,7 @@ func (p *twitterProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return false, fmt.Errorf("twitter: detect auth: eval url: %w", err)
 	}
@@ -40,6 +41,7 @@ func (p *twitterProvider) DetectAuth(ctx context.Context, page *scout.Page) (boo
 
 	// Check for primary column element which appears when authenticated.
 	_, err = page.Element("[data-testid=\"primaryColumn\"]")
+
 	if err == nil {
 		return true, nil
 	}
@@ -53,11 +55,13 @@ func (p *twitterProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("twitter: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return nil, fmt.Errorf("twitter: capture session: eval url: %w", err)
 	}
@@ -91,6 +95,7 @@ func (p *twitterProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return {};
 	}`)
+
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -110,6 +115,7 @@ func (p *twitterProvider) CaptureSession(ctx context.Context, page *scout.Page) 
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		userInfo := userResult.String()
 		if userInfo != "" {
@@ -189,11 +195,13 @@ func (m *TwitterMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("twitter: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(twitterSession.URL)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("twitter: scrape: new page: %w", err)
@@ -221,6 +229,7 @@ func (m *TwitterMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHijackURLFilter("*twitter.com/i/api/*"),
 		scout.WithHijackBodyCapture(),
 	)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("twitter: scrape: create hijacker: %w", err)
@@ -332,6 +341,7 @@ type twitterAPIResponse struct {
 // parseGraphQLResponse handles Twitter's GraphQL API responses.
 func parseGraphQLResponse(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp twitterAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -577,6 +587,7 @@ func userMapToResult(user map[string]any) *scraper.Result {
 // parseUserProfileResponse handles user profile API responses.
 func parseUserProfileResponse(body string) []scraper.Result {
 	var user map[string]any
+
 	if err := json.Unmarshal([]byte(body), &user); err != nil {
 		return nil
 	}
@@ -661,12 +672,14 @@ func parseTwitterTimestamp(ts any) time.Time {
 
 	// Try parsing Twitter's standard format: "Mon Jan 01 12:34:56 +0000 2024"
 	t, err := time.Parse("Mon Jan 02 15:04:05 -0700 2006", tsStr)
+
 	if err == nil {
 		return t
 	}
 
 	// Try ISO format.
 	t, err = time.Parse(time.RFC3339, tsStr)
+
 	if err == nil {
 		return t
 	}

@@ -28,6 +28,7 @@ func (p *gmailProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return false, fmt.Errorf("gmail: detect auth: eval url: %w", err)
 	}
@@ -39,6 +40,7 @@ func (p *gmailProvider) DetectAuth(ctx context.Context, page *scout.Page) (bool,
 
 	// Check for Gmail navigation element.
 	_, err = page.Element(`div[role="navigation"]`)
+
 	if err == nil {
 		return true, nil
 	}
@@ -52,11 +54,13 @@ func (p *gmailProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("gmail: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return nil, fmt.Errorf("gmail: capture session: eval url: %w", err)
 	}
@@ -84,6 +88,7 @@ func (p *gmailProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 		} catch(e) {}
 		return {};
 	}`)
+
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -105,6 +110,7 @@ func (p *gmailProvider) CaptureSession(ctx context.Context, page *scout.Page) (*
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		tok := tokenResult.String()
 		if tok != "" {
@@ -173,11 +179,13 @@ func (m *GmailMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("gmail: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage("https://mail.google.com")
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("gmail: scrape: new page: %w", err)
@@ -204,6 +212,7 @@ func (m *GmailMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		scout.WithHijackURLFilter("*gmail.com*"),
 		scout.WithHijackBodyCapture(),
 	)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("gmail: scrape: create hijacker: %w", err)
@@ -330,6 +339,7 @@ type gmailEmail struct { //nolint:unused
 func parseEmailList(body string, targetSet map[string]struct{}) []scraper.Result {
 	// Gmail API responses are complex nested arrays. This is a simplified parser.
 	var resp gmailAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil || len(resp.Response) == 0 {
 		return nil
 	}
@@ -389,6 +399,7 @@ func parseEmailList(body string, targetSet map[string]struct{}) []scraper.Result
 
 func parseEmailThread(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp gmailAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -440,6 +451,7 @@ type gmailLabel struct {
 
 func parseLabelsList(body string) []scraper.Result {
 	var labels []gmailLabel
+
 	if err := json.Unmarshal([]byte(body), &labels); err != nil {
 		return nil
 	}
@@ -475,6 +487,7 @@ type gmailContact struct {
 
 func parseContactsList(body string) []scraper.Result {
 	var contacts []gmailContact
+
 	if err := json.Unmarshal([]byte(body), &contacts); err != nil {
 		return nil
 	}

@@ -75,14 +75,14 @@ func resolveElectron(ctx context.Context, version string) (string, error) {
 
 // lookupElectronCDP checks if an Electron app is already running with CDP enabled
 // and returns the WebSocket URL. This is used by WithElectronCDP.
-func lookupElectronCDP(endpoint string) (string, error) {
+func lookupElectronCDP(endpoint string) (string, error) { //nolint:unparam
 	if strings.Contains(endpoint, "/devtools/") {
 		return endpoint, nil
 	}
 
 	resolved, err := launcher.ResolveURL(endpoint)
 	if err != nil {
-		return endpoint, nil
+		return endpoint, nil //nolint:nilerr
 	}
 
 	return resolved, nil

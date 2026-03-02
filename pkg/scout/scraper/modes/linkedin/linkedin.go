@@ -29,6 +29,7 @@ func (p *linkedinProvider) DetectAuth(ctx context.Context, page *scout.Page) (bo
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return false, fmt.Errorf("linkedin: detect auth: eval url: %w", err)
 	}
@@ -41,6 +42,7 @@ func (p *linkedinProvider) DetectAuth(ctx context.Context, page *scout.Page) (bo
 
 	// Check for global-nav element which indicates logged-in state.
 	_, err = page.Element(".global-nav")
+
 	if err == nil {
 		return true, nil
 	}
@@ -54,11 +56,13 @@ func (p *linkedinProvider) CaptureSession(ctx context.Context, page *scout.Page)
 	}
 
 	cookies, err := page.GetCookies()
+
 	if err != nil {
 		return nil, fmt.Errorf("linkedin: capture session: get cookies: %w", err)
 	}
 
 	result, err := page.Eval(`() => window.location.href`)
+
 	if err != nil {
 		return nil, fmt.Errorf("linkedin: capture session: eval url: %w", err)
 	}
@@ -76,6 +80,7 @@ func (p *linkedinProvider) CaptureSession(ctx context.Context, page *scout.Page)
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		tok := tokenResult.String()
 		if tok != "" {
@@ -94,6 +99,7 @@ func (p *linkedinProvider) CaptureSession(ctx context.Context, page *scout.Page)
 		} catch(e) {}
 		return '';
 	}`)
+
 	if err == nil {
 		val := sessionResult.String()
 		if val != "" {
@@ -117,6 +123,7 @@ func (p *linkedinProvider) CaptureSession(ctx context.Context, page *scout.Page)
 		} catch(e) {}
 		return '{}';
 	}`)
+
 	if err == nil {
 		raw := lsResult.String()
 		if raw != "" && raw != "{}" {
@@ -188,11 +195,13 @@ func (m *LinkedInMode) Scrape(ctx context.Context, session scraper.SessionData, 
 		scout.WithHeadless(opts.Headless),
 		scout.WithStealth(),
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("linkedin: scrape: create browser: %w", err)
 	}
 
 	page, err := browser.NewPage(linkedinSession.URL)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("linkedin: scrape: new page: %w", err)
@@ -218,6 +227,7 @@ func (m *LinkedInMode) Scrape(ctx context.Context, session scraper.SessionData, 
 		scout.WithHijackURLFilter("*linkedin.com/voyager/api/*"),
 		scout.WithHijackBodyCapture(),
 	)
+
 	if err != nil {
 		browser.Close()
 		return nil, fmt.Errorf("linkedin: scrape: create hijacker: %w", err)
@@ -351,6 +361,7 @@ type profileResponse struct {
 
 func parseProfileResponse(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp linkedinAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -360,6 +371,7 @@ func parseProfileResponse(body string, targetSet map[string]struct{}) []scraper.
 	}
 
 	var profile profileResponse
+
 	if err := json.Unmarshal(resp.Data, &profile); err != nil {
 		return nil
 	}
@@ -409,6 +421,7 @@ type postResponse struct {
 
 func parseFeedResponse(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp linkedinAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -418,6 +431,7 @@ func parseFeedResponse(body string, targetSet map[string]struct{}) []scraper.Res
 	// Process elements (individual posts).
 	for _, elemRaw := range resp.Elements {
 		var post postResponse
+
 		if err := json.Unmarshal(elemRaw, &post); err != nil {
 			continue
 		}
@@ -462,6 +476,7 @@ type connectionResponse struct {
 
 func parseConnectionsResponse(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp linkedinAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -470,6 +485,7 @@ func parseConnectionsResponse(body string, targetSet map[string]struct{}) []scra
 
 	for _, elemRaw := range resp.Elements {
 		var conn connectionResponse
+
 		if err := json.Unmarshal(elemRaw, &conn); err != nil {
 			continue
 		}
@@ -515,6 +531,7 @@ type jobResponse struct {
 
 func parseJobsResponse(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp linkedinAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -523,6 +540,7 @@ func parseJobsResponse(body string, targetSet map[string]struct{}) []scraper.Res
 
 	for _, elemRaw := range resp.Elements {
 		var job jobResponse
+
 		if err := json.Unmarshal(elemRaw, &job); err != nil {
 			continue
 		}
@@ -572,6 +590,7 @@ type messageResponse struct {
 
 func parseMessagingResponse(body string, targetSet map[string]struct{}) []scraper.Result {
 	var resp linkedinAPIResponse
+
 	if err := json.Unmarshal([]byte(body), &resp); err != nil {
 		return nil
 	}
@@ -580,6 +599,7 @@ func parseMessagingResponse(body string, targetSet map[string]struct{}) []scrape
 
 	for _, elemRaw := range resp.Elements {
 		var msg messageResponse
+
 		if err := json.Unmarshal(elemRaw, &msg); err != nil {
 			continue
 		}

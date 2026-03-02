@@ -185,8 +185,8 @@ func FixRunbook(browser *scout.Browser, r *Runbook) (*Runbook, []string, error) 
 				}
 			}
 
-		case strings.HasPrefix(name, "step["):
-			// Step selectors: try matching by action type and field candidates.
+		default:
+			// Step selectors and others: try matching by action type and field candidates.
 			// This is best-effort; steps are harder to auto-fix.
 		}
 	}
