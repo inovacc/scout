@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"github.com/google/uuid"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/defaults"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher/flags"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
@@ -49,7 +50,7 @@ type Launcher struct {
 func New() *Launcher {
 	dir := defaults.Dir
 	if dir == "" {
-		dir = filepath.Join(DefaultUserDataDirPrefix, utils.RandString(8))
+		dir = filepath.Join(DefaultUserDataDirPrefix, uuid.Must(uuid.NewV7()).String())
 	}
 
 	defaultFlags := map[flags.Flag][]string{

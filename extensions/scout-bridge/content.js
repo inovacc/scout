@@ -454,6 +454,124 @@
     return { observing: true };
   });
 
+  // DOM changes monitor — aggregates mutations and sends periodic summaries.
+  var _domMonitor = null;
+  var _domMonitorInterval = null;
+  var _domMonitorChanges = { added: 0, removed: 0, modified: 0, details: [] };
+
+  scout.on("dom.monitor", function (params) {
+    params = params || {};
+    var interval = params.interval || 1000;
+    var maxDetails = params.maxDetails || 50;
+
+    if (_domMonitor) {
+      _domMonitor.disconnect();
+    }
+
+    var target = params.selector
+      ? document.querySelector(params.selector)
+      : document.body;
+    if (!target) return { error: "target not found" };
+
+    _domMonitorChanges = { added: 0, removed: 0, modified: 0, details: [] };
+
+    _domMonitor = new MutationObserver(function (mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        if (m.type === "childList") {
+          _domMonitorChanges.added += m.addedNodes.length;
+          _domMonitorChanges.removed += m.removedNodes.length;
+        } else if (m.type === "attributes" || m.type === "characterData") {
+          _domMonitorChanges.modified++;
+        }
+        if (_domMonitorChanges.details.length < maxDetails) {
+          _domMonitorChanges.details.push({
+            type: m.type,
+            target: _cssPath(m.target),
+            addedNodes: m.addedNodes ? m.addedNodes.length : 0,
+            removedNodes: m.removedNodes ? m.removedNodes.length : 0,
+            attributeName: m.attributeName || null,
+            oldValue: m.oldValue || null,
+            ts: Date.now(),
+          });
+        }
+      }
+    });
+
+    _domMonitor.observe(target, {
+      childList: true,
+      attributes: true,
+      characterData: true,
+      subtree: true,
+      attributeOldValue: true,
+      characterDataOldValue: true,
+    });
+
+    // Send periodic summaries.
+    if (_domMonitorInterval) clearInterval(_domMonitorInterval);
+    _domMonitorInterval = setInterval(function () {
+      if (
+        _domMonitorChanges.added > 0 ||
+        _domMonitorChanges.removed > 0 ||
+        _domMonitorChanges.modified > 0
+      ) {
+        scout.send("dom.changes", {
+          added: _domMonitorChanges.added,
+          removed: _domMonitorChanges.removed,
+          modified: _domMonitorChanges.modified,
+          details: _domMonitorChanges.details,
+        });
+        _domMonitorChanges = { added: 0, removed: 0, modified: 0, details: [] };
+      }
+    }, interval);
+
+    return { monitoring: true, interval: interval };
+  });
+
+  scout.on("dom.monitor.stop", function () {
+    if (_domMonitor) {
+      _domMonitor.disconnect();
+      _domMonitor = null;
+    }
+    if (_domMonitorInterval) {
+      clearInterval(_domMonitorInterval);
+      _domMonitorInterval = null;
+    }
+    return { stopped: true };
+  });
+
+  // dom.snapshot — capture serialized DOM state for comparison.
+  scout.on("dom.snapshot", function (params) {
+    params = params || {};
+    var root = params.selector
+      ? document.querySelector(params.selector)
+      : document.body;
+    if (!root) return { error: "target not found" };
+
+    function snap(node, depth) {
+      if (depth > 30) return null;
+      if (node.nodeType === Node.TEXT_NODE) {
+        var text = node.textContent.trim();
+        return text ? { t: "#text", v: text } : null;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return null;
+      var tag = node.tagName.toLowerCase();
+      if (tag === "script" || tag === "style") return null;
+      var obj = { t: tag };
+      if (node.id) obj.id = node.id;
+      if (node.className && typeof node.className === "string") obj.cls = node.className;
+      var kids = [];
+      for (var c = node.firstChild; c; c = c.nextSibling) {
+        var child = snap(c, depth + 1);
+        if (child) kids.push(child);
+      }
+      if (kids.length) obj.c = kids;
+      return obj;
+    }
+
+    return { snapshot: snap(root, 0), ts: Date.now() };
+  });
+
   // Built-in handler: dom.shadowQuery — query inside shadow DOM roots.
   scout.on("dom.shadowQuery", function (params) {
     params = params || {};

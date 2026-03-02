@@ -412,6 +412,120 @@ func (b *Bridge) DOMMarkdown(opts ...DOMOption) (string, error) {
 	return md, nil
 }
 
+// DOMChange represents a DOM change event from the monitor.
+type DOMChange struct {
+	Type          string `json:"type"`
+	Target        string `json:"target"`
+	AddedNodes    int    `json:"addedNodes"`
+	RemovedNodes  int    `json:"removedNodes"`
+	AttributeName string `json:"attributeName,omitempty"`
+	OldValue      string `json:"oldValue,omitempty"`
+	Timestamp     int64  `json:"ts"`
+}
+
+// DOMChangeSummary is the periodic summary sent by the DOM monitor.
+type DOMChangeSummary struct {
+	Added    int         `json:"added"`
+	Removed  int         `json:"removed"`
+	Modified int         `json:"modified"`
+	Details  []DOMChange `json:"details"`
+}
+
+// DOMSnapshot represents a serialized DOM state for comparison.
+type DOMSnapshot struct {
+	Tag      string        `json:"t"`
+	ID       string        `json:"id,omitempty"`
+	Class    string        `json:"cls,omitempty"`
+	Value    string        `json:"v,omitempty"`
+	Children []DOMSnapshot `json:"c,omitempty"`
+}
+
+// DOMSnapshotResult wraps a snapshot with its capture timestamp.
+type DOMSnapshotResult struct {
+	Snapshot *DOMSnapshot `json:"snapshot"`
+	TS       int64        `json:"ts"`
+}
+
+// MonitorDOMChanges starts the DOM changes monitor and returns a channel
+// of change summaries and a stop function.
+func (b *Bridge) MonitorDOMChanges(opts ...map[string]any) (<-chan DOMChangeSummary, func(), error) {
+	if b == nil {
+		return nil, nil, fmt.Errorf("scout: bridge is nil")
+	}
+
+	params := map[string]any{}
+	if len(opts) > 0 && opts[0] != nil {
+		params = opts[0]
+	}
+
+	// Start monitor in browser.
+	result, err := b.Query("dom.monitor", params)
+	if err != nil {
+		return nil, nil, fmt.Errorf("scout: bridge dom.monitor: %w", err)
+	}
+
+	var resp struct {
+		Error string `json:"error"`
+	}
+	if json.Unmarshal(result, &resp) == nil && resp.Error != "" {
+		return nil, nil, fmt.Errorf("scout: bridge dom.monitor: %s", resp.Error)
+	}
+
+	ch := make(chan DOMChangeSummary, 64)
+
+	// Listen for dom.changes events.
+	b.On("dom.changes", func(data json.RawMessage) {
+		var summary DOMChangeSummary
+		if err := json.Unmarshal(data, &summary); err != nil {
+			return
+		}
+		select {
+		case ch <- summary:
+		default:
+			// Drop if consumer is slow.
+		}
+	})
+
+	stop := func() {
+		_, _ = b.Query("dom.monitor.stop", nil)
+		b.Off("dom.changes")
+		close(ch)
+	}
+
+	return ch, stop, nil
+}
+
+// TakeDOMSnapshot captures the current DOM state for later comparison.
+func (b *Bridge) TakeDOMSnapshot(selector string) (*DOMSnapshotResult, error) {
+	if b == nil {
+		return nil, fmt.Errorf("scout: bridge is nil")
+	}
+
+	params := map[string]any{}
+	if selector != "" {
+		params["selector"] = selector
+	}
+
+	raw, err := b.Query("dom.snapshot", params)
+	if err != nil {
+		return nil, fmt.Errorf("scout: bridge dom.snapshot: %w", err)
+	}
+
+	var errResp struct {
+		Error string `json:"error"`
+	}
+	if json.Unmarshal(raw, &errResp) == nil && errResp.Error != "" {
+		return nil, fmt.Errorf("scout: bridge dom.snapshot: %s", errResp.Error)
+	}
+
+	var result DOMSnapshotResult
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil, fmt.Errorf("scout: bridge dom.snapshot unmarshal: %w", err)
+	}
+
+	return &result, nil
+}
+
 // writeBridgeExtension writes the embedded bridge extension to a temp directory
 // and returns its path. The caller should ensure cleanup.
 func writeBridgeExtension() (string, error) {
