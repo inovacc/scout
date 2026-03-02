@@ -208,27 +208,23 @@ func EnableFeature(feature string, data string) error {
 	disabled := filepath.Join(appDir, fixDisableName(feature))
 	enabled := filepath.Join(appDir, fixEnableName(feature))
 
-	// If disabled file doesn't exist, create enabled file
-	if _, err := os.Stat(disabled); os.IsNotExist(err) {
-		f, err := os.Create(enabled)
-		if err != nil {
-			return err
-		}
+	// Remove disabled file if it exists
+	_ = os.Remove(disabled)
 
-		if data != "" {
-			if _, err = f.WriteString(data); err != nil {
-				if err := f.Close(); err != nil {
-					return err
-				}
-
-				return err
-			}
-		}
-
-		return f.Close()
+	// Always create/overwrite enabled file with current data
+	f, err := os.Create(enabled)
+	if err != nil {
+		return err
 	}
 
-	return os.Rename(disabled, enabled)
+	if data != "" {
+		if _, err = f.WriteString(data); err != nil {
+			_ = f.Close()
+			return err
+		}
+	}
+
+	return f.Close()
 }
 
 func DisableFeature(feature string) error {

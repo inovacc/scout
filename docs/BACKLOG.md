@@ -24,7 +24,7 @@
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
 | ARM64 Linux browser download | P2 | Medium | Playwright host fallback for arm64; validate in CI |
-| browser.json revision manifest | P1 | Medium | Replace hardcoded `RevisionDefault` with a `browser.json` config file in launcher; supports per-platform revisions, zip names, and download hosts; `LAST_CHANGE` fallback already added |
+| browser.json revision manifest | P1 | Medium | Replace hardcoded `RevisionDefault` with a `browser.json` config file in launcher; supports per-platform revisions, zip names, and download hosts; `LAST_CHANGE` fallback already added (ROADMAP Phase 43) |
 | ~~Chrome protocol version tracking~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — .scripts/rod-upstream-diff.sh with --check/--full modes~~ |
 | ~~Headless=new migration~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0)~~ |
 

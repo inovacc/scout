@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Core library complete through Phase 40 (v0.27.0+).** All 40 phases delivered. See git history for details.
+**Core library complete through Phase 42.** All 42 phases delivered. See git history for details.
 
 ### Completed Phases (Summary)
 
@@ -42,12 +42,14 @@
 | 38 | Scraper Modes Batch 4 (Amazon, Google Maps, Salesforce, Grafana, Cloud Consoles) | Done |
 | 39 | Runbook rename, MCP SSE, test coverage, GoDoc examples | Done |
 | 40 | Multi-tab orchestration (TabGroup), MCP expanded to 33 tools, ping/curl diagnostics | Done |
+| 41 | Electron Support (runtime download, CDP connection, CLI flags) | Done |
+| 42 | Command Logging (internal/flags, internal/logger, scout logger subcommand, PersistentPreRun capture) | Done |
 
 ### Next Phase
 
 | Phase | Feature | Status |
 |-------|---------|--------|
-| 41 | Launcher `browser.json` manifest (per-platform revisions, zip names, download hosts, auto-update via LAST_CHANGE) | Planned |
+| 43 | Launcher `browser.json` manifest (per-platform revisions, zip names, download hosts, auto-update via LAST_CHANGE) | Planned |
 
 ### Remaining Work
 
