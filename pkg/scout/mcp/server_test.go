@@ -534,7 +534,7 @@ func TestServeSSEListenError(t *testing.T) {
 	defer cancel()
 
 	// Use an invalid address to trigger a listen error.
-	err := ServeSSE(ctx, logger, "invalid-addr-no-port", true, false)
+	err := ServeSSE(ctx, logger, "invalid-addr-no-port", true, false, "", 0)
 	if err == nil {
 		t.Fatal("expected error for invalid address")
 	}

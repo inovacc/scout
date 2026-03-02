@@ -28,7 +28,7 @@ var mcpCmd = &cobra.Command{
 automation capabilities as MCP tools. Communicates via stdio (JSON-RPC).
 
 Use --install to generate .mcp.json in the current directory.
-Use --install --global to register via "claude mcp add" (global Claude Code config).
+Use --install --claude to register globally via "claude mcp add".
 Use --sse to start with HTTP+SSE transport instead of stdio (default addr: localhost:8080).
 Use --addr to customize the SSE listen address.
 
@@ -48,46 +48,46 @@ Subcommands:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		install, _ := cmd.Flags().GetBool("install")
 		if install {
-			global, _ := cmd.Flags().GetBool("global")
+			claude, _ := cmd.Flags().GetBool("claude")
 
-			cfg := mcpConfig{
-				MCPServers: map[string]mcpServerConfig{
-					"scout": {
-						Command: "scout",
-						Args:    []string{"mcp"},
+			if !claude {
+				cfg := mcpConfig{
+					MCPServers: map[string]mcpServerConfig{
+						"scout": {
+							Command: "scout",
+							Args:    []string{"mcp"},
+						},
 					},
-				},
-			}
+				}
 
-			if global {
-				// Use `claude mcp add` to register globally.
-				bin, err := exec.LookPath("claude")
+				data, err := json.MarshalIndent(cfg, "", "  ")
 				if err != nil {
-					return fmt.Errorf("scout: claude CLI not found: %w", err)
+					return fmt.Errorf("scout: marshal mcp config: %w", err)
 				}
 
-				add := exec.Command(bin, "mcp", "add", "-s", "user", "scout", "--", "scout", "mcp")
-				add.Stdout = os.Stdout
-				add.Stderr = os.Stderr
-
-				if err := add.Run(); err != nil {
-					return fmt.Errorf("scout: claude mcp add: %w", err)
+				if err := os.WriteFile(".mcp.json", append(data, '\n'), 0644); err != nil {
+					return fmt.Errorf("scout: write .mcp.json: %w", err)
 				}
 
-				_, _ = fmt.Fprintln(os.Stderr, "Registered scout MCP server globally via claude mcp add")
+				_, _ = fmt.Fprintln(os.Stderr, "Wrote .mcp.json")
 				return nil
 			}
 
-			data, err := json.MarshalIndent(cfg, "", "  ")
+			// Default: register globally via claude mcp add
+			bin, err := exec.LookPath("claude")
 			if err != nil {
-				return fmt.Errorf("scout: marshal mcp config: %w", err)
+				return fmt.Errorf("scout: claude CLI not found: %w", err)
 			}
 
-			if err := os.WriteFile(".mcp.json", append(data, '\n'), 0644); err != nil {
-				return fmt.Errorf("scout: write .mcp.json: %w", err)
+			add := exec.Command(bin, "mcp", "add", "-s", "user", "scout", "--", "scout", "mcp")
+			add.Stdout = os.Stdout
+			add.Stderr = os.Stderr
+
+			if err := add.Run(); err != nil {
+				return fmt.Errorf("scout: claude mcp add: %w", err)
 			}
 
-			_, _ = fmt.Fprintln(os.Stderr, "Wrote .mcp.json")
+			_, _ = fmt.Fprintln(os.Stderr, "Registered scout MCP server globally via claude mcp add")
 			return nil
 		}
 
@@ -97,18 +97,19 @@ Subcommands:
 		useSSE, _ := cmd.Flags().GetBool("sse")
 		addr, _ := cmd.Flags().GetString("addr")
 		bin, _ := cmd.Flags().GetString("bin")
+		idleTimeout, _ := cmd.Flags().GetDuration("idle-timeout")
 
 		if useSSE {
-			return scoutmcp.ServeSSE(context.Background(), logger, addr, headless, stealth, bin)
+			return scoutmcp.ServeSSE(context.Background(), logger, addr, headless, stealth, bin, idleTimeout)
 		}
-		return scoutmcp.Serve(context.Background(), logger, headless, stealth, bin)
+		return scoutmcp.Serve(context.Background(), logger, headless, stealth, bin, idleTimeout)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(mcpCmd)
-	mcpCmd.Flags().BoolP("install", "i", false, "Generate and write .mcp.json to current directory")
-	mcpCmd.Flags().BoolP("global", "g", false, "Write to ~/.claude/mcp.json (use with --install)")
+	mcpCmd.Flags().BoolP("install", "i", false, "Write .mcp.json to current directory")
+	mcpCmd.Flags().BoolP("claude", "c", false, "Register globally via claude mcp add (use with --install)")
 	mcpCmd.Flags().Bool("sse", false, "Use HTTP+SSE transport instead of stdio")
 	mcpCmd.Flags().String("addr", "localhost:8080", "Listen address for SSE transport")
 	mcpCmd.Flags().String("bin", "", "Path to browser executable")
