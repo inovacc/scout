@@ -184,18 +184,18 @@ func (m *GmailMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 	}
 
 	if err := page.SetCookies(gmailSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("gmail: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("gmail: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("gmail: scrape: wait load: %w", err)
 	}
 
@@ -205,7 +205,7 @@ func (m *GmailMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		scout.WithHijackBodyCapture(),
 	)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("gmail: scrape: create hijacker: %w", err)
 	}
 
@@ -215,7 +215,7 @@ func (m *GmailMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 	go func() {
 		defer close(results)
 		defer hijacker.Stop()
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()

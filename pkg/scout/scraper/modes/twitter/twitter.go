@@ -195,23 +195,23 @@ func (m *TwitterMode) Scrape(ctx context.Context, session scraper.SessionData, o
 
 	page, err := browser.NewPage(twitterSession.URL)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("twitter: scrape: new page: %w", err)
 	}
 
 	if err := page.SetCookies(twitterSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("twitter: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("twitter: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("twitter: scrape: wait load: %w", err)
 	}
 
@@ -222,7 +222,7 @@ func (m *TwitterMode) Scrape(ctx context.Context, session scraper.SessionData, o
 		scout.WithHijackBodyCapture(),
 	)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("twitter: scrape: create hijacker: %w", err)
 	}
 
@@ -232,7 +232,7 @@ func (m *TwitterMode) Scrape(ctx context.Context, session scraper.SessionData, o
 	go func() {
 		defer close(results)
 		defer hijacker.Stop()
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()

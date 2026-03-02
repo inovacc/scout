@@ -160,7 +160,7 @@ func (m *AmazonMode) Scrape(ctx context.Context, session scraper.SessionData, op
 
 	go func() {
 		defer close(results)
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
