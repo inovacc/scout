@@ -134,8 +134,8 @@ var githubIssuesCmd = &cobra.Command{
 			opts = append(opts, scout.WithGitHubState(state))
 		}
 
-		if max, _ := cmd.Flags().GetInt("max"); max > 0 {
-			opts = append(opts, scout.WithGitHubMaxItems(max))
+		if maxItems, _ := cmd.Flags().GetInt("max"); maxItems > 0 {
+			opts = append(opts, scout.WithGitHubMaxItems(maxItems))
 		}
 
 		if body, _ := cmd.Flags().GetBool("body"); body {
@@ -199,8 +199,8 @@ var githubPRsCmd = &cobra.Command{
 			opts = append(opts, scout.WithGitHubState(state))
 		}
 
-		if max, _ := cmd.Flags().GetInt("max"); max > 0 {
-			opts = append(opts, scout.WithGitHubMaxItems(max))
+		if maxItems, _ := cmd.Flags().GetInt("max"); maxItems > 0 {
+			opts = append(opts, scout.WithGitHubMaxItems(maxItems))
 		}
 
 		if body, _ := cmd.Flags().GetBool("body"); body {
@@ -309,8 +309,8 @@ var githubReleasesCmd = &cobra.Command{
 		defer func() { _ = browser.Close() }()
 
 		var opts []scout.GitHubOption
-		if max, _ := cmd.Flags().GetInt("max"); max > 0 {
-			opts = append(opts, scout.WithGitHubMaxItems(max))
+		if maxItems, _ := cmd.Flags().GetInt("max"); maxItems > 0 {
+			opts = append(opts, scout.WithGitHubMaxItems(maxItems))
 		}
 
 		releases, err := browser.GitHubReleases(owner, name, opts...)
@@ -363,8 +363,8 @@ var githubCodeCmd = &cobra.Command{
 			opts = append(opts, scout.WithGitHubRepo(owner, name))
 		}
 
-		if max, _ := cmd.Flags().GetInt("max"); max > 0 {
-			opts = append(opts, scout.WithGitHubMaxItems(max))
+		if maxItems, _ := cmd.Flags().GetInt("max"); maxItems > 0 {
+			opts = append(opts, scout.WithGitHubMaxItems(maxItems))
 		}
 
 		if pages, _ := cmd.Flags().GetInt("pages"); pages > 1 {

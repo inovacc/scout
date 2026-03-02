@@ -435,11 +435,12 @@ func parseSearchResults(body string, targetSet map[string]struct{}) []scraper.Re
 						PlaylistRenderer *playlistRenderer `json:"playlistRenderer"`
 					}
 					if json.Unmarshal(content, &videoData) == nil {
-						if videoData.VideoRenderer != nil {
+						switch {
+						case videoData.VideoRenderer != nil:
 							results = append(results, videoRendererToResult(videoData.VideoRenderer))
-						} else if videoData.ChannelRenderer != nil {
+						case videoData.ChannelRenderer != nil:
 							results = append(results, channelRendererToResult(videoData.ChannelRenderer))
-						} else if videoData.PlaylistRenderer != nil {
+						case videoData.PlaylistRenderer != nil:
 							results = append(results, playlistRendererToResult(videoData.PlaylistRenderer))
 						}
 					}

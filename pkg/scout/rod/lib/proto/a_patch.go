@@ -131,7 +131,7 @@ type Shape []DOMQuad
 // Box returns the smallest leveled rectangle that can cover the whole shape.
 func (qs Shape) Box() (box *DOMRect) {
 	if len(qs) == 0 {
-		return
+		return box
 	}
 
 	left := qs[0][0]
@@ -161,7 +161,7 @@ func (qs Shape) Box() (box *DOMRect) {
 
 	box = &DOMRect{left, top, right - left, bottom - top}
 
-	return
+	return box
 }
 
 // MoveTo X and Y to x and y.
@@ -172,7 +172,7 @@ func (p *InputTouchPoint) MoveTo(x, y float64) {
 
 // CookiesToParams converts Cookies list to NetworkCookieParam list.
 func CookiesToParams(cookies []*NetworkCookie) []*NetworkCookieParam {
-	list := []*NetworkCookieParam{}
+	list := make([]*NetworkCookieParam, 0, len(cookies))
 	for _, c := range cookies {
 		list = append(list, &NetworkCookieParam{
 			Name:     c.Name,

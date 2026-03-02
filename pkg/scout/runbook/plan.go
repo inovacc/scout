@@ -179,7 +179,8 @@ func planAutomate(browser *scout.Browser, r *Runbook, plan *ExecutionPlan) (*Exe
 			Status:   PlanOK,
 		}
 
-		if step.Selector != "" {
+		switch {
+		case step.Selector != "":
 			css := selectorToCSS(step.Selector)
 			if css != "" {
 				has, _ := page.Has(css)
@@ -194,9 +195,9 @@ func planAutomate(browser *scout.Browser, r *Runbook, plan *ExecutionPlan) (*Exe
 			// Score the selector.
 			selCheck := checkSelector(page, fmt.Sprintf("step[%d]:%s", i, step.Action), step.Selector)
 			plan.Selectors = append(plan.Selectors, selCheck)
-		} else if step.Action == "navigate" {
+		case step.Action == "navigate":
 			sc.Status = PlanOK // navigate steps don't need selectors
-		} else if step.Action == "eval" || step.Action == "screenshot" || step.Action == "key" {
+		case step.Action == "eval" || step.Action == "screenshot" || step.Action == "key":
 			sc.Status = PlanSkipped // these don't require selectors
 		}
 
@@ -276,7 +277,8 @@ func (p *ExecutionPlan) String() string {
 
 		for _, s := range p.Steps {
 			icon := "+"
-			switch s.Status {
+
+			switch s.Status { //nolint:exhaustive
 			case PlanMissing:
 				icon = "-"
 			case PlanSkipped:

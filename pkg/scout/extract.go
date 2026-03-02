@@ -398,7 +398,7 @@ func setField(page *rod.Page, scope *rod.Element, fv reflect.Value, ft reflect.T
 		// Nested struct: selector scopes a container element
 		el, err := findElement(page, scope, selector)
 		if err != nil {
-			return nil //nolint:nilerr // element not found, leave struct zero-valued
+			return nil
 		}
 
 		return extractStruct(page, el, fv)
@@ -427,7 +427,7 @@ func getTextOrAttr(el *rod.Element, attr string) (string, error) {
 func setStringField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
-		return nil //nolint:nilerr // not found, leave as zero value
+		return nil
 	}
 
 	val, err := getTextOrAttr(el, attr)
@@ -443,7 +443,7 @@ func setStringField(page *rod.Page, scope *rod.Element, fv reflect.Value, select
 func setIntField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
-		return nil //nolint:nilerr // not found, leave as zero value
+		return nil
 	}
 
 	val, err := getTextOrAttr(el, attr)
@@ -462,7 +462,7 @@ func setIntField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector,
 func setFloatField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
-		return nil //nolint:nilerr // not found, leave as zero value
+		return nil
 	}
 
 	val, err := getTextOrAttr(el, attr)
@@ -481,7 +481,7 @@ func setFloatField(page *rod.Page, scope *rod.Element, fv reflect.Value, selecto
 func setBoolField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
-		return nil //nolint:nilerr // not found, leave as zero value
+		return nil
 	}
 
 	val, err := getTextOrAttr(el, attr)
@@ -502,7 +502,7 @@ func setSliceField(page *rod.Page, scope *rod.Element, fv reflect.Value, ft refl
 		// []string: collect text/attr from all matches
 		els, err := findElements(page, scope, selector)
 		if err != nil {
-			return nil //nolint:nilerr // not found, leave as zero value
+			return nil
 		}
 
 		result := reflect.MakeSlice(ft, 0, len(els))
@@ -524,7 +524,7 @@ func setSliceField(page *rod.Page, scope *rod.Element, fv reflect.Value, ft refl
 		// []struct: one struct per matching element
 		els, err := findElements(page, scope, selector)
 		if err != nil {
-			return nil //nolint:nilerr // not found, leave as zero value
+			return nil
 		}
 
 		result := reflect.MakeSlice(ft, len(els), len(els))

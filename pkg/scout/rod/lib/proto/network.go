@@ -1809,7 +1809,8 @@ func (m NetworkClearBrowserCookies) Call(c Client) error {
 // modifications, or blocks it, or completes it with the provided response bytes. If a network
 // fetch occurs as a result which encounters a redirect an additional Network.requestIntercepted
 // event will be sent with the same InterceptionId.
-// Deprecated, use Fetch.continueRequest, Fetch.fulfillRequest and Fetch.failRequest instead.
+//
+// Deprecated: use Fetch.continueRequest, Fetch.fulfillRequest and Fetch.failRequest instead.
 type NetworkContinueInterceptedRequest struct {
 	// InterceptionID ...
 	InterceptionID NetworkInterceptionID `json:"interceptionId"`
@@ -1948,7 +1949,8 @@ func (m NetworkEnable) Call(c Client) error {
 
 // NetworkGetAllCookies (deprecated) Returns all browser cookies. Depending on the backend support, will return detailed cookie
 // information in the `cookies` field.
-// Deprecated. Use Storage.getCookies instead.
+//
+// Deprecated: use Storage.getCookies instead.
 type NetworkGetAllCookies struct{}
 
 // ProtoReq name.
@@ -2302,7 +2304,8 @@ func (m NetworkSetAttachDebugStack) Call(c Client) error {
 }
 
 // NetworkSetRequestInterception (deprecated) (experimental) Sets the requests to intercept that match the provided patterns and optionally resource types.
-// Deprecated, please use Fetch.enable instead.
+//
+// Deprecated: use Fetch.enable instead.
 type NetworkSetRequestInterception struct {
 	// Patterns Requests matching any of these patterns will be forwarded and wait for the corresponding
 	// continueInterceptedRequest call.
@@ -2522,7 +2525,8 @@ func (evt NetworkLoadingFinished) ProtoEvent() string {
 
 // NetworkRequestIntercepted (deprecated) (experimental) Details of an intercepted HTTP request, which must be either allowed, blocked, modified or
 // mocked.
-// Deprecated, use Fetch.requestPaused instead.
+//
+// Deprecated: use Fetch.requestPaused instead.
 type NetworkRequestIntercepted struct {
 	// InterceptionID Each request the page makes will have a unique id, however if any redirects are encountered
 	// while processing that fetch, they will be reported with the same id as the original fetch.

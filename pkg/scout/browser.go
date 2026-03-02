@@ -58,7 +58,7 @@ type Browser struct {
 }
 
 // New creates and connects a new headless browser with the given options.
-func New(opts ...Option) (*Browser, error) {
+func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 	// Clean up orphaned browsers on startup.
 	_, _ = CleanOrphans()
 
@@ -100,7 +100,8 @@ func New(opts ...Option) (*Browser, error) {
 		l *launcher.Launcher
 	)
 
-	if o.electronCDP != "" {
+	switch {
+	case o.electronCDP != "":
 		// Connect to running Electron app via CDP.
 		var resolveErr error
 
@@ -108,7 +109,7 @@ func New(opts ...Option) (*Browser, error) {
 		if resolveErr != nil {
 			return nil, fmt.Errorf("scout: resolve electron CDP: %w", resolveErr)
 		}
-	} else if o.electronApp != "" {
+	case o.electronApp != "":
 		// Launch Electron app with CDP debugging.
 		var err error
 
@@ -116,7 +117,7 @@ func New(opts ...Option) (*Browser, error) {
 		if err != nil {
 			return nil, err
 		}
-	} else if o.remoteCDP != "" {
+	case o.remoteCDP != "":
 		// Remote CDP endpoint — skip launcher entirely.
 		// If URL already contains a full path (e.g., /devtools/browser/UUID), use as-is.
 		// Otherwise resolve via /json/version to get the full WebSocket URL.
@@ -130,7 +131,7 @@ func New(opts ...Option) (*Browser, error) {
 				u = resolved
 			}
 		}
-	} else {
+	default:
 		var err error
 
 		u, l, err = launchLocal(o)
@@ -290,14 +291,15 @@ func launchLocal(o *options) (string, *launcher.Launcher, error) {
 
 	l := launcher.New().HeadlessNew(o.headless)
 
-	if o.execPath != "" {
+	switch {
+	case o.execPath != "":
 		l = l.Bin(o.execPath)
-	} else if o.autoDetect && o.browserType == "" {
+	case o.autoDetect && o.browserType == "":
 		if path, _, err := bestDetectedBrowser(); err == nil && path != "" {
 			l = l.Bin(path)
 		}
 		// If detection fails, fall through to rod auto-detect.
-	} else if o.browserType != "" && o.browserType != BrowserChrome {
+	case o.browserType != "" && o.browserType != BrowserChrome:
 		binPath, err := resolveBrowser(context.Background(), o.browserType)
 		if err != nil {
 			return "", nil, fmt.Errorf("scout: resolve %s browser: %w", o.browserType, err)
@@ -388,7 +390,7 @@ func launchLocal(o *options) (string, *launcher.Launcher, error) {
 
 // NewPage creates a new browser tab and navigates to the given URL.
 // If stealth mode is enabled, the page is created with anti-detection measures.
-func (b *Browser) NewPage(url string) (*Page, error) {
+func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 	if b == nil || b.browser == nil {
 		return nil, fmt.Errorf("scout: browser is nil")
 	}
@@ -429,7 +431,8 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 	hasInject := len(b.opts.injectScripts) > 0
 	hasFP := b.opts.fingerprint != nil
 
-	if b.opts.stealth {
+	switch {
+	case b.opts.stealth:
 		rodPage, err = stealth.Page(b.browser)
 		if err != nil {
 			return nil, fmt.Errorf("scout: create stealth page: %w", err)
@@ -452,7 +455,7 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 				return nil, fmt.Errorf("scout: navigate: %w", err)
 			}
 		}
-	} else if hasInject || hasFP {
+	case hasInject || hasFP:
 		// Create page blank, inject scripts, then navigate so scripts run before page JS.
 		rodPage, err = b.browser.Page(proto.TargetCreateTarget{})
 		if err != nil {
@@ -476,7 +479,7 @@ func (b *Browser) NewPage(url string) (*Page, error) {
 				return nil, fmt.Errorf("scout: navigate: %w", err)
 			}
 		}
-	} else {
+	default:
 		rodPage, err = b.browser.Page(proto.TargetCreateTarget{URL: url})
 		if err != nil {
 			return nil, fmt.Errorf("scout: create page: %w", err)

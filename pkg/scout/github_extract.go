@@ -59,7 +59,7 @@ func githubExtractDefaults() *githubExtractOpts {
 	}
 }
 
-// WithGitHubBody returns an option to include issue/PR/release body text.
+// WithGitHubExtractBody returns an option to include issue/PR/release body text.
 func WithGitHubExtractBody() GitHubExtractOption {
 	return func(o *githubExtractOpts) { o.includeBody = true }
 }

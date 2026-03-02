@@ -42,7 +42,7 @@ func registerContentTools(server *mcp.Server, state *mcpState) {
 			opts = append(opts, scout.WithIncludeLinks(*args.IncludeLinks))
 		}
 
-		md, err := page.Markdown(opts...)
+		md, err := page.Markdown(opts...) //nolint:contextcheck
 		if err != nil {
 			return errResult(err.Error())
 		}
@@ -71,7 +71,7 @@ func registerContentTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
-		table, err := page.ExtractTable(args.Selector)
+		table, err := page.ExtractTable(args.Selector) //nolint:contextcheck
 		if err != nil {
 			return errResult(err.Error())
 		}
@@ -89,7 +89,7 @@ func registerContentTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
-		meta, err := page.ExtractMeta()
+		meta, err := page.ExtractMeta() //nolint:contextcheck
 		if err != nil {
 			return errResult(err.Error())
 		}

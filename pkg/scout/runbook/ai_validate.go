@@ -62,7 +62,7 @@ func ValidateWithLLM(provider scout.LLMProvider, r *Runbook, sampleItems []map[s
 			items = items[:5]
 		}
 
-		sampleJSON, _ := json.MarshalIndent(items, "", "  ")
+		sampleJSON, _ := json.MarshalIndent(items, "", "  ") //nolint:errchkjson
 		userParts = append(userParts, fmt.Sprintf("\n\nSample extracted items (%d shown):\n%s", len(items), string(sampleJSON)))
 	}
 

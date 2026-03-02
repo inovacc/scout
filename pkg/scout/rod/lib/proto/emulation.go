@@ -417,7 +417,8 @@ type EmulationSetDeviceMetricsOverride struct {
 
 	// DevicePosture (deprecated) (experimental) (optional) If set, the posture of a foldable device. If not set the posture is set
 	// to continuous.
-	// Deprecated, use Emulation.setDevicePostureOverride.
+	//
+	// Deprecated: use Emulation.setDevicePostureOverride.
 	DevicePosture *EmulationDevicePosture `json:"devicePosture,omitempty"`
 }
 

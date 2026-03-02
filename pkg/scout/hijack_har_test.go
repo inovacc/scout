@@ -2,6 +2,7 @@ package scout
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 	"time"
 )

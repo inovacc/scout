@@ -756,7 +756,7 @@ func (s *ScoutServer) InjectJS(_ context.Context, req *pb.InjectJSRequest) (*pb.
 
 		rendered, err := scout.RenderTemplate(tmpl, data)
 		if err != nil {
-			return &pb.InjectJSResponse{Error: err.Error()}, nil
+			return &pb.InjectJSResponse{Error: err.Error()}, nil //nolint:nilerr // error conveyed in response field
 		}
 
 		script = rendered

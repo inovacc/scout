@@ -485,6 +485,7 @@ func (m OverlayHideHighlight) Call(c Client) error {
 }
 
 // OverlayHighlightFrame (deprecated) Highlights owner element of the frame with given id.
+//
 // Deprecated: Doesn't work reliably and cannot be fixed due to process
 // separation (the owner node might be in a different process). Determine
 // the owner node in the client and use highlightNode.

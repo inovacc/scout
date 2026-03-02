@@ -174,7 +174,7 @@ func (p *Page) DetectFramework() (*FrameworkInfo, error) {
 	}
 
 	if len(frameworks) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // no frameworks detected is not an error
 	}
 
 	// Prefer meta-frameworks over base frameworks

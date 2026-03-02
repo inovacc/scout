@@ -206,10 +206,8 @@ func (ra *ResearchAgent) DeepResearch(ctx context.Context, query string) (*Resea
 	// Follow-up iterations
 	followUps := initial.FollowUpQuestions
 	for depth := 1; depth < ra.opts.maxDepth && len(followUps) > 0; depth++ {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			break
-		default:
 		}
 
 		// Research each follow-up (limit to 2 per depth to stay within time budget)
@@ -217,11 +215,9 @@ func (ra *ResearchAgent) DeepResearch(ctx context.Context, query string) (*Resea
 
 		var nextFollowUps []string
 
-		for i := 0; i < limit; i++ {
-			select {
-			case <-ctx.Done():
+		for i := range limit {
+			if ctx.Err() != nil {
 				break
-			default:
 			}
 
 			sub, subErr := ra.Research(ctx, followUps[i])
@@ -230,7 +226,7 @@ func (ra *ResearchAgent) DeepResearch(ctx context.Context, query string) (*Resea
 			}
 
 			allSummaries = append(allSummaries, sub.Summary)
-			allSources = append(allSources, sub.Sources...)
+			allSources = append(allSources, sub.Sources...) //nolint:makezero
 			nextFollowUps = append(nextFollowUps, sub.FollowUpQuestions...)
 		}
 

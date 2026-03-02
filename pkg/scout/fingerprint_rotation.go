@@ -59,7 +59,7 @@ func (r *fingerprintRotator) forPage(domain string) *Fingerprint {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	switch r.config.Strategy {
+	switch r.config.Strategy { //nolint:exhaustive
 	case FingerprintRotatePerPage:
 		r.current = r.generate()
 		return r.current

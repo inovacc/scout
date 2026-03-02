@@ -82,7 +82,7 @@ func lookupElectronCDP(endpoint string) (string, error) {
 
 	resolved, err := launcher.ResolveURL(endpoint)
 	if err != nil {
-		return endpoint, nil //nolint:nilerr // fall back to raw endpoint
+		return endpoint, nil
 	}
 
 	return resolved, nil

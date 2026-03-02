@@ -36,7 +36,7 @@ func defaultUserDataDirPrefix() string {
 type Launcher struct {
 	Flags map[flags.Flag][]string `json:"flags"`
 
-	ctx       context.Context
+	ctx       context.Context //nolint:containedctx // internalized rod pattern
 	ctxCancel func()
 
 	logger io.Writer

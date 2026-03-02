@@ -95,7 +95,7 @@ setTimeout(() => {
 var (
 	sharedBrowser     *Browser
 	sharedBrowserOnce sync.Once
-	sharedBrowserErr  error
+	errSharedBrowser  error
 )
 
 // newTestBrowser returns a shared browser instance for tests.
@@ -104,15 +104,15 @@ func newTestBrowser(t *testing.T) *Browser {
 	t.Helper()
 
 	sharedBrowserOnce.Do(func() {
-		sharedBrowser, sharedBrowserErr = New(
+		sharedBrowser, errSharedBrowser = New(
 			WithHeadless(true),
 			WithNoSandbox(),
 			WithTimeout(30e9), // 30s
 		)
 	})
 
-	if sharedBrowserErr != nil {
-		t.Skipf("skipping: browser unavailable: %v", sharedBrowserErr)
+	if errSharedBrowser != nil {
+		t.Skipf("skipping: browser unavailable: %v", errSharedBrowser)
 	}
 
 	return sharedBrowser

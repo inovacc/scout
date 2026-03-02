@@ -224,7 +224,7 @@ var profileShowCmd = &cobra.Command{
 			}
 		}
 
-		if prof.Headers != nil && len(prof.Headers) > 0 {
+		if len(prof.Headers) > 0 {
 			_, _ = fmt.Fprintf(w, "Headers:        %d\n", len(prof.Headers))
 			for k, v := range prof.Headers {
 				_, _ = fmt.Fprintf(w, "  %s: %s\n", k, truncate(v, 60))

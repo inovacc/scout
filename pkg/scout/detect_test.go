@@ -3,6 +3,7 @@ package scout
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"testing"
 )
 
@@ -653,14 +654,7 @@ func TestDetectTechStack_ReactVite(t *testing.T) {
 	}
 
 	// Check analytics includes Google Analytics
-	foundGA := false
-
-	for _, a := range stack.Analytics {
-		if a == "Google Analytics" {
-			foundGA = true
-			break
-		}
-	}
+	foundGA := slices.Contains(stack.Analytics, "Google Analytics")
 
 	if !foundGA {
 		t.Errorf("expected Google Analytics in analytics, got %v", stack.Analytics)

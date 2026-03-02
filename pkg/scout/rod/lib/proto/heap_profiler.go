@@ -262,7 +262,8 @@ type HeapProfilerTakeHeapSnapshot struct {
 	ReportProgress bool `json:"reportProgress,omitempty"`
 
 	// TreatGlobalObjectsAsRoots (deprecated) (optional) If true, a raw snapshot without artificial roots will be generated.
-	// Deprecated in favor of `exposeInternals`.
+	//
+	// Deprecated: use `exposeInternals` instead.
 	TreatGlobalObjectsAsRoots bool `json:"treatGlobalObjectsAsRoots,omitempty"`
 
 	// CaptureNumericValue (optional) If true, numerical values are included in the snapshot

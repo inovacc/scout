@@ -193,6 +193,7 @@ func rrfMerge(engineResults [][]WebSearchItem) []WebSearchItem {
 func buildSearchQuery(query string, o *webSearchOptions) string {
 	var q strings.Builder
 	q.WriteString(query)
+
 	if o.domain != "" {
 		q.WriteString(" site:" + o.domain)
 	}
@@ -237,11 +238,11 @@ func (b *Browser) WebSearch(query string, opts ...WebSearchOption) (*WebSearchRe
 	}
 
 	// Search each engine sequentially and collect results
-	var engineResults [][]WebSearchItem
+	engineResults := make([][]WebSearchItem, 0, len(engines))
 
 	for _, eng := range engines {
-		opts := make([]SearchOption, len(baseSearchOpts))
-		copy(opts, baseSearchOpts)
+		opts := make([]SearchOption, 0, len(baseSearchOpts)+1)
+		opts = append(opts, baseSearchOpts...)
 		opts = append(opts, WithSearchEngine(eng))
 
 		results, err := b.SearchAll(finalQuery, opts...)
@@ -294,7 +295,7 @@ func (b *Browser) WebSearch(query string, opts ...WebSearchOption) (*WebSearchRe
 
 		sem := make(chan struct{}, concurrency)
 
-		for i := 0; i < fetchCount; i++ {
+		for i := range fetchCount {
 			wg.Add(1)
 
 			go func(idx int) {

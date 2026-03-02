@@ -148,7 +148,7 @@ func TestModeScrape_EmitsResults(t *testing.T) {
 		t.Fatalf("Scrape: %v", err)
 	}
 
-	var results []Result
+	results := make([]Result, 0, 3)
 	for r := range ch {
 		results = append(results, r)
 	}

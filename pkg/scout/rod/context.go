@@ -10,7 +10,7 @@ import (
 type (
 	timeoutContextKey struct{}
 	timeoutContextVal struct {
-		parent context.Context
+		parent context.Context //nolint:containedctx // internalized rod pattern
 		cancel context.CancelFunc
 	}
 )

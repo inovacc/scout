@@ -814,7 +814,8 @@ func TestBridgeWithoutExtension(t *testing.T) {
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
 	}
-	defer b.Close()
+
+	defer func() { _ = b.Close() }()
 
 	ts := newTestServer()
 	defer ts.Close()

@@ -12,9 +12,7 @@ func TestBrowserCloseConcurrent(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 10 {
-
 		wg.Go(func() {
-
 			_ = b.Close()
 		})
 	}

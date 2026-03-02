@@ -121,7 +121,7 @@ func GenerateWithAI(browser *scout.Browser, url string, opts ...AIRunbookOption)
 		return generateFallback(browser, url)
 	}
 
-	analysisJSON, _ := json.MarshalIndent(analysis, "", "  ")
+	analysisJSON, _ := json.MarshalIndent(analysis, "", "  ") //nolint:errchkjson
 
 	// Build prompts
 	systemPrompt := runbookSchemaPrompt

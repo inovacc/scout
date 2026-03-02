@@ -25,7 +25,7 @@ func mockBridgeClient(t *testing.T, addr, pageID string, handler func(BridgeMess
 			}
 
 			result := handler(msg)
-			resultRaw, _ := json.Marshal(result)
+			resultRaw, _ := json.Marshal(result) //nolint:errchkjson
 
 			resp := BridgeMessage{
 				ID:     msg.ID,

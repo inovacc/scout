@@ -402,10 +402,10 @@ func (s *BridgeServer) handleWS(conn *websocket.Conn) {
 					if err != nil {
 						resp.Error = err.Error()
 					} else {
-						resp.Result, _ = json.Marshal(result)
+						resp.Result, _ = json.Marshal(result) //nolint:errchkjson
 					}
 
-					data, _ := json.Marshal(resp)
+					data, _ := json.Marshal(resp) //nolint:errchkjson
 					select {
 					case c.send <- data:
 					default:

@@ -3145,7 +3145,8 @@ func (evt PageFrameStoppedLoading) ProtoEvent() string {
 }
 
 // PageDownloadWillBegin (deprecated) (experimental) Fired when page is about to start a download.
-// Deprecated. Use Browser.downloadWillBegin instead.
+//
+// Deprecated: use Browser.downloadWillBegin instead.
 type PageDownloadWillBegin struct {
 	// FrameID Id of the frame that caused download to begin.
 	FrameID PageFrameID `json:"frameId"`
@@ -3180,7 +3181,8 @@ const (
 )
 
 // PageDownloadProgress (deprecated) (experimental) Fired when download makes progress. Last call has |done| == true.
-// Deprecated. Use Browser.downloadProgress instead.
+//
+// Deprecated: use Browser.downloadProgress instead.
 type PageDownloadProgress struct {
 	// GUID Global unique identifier of the download.
 	GUID string `json:"guid"`

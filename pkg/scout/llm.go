@@ -131,6 +131,7 @@ func joinStrings(parts []string, sep string) string {
 
 	var result strings.Builder
 	result.WriteString(parts[0])
+
 	for _, p := range parts[1:] {
 		result.WriteString(sep + p)
 	}

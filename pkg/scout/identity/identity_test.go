@@ -152,7 +152,7 @@ func TestLuhnRoundTrip(t *testing.T) {
 	input := "MFZWI3DBONSGYZLOOQQGC3LFOQQHG2DFEBZGK4TTNFWHIZLTOQ"
 	if len(input) != 52 {
 		// pad to 52
-		input = input + strings.Repeat("A", 52-len(input))
+		input += strings.Repeat("A", 52-len(input))
 	}
 
 	luhnified, err := luhnify(input)

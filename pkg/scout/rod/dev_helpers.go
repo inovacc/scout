@@ -85,7 +85,7 @@ func (b *Browser) ServeMonitor(host string) string {
 	mux.HandleFunc("/screenshot/", func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
 		target := proto.TargetTargetID(id)
-		p := b.MustPageFromTargetID(target)
+		p := b.MustPageFromTargetID(target) //nolint:contextcheck // internalized rod pattern
 
 		w.Header().Add("Content-Type", "image/png;")
 		utils.E(w.Write(p.MustScreenshot())) //nolint: contextcheck

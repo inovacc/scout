@@ -1,6 +1,3 @@
-// Package auth provides a generic authentication framework for web scrapers.
-// It extracts the auth-then-scrape pattern into reusable components that any
-// scraper mode (Slack, Teams, Discord, etc.) can implement.
 package auth
 
 import (

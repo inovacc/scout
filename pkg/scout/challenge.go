@@ -157,7 +157,7 @@ func (p *Page) DetectChallenge() (*ChallengeInfo, error) {
 	}
 
 	if len(challenges) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // no challenges detected is not an error
 	}
 
 	sort.Slice(challenges, func(i, j int) bool {

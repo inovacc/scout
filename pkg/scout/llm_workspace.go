@@ -60,10 +60,10 @@ type LLMJob struct {
 	// Timing
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
-	ExtractStarted  time.Time `json:"extract_started,omitempty"`
-	ExtractFinished time.Time `json:"extract_finished,omitempty"`
-	ReviewStarted   time.Time `json:"review_started,omitempty"`
-	ReviewFinished  time.Time `json:"review_finished,omitempty"`
+	ExtractStarted  time.Time `json:"extract_started,omitempty"`  //nolint:modernize // omitzero may break JSON compat
+	ExtractFinished time.Time `json:"extract_finished,omitempty"` //nolint:modernize // omitzero may break JSON compat
+	ReviewStarted   time.Time `json:"review_started,omitempty"`   //nolint:modernize // omitzero may break JSON compat
+	ReviewFinished  time.Time `json:"review_finished,omitempty"`  //nolint:modernize // omitzero may break JSON compat
 
 	// Metadata
 	Metadata map[string]string `json:"metadata,omitempty"`

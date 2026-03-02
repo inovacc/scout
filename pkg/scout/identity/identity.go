@@ -1,7 +1,3 @@
-// Package identity provides Syncthing-style device identity for mTLS authentication.
-// Each scout instance has an ECDSA P-256 keypair and self-signed certificate.
-// Device IDs are derived from the SHA-256 hash of the certificate's DER encoding,
-// formatted as base32 with Luhn check digits.
 package identity
 
 import (

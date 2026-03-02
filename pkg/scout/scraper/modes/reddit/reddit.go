@@ -190,7 +190,7 @@ func (m *RedditMode) Scrape(ctx context.Context, session scraper.SessionData, op
 
 	go func() {
 		defer close(results)
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		m.scrapeTargets(ctx, browser, authSession, opts, results)
 	}()
@@ -240,7 +240,7 @@ func (m *RedditMode) scrapeSubreddit(ctx context.Context, browser *scout.Browser
 	if err != nil {
 		return 0, fmt.Errorf("reddit: new page: %w", err)
 	}
-	defer page.Close()
+	defer func() { _ = page.Close() }()
 
 	// Restore session cookies if available.
 	if session != nil && len(session.Cookies) > 0 {

@@ -20,9 +20,7 @@ func TestNewDefaults(t *testing.T) {
 		t.Fatalf("expected headless=new by default, got %q", got)
 	}
 
-	if l.Get(flags.Bin) == "" {
-		// Bin defaults to empty string from defaults.Bin
-	}
+	// Bin defaults to empty string from defaults.Bin (no assertion needed).
 
 	if !l.Has(flags.UserDataDir) {
 		t.Fatal("expected user-data-dir set by default")

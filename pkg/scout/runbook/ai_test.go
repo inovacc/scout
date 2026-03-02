@@ -60,7 +60,7 @@ func TestRefineSelectors_Mock(t *testing.T) {
 		"title": "[data-testid=\"title\"]",
 		"price": "[data-testid=\"price\"]",
 	}
-	refinedJSON, _ := json.Marshal(refined)
+	refinedJSON, _ := json.Marshal(refined) //nolint:errchkjson
 
 	provider := &mockLLMProvider{
 		name:      "mock",

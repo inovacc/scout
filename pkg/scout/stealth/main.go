@@ -1,5 +1,3 @@
-// Package stealth is a package for anti-bot-detection with rod
-// Generate assets: task generate:stealth (requires Node.js/npx)
 package stealth
 
 import (

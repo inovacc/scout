@@ -223,7 +223,7 @@ done:
 	var hasRequest, hasResponse bool
 
 	for _, ev := range events {
-		switch ev.Type {
+		switch ev.Type { //nolint:exhaustive
 		case HijackEventRequest:
 			hasRequest = true
 
@@ -359,7 +359,7 @@ drain:
 	var hasWSOpened, hasWSSent, hasWSReceived, hasWSClosed bool
 
 	for _, ev := range events {
-		switch ev.Type {
+		switch ev.Type { //nolint:exhaustive
 		case HijackWSOpened:
 			hasWSOpened = true
 		case HijackWSSent:

@@ -64,11 +64,11 @@ func (r *vpnRotator) next() string {
 // Returns the new connection or nil if no rotation happened.
 func (r *vpnRotator) rotateIfNeeded(ctx context.Context) (*VPNConnection, error) {
 	if r == nil || r.provider == nil {
-		return nil, nil
+		return nil, nil //nolint:nilnil // no rotation needed when provider is nil
 	}
 
 	if !r.shouldRotate() {
-		return nil, nil
+		return nil, nil //nolint:nilnil
 	}
 
 	country := r.next()

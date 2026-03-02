@@ -132,7 +132,7 @@ type RuntimeDeepSerializedValue struct {
 	Type RuntimeDeepSerializedValueType `json:"type"`
 
 	// Value (optional) ...
-	Value gson.JSON `json:"value,omitempty"`
+	Value gson.JSON `json:"value,omitempty"` //nolint:modernize // internalized rod generated code // internalized rod generated code
 
 	// ObjectID (optional) ...
 	ObjectID string `json:"objectId,omitempty"`
@@ -255,7 +255,7 @@ type RuntimeRemoteObject struct {
 	ClassName string `json:"className,omitempty"`
 
 	// Value (optional) Remote object value in case of primitive values or JSON values (if it was requested).
-	Value gson.JSON `json:"value,omitempty"`
+	Value gson.JSON `json:"value,omitempty"` //nolint:modernize // internalized rod generated code // internalized rod generated code
 
 	// UnserializableValue (optional) Primitive value which can not be JSON-stringified does not have `value`, but gets this
 	// property.
@@ -589,7 +589,7 @@ type RuntimePrivatePropertyDescriptor struct {
 // unserializable primitive value or neither of (for undefined) them should be specified.
 type RuntimeCallArgument struct {
 	// Value (optional) Primitive value or serializable javascript object.
-	Value gson.JSON `json:"value,omitempty"`
+	Value gson.JSON `json:"value,omitempty"` //nolint:modernize // internalized rod generated code
 
 	// UnserializableValue (optional) Primitive value which can not be JSON-stringified.
 	UnserializableValue RuntimeUnserializableValue `json:"unserializableValue,omitempty"`
@@ -1261,7 +1261,8 @@ type RuntimeAddBinding struct {
 	// execution context. If omitted and `executionContextName` is not set,
 	// the binding is exposed to all execution contexts of the target.
 	// This parameter is mutually exclusive with `executionContextName`.
-	// Deprecated in favor of `executionContextName` due to an unclear use case
+	//
+	// Deprecated: use `executionContextName` instead due to an unclear use case
 	// and bugs in implementation (crbug.com/1169639). `executionContextId` will be
 	// removed in the future.
 	ExecutionContextID RuntimeExecutionContextID `json:"executionContextId,omitempty"`

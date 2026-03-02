@@ -272,7 +272,7 @@ func resolveBrowser(ctx context.Context, bt BrowserType) (string, error) {
 		return "", err
 	}
 
-	switch bt {
+	switch bt { //nolint:exhaustive
 	case BrowserBrave:
 		return DownloadBrave(ctx)
 	case BrowserEdge:

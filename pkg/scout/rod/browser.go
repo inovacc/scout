@@ -34,7 +34,7 @@ type Browser struct {
 
 	e eFunc
 
-	ctx context.Context
+	ctx context.Context //nolint:containedctx // internalized rod pattern
 
 	sleeper func() utils.Sleeper
 
@@ -516,7 +516,7 @@ func (b *Browser) SetCookies(cookies []*proto.NetworkCookieParam) error {
 // The file path will be:
 //
 //	filepath.Join(dir, info.GUID)
-func (b *Browser) WaitDownload(dir string) func() (info *proto.PageDownloadWillBegin) {
+func (b *Browser) WaitDownload(dir string) func() (info *proto.PageDownloadWillBegin) { //nolint:staticcheck // internalized rod API uses deprecated CDP types
 	var oldDownloadBehavior proto.BrowserSetDownloadBehavior
 
 	has := b.LoadState("", &oldDownloadBehavior)
@@ -527,15 +527,15 @@ func (b *Browser) WaitDownload(dir string) func() (info *proto.PageDownloadWillB
 		DownloadPath:     dir,
 	}.Call(b)
 
-	var start *proto.PageDownloadWillBegin
+	var start *proto.PageDownloadWillBegin //nolint:staticcheck // internalized rod API
 
-	waitProgress := b.EachEvent(func(e *proto.PageDownloadWillBegin) {
+	waitProgress := b.EachEvent(func(e *proto.PageDownloadWillBegin) { //nolint:staticcheck // internalized rod API
 		start = e
-	}, func(e *proto.PageDownloadProgress) bool {
+	}, func(e *proto.PageDownloadProgress) bool { //nolint:staticcheck // internalized rod API
 		return start != nil && start.GUID == e.GUID && e.State == proto.PageDownloadProgressStateCompleted
 	})
 
-	return func() *proto.PageDownloadWillBegin {
+	return func() *proto.PageDownloadWillBegin { //nolint:staticcheck // internalized rod API
 		defer func() {
 			if has {
 				_ = oldDownloadBehavior.Call(b)

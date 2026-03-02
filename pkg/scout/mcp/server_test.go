@@ -92,7 +92,7 @@ func navigateHelper(t *testing.T, ctx context.Context, cs *mcp.ClientSession, ur
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("navigate error: %s", text)
 	}
 }
@@ -112,7 +112,7 @@ func TestNavigateTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("navigate returned error: %s", text)
 	}
 
@@ -356,7 +356,7 @@ func TestSearchTool(t *testing.T) {
 	// Either a valid result or an error result (e.g., no network, CAPTCHA) is acceptable.
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Logf("search returned error (expected in test env): %s", text)
 	}
 }
@@ -376,7 +376,7 @@ func TestFetchTool(t *testing.T) {
 
 	if result.IsError {
 		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolErr{text})
+		skipIfNoBrowser(t, &toolError{text})
 		t.Fatalf("fetch error: %s", text)
 	}
 
@@ -551,6 +551,6 @@ func TestServeSSEListenError(t *testing.T) {
 }
 
 // toolErr wraps a string as an error for skipIfNoBrowser.
-type toolErr struct{ msg string }
+type toolError struct{ msg string }
 
-func (e *toolErr) Error() string { return e.msg }
+func (e *toolError) Error() string { return e.msg }

@@ -43,7 +43,7 @@ func registerAnalysisTools(server *mcp.Server, state *mcpState) {
 			maxPages = *args.MaxPages
 		}
 
-		results, err := browser.Crawl(args.URL, nil,
+		results, err := browser.Crawl(args.URL, nil, //nolint:contextcheck
 			scout.WithCrawlMaxDepth(maxDepth),
 			scout.WithCrawlMaxPages(maxPages),
 		)
@@ -88,19 +88,19 @@ func registerAnalysisTools(server *mcp.Server, state *mcpState) {
 
 		var result detectResult
 
-		if fw, err := page.DetectFrameworks(); err == nil {
+		if fw, err := page.DetectFrameworks(); err == nil { //nolint:contextcheck
 			result.Frameworks = fw
 		}
 
-		if pwa, err := page.DetectPWA(); err == nil {
+		if pwa, err := page.DetectPWA(); err == nil { //nolint:contextcheck
 			result.PWA = pwa
 		}
 
-		if rm, err := page.DetectRenderMode(); err == nil {
+		if rm, err := page.DetectRenderMode(); err == nil { //nolint:contextcheck
 			result.RenderMode = rm
 		}
 
-		if ts, err := page.DetectTechStack(); err == nil {
+		if ts, err := page.DetectTechStack(); err == nil { //nolint:contextcheck
 			result.TechStack = ts
 		}
 

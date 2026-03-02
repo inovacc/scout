@@ -662,7 +662,8 @@ type DOMGetDocumentResult struct {
 }
 
 // DOMGetFlattenedDocument (deprecated) Returns the root DOM node (and optionally the subtree) to the caller.
-// Deprecated, as it is not designed to work well with the rest of the DOM agent.
+//
+// Deprecated: not designed to work well with the rest of the DOM agent.
 // Use DOMSnapshot.captureSnapshot instead.
 type DOMGetFlattenedDocument struct {
 	// Depth (optional) The maximum depth at which children should be retrieved, defaults to 1. Use -1 for the
