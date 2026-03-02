@@ -206,23 +206,23 @@ func (m *NotionMode) Scrape(ctx context.Context, session scraper.SessionData, op
 
 	page, err := browser.NewPage("https://www.notion.so")
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("notion: scrape: new page: %w", err)
 	}
 
 	if err := page.SetCookies(notionSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("notion: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("notion: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("notion: scrape: wait load: %w", err)
 	}
 
@@ -232,7 +232,7 @@ func (m *NotionMode) Scrape(ctx context.Context, session scraper.SessionData, op
 		scout.WithHijackBodyCapture(),
 	)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("notion: scrape: create hijacker: %w", err)
 	}
 
@@ -242,7 +242,7 @@ func (m *NotionMode) Scrape(ctx context.Context, session scraper.SessionData, op
 	go func() {
 		defer close(results)
 		defer hijacker.Stop()
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()

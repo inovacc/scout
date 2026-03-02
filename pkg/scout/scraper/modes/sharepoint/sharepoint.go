@@ -206,23 +206,23 @@ func (m *SharePointMode) Scrape(ctx context.Context, session scraper.SessionData
 
 	page, err := browser.NewPage(spSession.URL)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("sharepoint: scrape: new page: %w", err)
 	}
 
 	if err := page.SetCookies(spSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("sharepoint: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("sharepoint: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("sharepoint: scrape: wait load: %w", err)
 	}
 
@@ -233,7 +233,7 @@ func (m *SharePointMode) Scrape(ctx context.Context, session scraper.SessionData
 		scout.WithHijackBodyCapture(),
 	)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("sharepoint: scrape: create hijacker: %w", err)
 	}
 
@@ -243,7 +243,7 @@ func (m *SharePointMode) Scrape(ctx context.Context, session scraper.SessionData
 	go func() {
 		defer close(results)
 		defer hijacker.Stop()
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()

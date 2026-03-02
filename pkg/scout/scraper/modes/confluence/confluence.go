@@ -189,23 +189,23 @@ func (m *ConfluenceMode) Scrape(ctx context.Context, session scraper.SessionData
 
 	page, err := browser.NewPage(confluenceSession.URL)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("confluence: scrape: new page: %w", err)
 	}
 
 	if err := page.SetCookies(confluenceSession.Cookies...); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("confluence: scrape: set cookies: %w", err)
 	}
 
 	// Reload to apply cookies.
 	if _, err := page.Eval(`() => location.reload()`); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("confluence: scrape: reload: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("confluence: scrape: wait load: %w", err)
 	}
 
@@ -217,7 +217,7 @@ func (m *ConfluenceMode) Scrape(ctx context.Context, session scraper.SessionData
 		scout.WithHijackBodyCapture(),
 	)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("confluence: scrape: create hijacker: %w", err)
 	}
 
@@ -227,7 +227,7 @@ func (m *ConfluenceMode) Scrape(ctx context.Context, session scraper.SessionData
 	go func() {
 		defer close(results)
 		defer hijacker.Stop()
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()

@@ -234,7 +234,7 @@ func (m *YouTubeMode) Scrape(ctx context.Context, session scraper.SessionData, o
 	go func() {
 		defer close(results)
 		defer hijacker.Stop()
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()

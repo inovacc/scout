@@ -139,25 +139,25 @@ func (m *GMapsMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 
 	page, err := browser.NewPage(startURL)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("gmaps: scrape: new page: %w", err)
 	}
 
 	if gmapsSession != nil && len(gmapsSession.Cookies) > 0 {
 		if err := page.SetCookies(gmapsSession.Cookies...); err != nil {
-			browser.Close()
+			_ = browser.Close()
 			return nil, fmt.Errorf("gmaps: scrape: set cookies: %w", err)
 		}
 
 		// Reload to apply cookies.
 		if _, err := page.Eval(`() => location.reload()`); err != nil {
-			browser.Close()
+			_ = browser.Close()
 			return nil, fmt.Errorf("gmaps: scrape: reload: %w", err)
 		}
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("gmaps: scrape: wait load: %w", err)
 	}
 
@@ -166,7 +166,7 @@ func (m *GMapsMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 		scout.WithHijackBodyCapture(),
 	)
 	if err != nil {
-		browser.Close()
+		_ = browser.Close()
 		return nil, fmt.Errorf("gmaps: scrape: create hijacker: %w", err)
 	}
 
@@ -176,7 +176,7 @@ func (m *GMapsMode) Scrape(ctx context.Context, session scraper.SessionData, opt
 	go func() {
 		defer close(results)
 		defer hijacker.Stop()
-		defer browser.Close()
+		defer func() { _ = browser.Close() }()
 
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
