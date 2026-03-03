@@ -3,11 +3,9 @@
     "description": "Open-source browser engine. Snapshot builds by revision number.",
     "revision": {
       "default": 1588893,
-      "playwright_arm64": 1124,
       "latest_api": {
         "windows_amd64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Win_x64/LAST_CHANGE",
         "linux_amd64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/LAST_CHANGE",
-        "linux_arm64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/LAST_CHANGE",
         "darwin_amd64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Mac/LAST_CHANGE",
         "darwin_arm64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Mac_Arm/LAST_CHANGE"
       }
@@ -21,11 +19,6 @@
       "npmmirror": {
         "base": "https://registry.npmmirror.com/-/binary/chromium-browser-snapshots",
         "pattern": "{base}/{prefix}/{revision}/{zip}"
-      },
-      "playwright": {
-        "base": "https://playwright.azureedge.net/builds/chromium",
-        "pattern": "{base}/{revision}/chromium-linux-arm64.zip",
-        "note": "Only used for linux_arm64 with RevisionPlaywright"
       }
     },
     "platforms": {
@@ -55,15 +48,6 @@
           "https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/{revision}/chrome-linux.zip",
           "https://registry.npmmirror.com/-/binary/chromium-browser-snapshots/Linux_x64/{revision}/chrome-linux.zip"
         ]
-      },
-      "linux_arm64": {
-        "prefix": "Linux_x64",
-        "zip": "chromium-linux-arm64.zip",
-        "binary": "chrome-linux/chrome",
-        "urls": [
-          "https://playwright.azureedge.net/builds/chromium/{playwright_revision}/chromium-linux-arm64.zip"
-        ],
-        "note": "Uses RevisionPlaywright (1124), not RevisionDefault"
       },
       "darwin_amd64": {
         "prefix": "Mac",
@@ -172,18 +156,6 @@
         ],
         "checksums": "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser-{version}-linux-amd64.zip.sha256"
       },
-      "linux_arm64": {
-        "zip": "brave-browser-{version}-linux-arm64.zip",
-        "deb": "brave-browser_{version}_arm64.deb",
-        "rpm": "brave-browser-{version}-1.aarch64.rpm",
-        "binary": "brave",
-        "urls": [
-          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser-{version}-linux-arm64.zip",
-          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser_{version}_arm64.deb",
-          "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser-{version}-1.aarch64.rpm"
-        ],
-        "checksums": "https://github.com/brave/brave-browser/releases/download/v{version}/brave-browser-{version}-linux-arm64.zip.sha256"
-      },
       "darwin_amd64": {
         "zip": "brave-v{version}-darwin-x64.zip",
         "binary": "Brave Browser.app/Contents/MacOS/Brave Browser",
@@ -276,7 +248,6 @@
       "windows_386",
       "windows_arm64",
       "linux_amd64",
-      "linux_arm64",
       "darwin_amd64",
       "darwin_arm64"
     ]

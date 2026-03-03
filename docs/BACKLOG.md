@@ -23,8 +23,7 @@
 
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
-| ARM64 Linux browser download | P2 | Medium | Playwright host fallback for arm64; validate in CI |
-| browser.json revision manifest | P1 | Medium | Replace hardcoded `RevisionDefault` with a `browser.json` config file in launcher; supports per-platform revisions, zip names, and download hosts; `LAST_CHANGE` fallback already added (ROADMAP Phase 43) |
+| ~~browser.json revision manifest~~ | ~~P1~~ | ~~Medium~~ | ~~Done (Phase 43/50) — `browser.json` embedded manifest with per-platform revisions, zip names, download hosts; `LAST_CHANGE` fallback~~ |
 | ~~Chrome protocol version tracking~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — .scripts/rod-upstream-diff.sh with --check/--full modes~~ |
 | ~~Headless=new migration~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0)~~ |
 
@@ -38,10 +37,11 @@
 | ~~Multi-tab orchestration~~ | ~~P3~~ | ~~Large~~ | ~~Done — TabGroup with Do/DoAll/DoParallel/Broadcast/Navigate/Wait/Collect~~ |
 | ~~Auto-upload results to GDrive/OneDrive~~ | ~~P2~~ | ~~Medium~~ | ~~Done — `scout upload auth/file/status` with OAuth2 for Google Drive and OneDrive~~ |
 | ~~Session reuse & clean reset~~ | ~~P1~~ | ~~Medium~~ | ~~Done — `WithReusableSession()`, `WithTargetURL()`, domain-hash routing, `scout session reset [id\|--all]`~~ |
+| ~~Orphan process detection (PID reuse)~~ | ~~P1~~ | ~~Medium~~ | ~~Done (v0.49.0) — gops agent + `IsScoutProcess()` replaces `ProcessAlive` for scout PIDs; `Page.WaitClose()` detects browser window close via CDP; synchronous session dir cleanup~~ |
 | ~~REPL mode~~ | ~~P2~~ | ~~Medium~~ | ~~Done — `scout repl [url]` interactive local browser shell with 20 commands~~ |
 | ~~Site health checker / test page~~ | ~~P1~~ | ~~Large~~ | ~~Done — `scout test-site <url>` with crawl, console/JS/network error detection, JSON/table report~~ |
 | ~~Page gather~~ | ~~P1~~ | ~~Medium~~ | ~~Done (Phase 47) — `scout gather <url>` one-shot page intelligence~~ |
-| PDF form filling | P3 | Medium | Fill interactive PDF forms via browser rendering |
+| ~~PDF form filling~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 51) — `PDFFormFields()`, `FillPDFForm()`, CLI `scout pdf-form fields/fill`~~ |
 | ~~Visual regression testing~~ | ~~P3~~ | ~~Large~~ | ~~Done (v0.28.0) — VisualDiff with threshold, color tolerance, diff image overlay~~ |
 
 ### Infrastructure

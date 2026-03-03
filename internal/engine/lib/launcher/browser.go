@@ -31,10 +31,12 @@ func HostGoogle(revision int) string {
 	if p == nil {
 		return ""
 	}
+
 	h, ok := browser.LoadManifest().Chromium.Hosts["google"]
 	if !ok || h.Base == "" {
 		return ""
 	}
+
 	return fmt.Sprintf("%s/%s/%d/%s", h.Base, p.Prefix, revision, p.Zip)
 }
 
@@ -44,25 +46,13 @@ func HostNPM(revision int) string {
 	if p == nil {
 		return ""
 	}
+
 	h, ok := browser.LoadManifest().Chromium.Hosts["npmmirror"]
 	if !ok || h.Base == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s/%s/%d/%s", h.Base, p.Prefix, revision, p.Zip)
-}
 
-// HostPlaywright to download browser. URL read from browser.json chromium hosts.
-func HostPlaywright(revision int) string {
-	m := browser.LoadManifest()
-	rev := m.PlaywrightRevision()
-	if runtime.GOOS != "linux" || runtime.GOARCH != "arm64" {
-		rev = revision
-	}
-	h, ok := m.Chromium.Hosts["playwright"]
-	if !ok || h.Base == "" {
-		return ""
-	}
-	return fmt.Sprintf("%s/%d/chromium-linux-arm64.zip", h.Base, rev)
+	return fmt.Sprintf("%s/%s/%d/%s", h.Base, p.Prefix, revision, p.Zip)
 }
 
 // DefaultBrowserDir for downloaded browser. Uses "$HOME/.scout/browsers" on all platforms.
@@ -106,7 +96,7 @@ func NewBrowser() *Browser {
 	return &Browser{
 		Context:  context.Background(),
 		Revision: browser.LoadManifest().DefaultRevision(),
-		Hosts:    []Host{HostGoogle, HostNPM, HostPlaywright},
+		Hosts:    []Host{HostGoogle, HostNPM},
 		RootDir:  DefaultBrowserDir,
 		Logger:   log.New(os.Stdout, "[launcher.Browser]", log.LstdFlags),
 		LockPort: defaults.LockPort,
@@ -175,6 +165,7 @@ func (lc *Browser) tryDownload(revision int) error {
 		if p := browser.HostConf(); p != nil {
 			zipName = p.Zip
 		}
+
 		if err := archive.Extract(data, zipName, dir); err != nil {
 			return fmt.Errorf("extract: %w", err)
 		}

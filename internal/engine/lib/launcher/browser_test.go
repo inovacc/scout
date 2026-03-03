@@ -100,8 +100,8 @@ func TestNewBrowserDefaults(t *testing.T) {
 		t.Fatalf("expected revision %d, got %d", RevisionDefault, b.Revision)
 	}
 
-	if len(b.Hosts) != 3 {
-		t.Fatalf("expected 3 hosts, got %d", len(b.Hosts))
+	if len(b.Hosts) != 2 {
+		t.Fatalf("expected 2 hosts, got %d", len(b.Hosts))
 	}
 
 	if b.LockPort == 0 {
