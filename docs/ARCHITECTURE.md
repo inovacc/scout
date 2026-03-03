@@ -77,7 +77,6 @@ flowchart TB
 
     subgraph External["External"]
         Chrome["Chromium / Chrome\n/ Brave / Edge"]
-        Rod["go-rod/rod"]
     end
 
     Options -->|configures| Browser
@@ -114,8 +113,7 @@ flowchart TB
     MCPTransport -->|serves| MCPServer
     CLI -->|starts| MCPServer
 
-    Rod -->|CDP protocol| Chrome
-    Browser -->|wraps| Rod
+    Browser -->|CDP protocol| Chrome
 ```
 
 ## Core Library Flow
@@ -124,39 +122,30 @@ flowchart TB
 sequenceDiagram
     participant User as User Code
     participant Scout as scout.Browser
-    participant Rod as go-rod
     participant Chrome as Chromium
 
     User->>Scout: New(WithHeadless(true), ...)
-    Scout->>Rod: rod.New().Launcher(...)
-    Rod->>Chrome: Launch headless browser
-    Chrome-->>Rod: WebSocket connection
-    Rod-->>Scout: *rod.Browser
+    Scout->>Chrome: Launch headless browser (CDP)
+    Chrome-->>Scout: WebSocket connection
     Scout-->>User: *scout.Browser
 
     User->>Scout: browser.NewPage(url)
-    Scout->>Rod: browser.Page(url)
-    Rod->>Chrome: Target.createTarget
-    Chrome-->>Rod: Page created
-    Rod-->>Scout: *rod.Page
+    Scout->>Chrome: Target.createTarget
+    Chrome-->>Scout: Page created
     Scout-->>User: *scout.Page
 
     User->>Scout: page.Element("h1")
-    Scout->>Rod: page.Element("h1")
-    Rod->>Chrome: DOM.querySelector
-    Chrome-->>Rod: Element node
-    Rod-->>Scout: *rod.Element
+    Scout->>Chrome: DOM.querySelector
+    Chrome-->>Scout: Element node
     Scout-->>User: *scout.Element
 
     User->>Scout: el.Text()
-    Scout->>Rod: el.Text()
-    Rod->>Chrome: Runtime.evaluate
-    Chrome-->>Rod: "Hello World"
+    Scout->>Chrome: Runtime.evaluate
+    Chrome-->>Scout: "Hello World"
     Scout-->>User: "Hello World", nil
 
     User->>Scout: browser.Close()
-    Scout->>Rod: browser.Close()
-    Rod->>Chrome: Browser.close
+    Scout->>Chrome: Browser.close
 ```
 
 ## HAR Network Recording
