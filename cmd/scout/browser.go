@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/browser"
 	"github.com/spf13/cobra"
 )
 
@@ -75,7 +76,11 @@ var browserListCmd = &cobra.Command{
 			fmt.Println("  (none)") //nolint:forbidigo
 		} else {
 			for _, b := range browsers {
-				fmt.Printf("  %s\n", b) //nolint:forbidigo
+				if len(b.Versions) == 0 {
+					fmt.Printf("  %s  (empty)\n", b.Name) //nolint:forbidigo
+				} else {
+					fmt.Printf("  %-12s  %s\n", b.Name, strings.Join(b.Versions, ", ")) //nolint:forbidigo
+				}
 			}
 		}
 
@@ -86,11 +91,22 @@ var browserListCmd = &cobra.Command{
 var browserDownloadCmd = &cobra.Command{
 	Use:   "download <browser>",
 	Short: "Download a browser for local/container use",
-	Long:  "Download and cache a browser binary. Supported: brave.",
+	Long:  "Download and cache a browser binary. Supported: chrome, chromium, brave, edge.",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := strings.ToLower(args[0])
 		switch name {
+		case "chrome", "chromium":
+			fmt.Println("Downloading Chromium browser (via rod launcher)...") //nolint:forbidigo
+
+			path, err := browser.DownloadChrome("")
+			if err != nil {
+				return fmt.Errorf("download chrome: %w", err)
+			}
+
+			fmt.Printf("Chromium downloaded to: %s\n", path) //nolint:forbidigo
+
+			return nil
 		case "brave":
 			fmt.Println("Downloading Brave browser...") //nolint:forbidigo
 
@@ -105,8 +121,22 @@ var browserDownloadCmd = &cobra.Command{
 			fmt.Printf("Brave downloaded to: %s\n", path) //nolint:forbidigo
 
 			return nil
+		case "edge":
+			fmt.Println("Downloading Microsoft Edge...") //nolint:forbidigo
+
+			ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Minute)
+			defer cancel()
+
+			path, err := scout.DownloadEdge(ctx)
+			if err != nil {
+				return fmt.Errorf("download edge: %w", err)
+			}
+
+			fmt.Printf("Edge downloaded to: %s\n", path) //nolint:forbidigo
+
+			return nil
 		default:
-			return fmt.Errorf("unsupported browser %q (supported: brave)", name)
+			return fmt.Errorf("unsupported browser %q (supported: chrome, chromium, brave, edge)", name)
 		}
 	},
 }
