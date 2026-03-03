@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine/browser"
 	"github.com/inovacc/scout/internal/engine/lib/proto"
 	"golang.org/x/oauth2"
 
@@ -56,10 +57,10 @@ type DOMNode = engine.DOMNode
 type DOMOption = engine.DOMOption
 type DOMSnapshot = engine.DOMSnapshot
 type DOMSnapshotResult = engine.DOMSnapshotResult
-type DetectedBrowser = engine.DetectedBrowser
+type DetectedBrowser = browser.DetectedBrowser
 type DirectProxy = engine.DirectProxy
 type DirectProxyOption = engine.DirectProxyOption
-type DownloadedBrowser = engine.DownloadedBrowser
+type DownloadedBrowser = browser.DownloadedBrowser
 type Element = engine.Element
 type EvalResult = engine.EvalResult
 type ExtensionInfo = engine.ExtensionInfo
@@ -260,11 +261,11 @@ var (
 	ChallengeRecaptchaV2 = engine.ChallengeRecaptchaV2
 	ChallengeRecaptchaV3 = engine.ChallengeRecaptchaV3
 	ChallengeTurnstile = engine.ChallengeTurnstile
-	ChromiumRevisionDefault = engine.ChromiumRevisionDefault
+	ChromiumRevisionDefault = browser.ChromiumRevisionDefault
 	DeepSeekBaseURL = engine.DeepSeekBaseURL
 	DefaultOrphanCheckInterval = engine.DefaultOrphanCheckInterval
 	DuckDuckGo = engine.DuckDuckGo
-	ErrBrowserNotFound = engine.ErrBrowserNotFound
+	ErrBrowserNotFound = browser.ErrNotFound
 	FingerprintRotateInterval = engine.FingerprintRotateInterval
 	FingerprintRotatePerDomain = engine.FingerprintRotatePerDomain
 	FingerprintRotatePerPage = engine.FingerprintRotatePerPage
@@ -309,18 +310,18 @@ var (
 	WindowStateNormal = engine.WindowStateNormal
 )
 
-func BrowserCacheDir() (string, error) { return engine.BrowserCacheDir() }
+func BrowserCacheDir() (string, error) { return browser.CacheDir() }
 func CaptureCredentials(ctx context.Context, url string, opts ...Option) (*CapturedCredentials, error) { return engine.CaptureCredentials(ctx, url, opts...) }
 func CaptureProfile(page *Page, opts ...ProfileOption) (*UserProfile, error) { return engine.CaptureProfile(page, opts...) }
-func ChromiumDownloadURLs(revision int) []string { return engine.ChromiumDownloadURLs(revision) }
+func ChromiumDownloadURLs(revision int) []string { return browser.ChromiumDownloadURLs(revision) }
 func CleanOrphans() (int, error) { return engine.CleanOrphans() }
 func ConvertHTMLToMarkdown(rawHTML string, opts ...MarkdownOption) (string, error) { return engine.ConvertHTMLToMarkdown(rawHTML, opts...) }
-func DetectBrowsers() []DetectedBrowser { return engine.DetectBrowsers() }
+func DetectBrowsers() []DetectedBrowser { return browser.DetectBrowsers() }
 func DiffProfiles(a, b *UserProfile) ProfileDiff { return engine.DiffProfiles(a, b) }
 func DomainHash(rawURL string) string { return engine.DomainHash(rawURL) }
-func DownloadBrave(ctx context.Context) (string, error) { return engine.DownloadBrave(ctx) }
-func DownloadChromium(ctx context.Context, revision int) (string, error) { return engine.DownloadChromium(ctx, revision) }
-func DownloadEdge(ctx context.Context) (string, error) { return engine.DownloadEdge(ctx) }
+func DownloadBrave(ctx context.Context) (string, error) { return browser.DownloadBrave(ctx) }
+func DownloadChromium(ctx context.Context, revision int) (string, error) { return browser.DownloadChromium(ctx, revision) }
+func DownloadEdge(ctx context.Context) (string, error) { return browser.DownloadEdge(ctx) }
 func DownloadElectron(ctx context.Context, version string) (string, error) { return engine.DownloadElectron(ctx, version) }
 func DownloadExtension(id string) (*ExtensionInfo, error) { return engine.DownloadExtension(id) }
 func DownloadLatestElectron(ctx context.Context) (string, error) { return engine.DownloadLatestElectron(ctx) }
@@ -333,7 +334,7 @@ func GenerateFingerprint(opts ...FingerprintOption) *Fingerprint { return engine
 func InjectAllHelpers(page *Page) error { return engine.InjectAllHelpers(page) }
 func InjectHelper(page *Page, helper string) error { return engine.InjectHelper(page, helper) }
 func InjectTemplate(page *Page, tmplName string, data map[string]any) (*EvalResult, error) { return engine.InjectTemplate(page, tmplName, data) }
-func ListDownloadedBrowsers() ([]DownloadedBrowser, error) { return engine.ListDownloadedBrowsers() }
+func ListDownloadedBrowsers() ([]DownloadedBrowser, error) { return browser.ListDownloaded() }
 func ListLocalExtensions() ([]ExtensionInfo, error) { return engine.ListLocalExtensions() }
 func ListSessions() ([]SessionListing, error) { return engine.ListSessions() }
 func LoadCredentials(path string) (*CapturedCredentials, error) { return engine.LoadCredentials(path) }
@@ -341,7 +342,7 @@ func LoadProfile(path string) (*UserProfile, error) { return engine.LoadProfile(
 func LoadProfileEncrypted(path, passphrase string) (*UserProfile, error) { return engine.LoadProfileEncrypted(path, passphrase) }
 func LoadSessionFromFile(path string) (*SessionState, error) { return engine.LoadSessionFromFile(path) }
 func LoadUploadConfig() (*UploadConfig, error) { return engine.LoadUploadConfig() }
-func LookupBrowserPublic(bt BrowserType) (string, error) { return engine.LookupBrowserPublic(bt) }
+func LookupBrowserPublic(bt BrowserType) (string, error) { return browser.LookupBrowser(bt) }
 func MergeProfiles(base, overlay *UserProfile) *UserProfile { return engine.MergeProfiles(base, overlay) }
 func NavigateWithBypass(page *Page, url string, solver *ChallengeSolver) error { return engine.NavigateWithBypass(page, url, solver) }
 func New(opts ...Option) (*Browser, error) { return engine.New(opts...) }
@@ -384,7 +385,7 @@ func PaginateByURL[T any](b *Browser, urlFunc func(page int) string, opts ...Pag
 	return engine.PaginateByURL[T](b, urlFunc, opts...)
 }
 func ParseAttrSpec(spec string) (selector, attr string, ok bool) { return engine.ParseAttrSpec(spec) }
-func ParseBrowserVersion(output string) string { return engine.ParseBrowserVersion(output) }
+func ParseBrowserVersion(output string) string { return browser.ParseBrowserVersion(output) }
 func ParseSurfsharkClusters(data []byte) ([]VPNServer, error) { return engine.ParseSurfsharkClusters(data) }
 func ProxyChainDescription(chain *ProxyChain) string { return engine.ProxyChainDescription(chain) }
 func ReadSessionInfo(id string) (*SessionInfo, error) { return engine.ReadSessionInfo(id) }
@@ -603,6 +604,7 @@ func WithSolverLLM(provider LLMProvider) SolverOption { return engine.WithSolver
 func WithSolverService(svc CaptchaSolverService) SolverOption { return engine.WithSolverService(svc) }
 func WithSolverTimeout(d time.Duration) SolverOption { return engine.WithSolverTimeout(d) }
 func WithStealth() Option { return engine.WithStealth() }
+func WithSystemBrowser() Option { return engine.WithSystemBrowser() }
 func WithSwaggerEndpointsOnly(v bool) SwaggerOption { return engine.WithSwaggerEndpointsOnly(v) }
 func WithSwaggerRaw(v bool) SwaggerOption { return engine.WithSwaggerRaw(v) }
 func WithTLSProfile(profile string) Option { return engine.WithTLSProfile(profile) }

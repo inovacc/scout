@@ -49,12 +49,15 @@
 | 45 | Site Health Checker — `scout test-site <url>` crawls site, detects broken links, console errors, JS exceptions, network failures; structured report (JSON/table) | Done |
 | 46 | REPL Mode — `scout repl [url]` interactive local browser shell with 20 commands (navigate, eval, click, type, extract, screenshot, markdown, health, tabs, etc.) | Done |
 
+| 47 | Page Gather — `scout gather <url>` one-shot page intelligence: DOM state, HAR, links, screenshots, cookies, metadata, console log, frameworks, accessibility snapshot | Done |
+| 48 | Cloud Upload — `scout upload` with OAuth2 auth for Google Drive and OneDrive; `scout upload auth`, `scout upload file`, `scout upload status`; config persisted to `~/.scout/upload.json` | Done |
+| 49 | Internal Migration — Move `pkg/scout/` to `internal/engine/` with public facade, extract domain sub-packages (detect, fingerprint, hijack, llm, vpn, session), merge rod internals into engine | Done |
+
 ### Next Phase
 
 | Phase | Feature | Status |
 |-------|---------|--------|
-| 47 | Page Gather — `scout gather <url>` one-shot page intelligence: DOM state, HAR, links, screenshots, cookies, metadata, console log, frameworks, accessibility snapshot | Done |
-| 48 | Cloud Upload — `scout upload` with OAuth2 auth for Google Drive and OneDrive; `scout upload auth`, `scout upload file`, `scout upload status`; config persisted to `~/.scout/upload.json` | Done |
+| 50 | Browser Manifest — `browser.json` revision manifest replacing hardcoded `RevisionDefault`; per-platform revisions, zip names, download hosts; `LAST_CHANGE` fallback | Planned |
 
 ### Remaining Work
 

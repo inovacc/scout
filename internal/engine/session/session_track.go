@@ -345,17 +345,20 @@ func DomainHash(rawURL string) string {
 }
 
 // Hash returns a deterministic hash for a session directory name.
-// If rawURL is provided, it hashes the root domain. Otherwise, it returns
-// a hash of the label (e.g. "default", browser name, etc.).
+// The label (typically the browser name) is always included in the digest so
+// that different browsers produce different session directories even for the
+// same URL.
 func Hash(rawURL, label string) string {
-	if rawURL != "" {
-		if h := DomainHash(rawURL); h != "" {
-			return h
-		}
-	}
-
 	if label == "" {
 		label = "default"
+	}
+
+	if rawURL != "" {
+		root := RootDomain(rawURL)
+		if root != "" {
+			h := sha256.Sum256([]byte(root + "\x00" + label))
+			return hex.EncodeToString(h[:12])
+		}
 	}
 
 	h := sha256.Sum256([]byte(label))

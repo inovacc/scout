@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine/browser"
 	"github.com/inovacc/scout/pkg/scout/archive"
 )
 
@@ -123,7 +124,7 @@ func DownloadElectron(ctx context.Context, version string) (string, error) {
 	binPath := filepath.Join(destDir, electronBinPath())
 
 	// Already downloaded.
-	if fileExists(binPath) {
+	if browser.FileExists(binPath) {
 		return binPath, nil
 	}
 
@@ -134,7 +135,7 @@ func DownloadElectron(ctx context.Context, version string) (string, error) {
 
 	url := fmt.Sprintf("https://github.com/electron/electron/releases/download/%s/%s", version, asset)
 
-	data, err := downloadFile(ctx, url)
+	data, err := browser.DownloadFile(ctx, url)
 	if err != nil {
 		return "", fmt.Errorf("scout: download electron: %w", err)
 	}
@@ -157,7 +158,7 @@ func DownloadElectron(ctx context.Context, version string) (string, error) {
 		}
 	}
 
-	if !fileExists(binPath) {
+	if !browser.FileExists(binPath) {
 		return "", fmt.Errorf("scout: electron binary not found at %s after extraction", binPath)
 	}
 

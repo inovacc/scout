@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine/browser"
 	"github.com/inovacc/scout/internal/engine/lib/defaults"
 	"github.com/inovacc/scout/internal/engine/lib/utils"
 	"github.com/inovacc/scout/pkg/scout/archive"
@@ -24,48 +25,44 @@ import (
 // Host formats a revision number to a downloadable URL for the browser.
 type Host func(revision int) string
 
-var hostConf = map[string]struct {
-	urlPrefix string
-	zipName   string
-}{
-	"darwin_amd64":  {"Mac", "chrome-mac.zip"},
-	"darwin_arm64":  {"Mac_Arm", "chrome-mac.zip"},
-	"linux_amd64":   {"Linux_x64", "chrome-linux.zip"},
-	"windows_386":   {"Win", "chrome-win.zip"},
-	"windows_amd64": {"Win_x64", "chrome-win.zip"},
-}[runtime.GOOS+"_"+runtime.GOARCH]
-
-// HostGoogle to download browser.
+// HostGoogle to download browser. URL read from browser.json chromium hosts.
 func HostGoogle(revision int) string {
-	return fmt.Sprintf(
-		"https://storage.googleapis.com/chromium-browser-snapshots/%s/%d/%s",
-		hostConf.urlPrefix,
-		revision,
-		hostConf.zipName,
-	)
+	p := browser.HostConf()
+	if p == nil {
+		return ""
+	}
+	h, ok := browser.LoadManifest().Chromium.Hosts["google"]
+	if !ok || h.Base == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s/%s/%d/%s", h.Base, p.Prefix, revision, p.Zip)
 }
 
-// HostNPM to download browser.
+// HostNPM to download browser. URL read from browser.json chromium hosts.
 func HostNPM(revision int) string {
-	return fmt.Sprintf(
-		"https://registry.npmmirror.com/-/binary/chromium-browser-snapshots/%s/%d/%s",
-		hostConf.urlPrefix,
-		revision,
-		hostConf.zipName,
-	)
+	p := browser.HostConf()
+	if p == nil {
+		return ""
+	}
+	h, ok := browser.LoadManifest().Chromium.Hosts["npmmirror"]
+	if !ok || h.Base == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s/%s/%d/%s", h.Base, p.Prefix, revision, p.Zip)
 }
 
-// HostPlaywright to download browser.
+// HostPlaywright to download browser. URL read from browser.json chromium hosts.
 func HostPlaywright(revision int) string {
-	rev := RevisionPlaywright
+	m := browser.LoadManifest()
+	rev := m.PlaywrightRevision()
 	if runtime.GOOS != "linux" || runtime.GOARCH != "arm64" {
 		rev = revision
 	}
-
-	return fmt.Sprintf(
-		"https://playwright.azureedge.net/builds/chromium/%d/chromium-linux-arm64.zip",
-		rev,
-	)
+	h, ok := m.Chromium.Hosts["playwright"]
+	if !ok || h.Base == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s/%d/chromium-linux-arm64.zip", h.Base, rev)
 }
 
 // DefaultBrowserDir for downloaded browser. Uses "$HOME/.scout/browsers" on all platforms.
@@ -108,7 +105,7 @@ type Browser struct {
 func NewBrowser() *Browser {
 	return &Browser{
 		Context:  context.Background(),
-		Revision: RevisionDefault,
+		Revision: browser.LoadManifest().DefaultRevision(),
 		Hosts:    []Host{HostGoogle, HostNPM, HostPlaywright},
 		RootDir:  DefaultBrowserDir,
 		Logger:   log.New(os.Stdout, "[launcher.Browser]", log.LstdFlags),
@@ -174,7 +171,11 @@ func (lc *Browser) tryDownload(revision int) error {
 			return fmt.Errorf("create dir: %w", err)
 		}
 
-		if err := archive.Extract(data, hostConf.zipName, dir); err != nil {
+		zipName := ""
+		if p := browser.HostConf(); p != nil {
+			zipName = p.Zip
+		}
+		if err := archive.Extract(data, zipName, dir); err != nil {
 			return fmt.Errorf("extract: %w", err)
 		}
 
@@ -280,10 +281,10 @@ func latestRevision(ctx context.Context, client *http.Client) (int, bool) {
 		client = http.DefaultClient
 	}
 
-	url := fmt.Sprintf(
-		"https://storage.googleapis.com/chromium-browser-snapshots/%s/LAST_CHANGE",
-		hostConf.urlPrefix,
-	)
+	url := browser.LoadManifest().LatestAPI()
+	if url == "" {
+		return 0, false
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

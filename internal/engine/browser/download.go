@@ -1,9 +1,8 @@
-package engine
+package browser
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,26 +19,8 @@ import (
 // browserDownloadTimeout is the HTTP timeout for downloading browser archives.
 const browserDownloadTimeout = 5 * time.Minute
 
-// braveAssets maps GOOS_GOARCH to the GitHub release asset filename pattern.
-// The %s placeholder is replaced with the version number (without "v" prefix).
-var braveAssets = map[string]string{
-	"windows_amd64": "brave-v%s-win32-x64.zip",
-	"windows_arm64": "brave-v%s-win32-arm64.zip",
-	"darwin_amd64":  "brave-v%s-darwin-x64.zip",
-	"darwin_arm64":  "brave-v%s-darwin-arm64.zip",
-	"linux_amd64":   "brave-browser-%s-linux-amd64.zip",
-	"linux_arm64":   "brave-browser-%s-linux-arm64.zip",
-}
-
-// braveBins maps GOOS to the executable path within the extracted archive.
-var braveBins = map[string]string{
-	"windows": "brave.exe",
-	"darwin":  "Brave Browser.app/Contents/MacOS/Brave Browser",
-	"linux":   "brave",
-}
-
-// BrowserCacheDir returns the path to ~/.scout/browsers/, creating it if needed.
-func BrowserCacheDir() (string, error) {
+// CacheDir returns the path to ~/.scout/browsers/, creating it if needed.
+func CacheDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("scout: user home dir: %w", err)
@@ -53,23 +34,111 @@ func BrowserCacheDir() (string, error) {
 	return dir, nil
 }
 
-// ChromiumRevisionDefault is the pinned Chromium snapshot revision.
-const ChromiumRevisionDefault = 1592198
+// RegistryFile is the JSON file tracking downloaded browsers.
+const RegistryFile = "installed.json"
 
-// chromiumRevisionPlaywright is the Playwright ARM64 Linux revision.
-const chromiumRevisionPlaywright = 1124
+// LoadRegistry reads ~/.scout/browsers/installed.json.
+// Returns an empty slice (not error) if the file doesn't exist.
+func LoadRegistry() ([]BrowserEntry, error) {
+	cacheDir, err := CacheDir()
+	if err != nil {
+		return nil, err
+	}
 
-// chromiumHostConf maps GOOS_GOARCH to Chromium snapshot URL parts.
-var chromiumHostConf = map[string]struct {
-	urlPrefix string
-	zipName   string
-}{
-	"darwin_amd64":  {"Mac", "chrome-mac.zip"},
-	"darwin_arm64":  {"Mac_Arm", "chrome-mac.zip"},
-	"linux_amd64":   {"Linux_x64", "chrome-linux.zip"},
-	"windows_386":   {"Win", "chrome-win.zip"},
-	"windows_amd64": {"Win_x64", "chrome-win.zip"},
+	data, err := os.ReadFile(filepath.Join(cacheDir, RegistryFile))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("scout: read browser registry: %w", err)
+	}
+
+	var entries []BrowserEntry
+	if err := json.Unmarshal(data, &entries); err != nil {
+		return nil, fmt.Errorf("scout: parse browser registry: %w", err)
+	}
+
+	return entries, nil
 }
+
+// SaveRegistry writes the registry to ~/.scout/browsers/installed.json.
+func SaveRegistry(entries []BrowserEntry) error {
+	cacheDir, err := CacheDir()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(entries, "", "  ")
+	if err != nil {
+		return fmt.Errorf("scout: marshal browser registry: %w", err)
+	}
+
+	return os.WriteFile(filepath.Join(cacheDir, RegistryFile), data, 0o644)
+}
+
+// RegisterBrowser adds or updates a browser entry in the registry.
+// No-op if the exact entry (name+version+platform+binary) already exists.
+func RegisterBrowser(name, version, binary string) {
+	entries, _ := LoadRegistry()
+
+	platform := runtime.GOOS + "_" + runtime.GOARCH
+
+	// Check if already registered with same binary path.
+	for _, e := range entries {
+		if e.Name == name && e.Version == version && e.Platform == platform && e.Binary == binary {
+			return // already registered
+		}
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	// Update existing entry for same name+version+platform, or append.
+	found := false
+	for i, e := range entries {
+		if e.Name == name && e.Version == version && e.Platform == platform {
+			entries[i].Binary = binary
+			entries[i].Installed = now
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		entries = append(entries, BrowserEntry{
+			Name:      name,
+			Version:   version,
+			Binary:    binary,
+			Platform:  platform,
+			Installed: now,
+		})
+	}
+
+	_ = SaveRegistry(entries)
+}
+
+// LookupRegistryBrowser finds the latest entry for a given browser name from the registry.
+// Returns the binary path or empty string if not found (or binary no longer exists on disk).
+func LookupRegistryBrowser(name string) string {
+	entries, err := LoadRegistry()
+	if err != nil || len(entries) == 0 {
+		return ""
+	}
+
+	platform := runtime.GOOS + "_" + runtime.GOARCH
+
+	// Walk backwards — later entries are newer.
+	for i := len(entries) - 1; i >= 0; i-- {
+		e := entries[i]
+		if e.Name == name && e.Platform == platform && FileExists(e.Binary) {
+			return e.Binary
+		}
+	}
+
+	return ""
+}
+
+// ChromiumRevisionDefault is the pinned Chromium snapshot revision from browser.json.
+var ChromiumRevisionDefault = LoadManifest().DefaultRevision()
 
 // chromiumBins maps GOOS to the executable name within the extracted archive.
 var chromiumBins = map[string]string{
@@ -80,27 +149,21 @@ var chromiumBins = map[string]string{
 
 // ChromiumDownloadURLs returns candidate download URLs for the given revision.
 func ChromiumDownloadURLs(revision int) []string {
-	conf, ok := chromiumHostConf[runtime.GOOS+"_"+runtime.GOARCH]
-	if !ok {
+	m := LoadManifest()
+	p := m.Platform()
+	if p == nil {
 		return nil
 	}
 
-	urls := []string{
-		// Google CDN.
-		fmt.Sprintf("https://storage.googleapis.com/chromium-browser-snapshots/%s/%d/%s",
-			conf.urlPrefix, revision, conf.zipName),
-		// NPM mirror.
-		fmt.Sprintf("https://registry.npmmirror.com/-/binary/chromium-browser-snapshots/%s/%d/%s",
-			conf.urlPrefix, revision, conf.zipName),
-	}
+	rev := fmt.Sprintf("%d", revision)
+	pwRev := fmt.Sprintf("%d", m.PlaywrightRevision())
 
-	// Playwright CDN for ARM64 Linux.
-	if runtime.GOOS == "linux" && runtime.GOARCH == "arm64" {
-		urls = append(urls, fmt.Sprintf(
-			"https://playwright.azureedge.net/builds/chromium/%d/chromium-linux-arm64.zip",
-			chromiumRevisionPlaywright))
+	var urls []string
+	for _, tmpl := range p.URLs {
+		u := strings.ReplaceAll(tmpl, "{revision}", rev)
+		u = strings.ReplaceAll(u, "{playwright_revision}", pwRev)
+		urls = append(urls, u)
 	}
-
 	return urls
 }
 
@@ -111,7 +174,7 @@ func DownloadChromium(ctx context.Context, revision int) (string, error) {
 		revision = ChromiumRevisionDefault
 	}
 
-	cacheDir, err := BrowserCacheDir()
+	cacheDir, err := CacheDir()
 	if err != nil {
 		return "", err
 	}
@@ -121,7 +184,8 @@ func DownloadChromium(ctx context.Context, revision int) (string, error) {
 	binPath := filepath.Join(destDir, chromiumBinPath())
 
 	// Already downloaded.
-	if fileExists(binPath) {
+	if FileExists(binPath) {
+		RegisterBrowser("chromium", revStr, binPath)
 		return binPath, nil
 	}
 
@@ -135,7 +199,7 @@ func DownloadChromium(ctx context.Context, revision int) (string, error) {
 	var dlErr error
 
 	for _, u := range urls {
-		data, dlErr = downloadFile(ctx, u)
+		data, dlErr = DownloadFile(ctx, u)
 		if dlErr == nil {
 			break
 		}
@@ -145,7 +209,7 @@ func DownloadChromium(ctx context.Context, revision int) (string, error) {
 		// Fallback: try latest revision from LAST_CHANGE.
 		if latest, ok := latestChromiumRevision(ctx); ok && latest != revision {
 			for _, u := range ChromiumDownloadURLs(latest) {
-				data, dlErr = downloadFile(ctx, u)
+				data, dlErr = DownloadFile(ctx, u)
 				if dlErr == nil {
 					revStr = fmt.Sprintf("%d", latest)
 					destDir = filepath.Join(cacheDir, "chromium", revStr)
@@ -169,9 +233,13 @@ func DownloadChromium(ctx context.Context, revision int) (string, error) {
 		return "", fmt.Errorf("scout: create chromium dir: %w", err)
 	}
 
-	conf := chromiumHostConf[runtime.GOOS+"_"+runtime.GOARCH]
+	p := LoadManifest().Platform()
+	zipName := ""
+	if p != nil {
+		zipName = p.Zip
+	}
 
-	if err := archive.Extract(data, conf.zipName, destDir); err != nil {
+	if err := archive.Extract(data, zipName, destDir); err != nil {
 		return "", fmt.Errorf("scout: extract chromium: %w", err)
 	}
 
@@ -184,21 +252,21 @@ func DownloadChromium(ctx context.Context, revision int) (string, error) {
 		_ = os.Chmod(binPath, 0o755)
 	}
 
-	if !fileExists(binPath) {
+	if !FileExists(binPath) {
 		return "", fmt.Errorf("scout: chromium binary not found at %s after extraction", binPath)
 	}
+
+	RegisterBrowser("chromium", revStr, binPath)
 
 	return binPath, nil
 }
 
 // latestChromiumRevision queries Google's LAST_CHANGE endpoint.
 func latestChromiumRevision(ctx context.Context) (int, bool) {
-	conf, ok := chromiumHostConf[runtime.GOOS+"_"+runtime.GOARCH]
-	if !ok {
+	url := LoadManifest().LatestAPI()
+	if url == "" {
 		return 0, false
 	}
-
-	url := fmt.Sprintf("https://storage.googleapis.com/chromium-browser-snapshots/%s/LAST_CHANGE", conf.urlPrefix)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -242,14 +310,12 @@ func chromiumBinPath() string {
 }
 
 // stripFirstDir removes a single top-level directory, promoting its contents up.
-// Used for archives like chrome-win.zip that wrap everything in chrome-win/.
 func stripFirstDir(dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return err
 	}
 
-	// Only strip if there's exactly one directory entry.
 	if len(entries) != 1 || !entries[0].IsDir() {
 		return nil
 	}
@@ -282,7 +348,7 @@ func DownloadBrave(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	cacheDir, err := BrowserCacheDir()
+	cacheDir, err := CacheDir()
 	if err != nil {
 		return "", err
 	}
@@ -291,18 +357,19 @@ func DownloadBrave(ctx context.Context) (string, error) {
 	binPath := filepath.Join(destDir, braveBinPath())
 
 	// Already downloaded.
-	if fileExists(binPath) {
+	if FileExists(binPath) {
+		RegisterBrowser("brave", version, binPath)
 		return binPath, nil
 	}
 
-	asset := braveAssetName(version)
-	if asset == "" {
+	dlURL := LoadManifest().Brave.DownloadURL(version)
+	if dlURL == "" {
 		return "", fmt.Errorf("scout: no Brave release available for %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 
-	url := fmt.Sprintf("https://github.com/brave/brave-browser/releases/download/v%s/%s", version, asset)
+	asset := braveAssetName(version)
 
-	data, err := downloadFile(ctx, url)
+	data, err := DownloadFile(ctx, dlURL)
 	if err != nil {
 		return "", fmt.Errorf("scout: download brave: %w", err)
 	}
@@ -327,22 +394,143 @@ func DownloadBrave(ctx context.Context) (string, error) {
 		}
 	}
 
-	if !fileExists(binPath) {
+	if !FileExists(binPath) {
 		return "", fmt.Errorf("scout: brave binary not found at %s after extraction", binPath)
 	}
+
+	RegisterBrowser("brave", version, binPath)
 
 	return binPath, nil
 }
 
-// DownloadedBrowser describes a browser found in ~/.scout/browsers/.
-type DownloadedBrowser struct {
-	Name     string   // e.g. "chromium", "brave", "electron"
-	Versions []string // e.g. ["1592198"], ["1.87.191"]
+// chromeCfTBinPath returns the relative binary path for Chrome for Testing from browser.json.
+func chromeCfTBinPath() string {
+	return LoadManifest().Chrome.BinaryPath("chrome")
 }
 
-// ListDownloadedBrowsers returns info about browsers in ~/.scout/browsers/.
-func ListDownloadedBrowsers() ([]DownloadedBrowser, error) {
-	cacheDir, err := BrowserCacheDir()
+// chromeCfTPlatformID returns the CfT platform identifier for the current OS/arch from browser.json.
+func chromeCfTPlatformID() string {
+	p := LoadManifest().Chrome.BrowserPlatform()
+	if p == nil {
+		return ""
+	}
+	return p.PlatformID
+}
+
+// DownloadChrome downloads Google Chrome for Testing (latest Stable) and
+// extracts it to ~/.scout/browsers/chrome/<version>/. Returns the executable path.
+func DownloadChrome(ctx context.Context) (string, error) {
+	version, dlURL, err := latestChromeForTesting(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	cacheDir, err := CacheDir()
+	if err != nil {
+		return "", err
+	}
+
+	destDir := filepath.Join(cacheDir, "chrome", version)
+	binPath := filepath.Join(destDir, chromeCfTBinPath())
+
+	if FileExists(binPath) {
+		RegisterBrowser("chrome", version, binPath)
+		return binPath, nil
+	}
+
+	data, err := DownloadFile(ctx, dlURL)
+	if err != nil {
+		return "", fmt.Errorf("scout: download chrome: %w", err)
+	}
+
+	if err := os.RemoveAll(destDir); err != nil {
+		return "", fmt.Errorf("scout: clean chrome dir: %w", err)
+	}
+
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return "", fmt.Errorf("scout: create chrome dir: %w", err)
+	}
+
+	if err := archive.Extract(data, filepath.Base(dlURL), destDir); err != nil {
+		return "", fmt.Errorf("scout: extract chrome: %w", err)
+	}
+
+	if runtime.GOOS != "windows" {
+		_ = os.Chmod(binPath, 0o755)
+	}
+
+	if !FileExists(binPath) {
+		return "", fmt.Errorf("scout: chrome binary not found at %s after extraction", binPath)
+	}
+
+	RegisterBrowser("chrome", version, binPath)
+
+	return binPath, nil
+}
+
+// latestChromeForTesting queries the CfT API for the latest Stable version and download URL.
+func latestChromeForTesting(ctx context.Context) (version, downloadURL string, err error) {
+	apiURL := LoadManifest().Chrome.BrowserAPI("latest_stable")
+	if apiURL == "" {
+		return "", "", fmt.Errorf("scout: no Chrome for Testing API URL in browser.json")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return "", "", fmt.Errorf("scout: create request: %w", err)
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("scout: fetch chrome versions: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("scout: chrome API returned HTTP %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Channels struct {
+			Stable struct {
+				Version   string `json:"version"`
+				Downloads struct {
+					Chrome []struct {
+						Platform string `json:"platform"`
+						URL      string `json:"url"`
+					} `json:"chrome"`
+				} `json:"downloads"`
+			} `json:"Stable"`
+		} `json:"channels"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", "", fmt.Errorf("scout: decode chrome response: %w", err)
+	}
+
+	stable := result.Channels.Stable
+	if stable.Version == "" {
+		return "", "", fmt.Errorf("scout: empty version in chrome API response")
+	}
+
+	wantPlatform := chromeCfTPlatformID()
+	if wantPlatform == "" {
+		return "", "", fmt.Errorf("scout: no Chrome for Testing for %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	for _, dl := range stable.Downloads.Chrome {
+		if dl.Platform == wantPlatform {
+			return stable.Version, dl.URL, nil
+		}
+	}
+
+	return "", "", fmt.Errorf("scout: no Chrome for Testing download for platform %s", wantPlatform)
+}
+
+// ListDownloaded returns info about browsers in ~/.scout/browsers/.
+func ListDownloaded() ([]DownloadedBrowser, error) {
+	cacheDir, err := CacheDir()
 	if err != nil {
 		return nil, err
 	}
@@ -382,8 +570,12 @@ func ListDownloadedBrowsers() ([]DownloadedBrowser, error) {
 
 // latestBraveVersion fetches the latest Brave release tag from GitHub API.
 func latestBraveVersion(ctx context.Context) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://api.github.com/repos/brave/brave-browser/releases/latest", nil)
+	apiURL := LoadManifest().Brave.BrowserAPI("latest_release")
+	if apiURL == "" {
+		return "", fmt.Errorf("scout: no Brave API URL in browser.json")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("scout: create request: %w", err)
 	}
@@ -419,45 +611,23 @@ func latestBraveVersion(ctx context.Context) (string, error) {
 	return strings.TrimPrefix(release.TagName, "v"), nil
 }
 
-// braveAssetName returns the zip filename for the current platform and version.
+// braveAssetName returns the zip filename for the current platform and version from browser.json.
 func braveAssetName(version string) string {
-	key := runtime.GOOS + "_" + runtime.GOARCH
-
-	pattern, ok := braveAssets[key]
-	if !ok {
-		return ""
-	}
-
-	return fmt.Sprintf(pattern, version)
+	return LoadManifest().Brave.ZipName(version)
 }
 
-// braveBinPath returns the relative path to the Brave executable within the extracted archive.
+// braveBinPath returns the relative path to the Brave executable from browser.json.
 func braveBinPath() string {
-	bin, ok := braveBins[runtime.GOOS]
-	if !ok {
-		return "brave"
-	}
-
-	return bin
+	return LoadManifest().Brave.BinaryPath("brave")
 }
 
-// edgeUpdatesAPI is the Microsoft Edge update products endpoint.
-const edgeUpdatesAPI = "https://edgeupdates.microsoft.com/api/products"
-
-// edgeBins maps GOOS to the executable path within the extracted Edge install.
-var edgeBins = map[string]string{
-	"windows": filepath.Join("Microsoft", "Edge", "Application", "msedge.exe"),
-	"linux":   filepath.Join("opt", "microsoft", "msedge", "msedge"),
-	"darwin":  filepath.Join("Microsoft Edge.app", "Contents", "MacOS", "Microsoft Edge"),
+// edgeBinPath returns the relative path to the Edge executable from browser.json.
+func edgeBinPath() string {
+	return LoadManifest().Edge.BinaryPath("msedge")
 }
 
 // DownloadEdge downloads Microsoft Edge Stable from the official updates API
 // and extracts it to ~/.scout/browsers/edge/<version>/. Returns the path to the executable.
-//
-// On Windows, Edge's Enterprise MSI is a bootstrapper (not extractable).
-// We copy the locally installed Edge into the cache instead.
-// On Linux, the .deb package is downloaded and extracted.
-// On macOS, the .pkg is downloaded and extracted via pkgutil.
 func DownloadEdge(ctx context.Context) (string, error) {
 	if runtime.GOOS == "windows" {
 		return downloadEdgeWindows(ctx)
@@ -467,14 +637,12 @@ func DownloadEdge(ctx context.Context) (string, error) {
 }
 
 // downloadEdgeWindows copies the system-installed Edge into the browser cache.
-func downloadEdgeWindows(ctx context.Context) (string, error) {
-	systemPath, err := lookupBrowser(BrowserEdge)
+func downloadEdgeWindows(_ context.Context) (string, error) {
+	systemPath, err := lookupBrowser(Edge)
 	if err != nil {
 		return "", fmt.Errorf("scout: edge not installed — download from https://www.microsoft.com/edge/download: %w", err)
 	}
 
-	// Edge is at e.g. C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
-	// The version dir is next to msedge.exe, e.g. .../Application/131.0.2903.86/
 	appDir := filepath.Dir(systemPath)
 
 	var version string
@@ -493,11 +661,10 @@ func downloadEdgeWindows(ctx context.Context) (string, error) {
 	}
 
 	if version == "" {
-		// Use the binary directly without caching.
 		return systemPath, nil
 	}
 
-	cacheDir, err := BrowserCacheDir()
+	cacheDir, err := CacheDir()
 	if err != nil {
 		return "", err
 	}
@@ -505,21 +672,20 @@ func downloadEdgeWindows(ctx context.Context) (string, error) {
 	destDir := filepath.Join(cacheDir, "edge", version)
 	binPath := filepath.Join(destDir, "msedge.exe")
 
-	if fileExists(binPath) {
+	if FileExists(binPath) {
+		RegisterBrowser("edge", version, binPath)
 		return binPath, nil
 	}
 
-	// Copy the entire Edge version directory to cache.
 	srcDir := filepath.Join(appDir, version)
 
 	if err := copyDir(srcDir, destDir); err != nil {
 		return "", fmt.Errorf("scout: copy edge to cache: %w", err)
 	}
 
-	// Also copy msedge.exe and related files from Application/ root.
 	for _, name := range []string{"msedge.exe", "msedge.dll", "msedge_elf.dll"} {
 		src := filepath.Join(appDir, name)
-		if fileExists(src) {
+		if FileExists(src) {
 			data, err := os.ReadFile(src)
 			if err == nil {
 				_ = os.WriteFile(filepath.Join(destDir, name), data, 0o755)
@@ -527,11 +693,13 @@ func downloadEdgeWindows(ctx context.Context) (string, error) {
 		}
 	}
 
-	if !fileExists(binPath) {
+	if !FileExists(binPath) {
 		return systemPath, nil
 	}
 
 	_, _ = fmt.Fprintf(os.Stderr, "scout: cached Edge %s to %s\n", version, destDir)
+
+	RegisterBrowser("edge", version, binPath)
 
 	return binPath, nil
 }
@@ -543,7 +711,7 @@ func downloadEdgeUnix(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	cacheDir, err := BrowserCacheDir()
+	cacheDir, err := CacheDir()
 	if err != nil {
 		return "", err
 	}
@@ -551,11 +719,12 @@ func downloadEdgeUnix(ctx context.Context) (string, error) {
 	destDir := filepath.Join(cacheDir, "edge", version)
 	binPath := filepath.Join(destDir, edgeBinPath())
 
-	if fileExists(binPath) {
+	if FileExists(binPath) {
+		RegisterBrowser("edge", version, binPath)
 		return binPath, nil
 	}
 
-	data, err := downloadFile(ctx, dlURL)
+	data, err := DownloadFile(ctx, dlURL)
 	if err != nil {
 		return "", fmt.Errorf("scout: download edge: %w", err)
 	}
@@ -576,9 +745,11 @@ func downloadEdgeUnix(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("scout: chmod edge binary: %w", err)
 	}
 
-	if !fileExists(binPath) {
+	if !FileExists(binPath) {
 		return "", fmt.Errorf("scout: edge binary not found at %s after extraction", binPath)
 	}
+
+	RegisterBrowser("edge", version, binPath)
 
 	return binPath, nil
 }
@@ -612,7 +783,12 @@ func copyDir(src, dst string) error {
 
 // latestEdgeRelease queries the Edge updates API for the latest Stable version and download URL.
 func latestEdgeRelease(ctx context.Context) (version, downloadURL string, err error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, edgeUpdatesAPI, nil)
+	apiURL := LoadManifest().Edge.BrowserAPI("updates")
+	if apiURL == "" {
+		return "", "", fmt.Errorf("scout: no Edge updates API URL in browser.json")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 	if err != nil {
 		return "", "", fmt.Errorf("scout: create request: %w", err)
 	}
@@ -694,7 +870,6 @@ func edgePlatformArch() (platform, arch string) {
 		arch = runtime.GOARCH
 	}
 
-	// macOS uses universal builds.
 	if runtime.GOOS == "darwin" {
 		arch = "universal"
 	}
@@ -732,8 +907,7 @@ func extractEdge(data []byte, dlURL, destDir string) error {
 	}
 }
 
-// extractMSI extracts an MSI archive. Tries 7z first (handles MSI natively),
-// falls back to msiexec /a on Windows.
+// extractMSI extracts an MSI archive.
 func extractMSI(data []byte, destDir string) error {
 	tmpFile := filepath.Join(os.TempDir(), fmt.Sprintf("scout-edge-%d.msi", time.Now().UnixNano()))
 
@@ -743,7 +917,6 @@ func extractMSI(data []byte, destDir string) error {
 
 	defer func() { _ = os.Remove(tmpFile) }()
 
-	// Try 7z first — handles MSI natively and works cross-platform.
 	if sevenZip, err := exec.LookPath("7z"); err == nil {
 		cmd := exec.Command(sevenZip, "x", "-y", "-o"+destDir, tmpFile)
 
@@ -754,7 +927,6 @@ func extractMSI(data []byte, destDir string) error {
 		return nil
 	}
 
-	// Fallback: msiexec /a (Windows only).
 	if runtime.GOOS != "windows" {
 		return fmt.Errorf("7z not found — install 7-Zip to extract MSI on this platform")
 	}
@@ -766,7 +938,6 @@ func extractMSI(data []byte, destDir string) error {
 		return fmt.Errorf("msiexec extract: %w\n%s", err, string(output))
 	}
 
-	// msiexec copies the MSI into TARGETDIR; remove it.
 	_ = os.Remove(filepath.Join(destDir, filepath.Base(tmpFile)))
 
 	return nil
@@ -791,18 +962,8 @@ func extractMacPKG(data []byte, destDir string) error {
 	return nil
 }
 
-// edgeBinPath returns the relative path to the Edge executable within the extracted install.
-func edgeBinPath() string {
-	bin, ok := edgeBins[runtime.GOOS]
-	if !ok {
-		return "msedge"
-	}
-
-	return bin
-}
-
-// downloadFile fetches a URL and returns the response body.
-func downloadFile(ctx context.Context, url string) ([]byte, error) {
+// DownloadFile fetches a URL and returns the response body.
+func DownloadFile(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("scout: create request: %w", err)
@@ -824,29 +985,114 @@ func downloadFile(ctx context.Context, url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-
-// resolveBrowser tries local lookup first, then falls back to auto-download.
-func resolveBrowser(ctx context.Context, bt BrowserType) (string, error) {
+// Resolve tries local lookup first, then falls back to auto-download.
+func Resolve(ctx context.Context, bt BrowserType) (string, error) {
 	path, err := lookupBrowser(bt)
 	if err == nil {
 		return path, nil
 	}
 
-	if !isNotFound(err) {
+	if !IsNotFound(err) {
 		return "", err
 	}
 
 	switch bt { //nolint:exhaustive
-	case BrowserBrave:
+	case Brave:
 		return DownloadBrave(ctx)
-	case BrowserEdge:
+	case Edge:
 		return DownloadEdge(ctx)
 	default:
 		return "", err
 	}
 }
 
-// isNotFound checks if the error wraps ErrBrowserNotFound.
-func isNotFound(err error) bool {
-	return errors.Is(err, ErrBrowserNotFound)
+// ResolveCached looks only in ~/.scout/browsers/ for the given browser type.
+// If not found in cache, downloads it. Never scans system install paths.
+func ResolveCached(ctx context.Context, bt BrowserType) (string, error) {
+	// Fast path: check registry first.
+	registryNames := browserRegistryNames(bt)
+	for _, name := range registryNames {
+		if path := LookupRegistryBrowser(name); path != "" {
+			return path, nil
+		}
+	}
+
+	// Fallback: scan cache dirs on disk (handles pre-registry downloads).
+	cacheDir, err := CacheDir()
+	if err != nil {
+		return "", err
+	}
+
+	type cacheEntry struct {
+		subdir  string
+		binName string
+	}
+
+	var candidates []cacheEntry
+	switch bt { //nolint:exhaustive
+	case Brave:
+		candidates = []cacheEntry{{"brave", braveBinPath()}}
+	case Edge:
+		candidates = []cacheEntry{{"edge", edgeBinPath()}}
+	case Chrome:
+		candidates = []cacheEntry{
+			{"chrome", chromeCfTBinPath()},
+			{"chromium", chromiumBinPath()},
+		}
+	default:
+		return "", fmt.Errorf("%w: %s", ErrNotFound, bt)
+	}
+
+	for _, c := range candidates {
+		if path := LatestCachedBin(filepath.Join(cacheDir, c.subdir), c.binName); path != "" {
+			return path, nil
+		}
+	}
+
+	// Not cached — download.
+	switch bt { //nolint:exhaustive
+	case Brave:
+		return DownloadBrave(ctx)
+	case Edge:
+		return DownloadEdge(ctx)
+	case Chrome:
+		return DownloadChromium(ctx, ChromiumRevisionDefault)
+	default:
+		return "", fmt.Errorf("%w: %s", ErrNotFound, bt)
+	}
+}
+
+// browserRegistryNames maps a BrowserType to registry entry names to check.
+func browserRegistryNames(bt BrowserType) []string {
+	switch bt { //nolint:exhaustive
+	case Chrome:
+		return []string{"chrome", "chromium"}
+	case Brave:
+		return []string{"brave"}
+	case Edge:
+		return []string{"edge"}
+	default:
+		return nil
+	}
+}
+
+// LatestCachedBin scans a browser cache directory for the latest version
+// subdirectory containing binName. Returns the full path or empty string.
+func LatestCachedBin(browserDir, binName string) string {
+	entries, err := os.ReadDir(browserDir)
+	if err != nil {
+		return ""
+	}
+
+	for i := len(entries) - 1; i >= 0; i-- {
+		if !entries[i].IsDir() {
+			continue
+		}
+		p := filepath.Join(browserDir, entries[i].Name(), binName)
+		if FileExists(p) {
+			return p
+		}
+	}
+
+	return ""
 }

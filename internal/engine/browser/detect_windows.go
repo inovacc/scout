@@ -1,6 +1,6 @@
 //go:build windows
 
-package engine
+package browser
 
 import (
 	"os"
@@ -22,7 +22,7 @@ func detectBrowserPaths() []browserCandidate {
 
 		candidates = append(candidates, browserCandidate{
 			Name: "Google Chrome",
-			Type: BrowserChrome,
+			Type: Chrome,
 			Path: filepath.Join(dir, `Google\Chrome\Application\chrome.exe`),
 		})
 	}
@@ -35,7 +35,7 @@ func detectBrowserPaths() []browserCandidate {
 
 		candidates = append(candidates, browserCandidate{
 			Name: "Brave Browser",
-			Type: BrowserBrave,
+			Type: Brave,
 			Path: filepath.Join(dir, `BraveSoftware\Brave-Browser\Application\brave.exe`),
 		})
 	}
@@ -48,7 +48,7 @@ func detectBrowserPaths() []browserCandidate {
 
 		candidates = append(candidates, browserCandidate{
 			Name: "Microsoft Edge",
-			Type: BrowserEdge,
+			Type: Edge,
 			Path: filepath.Join(dir, `Microsoft\Edge\Application\msedge.exe`),
 		})
 	}

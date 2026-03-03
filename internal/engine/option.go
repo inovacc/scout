@@ -4,21 +4,22 @@ import (
 	"os"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine/browser"
 	"github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
-// BrowserType identifies a Chromium-based browser for auto-detection.
-type BrowserType string
+// BrowserType is an alias for browser.BrowserType.
+type BrowserType = browser.BrowserType
 
 const (
 	// BrowserChrome uses rod's default Chrome/Chromium auto-detection.
-	BrowserChrome BrowserType = "chrome"
+	BrowserChrome = browser.Chrome
 	// BrowserBrave selects Brave Browser.
-	BrowserBrave BrowserType = "brave"
+	BrowserBrave = browser.Brave
 	// BrowserEdge selects Microsoft Edge.
-	BrowserEdge BrowserType = "edge"
+	BrowserEdge = browser.Edge
 	// BrowserElectron selects Electron runtime for app automation.
-	BrowserElectron BrowserType = "electron"
+	BrowserElectron = browser.Electron
 )
 
 // Option configures a Browser instance.
@@ -76,6 +77,7 @@ type options struct {
 	reusableSession    bool   // enable session reuse via scout.pid
 	sessionID          string // explicit session ID to reuse from scout.pid
 	targetURL          string // URL for domain-based session routing
+	systemBrowser      bool   // allow system-installed browsers (not just cache)
 }
 
 func defaults() *options {
@@ -406,6 +408,19 @@ func WithReusableSession() Option {
 // "https://sub.mysite.com" and "https://admin.mysite.com" share the same session.
 func WithTargetURL(url string) Option {
 	return func(o *options) { o.targetURL = url }
+}
+
+// WithAutoDetect picks the best available browser (Chrome > Brave > Edge > Chromium).
+// If no browser is found, falls back to rod's default auto-detection.
+// This is ignored if WithExecPath or WithBrowser is also set.
+func WithAutoDetect() Option {
+	return func(o *options) { o.autoDetect = true }
+}
+
+// WithSystemBrowser opts in to scanning system-installed browsers (Program Files,
+// /usr/bin, etc.). Without this option, only browsers in ~/.scout/browsers/ are used.
+func WithSystemBrowser() Option {
+	return func(o *options) { o.systemBrowser = true }
 }
 
 // WithSessionID reuses a specific session by its UUID from scout.pid.
