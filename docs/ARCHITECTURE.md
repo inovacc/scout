@@ -4,7 +4,7 @@
 
 ```mermaid
 flowchart TB
-    subgraph Library["package scout (core library)"]
+    subgraph Library["internal/engine (core library)"]
         Browser["Browser\n(browser.go)"]
         Page["Page\n(page.go)"]
         Element["Element\n(element.go)"]
@@ -48,10 +48,19 @@ flowchart TB
         Platform["Platform Defaults\n(platform_*.go)"]
     end
 
+    subgraph SubPackages["Engine Sub-Packages"]
+        Detect["Detect\n(detect/)"]
+        Fingerprint["Fingerprint\n(fingerprint/)"]
+        Hijack["Hijack\n(hijack/)"]
+        LLMPkg["LLM\n(llm/)"]
+        VPN["VPN\n(vpn/)"]
+        SessionPkg["Session\n(session/)"]
+        StealthPkg["Stealth\n(stealth/)"]
+    end
+
     subgraph Identity["Identity & Discovery"]
-        DeviceID["DeviceIdentity\n(pkg/identity/)"]
-        Discovery["mDNS Discovery\n(pkg/discovery/)"]
-        StealthPkg["Stealth\n(pkg/stealth/)"]
+        DeviceID["DeviceIdentity\n(pkg/scout/identity/)"]
+        Discovery["mDNS Discovery\n(pkg/scout/discovery/)"]
         ExtPkg["Extensions\n(extensions/)"]
     end
 

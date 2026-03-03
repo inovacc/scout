@@ -10,52 +10,65 @@
 
 ## Open Items
 
-### Testing & Quality
-
-| Item | Priority | Effort | Scope |
-|------|----------|--------|-------|
-| ~~Integration test suite for scraper modes~~ | ~~P2~~ | ~~Large~~ | ~~Done (v0.28.0) — mock Mode/Session/AuthProvider, registry, progress, cancellation tests~~ |
-| ~~Test coverage for gRPC streaming RPCs~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — StreamHijack, double-start/stop, invalid session tests~~ |
-| ~~Benchmark suite for core operations~~ | ~~P3~~ | ~~Medium~~ | ~~Done — BenchmarkPageCreation, BenchmarkExtract, BenchmarkPagination, BenchmarkSnapshot~~ |
-| ~~Fuzz testing for recipe parser~~ | ~~P3~~ | ~~Medium~~ | ~~Done (v0.28.0) — FuzzParse + FuzzResolveSelector with 12 seed corpus entries~~ |
-
-### Platform & Compatibility
-
-| Item | Priority | Effort | Scope |
-|------|----------|--------|-------|
-| ~~browser.json revision manifest~~ | ~~P1~~ | ~~Medium~~ | ~~Done (Phase 43/50) — `browser.json` embedded manifest with per-platform revisions, zip names, download hosts; `LAST_CHANGE` fallback~~ |
-| ~~Chrome protocol version tracking~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — .scripts/rod-upstream-diff.sh with --check/--full modes~~ |
-| ~~Headless=new migration~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0)~~ |
-
-### Features
-
-| Item | Priority | Effort | Scope |
-|------|----------|--------|-------|
-| ~~Proxy chain support~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.28.0) — WithProxyChain, ValidateProxyChain, ProxyChainDescription~~ |
-| ~~HAR export~~ | ~~P2~~ | ~~Medium~~ | ~~Done (v0.27.0) — HijackRecorder with ExportHAR()~~ |
-| ~~Cookie jar persistence~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — SaveCookiesToFile/LoadCookiesFromFile~~ |
-| ~~Multi-tab orchestration~~ | ~~P3~~ | ~~Large~~ | ~~Done — TabGroup with Do/DoAll/DoParallel/Broadcast/Navigate/Wait/Collect~~ |
-| ~~Auto-upload results to GDrive/OneDrive~~ | ~~P2~~ | ~~Medium~~ | ~~Done — `scout upload auth/file/status` with OAuth2 for Google Drive and OneDrive~~ |
-| ~~Session reuse & clean reset~~ | ~~P1~~ | ~~Medium~~ | ~~Done — `WithReusableSession()`, `WithTargetURL()`, domain-hash routing, `scout session reset [id\|--all]`~~ |
-| ~~Orphan process detection (PID reuse)~~ | ~~P1~~ | ~~Medium~~ | ~~Done (v0.49.0) — gops agent + `IsScoutProcess()` replaces `ProcessAlive` for scout PIDs; `Page.WaitClose()` detects browser window close via CDP; synchronous session dir cleanup~~ |
-| ~~REPL mode~~ | ~~P2~~ | ~~Medium~~ | ~~Done — `scout repl [url]` interactive local browser shell with 20 commands~~ |
-| ~~Site health checker / test page~~ | ~~P1~~ | ~~Large~~ | ~~Done — `scout test-site <url>` with crawl, console/JS/network error detection, JSON/table report~~ |
-| ~~Page gather~~ | ~~P1~~ | ~~Medium~~ | ~~Done (Phase 47) — `scout gather <url>` one-shot page intelligence~~ |
-| ~~PDF form filling~~ | ~~P3~~ | ~~Medium~~ | ~~Done (Phase 51) — `PDFFormFields()`, `FillPDFForm()`, CLI `scout pdf-form fields/fill`~~ |
-| ~~Visual regression testing~~ | ~~P3~~ | ~~Large~~ | ~~Done (v0.28.0) — VisualDiff with threshold, color tolerance, diff image overlay~~ |
-
 ### Infrastructure
 
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
-| ~~MCP server SSE transport~~ | ~~P2~~ | ~~Medium~~ | ~~Done — ServeSSE() with --sse/--addr CLI flags~~ |
-| ~~gRPC reflection + health service~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — health.NewServer() registered~~ |
-| ~~CLI shell completions~~ | ~~P2~~ | ~~Quick~~ | ~~Done (v0.27.0) — scout completion bash/zsh/fish/powershell~~ |
-| ~~Rebrand rod references to scout~~ | ~~P2~~ | ~~Medium~~ | ~~Done — `-rod` → `-scout`, `DISABLE_ROD_FLAG` → `DISABLE_SCOUT_FLAG`, `rod-*` flags → `scout-*`, cache dir `rod/` → `scout/`, error links → github.com/inovacc/scout~~ |
 | OpenTelemetry tracing | P3 | Large | Instrument core operations with span context propagation |
 | Plugin system | P3 | XL | Dynamic loading of scraper modes and extractors |
 
 ## Completed Items (Archive)
+
+<details>
+<summary>Testing & Quality (all done)</summary>
+
+| Item | Completed |
+|------|-----------|
+| Integration test suite for scraper modes | v0.28.0 — mock Mode/Session/AuthProvider, registry, progress, cancellation tests |
+| Test coverage for gRPC streaming RPCs | v0.28.0 — StreamHijack, double-start/stop, invalid session tests |
+| Benchmark suite for core operations | BenchmarkPageCreation, BenchmarkExtract, BenchmarkPagination, BenchmarkSnapshot |
+| Fuzz testing for recipe parser | v0.28.0 — FuzzParse + FuzzResolveSelector with 12 seed corpus entries |
+</details>
+
+<details>
+<summary>Platform & Compatibility (all done)</summary>
+
+| Item | Completed |
+|------|-----------|
+| browser.json revision manifest | Phase 43/50 — embedded manifest with per-platform revisions, zip names, download hosts; LAST_CHANGE fallback |
+| Chrome protocol version tracking | v0.28.0 — .scripts/rod-upstream-diff.sh with --check/--full modes |
+| Headless=new migration | v0.27.0 |
+</details>
+
+<details>
+<summary>Features (all done)</summary>
+
+| Item | Completed |
+|------|-----------|
+| Proxy chain support | v0.28.0 — WithProxyChain, ValidateProxyChain, ProxyChainDescription |
+| HAR export | v0.27.0 — HijackRecorder with ExportHAR() |
+| Cookie jar persistence | v0.27.0 — SaveCookiesToFile/LoadCookiesFromFile |
+| Multi-tab orchestration | TabGroup with Do/DoAll/DoParallel/Broadcast/Navigate/Wait/Collect |
+| Auto-upload results to GDrive/OneDrive | scout upload auth/file/status with OAuth2 |
+| Session reuse & clean reset | WithReusableSession(), WithTargetURL(), domain-hash routing, scout session reset |
+| Orphan process detection (PID reuse) | v0.49.0 — gops agent + IsScoutProcess() + Page.WaitClose() |
+| REPL mode | scout repl with 20 commands |
+| Site health checker / test page | scout test-site with crawl, error detection, JSON/table report |
+| Page gather | Phase 47 — scout gather one-shot page intelligence |
+| PDF form filling | Phase 51 — PDFFormFields(), FillPDFForm(), CLI scout pdf-form |
+| Visual regression testing | v0.28.0 — VisualDiff with threshold, color tolerance, diff image overlay |
+</details>
+
+<details>
+<summary>Infrastructure (done items)</summary>
+
+| Item | Completed |
+|------|-----------|
+| MCP server SSE transport | ServeSSE() with --sse/--addr CLI flags |
+| gRPC reflection + health service | v0.27.0 — health.NewServer() registered |
+| CLI shell completions | v0.27.0 — scout completion bash/zsh/fish/powershell |
+| Rebrand rod references to scout | -rod to -scout, cache dir rod/ to scout/, error links updated |
+</details>
 
 <details>
 <summary>Scraper Modes — Authenticated Services (all done)</summary>

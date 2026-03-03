@@ -22,3 +22,6 @@ No open issues at this time.
 | Windows browser detection opens GUI | Fixed: PowerShell `-WindowStyle Hidden` (v0.20.0) | 2026-02 |
 | ParseVersion wrong for Brave | Fixed: regex returns first match (v0.20.0) | 2026-02 |
 | Bridge extension opens visible browser in headless tests | Fixed: skip bridge loading when `--headless` active (old mode doesn't support extensions) | 2026-02 |
+| Orphaned browser on terminal close (`mcp open`) | Fixed: gops agent + `Page.WaitClose()` CDP event detection + synchronous `launcher.Cleanup()` | 2026-03 |
+| `CleanOrphans` false positives from PID reuse | Fixed: `IsScoutProcess()` via gops confirms PID is a scout Go process | 2026-03 |
+| Session directory not cleaned on close | Fixed: `launcher.Cleanup()` made synchronous (was `go` goroutine, racing process exit) | 2026-03 |
