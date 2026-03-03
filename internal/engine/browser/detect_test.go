@@ -25,6 +25,51 @@ func TestDetectBrowsers(t *testing.T) {
 	}
 }
 
+func TestBestDetected(t *testing.T) {
+	path, bt, err := BestDetected()
+	if err != nil {
+		t.Logf("BestDetected() error (expected on CI): %v", err)
+		return
+	}
+
+	if path == "" {
+		t.Error("BestDetected() returned empty path with no error")
+	}
+
+	if bt == "" {
+		t.Error("BestDetected() returned empty BrowserType")
+	}
+
+	t.Logf("BestDetected: %s (%s)", path, bt)
+}
+
+func TestBrowserTypePriority(t *testing.T) {
+	p := BrowserTypePriority()
+	if len(p) == 0 {
+		t.Fatal("BrowserTypePriority() returned empty map")
+	}
+
+	if _, ok := p[Chrome]; !ok {
+		t.Error("Chrome not in priority map")
+	}
+
+	if _, ok := p[Brave]; !ok {
+		t.Error("Brave not in priority map")
+	}
+
+	if _, ok := p[Edge]; !ok {
+		t.Error("Edge not in priority map")
+	}
+
+	if p[Chrome] >= p[Brave] {
+		t.Error("Chrome should have higher priority (lower value) than Brave")
+	}
+
+	if p[Brave] >= p[Edge] {
+		t.Error("Brave should have higher priority (lower value) than Edge")
+	}
+}
+
 func TestParseBrowserVersion(t *testing.T) {
 	tests := []struct {
 		name   string
