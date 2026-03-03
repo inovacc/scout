@@ -50,6 +50,7 @@ func LoadRegistry() ([]BrowserEntry, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
+
 		return nil, fmt.Errorf("scout: read browser registry: %w", err)
 	}
 
@@ -94,11 +95,13 @@ func RegisterBrowser(name, version, binary string) {
 
 	// Update existing entry for same name+version+platform, or append.
 	found := false
+
 	for i, e := range entries {
 		if e.Name == name && e.Version == version && e.Platform == platform {
 			entries[i].Binary = binary
 			entries[i].Installed = now
 			found = true
+
 			break
 		}
 	}
@@ -150,20 +153,20 @@ var chromiumBins = map[string]string{
 // ChromiumDownloadURLs returns candidate download URLs for the given revision.
 func ChromiumDownloadURLs(revision int) []string {
 	m := LoadManifest()
+
 	p := m.Platform()
 	if p == nil {
 		return nil
 	}
 
 	rev := fmt.Sprintf("%d", revision)
-	pwRev := fmt.Sprintf("%d", m.PlaywrightRevision())
 
 	var urls []string
+
 	for _, tmpl := range p.URLs {
-		u := strings.ReplaceAll(tmpl, "{revision}", rev)
-		u = strings.ReplaceAll(u, "{playwright_revision}", pwRev)
-		urls = append(urls, u)
+		urls = append(urls, strings.ReplaceAll(tmpl, "{revision}", rev))
 	}
+
 	return urls
 }
 
@@ -195,8 +198,10 @@ func DownloadChromium(ctx context.Context, revision int) (string, error) {
 		return "", fmt.Errorf("scout: no Chromium download for %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 
-	var data []byte
-	var dlErr error
+	var (
+		data  []byte
+		dlErr error
+	)
 
 	for _, u := range urls {
 		data, dlErr = DownloadFile(ctx, u)
@@ -234,6 +239,7 @@ func DownloadChromium(ctx context.Context, revision int) (string, error) {
 	}
 
 	p := LoadManifest().Platform()
+
 	zipName := ""
 	if p != nil {
 		zipName = p.Zip
@@ -414,6 +420,7 @@ func chromeCfTPlatformID() string {
 	if p == nil {
 		return ""
 	}
+
 	return p.PlatformID
 }
 
@@ -481,10 +488,12 @@ func latestChromeForTesting(ctx context.Context) (version, downloadURL string, e
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", "", fmt.Errorf("scout: fetch chrome versions: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -1029,6 +1038,7 @@ func ResolveCached(ctx context.Context, bt BrowserType) (string, error) {
 	}
 
 	var candidates []cacheEntry
+
 	switch bt { //nolint:exhaustive
 	case Brave:
 		candidates = []cacheEntry{{"brave", braveBinPath()}}
@@ -1088,6 +1098,7 @@ func LatestCachedBin(browserDir, binName string) string {
 		if !entries[i].IsDir() {
 			continue
 		}
+
 		p := filepath.Join(browserDir, entries[i].Name(), binName)
 		if FileExists(p) {
 			return p

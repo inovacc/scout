@@ -29,9 +29,8 @@ type ChromiumConfig struct {
 
 // RevisionConfig holds revision numbers and latest-check URLs.
 type RevisionConfig struct {
-	Default         int               `json:"default"`
-	PlaywrightARM64 int               `json:"playwright_arm64"`
-	LatestAPI       map[string]string `json:"latest_api"`
+	Default   int               `json:"default"`
+	LatestAPI map[string]string `json:"latest_api"`
 }
 
 // HostConfig describes a download host template.
@@ -76,19 +75,16 @@ func LoadManifest() *Manifest {
 		if err := json.Unmarshal(manifestJSON, &m); err != nil {
 			panic(fmt.Sprintf("browser: parse browser.json: %v", err))
 		}
+
 		manifestInst = &m
 	})
+
 	return manifestInst
 }
 
 // DefaultRevision returns the default Chromium snapshot revision.
 func (m *Manifest) DefaultRevision() int {
 	return m.Chromium.Revision.Default
-}
-
-// PlaywrightRevision returns the Playwright ARM64 Linux revision.
-func (m *Manifest) PlaywrightRevision() int {
-	return m.Chromium.Revision.PlaywrightARM64
 }
 
 // PlatformKey returns the current GOOS_GOARCH key.
@@ -102,6 +98,7 @@ func (m *Manifest) Platform() *PlatformConfig {
 	if !ok {
 		return nil
 	}
+
 	return &p
 }
 
@@ -113,17 +110,17 @@ func (m *Manifest) HostURLs(revision int) []HostFunc {
 	}
 
 	rev := fmt.Sprintf("%d", revision)
-	pwRev := fmt.Sprintf("%d", m.PlaywrightRevision())
 
 	var hosts []HostFunc
+
 	for _, tmpl := range p.URLs {
 		t := tmpl // capture
+
 		hosts = append(hosts, func(_ int) string {
-			u := strings.ReplaceAll(t, "{revision}", rev)
-			u = strings.ReplaceAll(u, "{playwright_revision}", pwRev)
-			return u
+			return strings.ReplaceAll(t, "{revision}", rev)
 		})
 	}
+
 	return hosts
 }
 
@@ -137,6 +134,7 @@ func (d *BrowserDef) BrowserAPI(key string) string {
 	if d.API == nil {
 		return ""
 	}
+
 	return d.API[key]
 }
 
@@ -146,6 +144,7 @@ func (d *BrowserDef) BrowserPlatform() *BrowserPlatformDef {
 	if !ok {
 		return nil
 	}
+
 	return &p
 }
 
@@ -155,6 +154,7 @@ func (d *BrowserDef) BinaryPath(fallback string) string {
 	if p == nil || p.Binary == "" {
 		return fallback
 	}
+
 	return p.Binary
 }
 
@@ -164,6 +164,7 @@ func (d *BrowserDef) ZipName(version string) string {
 	if p == nil {
 		return ""
 	}
+
 	return strings.ReplaceAll(p.Zip, "{version}", version)
 }
 
@@ -174,6 +175,7 @@ func (d *BrowserDef) DownloadURL(version string) string {
 	if p == nil || len(p.URLs) == 0 {
 		return ""
 	}
+
 	return strings.ReplaceAll(p.URLs[0], "{version}", version)
 }
 
