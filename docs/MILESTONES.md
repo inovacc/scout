@@ -152,54 +152,30 @@
 - **New dependency:** `github.com/ollama/ollama`
 - **Coverage:** pkg/scout 75.7%
 
-## v0.8.0 - Screen Recorder [PLANNED]
+## v0.28.0 - Scraper Framework & Coverage [COMPLETE]
 
-**Goal:** Capture browser sessions as video for forensic evidence.
+**Goal:** Pluggable scraper modes, proxy chain, visual diff, fuzz testing.
 
-- [ ] ScreenRecorder type using CDP `Page.startScreencast`
-- [ ] WebM/GIF/PNG export formats
-- [ ] gRPC RPCs and CLI commands (`scout record start/stop/export`)
-- [ ] Combined HAR+video forensic bundles
+- [x] 19 scraper modes (Slack, Teams, Discord, Reddit, Gmail, Outlook, LinkedIn, Jira, Confluence, Twitter/X, YouTube, Notion, Google Drive, SharePoint, Salesforce, Amazon, Google Maps, Cloud Consoles, Grafana/Datadog)
+- [x] Proxy chain support (WithProxyChain, ValidateProxyChain)
+- [x] Visual regression testing (VisualDiff with threshold)
+- [x] Fuzz testing for recipe/runbook parser
+- [x] gRPC streaming test coverage raised to 80.6%
+- **Coverage:** pkg/scout/scraper 91.7% | pkg/scout/recipes 91.7% | pkg/scout/identity 81.1%
 
-## v0.9.0 - Distributed Crawling [PLANNED]
+## v0.49.0 - Internal Migration & Process Management [COMPLETE]
 
-**Goal:** Swarm-mode crawling across multiple browser instances.
+**Goal:** Move core to `internal/engine/`, add gops-based process management.
 
-- [ ] Browser cluster / pool management
-- [ ] Multi-proxy swarm distribution
-- [ ] Shared work queue for BFS crawling
-- [ ] Result aggregation
-
-## v1.0.0 - Documentation & Release [IN PROGRESS]
-
-**Goal:** Comprehensive documentation and stable release.
-
-- [x] Published to GitHub with git remote
-- [x] Git tags (v0.1.3, v0.1.4, v0.1.5)
-- [x] LICENSE file
-- [x] GoDoc examples for Browser, Page, Element, EvalResult, and new features (28+ examples in example_test.go)
-- [ ] Integration test examples (login flow, form submission, scraping)
-- [x] 80%+ test coverage — 69 new tests added for stealth, grpc/server, options, readability
-- **Coverage:** pkg/scout ~80%+ | pkg/identity 81.1% | scraper 84.3% | pkg/stealth ~80%+ | pkg/scout/recipe 81.5% | grpc/server ~80%+
-
-## v0.7.6 - Bridge DOM & Sitemap Extract [IN PROGRESS]
-
-**Goal:** Crawl + bridge-based DOM extraction for entire sites.
-
-- [x] `SitemapExtract()` — BFS crawl with bridge DOM JSON + Markdown extraction per page
-- [x] Functional options: `WithSitemapMaxDepth`, `WithSitemapMaxPages`, `WithSitemapSelector`, `WithSitemapMainOnly`, `WithSitemapSkipJSON`, `WithSitemapSkipMarkdown`, `WithSitemapOutputDir`
-- [x] Per-page output files (`dom.json`, `dom.md`) and index files (`index.json`, `index.md`)
-- [x] CLI: `scout sitemap extract <url>` with full flag support
-- [x] Updated `examples/advanced/bridge-dom/` to use `SitemapExtract()`
-- [x] Tests: `TestSitemapExtract`, `TestSitemapExtractOutputDir`, `TestSitemapExtractOptions`, `TestSitemapOptionDefaults`, `TestURLToDir`
-- [x] Browser auto-download: Brave auto-downloads from GitHub releases if not installed locally
-- [x] `resolveBrowser()` fallback chain: local lookup → auto-download → error with download URL (Edge)
-- [x] `ListDownloadedBrowsers()` and `BrowserCacheDir()` for `~/.scout/browsers/` management
-- [x] CLI: `scout browser list` — show detected and downloaded browsers
-- [x] 7 tests for browser download (asset naming, zip extraction, resolve fallback)
-- [x] Docker images (Phase 21b) — `Dockerfile`, `Dockerfile.slim`, `.dockerignore`, `docker-compose.yml`
-- [x] WebFetch — `webfetch.go` with 6 content modes, caching, batch, 13 tests (88%+), CLI `scout fetch`
-- [x] Recipe Creator — `analyze.go` + `generate.go` with site analysis, recipe generation, 11 tests (81.5%)
-- [x] Stealth expansion — `stealth_extra.go` (5 evasions), `disable-blink-features` launch flag, bot detection integration tests
-- [x] CLI `baseOpts` refactor — unified browser option composition via `helpers.go`
-- **Coverage:** pkg/scout 75.7% | pkg/stealth 50.0% | pkg/scout/recipe 81.5% | grpc/server 67.7%
+- [x] Migrate `pkg/scout/` core to `internal/engine/` with public facade
+- [x] Extract domain sub-packages (detect, fingerprint, hijack, llm, vpn, session, stealth)
+- [x] Internalize rod into `internal/engine/lib/`
+- [x] gops agent for process discovery
+- [x] `IsScoutProcess()` for reliable orphan detection
+- [x] `Page.WaitClose()` for browser window close detection
+- [x] Synchronous session directory cleanup
+- [x] Platform-specific process files (`_windows.go`, `_linux.go`)
+- [x] Browser manifest (`browser.json`) with per-platform download configuration
+- [x] Session reuse (`WithReusableSession()`), REPL mode, health checker, page gather, cloud upload
+- [x] PDF form filling (`PDFFormFields()`, `FillPDFForm()`)
+- **Coverage:** internal/engine/browser 25.2% | internal/engine/llm 70.4% | internal/engine/session 47.4%

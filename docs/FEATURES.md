@@ -124,10 +124,10 @@
 - **Status:** Completed
 - **Description:** Download Chrome extensions from the Web Store by ID, unpack CRX2/CRX3 files, and store persistently in `~/.scout/extensions/`. `DownloadExtension(id)` fetches and unpacks with zip-slip protection. `ListLocalExtensions()` and `RemoveExtension(id)` for management. `WithExtensionByID(ids...)` option loads downloaded extensions by ID at browser launch. CLI `scout extension download/remove/list`. Implemented in `pkg/scout/extension.go`.
 
-### Scout Bridge Extension (Partial)
+### Scout Bridge Extension
 
-- **Status:** In Progress
-- **Description:** Built-in Manifest V3 Chrome extension for bidirectional Go↔browser communication. Extension files in `extensions/scout-bridge/`, embedded via `extensions/extensions.go` using `embed.FS`, auto-loaded via `WithBridge()` option. Full WebSocket transport, event streaming, and remote command capabilities planned. Implemented in `pkg/scout/bridge.go` and `extensions/`.
+- **Status:** Completed
+- **Description:** Built-in Manifest V3 Chrome extension for bidirectional Go↔browser communication. Extension files in `extensions/scout-bridge/`, embedded via `extensions/extensions.go` using `embed.FS`, auto-loaded by default (disable with `WithoutBridge()`). WebSocket transport, event streaming, DOM observation, clipboard, tab management, recording. Implemented in `internal/engine/bridge.go` and `extensions/`.
 
 ### LLM-Powered Extraction
 
@@ -142,7 +142,7 @@
 ### Stealth Mode — Anti-Bot-Detection
 
 - **Status:** Completed
-- **Description:** Comprehensive stealth system combining Chrome launch flags (`disable-blink-features=AutomationControlled`), core JS injection from `extract-stealth-evasions` (navigator.webdriver, chrome.runtime, Permissions, WebGL, plugins, etc.), and custom `ExtraJS` evasions (canvas/audio fingerprint noise, WebGL vendor spoofing, navigator.connection, Notification.permission). Enabled via `WithStealth()` option, `--stealth` CLI flag, or `SCOUT_STEALTH=true`. Integration tests against real bot-detection sites (bot.sannysoft.com, arh.antoinevastel.com, pixelscan.net, brotector, fingerprint.com). Implemented in `pkg/stealth/` and `pkg/scout/browser.go`.
+- **Description:** Comprehensive stealth system combining Chrome launch flags (`disable-blink-features=AutomationControlled`), core JS injection from `extract-stealth-evasions` (navigator.webdriver, chrome.runtime, Permissions, WebGL, plugins, etc.), and custom `ExtraJS` evasions (canvas/audio fingerprint noise, WebGL vendor spoofing, navigator.connection, Notification.permission). Enabled via `WithStealth()` option, `--stealth` CLI flag, or `SCOUT_STEALTH=true`. Integration tests against real bot-detection sites. Implemented in `internal/engine/stealth/` and `internal/engine/browser.go`.
 
 ### WebFetch — URL Content Extraction
 
@@ -169,32 +169,28 @@
 - **Status:** Completed
 - **Description:** gops agent registration for process discovery, `IsScoutProcess()` for reliable orphan detection immune to PID reuse, `Page.WaitClose()` for detecting browser window close via CDP `TargetTargetDestroyed` event, synchronous session directory cleanup, platform-specific process files. `mcp open` now exits cleanly when the user closes the browser window.
 
-## Proposed Features
-
 ### Screen Recorder
 
-- **Priority:** P2
-- **Status:** Proposed
-- **Description:** Capture browser sessions as video using CDP `Page.startScreencast`. Record page interactions as WebM, GIF, or PNG frame sequences. Combined HAR+video forensic bundles.
+- **Status:** Completed
+- **Description:** Capture browser sessions as video using CDP `Page.startScreencast`. GIF export. Implemented in `internal/engine/recorder.go`.
+
+### PDF Form Filling
+
+- **Status:** Completed
+- **Description:** Detect fillable PDF form fields via `Page.PDFFormFields()` and fill them via browser rendering with `Page.FillPDFForm(fields)`. CLI: `scout pdf-form fields`, `scout pdf-form fill`. Implemented in `internal/engine/pdf_form.go` and `cmd/scout/pdf.go`.
+
+### Knowledge Base Builder
+
+- **Status:** Completed
+- **Description:** Crawl a site and build a structured knowledge base with DOM, markdown, links, tech stack, and page metadata. `Browser.Knowledge(url, opts...)` with depth, concurrency, and timeout controls. CLI: `scout knowledge <url>`. Implemented in `internal/engine/knowledge.go`.
+
+## Proposed Features
 
 ### Distributed Crawling (Swarm Mode)
 
 - **Priority:** P2
 - **Status:** Proposed
-- **Description:** Split crawl workloads across multiple browser instances running on different IPs/proxies. Browser cluster management, shared BFS queue, result aggregation, headless swarm
-  configuration.
-
-### Context Support
-
-- **Priority:** P2
-- **Status:** Proposed
-- **Description:** Accept `context.Context` on methods for cancellation and deadline propagation, instead of relying solely on rod's timeout mechanism.
-
-### Connection to Existing Browser
-
-- **Priority:** P2
-- **Status:** Proposed
-- **Description:** Add an option to connect to an already-running browser via WebSocket URL (rod supports `ControlURL`), useful for debugging and reusing browser sessions.
+- **Description:** Split crawl workloads across multiple browser instances running on different IPs/proxies. Browser cluster management, shared BFS queue, result aggregation, headless swarm configuration.
 
 ### Page Pool
 
