@@ -266,7 +266,14 @@
       "WebFetch(domain:deepwiki.com)",
       "Bash(do echo:*)",
       "Bash(rm:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(/d/shared/development/personal/projects/scout/.scripts/test-all.sh:*)",
+      "Bash(/d/shared/development/personal/projects/scout/.scripts/test-browser-download.sh:*)",
+      "Bash(/d/shared/development/personal/projects/scout/.scripts/download-browsers.sh:*)",
+      "Bash(tasklist:*)",
+      "Bash(powershell:*)",
+      "Bash(powershell.exe:*)",
+      "Skill(commit-commands:commit)"
     ]
   },
   "enableAllProjectMcpServers": true,

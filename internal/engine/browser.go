@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine/browser"
 	launcher2 "github.com/inovacc/scout/internal/engine/lib/launcher"
 	"github.com/inovacc/scout/internal/engine/lib/launcher/flags"
 	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
@@ -252,6 +253,9 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 
 // launchLocal starts a local browser process and returns the CDP WebSocket URL and launcher.
 func launchLocal(o *options) (string, *launcher2.Launcher, error) {
+	// Kill dangling browser processes left over from previous sessions.
+	_, _ = CleanOrphans()
+
 	// Session reuse: resolve data dir from explicit session ID, domain hash, or auto-find.
 	if o.userDataDir == "" {
 		if o.sessionID != "" {
@@ -293,12 +297,24 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 	case o.execPath != "":
 		l = l.Bin(o.execPath)
 	case o.autoDetect && o.browserType == "":
-		if path, _, err := bestDetectedBrowser(); err == nil && path != "" {
-			l = l.Bin(path)
+		if o.systemBrowser {
+			if path, _, err := browser.BestDetected(); err == nil && path != "" {
+				l = l.Bin(path)
+			}
+		} else {
+			if path, err := browser.BestCached(); err == nil && path != "" {
+				l = l.Bin(path)
+			}
 		}
 		// If detection fails, fall through to rod auto-detect.
-	case o.browserType != "" && o.browserType != BrowserChrome:
-		binPath, err := resolveBrowser(context.Background(), o.browserType)
+	case o.browserType != "":
+		var binPath string
+		var err error
+		if o.systemBrowser {
+			binPath, err = browser.Resolve(context.Background(), o.browserType)
+		} else {
+			binPath, err = browser.ResolveCached(context.Background(), o.browserType)
+		}
 		if err != nil {
 			return "", nil, fmt.Errorf("scout: resolve %s browser: %w", o.browserType, err)
 		}

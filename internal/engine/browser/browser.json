@@ -85,6 +85,56 @@
       }
     }
   },
+  "chrome": {
+    "description": "Google Chrome for Testing. Versioned builds via Chrome for Testing (CfT) API.",
+    "api": {
+      "known_versions": "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json",
+      "latest_stable": "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json",
+      "latest_per_channel": "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json"
+    },
+    "platforms": {
+      "windows_amd64": {
+        "platform_id": "win64",
+        "zip": "chrome-win64.zip",
+        "binary": "chrome-win64/chrome.exe",
+        "urls": [
+          "https://storage.googleapis.com/chrome-for-testing-public/{version}/win64/chrome-win64.zip"
+        ]
+      },
+      "windows_386": {
+        "platform_id": "win32",
+        "zip": "chrome-win32.zip",
+        "binary": "chrome-win32/chrome.exe",
+        "urls": [
+          "https://storage.googleapis.com/chrome-for-testing-public/{version}/win32/chrome-win32.zip"
+        ]
+      },
+      "linux_amd64": {
+        "platform_id": "linux64",
+        "zip": "chrome-linux64.zip",
+        "binary": "chrome-linux64/chrome",
+        "urls": [
+          "https://storage.googleapis.com/chrome-for-testing-public/{version}/linux64/chrome-linux64.zip"
+        ]
+      },
+      "darwin_amd64": {
+        "platform_id": "mac-x64",
+        "zip": "chrome-mac-x64.zip",
+        "binary": "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        "urls": [
+          "https://storage.googleapis.com/chrome-for-testing-public/{version}/mac-x64/chrome-mac-x64.zip"
+        ]
+      },
+      "darwin_arm64": {
+        "platform_id": "mac-arm64",
+        "zip": "chrome-mac-arm64.zip",
+        "binary": "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        "urls": [
+          "https://storage.googleapis.com/chrome-for-testing-public/{version}/mac-arm64/chrome-mac-arm64.zip"
+        ]
+      }
+    }
+  },
   "brave": {
     "description": "Privacy-focused Chromium browser. Distributed via GitHub releases.",
     "api": {
@@ -162,6 +212,9 @@
   },
   "edge": {
     "description": "Microsoft Edge (Chromium-based). Enterprise MSI for Windows, DEB/RPM for Linux.",
+    "api": {
+      "updates": "https://edgeupdates.microsoft.com/api/products"
+    },
     "channels": ["stable", "beta", "dev"],
     "platforms": {
       "windows_amd64": {
@@ -218,7 +271,6 @@
   "_meta": {
     "generated": "2026-02-25",
     "description": "Browser download sources for scout auto-download. URLs use {revision} or {version} as placeholders.",
-    "cache_dir": "~/.scout/browsers/",
     "supported_platforms": [
       "windows_amd64",
       "windows_386",

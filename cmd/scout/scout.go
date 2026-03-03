@@ -57,6 +57,7 @@ func init() {
 	rootCmd.PersistentFlags().String("electron-version", "", "Electron version to download (e.g. v33.2.0)")
 	rootCmd.PersistentFlags().String("electron-cdp", "", "CDP endpoint of running Electron app")
 	rootCmd.PersistentFlags().Duration("idle-timeout", 5*time.Minute, "auto-shutdown after inactivity (0 to disable)")
+	rootCmd.PersistentFlags().Bool("system-browser", false, "allow system-installed browsers instead of cache-only")
 }
 
 func Execute() {

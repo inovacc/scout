@@ -1,6 +1,6 @@
 //go:build !windows
 
-package engine
+package browser
 
 import (
 	"os/exec"
@@ -27,16 +27,16 @@ func detectBrowserPaths() []browserCandidate {
 	for _, p := range chromePaths {
 		candidates = append(candidates, browserCandidate{
 			Name: "Google Chrome",
-			Type: BrowserChrome,
+			Type: Chrome,
 			Path: p,
 		})
 	}
 	// PATH-based fallback for Chrome.
 	if p, err := exec.LookPath("google-chrome"); err == nil {
-		candidates = append(candidates, browserCandidate{Name: "Google Chrome", Type: BrowserChrome, Path: p})
+		candidates = append(candidates, browserCandidate{Name: "Google Chrome", Type: Chrome, Path: p})
 	}
 	if p, err := exec.LookPath("chromium-browser"); err == nil {
-		candidates = append(candidates, browserCandidate{Name: "Chromium", Type: BrowserChrome, Path: p})
+		candidates = append(candidates, browserCandidate{Name: "Chromium", Type: Chrome, Path: p})
 	}
 
 	// Brave Browser
@@ -52,10 +52,10 @@ func detectBrowserPaths() []browserCandidate {
 		)
 	}
 	for _, p := range bravePaths {
-		candidates = append(candidates, browserCandidate{Name: "Brave Browser", Type: BrowserBrave, Path: p})
+		candidates = append(candidates, browserCandidate{Name: "Brave Browser", Type: Brave, Path: p})
 	}
 	if p, err := exec.LookPath("brave-browser"); err == nil {
-		candidates = append(candidates, browserCandidate{Name: "Brave Browser", Type: BrowserBrave, Path: p})
+		candidates = append(candidates, browserCandidate{Name: "Brave Browser", Type: Brave, Path: p})
 	}
 
 	// Microsoft Edge
@@ -70,10 +70,10 @@ func detectBrowserPaths() []browserCandidate {
 		)
 	}
 	for _, p := range edgePaths {
-		candidates = append(candidates, browserCandidate{Name: "Microsoft Edge", Type: BrowserEdge, Path: p})
+		candidates = append(candidates, browserCandidate{Name: "Microsoft Edge", Type: Edge, Path: p})
 	}
 	if p, err := exec.LookPath("microsoft-edge"); err == nil {
-		candidates = append(candidates, browserCandidate{Name: "Microsoft Edge", Type: BrowserEdge, Path: p})
+		candidates = append(candidates, browserCandidate{Name: "Microsoft Edge", Type: Edge, Path: p})
 	}
 
 	return candidates

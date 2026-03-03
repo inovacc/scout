@@ -170,6 +170,37 @@ func TestDomainHash(t *testing.T) {
 	}
 }
 
+func TestHashIncludesBrowserName(t *testing.T) {
+	url := "https://example.com"
+
+	// Same URL, different browsers → different hashes.
+	hChrome := Hash(url, "chrome")
+	hBrave := Hash(url, "brave")
+	hEdge := Hash(url, "edge")
+
+	if hChrome == hBrave {
+		t.Errorf("chrome and brave should have different hashes for same URL: %s", hChrome)
+	}
+	if hChrome == hEdge {
+		t.Errorf("chrome and edge should have different hashes for same URL: %s", hChrome)
+	}
+	if hBrave == hEdge {
+		t.Errorf("brave and edge should have different hashes for same URL: %s", hBrave)
+	}
+
+	// Same browser, same URL → stable hash.
+	if h2 := Hash(url, "chrome"); h2 != hChrome {
+		t.Errorf("Hash should be deterministic: %s vs %s", hChrome, h2)
+	}
+
+	// No URL → hash of label only; different labels → different hashes.
+	hNoURL1 := Hash("", "chrome")
+	hNoURL2 := Hash("", "brave")
+	if hNoURL1 == hNoURL2 {
+		t.Errorf("different labels without URL should produce different hashes: %s", hNoURL1)
+	}
+}
+
 func TestFindByDomain(t *testing.T) {
 	dir := t.TempDir()
 	origFunc := SessionsDir

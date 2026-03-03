@@ -40,7 +40,7 @@
 | ~~Session reuse & clean reset~~ | ~~P1~~ | ~~Medium~~ | ~~Done — `WithReusableSession()`, `WithTargetURL()`, domain-hash routing, `scout session reset [id\|--all]`~~ |
 | ~~REPL mode~~ | ~~P2~~ | ~~Medium~~ | ~~Done — `scout repl [url]` interactive local browser shell with 20 commands~~ |
 | ~~Site health checker / test page~~ | ~~P1~~ | ~~Large~~ | ~~Done — `scout test-site <url>` with crawl, console/JS/network error detection, JSON/table report~~ |
-| Page gather | P1 | Medium | `scout gather <url>` — one-shot page intelligence: DOM state, HAR, links, screenshots, cookies, metadata in structured output |
+| ~~Page gather~~ | ~~P1~~ | ~~Medium~~ | ~~Done (Phase 47) — `scout gather <url>` one-shot page intelligence~~ |
 | PDF form filling | P3 | Medium | Fill interactive PDF forms via browser rendering |
 | ~~Visual regression testing~~ | ~~P3~~ | ~~Large~~ | ~~Done (v0.28.0) — VisualDiff with threshold, color tolerance, diff image overlay~~ |
 

@@ -1,6 +1,6 @@
 //go:build windows
 
-package engine
+package browser
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ func lookupBrowser(bt BrowserType) (string, error) {
 	programFilesX86 := os.Getenv("ProgramFiles(x86)")
 
 	switch bt { //nolint:exhaustive
-	case BrowserBrave:
+	case Brave:
 		paths := []string{
 			filepath.Join(localAppData, `BraveSoftware\Brave-Browser\Application\brave.exe`),
 			filepath.Join(programFiles, `BraveSoftware\Brave-Browser\Application\brave.exe`),
@@ -23,7 +23,7 @@ func lookupBrowser(bt BrowserType) (string, error) {
 
 		return firstExisting(paths, bt)
 
-	case BrowserEdge:
+	case Edge:
 		paths := []string{
 			filepath.Join(programFiles, `Microsoft\Edge\Application\msedge.exe`),
 			filepath.Join(programFilesX86, `Microsoft\Edge\Application\msedge.exe`),
@@ -32,10 +32,10 @@ func lookupBrowser(bt BrowserType) (string, error) {
 
 		return firstExisting(paths, bt)
 
-	case BrowserChrome:
+	case Chrome:
 		return "", nil // rod auto-detect
 
 	default:
-		return "", fmt.Errorf("%w: unknown browser type %q", ErrBrowserNotFound, bt)
+		return "", fmt.Errorf("%w: unknown browser type %q", ErrNotFound, bt)
 	}
 }

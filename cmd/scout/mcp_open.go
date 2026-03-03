@@ -29,18 +29,12 @@ Examples:
 	RunE: func(cmd *cobra.Command, args []string) error {
 		url := args[0]
 
-		// Default to headed mode unless --headless was explicitly set.
-		headless := isHeadless(cmd)
-		if !cmd.Flags().Changed("headless") {
-			headless = false
-		}
+		opts := baseOpts(cmd)
 
-		opts := []scout.Option{
-			scout.WithHeadless(headless),
-			scout.WithNoSandbox(),
-			browserOpt(cmd),
+		// Default to headed mode unless --headless was explicitly set.
+		if !cmd.Flags().Changed("headless") {
+			opts = append(opts, scout.WithHeadless(false))
 		}
-		opts = append(opts, stealthOpts(cmd)...)
 
 		maximized, _ := cmd.Flags().GetBool("maximized")
 		if maximized {
