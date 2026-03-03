@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod/lib/devices"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/internal/engine/lib/devices"
+	"github.com/inovacc/scout/internal/engine/lib/input"
+	"github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 func TestPageNavigateAndTitle(t *testing.T) {

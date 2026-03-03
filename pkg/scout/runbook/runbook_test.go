@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	input2 "github.com/inovacc/scout/internal/engine/lib/input"
 	"github.com/inovacc/scout/pkg/scout"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
 )
 
 // newTestBrowser creates a headless browser for testing. Skips if unavailable.
@@ -283,14 +283,14 @@ func TestValidate_ExtractMissingFields(t *testing.T) {
 func TestMapKeyName(t *testing.T) {
 	tests := []struct {
 		name string
-		want input.Key
+		want input2.Key
 	}{
-		{"Enter", input.Enter},
-		{"Tab", input.Tab},
-		{"Escape", input.Escape},
-		{"Space", input.Space},
-		{"Backspace", input.Backspace},
-		{"a", input.Key('a')},
+		{"Enter", input2.Enter},
+		{"Tab", input2.Tab},
+		{"Escape", input2.Escape},
+		{"Space", input2.Space},
+		{"Backspace", input2.Backspace},
+		{"a", input2.Key('a')},
 		{"", 0},
 		{"UnknownLong", 0},
 	}

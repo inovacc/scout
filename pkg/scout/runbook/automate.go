@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	input2 "github.com/inovacc/scout/internal/engine/lib/input"
 	"github.com/inovacc/scout/pkg/scout"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
 )
 
 // runAutomate executes an automation runbook step by step.
@@ -147,21 +147,21 @@ func runAutomate(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resu
 	return result, nil
 }
 
-func mapKeyName(name string) input.Key {
+func mapKeyName(name string) input2.Key {
 	switch name {
 	case "Enter":
-		return input.Enter
+		return input2.Enter
 	case "Tab":
-		return input.Tab
+		return input2.Tab
 	case "Escape":
-		return input.Escape
+		return input2.Escape
 	case "Space":
-		return input.Space
+		return input2.Space
 	case "Backspace":
-		return input.Backspace
+		return input2.Backspace
 	default:
 		if len(name) == 1 {
-			return input.Key(name[0])
+			return input2.Key(name[0])
 		}
 
 		return 0

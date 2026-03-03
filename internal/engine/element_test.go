@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
+	"github.com/inovacc/scout/internal/engine/lib/input"
 )
 
 func init() {

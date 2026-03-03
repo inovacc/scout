@@ -3,7 +3,7 @@ package engine
 import (
 	"fmt"
 
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 // WindowState represents the state of a browser window.
@@ -84,17 +84,17 @@ func (p *Page) setWindowState(state WindowState) error {
 		return fmt.Errorf("scout: page is nil")
 	}
 
-	bounds := &proto.BrowserBounds{
-		WindowState: proto.BrowserWindowState(state),
+	bounds := &proto2.BrowserBounds{
+		WindowState: proto2.BrowserWindowState(state),
 	}
 
 	// Chrome requires restoring to normal before changing to another non-normal state.
 	// If transitioning between non-normal states, restore first.
 	if state != WindowStateNormal {
 		current, err := p.page.GetWindow()
-		if err == nil && current.WindowState != "" && current.WindowState != proto.BrowserWindowStateNormal {
-			if err := p.page.SetWindow(&proto.BrowserBounds{
-				WindowState: proto.BrowserWindowStateNormal,
+		if err == nil && current.WindowState != "" && current.WindowState != proto2.BrowserWindowStateNormal {
+			if err := p.page.SetWindow(&proto2.BrowserBounds{
+				WindowState: proto2.BrowserWindowStateNormal,
 			}); err != nil {
 				return fmt.Errorf("scout: restore window before %s: %w", state, err)
 			}
@@ -109,7 +109,7 @@ func (p *Page) setWindowState(state WindowState) error {
 	// actual window dimensions. Without this, the initial SetViewport (e.g. 1920x1080)
 	// pins the viewport and causes blank/white space in the rendered page.
 	if state == WindowStateMaximized || state == WindowStateFullscreen {
-		_ = proto.EmulationClearDeviceMetricsOverride{}.Call(p.page)
+		_ = proto2.EmulationClearDeviceMetricsOverride{}.Call(p.page)
 	}
 
 	return nil

@@ -7,10 +7,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/devices"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/internal/engine/lib/devices"
+	"github.com/inovacc/scout/internal/engine/lib/input"
+	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
 	"github.com/ysmood/gson"
 )
 
@@ -86,7 +85,7 @@ type PageTimingInfo struct {
 
 // Page wraps a rod page (browser tab) with a simplified API.
 type Page struct {
-	page     *rod.Page
+	page     *rodPage
 	browser  *Browser
 	info     *PageInfo
 	hijacker *SessionHijacker
@@ -208,8 +207,8 @@ func (p *Page) ScrollScreenshot() ([]byte, error) {
 
 // ScreenshotPNG captures a viewport screenshot in PNG format.
 func (p *Page) ScreenshotPNG() ([]byte, error) {
-	data, err := p.page.Screenshot(false, &proto.PageCaptureScreenshot{
-		Format: proto.PageCaptureScreenshotFormatPng,
+	data, err := p.page.Screenshot(false, &proto2.PageCaptureScreenshot{
+		Format: proto2.PageCaptureScreenshotFormatPng,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("scout: screenshot png: %w", err)
@@ -222,8 +221,8 @@ func (p *Page) ScreenshotPNG() ([]byte, error) {
 func (p *Page) ScreenshotJPEG(quality int) ([]byte, error) {
 	q := quality
 
-	data, err := p.page.Screenshot(false, &proto.PageCaptureScreenshot{
-		Format:  proto.PageCaptureScreenshotFormatJpeg,
+	data, err := p.page.Screenshot(false, &proto2.PageCaptureScreenshot{
+		Format:  proto2.PageCaptureScreenshotFormatJpeg,
 		Quality: gson.Int(q),
 	})
 	if err != nil {
@@ -235,7 +234,7 @@ func (p *Page) ScreenshotJPEG(quality int) ([]byte, error) {
 
 // PDF generates a PDF of the current page with default settings.
 func (p *Page) PDF() ([]byte, error) {
-	reader, err := p.page.PDF(&proto.PagePrintToPDF{})
+	reader, err := p.page.PDF(&proto2.PagePrintToPDF{})
 	if err != nil {
 		return nil, fmt.Errorf("scout: generate pdf: %w", err)
 	}
@@ -250,7 +249,7 @@ func (p *Page) PDF() ([]byte, error) {
 
 // PDFWithOptions generates a PDF with custom options.
 func (p *Page) PDFWithOptions(opts PDFOptions) ([]byte, error) {
-	req := &proto.PagePrintToPDF{
+	req := &proto2.PagePrintToPDF{
 		Landscape:           opts.Landscape,
 		DisplayHeaderFooter: opts.DisplayHeaderFooter,
 		PrintBackground:     opts.PrintBackground,
@@ -362,7 +361,7 @@ func (p *Page) ElementsByXPath(xpath string) ([]*Element, error) {
 
 // ElementByJS finds an element using a JavaScript expression.
 func (p *Page) ElementByJS(js string, args ...any) (*Element, error) {
-	opts := rod.Eval(js, args...)
+	opts := Eval(js, args...)
 
 	el, err := p.page.ElementByJS(opts)
 	if err != nil {
@@ -515,12 +514,12 @@ func (p *Page) WaitXPath(xpath string) (*Element, error) {
 // WaitNavigation returns a function that waits for the next navigation to complete.
 // Call the returned function after triggering navigation.
 func (p *Page) WaitNavigation() func() {
-	return p.page.WaitNavigation(proto.PageLifecycleEventNameLoad)
+	return p.page.WaitNavigation(proto2.PageLifecycleEventNameLoad)
 }
 
 // SetViewport sets the page viewport dimensions.
 func (p *Page) SetViewport(width, height int) error {
-	if err := p.page.SetViewport(&proto.EmulationSetDeviceMetricsOverride{
+	if err := p.page.SetViewport(&proto2.EmulationSetDeviceMetricsOverride{
 		Width:  width,
 		Height: height,
 	}); err != nil {
@@ -532,7 +531,7 @@ func (p *Page) SetViewport(width, height int) error {
 
 // SetWindow sets the browser window bounds.
 func (p *Page) SetWindow(left, top, width, height int) error {
-	if err := p.page.SetWindow(&proto.BrowserBounds{
+	if err := p.page.SetWindow(&proto2.BrowserBounds{
 		Left:   gson.Int(left),
 		Top:    gson.Int(top),
 		Width:  gson.Int(width),
@@ -600,7 +599,7 @@ func (p *Page) Activate() error {
 
 // HandleDialog returns functions to wait for and handle JavaScript dialogs (alert, confirm, prompt).
 // Call wait() to block until a dialog appears, then call handle() to accept/dismiss it.
-func (p *Page) HandleDialog() (wait func() *proto.PageJavascriptDialogOpening, handle func(*proto.PageHandleJavaScriptDialog) error) {
+func (p *Page) HandleDialog() (wait func() *proto2.PageJavascriptDialogOpening, handle func(*proto2.PageHandleJavaScriptDialog) error) {
 	return p.page.HandleDialog()
 }
 
@@ -654,7 +653,7 @@ func (p *Page) KeyType(keys ...input.Key) error {
 }
 
 // RodPage returns the underlying rod.Page for advanced use cases.
-func (p *Page) RodPage() *rod.Page {
+func (p *Page) RodPage() *rodPage {
 	return p.page
 }
 
@@ -757,7 +756,7 @@ func (p *Page) collectInfoJS() (*PageInfo, error) {
 }
 
 // remoteObjectToEvalResult converts a rod RemoteObject to our EvalResult.
-func remoteObjectToEvalResult(obj *proto.RuntimeRemoteObject) *EvalResult {
+func remoteObjectToEvalResult(obj *proto2.RuntimeRemoteObject) *EvalResult {
 	if obj == nil {
 		return &EvalResult{Type: "undefined"}
 	}
@@ -772,7 +771,7 @@ func remoteObjectToEvalResult(obj *proto.RuntimeRemoteObject) *EvalResult {
 	}
 }
 
-func wrapElements(els rod.Elements) []*Element {
+func wrapElements(els Elements) []*Element {
 	result := make([]*Element, len(els))
 	for i, el := range els {
 		result[i] = &Element{element: el}
@@ -781,7 +780,7 @@ func wrapElements(els rod.Elements) []*Element {
 	return result
 }
 
-func readAll(r *rod.StreamReader) ([]byte, error) {
+func readAll(r *StreamReader) ([]byte, error) {
 	var buf []byte
 
 	for {

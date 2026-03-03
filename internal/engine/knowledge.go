@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 // KnowledgeResult holds the complete knowledge collection for a site.

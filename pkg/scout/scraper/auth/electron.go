@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine"
 	"github.com/inovacc/scout/pkg/scout"
-	"github.com/inovacc/scout/pkg/scout/rod"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 )
 
 // ElectronOptions configures connection to an Electron app's debug port.
@@ -60,8 +59,8 @@ func ElectronSession(ctx context.Context, opts ElectronOptions) (*Session, error
 		return nil, fmt.Errorf("auth: electron: could not connect to debug port %d within %v", opts.DebugPort, opts.Timeout)
 	}
 
-	browser := rod.New().ControlURL(wsURL)
-	if err := browser.Connect(); err != nil {
+	browser, err := engine.New(engine.WithRemoteCDP(wsURL))
+	if err != nil {
 		return nil, fmt.Errorf("auth: electron: connect: %w", err)
 	}
 
@@ -76,10 +75,10 @@ func ElectronSession(ctx context.Context, opts ElectronOptions) (*Session, error
 		return nil, fmt.Errorf("auth: electron: no pages found")
 	}
 
-	page := pages.First()
+	page := pages[0]
 
 	// Extract cookies
-	cookies, err := page.Cookies(nil)
+	cookies, err := page.GetCookies()
 	if err != nil {
 		return nil, fmt.Errorf("auth: electron: get cookies: %w", err)
 	}
@@ -94,22 +93,32 @@ func ElectronSession(ctx context.Context, opts ElectronOptions) (*Session, error
 		ss = make(map[string]string)
 	}
 
-	info, err := page.Info()
-	if err != nil {
-		return nil, fmt.Errorf("auth: electron: page info: %w", err)
+	info := page.Info()
+
+	var pageURL string
+	if info != nil {
+		pageURL = info.URL
 	}
 
 	session := &Session{
 		Provider:       "electron",
 		Version:        "1.0",
 		Timestamp:      time.Now().UTC(),
-		URL:            info.URL,
+		URL:            pageURL,
 		LocalStorage:   ls,
 		SessionStorage: ss,
 	}
 
 	for _, c := range cookies {
-		session.Cookies = append(session.Cookies, protoCookieToScout(c))
+		session.Cookies = append(session.Cookies, scout.Cookie{
+			Name:     c.Name,
+			Value:    c.Value,
+			Domain:   c.Domain,
+			Path:     c.Path,
+			Secure:   c.Secure,
+			HTTPOnly: c.HTTPOnly,
+			SameSite: c.SameSite,
+		})
 	}
 
 	return session, nil
@@ -138,7 +147,7 @@ func getDebuggerWebSocketURL(debugURL string) (string, error) {
 	return result.WebSocketDebuggerURL, nil
 }
 
-func evalStorage(page *rod.Page, storageName string) (map[string]string, error) {
+func evalStorage(page *engine.Page, storageName string) (map[string]string, error) {
 	js := fmt.Sprintf(`() => {
 		const result = {};
 		try {
@@ -156,21 +165,10 @@ func evalStorage(page *rod.Page, storageName string) (map[string]string, error) 
 	}
 
 	var data map[string]string
-	if err := json.Unmarshal([]byte(result.Value.Str()), &data); err != nil {
+	if err := json.Unmarshal([]byte(result.String()), &data); err != nil {
 		return nil, err
 	}
 
 	return data, nil
 }
 
-func protoCookieToScout(c *proto.NetworkCookie) scout.Cookie {
-	return scout.Cookie{
-		Name:     c.Name,
-		Value:    c.Value,
-		Domain:   c.Domain,
-		Path:     c.Path,
-		Secure:   c.Secure,
-		HTTPOnly: c.HTTPOnly,
-		SameSite: string(c.SameSite),
-	}
-}

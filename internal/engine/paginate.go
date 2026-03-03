@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"time"
-
-	"github.com/inovacc/scout/pkg/scout/rod"
 )
 
 // PaginateOption configures pagination behavior.
@@ -289,7 +287,7 @@ func extractAll[T any](p *Page) ([]T, error) {
 	var items []T
 
 	for _, el := range fieldEls {
-		parent, err := p.page.ElementByJS(rod.Eval(`() => this.parentElement`).This(el.Object))
+		parent, err := p.page.ElementByJS(Eval(`() => this.parentElement`).This(el.Object))
 		if err != nil {
 			continue
 		}

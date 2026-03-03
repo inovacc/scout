@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-
-	"github.com/inovacc/scout/pkg/scout/rod"
 )
 
 // ExtractOption configures extraction behavior.
@@ -266,7 +264,7 @@ func (p *Page) ExtractLinks() ([]string, error) {
 
 // --- internal helpers ---
 
-func extractTableFromElement(el *rod.Element) (*TableData, error) {
+func extractTableFromElement(el *rodElement) (*TableData, error) {
 	td := &TableData{}
 
 	// Extract headers
@@ -344,24 +342,24 @@ func parseTag(tag string) (selector, attr string) {
 }
 
 // findElements finds elements relative to a scope element, or from page root.
-func findElements(page *rod.Page, scope *rod.Element, selector string) (rod.Elements, error) {
+func findElements(page *rodPage, scope *rodElement, selector string) (Elements, error) {
 	if scope != nil {
-		return page.ElementsByJS(rod.Eval(`(sel) => this.querySelectorAll(sel)`, selector).This(scope.Object))
+		return page.ElementsByJS(Eval(`(sel) => this.querySelectorAll(sel)`, selector).This(scope.Object))
 	}
 
 	return page.Elements(selector)
 }
 
 // findElement finds the first element relative to a scope, or from page root.
-func findElement(page *rod.Page, scope *rod.Element, selector string) (*rod.Element, error) {
+func findElement(page *rodPage, scope *rodElement, selector string) (*rodElement, error) {
 	if scope != nil {
-		return page.ElementByJS(rod.Eval(`(sel) => this.querySelector(sel)`, selector).This(scope.Object))
+		return page.ElementByJS(Eval(`(sel) => this.querySelector(sel)`, selector).This(scope.Object))
 	}
 
 	return page.Element(selector)
 }
 
-func extractStruct(page *rod.Page, scope *rod.Element, rv reflect.Value) error {
+func extractStruct(page *rodPage, scope *rodElement, rv reflect.Value) error {
 	rt := rv.Type()
 	for i := 0; i < rt.NumField(); i++ {
 		field := rt.Field(i)
@@ -382,7 +380,7 @@ func extractStruct(page *rod.Page, scope *rod.Element, rv reflect.Value) error {
 	return nil
 }
 
-func setField(page *rod.Page, scope *rod.Element, fv reflect.Value, ft reflect.Type, selector, attr string) error {
+func setField(page *rodPage, scope *rodElement, fv reflect.Value, ft reflect.Type, selector, attr string) error {
 	switch ft.Kind() { //nolint:exhaustive // only supported types are handled
 	case reflect.String:
 		return setStringField(page, scope, fv, selector, attr)
@@ -407,7 +405,7 @@ func setField(page *rod.Page, scope *rod.Element, fv reflect.Value, ft reflect.T
 	}
 }
 
-func getTextOrAttr(el *rod.Element, attr string) (string, error) {
+func getTextOrAttr(el *rodElement, attr string) (string, error) {
 	if attr != "" {
 		val, err := el.Attribute(attr)
 		if err != nil {
@@ -424,7 +422,7 @@ func getTextOrAttr(el *rod.Element, attr string) (string, error) {
 	return el.Text()
 }
 
-func setStringField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
+func setStringField(page *rodPage, scope *rodElement, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
 		return nil //nolint:nilerr
@@ -440,7 +438,7 @@ func setStringField(page *rod.Page, scope *rod.Element, fv reflect.Value, select
 	return nil
 }
 
-func setIntField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
+func setIntField(page *rodPage, scope *rodElement, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
 		return nil //nolint:nilerr
@@ -459,7 +457,7 @@ func setIntField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector,
 	return nil
 }
 
-func setFloatField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
+func setFloatField(page *rodPage, scope *rodElement, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
 		return nil //nolint:nilerr
@@ -478,7 +476,7 @@ func setFloatField(page *rod.Page, scope *rod.Element, fv reflect.Value, selecto
 	return nil
 }
 
-func setBoolField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector, attr string) error {
+func setBoolField(page *rodPage, scope *rodElement, fv reflect.Value, selector, attr string) error {
 	el, err := findElement(page, scope, selector)
 	if err != nil {
 		return nil //nolint:nilerr
@@ -495,7 +493,7 @@ func setBoolField(page *rod.Page, scope *rod.Element, fv reflect.Value, selector
 	return nil
 }
 
-func setSliceField(page *rod.Page, scope *rod.Element, fv reflect.Value, ft reflect.Type, selector, attr string) error {
+func setSliceField(page *rodPage, scope *rodElement, fv reflect.Value, ft reflect.Type, selector, attr string) error {
 	elemType := ft.Elem()
 
 	if elemType.Kind() == reflect.String {

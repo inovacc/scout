@@ -7,14 +7,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 // HealthIssue describes a single problem found during a health check.
 type HealthIssue struct {
 	URL        string `json:"url"`
-	Source     string `json:"source"`                // "link", "console", "network", "js_exception"
-	Severity   string `json:"severity"`              // "error", "warning", "info"
+	Source     string `json:"source"`   // "link", "console", "network", "js_exception"
+	Severity   string `json:"severity"` // "error", "warning", "info"
 	Message    string `json:"message"`
 	Location   string `json:"location,omitempty"`
 	StatusCode int    `json:"status_code,omitempty"`

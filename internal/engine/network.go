@@ -7,8 +7,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 // Cookie represents an HTTP cookie.
@@ -30,7 +29,7 @@ type HijackHandler func(*HijackContext)
 // HijackRouter manages request interception. Call Run() in a goroutine,
 // then Stop() when done.
 type HijackRouter struct {
-	router *rod.HijackRouter
+	router *rodHijackRouter
 }
 
 // Run starts the hijack router. This method blocks, so call it in a goroutine.
@@ -49,17 +48,17 @@ func (r *HijackRouter) Stop() error {
 
 // HijackContext provides access to the intercepted request and response.
 type HijackContext struct {
-	hijack *rod.Hijack
+	hijack *Hijack
 }
 
 // HijackRequest provides read access to the intercepted request.
 type HijackRequest struct {
-	req *rod.HijackRequest
+	req *rodHijackRequest
 }
 
 // HijackResponse provides write access to the response.
 type HijackResponse struct {
-	resp *rod.HijackResponse
+	resp *rodHijackResponse
 }
 
 // Request returns the intercepted request.
@@ -74,7 +73,7 @@ func (c *HijackContext) Response() *HijackResponse {
 
 // ContinueRequest forwards the request to the server without modification.
 func (c *HijackContext) ContinueRequest() {
-	c.hijack.ContinueRequest(&proto.FetchContinueRequest{})
+	c.hijack.ContinueRequest(&proto2.FetchContinueRequest{})
 }
 
 // LoadResponse sends the request to the server and loads the response.
@@ -127,7 +126,7 @@ func (r *HijackResponse) SetHeader(pairs ...string) {
 }
 
 // Fail sends an error response.
-func (r *HijackResponse) Fail(reason proto.NetworkErrorReason) {
+func (r *HijackResponse) Fail(reason proto2.NetworkErrorReason) {
 	r.resp.Fail(reason)
 }
 
@@ -149,7 +148,7 @@ func (p *Page) SetHeaders(headers map[string]string) (cleanup func(), err error)
 
 // SetUserAgent overrides the User-Agent for this page.
 func (p *Page) SetUserAgent(ua string) error {
-	if err := p.page.SetUserAgent(&proto.NetworkSetUserAgentOverride{
+	if err := p.page.SetUserAgent(&proto2.NetworkSetUserAgentOverride{
 		UserAgent: ua,
 	}); err != nil {
 		return fmt.Errorf("scout: set user agent: %w", err)
@@ -160,9 +159,9 @@ func (p *Page) SetUserAgent(ua string) error {
 
 // SetCookies sets cookies on the page.
 func (p *Page) SetCookies(cookies ...Cookie) error {
-	params := make([]*proto.NetworkCookieParam, len(cookies))
+	params := make([]*proto2.NetworkCookieParam, len(cookies))
 	for i, c := range cookies {
-		param := &proto.NetworkCookieParam{
+		param := &proto2.NetworkCookieParam{
 			Name:     c.Name,
 			Value:    c.Value,
 			URL:      c.URL,
@@ -172,7 +171,7 @@ func (p *Page) SetCookies(cookies ...Cookie) error {
 			HTTPOnly: c.HTTPOnly,
 		}
 		if !c.Expires.IsZero() {
-			param.Expires = proto.TimeSinceEpoch(c.Expires.Unix())
+			param.Expires = proto2.TimeSinceEpoch(c.Expires.Unix())
 		}
 
 		params[i] = param
@@ -235,7 +234,7 @@ func (p *Page) Hijack(pattern string, handler HijackHandler) (*HijackRouter, err
 
 	router := p.page.HijackRequests()
 
-	err := router.Add(pattern, "", func(h *rod.Hijack) {
+	err := router.Add(pattern, "", func(h *Hijack) {
 		handler(&HijackContext{hijack: h})
 	})
 	if err != nil {
