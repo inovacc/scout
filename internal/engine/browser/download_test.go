@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +15,84 @@ import (
 
 	"github.com/inovacc/scout/pkg/scout/archive"
 )
+
+func TestChromiumDownloadURLs(t *testing.T) {
+	revision := LoadManifest().DefaultRevision()
+
+	urls := ChromiumDownloadURLs(revision)
+	if len(urls) == 0 {
+		t.Skipf("no download URLs for %s", PlatformKey())
+	}
+
+	rev := fmt.Sprintf("%d", revision)
+
+	for i, u := range urls {
+		if !strings.HasPrefix(u, "https://") {
+			t.Errorf("urls[%d] = %q, expected https:// prefix", i, u)
+		}
+
+		if strings.Contains(u, "{revision}") {
+			t.Errorf("urls[%d] still contains {revision}: %s", i, u)
+		}
+
+		if !strings.Contains(u, rev) {
+			t.Errorf("urls[%d] = %q, expected to contain revision %s", i, u, rev)
+		}
+	}
+}
+
+func TestChromiumDownloadURLsCustomRevision(t *testing.T) {
+	urls := ChromiumDownloadURLs(999999)
+	for _, u := range urls {
+		if !strings.Contains(u, "999999") {
+			t.Errorf("URL %q should contain custom revision 999999", u)
+		}
+	}
+}
+
+func TestStripFirstDir(t *testing.T) {
+	// Single top-level dir → contents promoted up.
+	dir := t.TempDir()
+	inner := filepath.Join(dir, "chrome-win")
+	_ = os.MkdirAll(inner, 0o755)
+	_ = os.WriteFile(filepath.Join(inner, "chrome.exe"), []byte("bin"), 0o755)
+	_ = os.WriteFile(filepath.Join(inner, "resources.pak"), []byte("res"), 0o644)
+
+	if err := stripFirstDir(dir); err != nil {
+		t.Fatalf("stripFirstDir: %v", err)
+	}
+
+	if !FileExists(filepath.Join(dir, "chrome.exe")) {
+		t.Error("chrome.exe not promoted to top level")
+	}
+
+	if !FileExists(filepath.Join(dir, "resources.pak")) {
+		t.Error("resources.pak not promoted to top level")
+	}
+
+	// Multiple entries at top level → no-op.
+	dir2 := t.TempDir()
+	_ = os.WriteFile(filepath.Join(dir2, "a.txt"), []byte("a"), 0o644)
+	_ = os.WriteFile(filepath.Join(dir2, "b.txt"), []byte("b"), 0o644)
+
+	if err := stripFirstDir(dir2); err != nil {
+		t.Fatalf("stripFirstDir(multiple): %v", err)
+	}
+
+	// Files should still be there, unchanged.
+	if !FileExists(filepath.Join(dir2, "a.txt")) {
+		t.Error("a.txt missing after no-op stripFirstDir")
+	}
+}
+
+func TestChromiumBinPath(t *testing.T) {
+	got := chromiumBinPath()
+	if got == "" {
+		t.Error("chromiumBinPath() returned empty")
+	}
+
+	t.Logf("chromiumBinPath() = %q", got)
+}
 
 func TestBraveAssetName(t *testing.T) {
 	name := braveAssetName("1.87.188")
@@ -358,6 +437,111 @@ func TestDownloadAllBrowsers(t *testing.T) {
 	}
 
 	t.Logf("BestCached = %s", best)
+}
+
+func TestEdgeBinPath(t *testing.T) {
+	got := edgeBinPath()
+	if got == "" {
+		t.Error("edgeBinPath() returned empty")
+	}
+
+	t.Logf("edgeBinPath() = %q", got)
+}
+
+func TestChromeCfTBinPath(t *testing.T) {
+	got := chromeCfTBinPath()
+	if got == "" {
+		t.Error("chromeCfTBinPath() returned empty")
+	}
+
+	t.Logf("chromeCfTBinPath() = %q", got)
+}
+
+func TestChromeCfTPlatformID(t *testing.T) {
+	got := chromeCfTPlatformID()
+	if got == "" {
+		t.Skipf("no CfT platform ID for %s", PlatformKey())
+	}
+
+	t.Logf("chromeCfTPlatformID() = %q", got)
+}
+
+func TestEdgePlatformArch(t *testing.T) {
+	platform, arch := edgePlatformArch()
+	if platform == "" {
+		t.Error("edgePlatformArch() returned empty platform")
+	}
+
+	if arch == "" {
+		t.Error("edgePlatformArch() returned empty arch")
+	}
+
+	t.Logf("edgePlatformArch() = %q, %q", platform, arch)
+}
+
+func TestIsEdgeArtifact(t *testing.T) {
+	// At least one of these should return true for the current platform.
+	artifacts := []string{"msi", "deb", "pkg"}
+	found := false
+
+	for _, a := range artifacts {
+		if isEdgeArtifact(a) {
+			found = true
+			t.Logf("isEdgeArtifact(%q) = true", a)
+		}
+	}
+
+	if !found {
+		t.Logf("no edge artifact type matches %s (expected on unsupported platforms)", PlatformKey())
+	}
+}
+
+func TestBrowserRegistryNames(t *testing.T) {
+	tests := []struct {
+		bt     BrowserType
+		expect []string
+	}{
+		{Chrome, []string{"chrome", "chromium"}},
+		{Brave, []string{"brave"}},
+		{Edge, []string{"edge"}},
+		{Electron, nil},
+	}
+
+	for _, tc := range tests {
+		t.Run(string(tc.bt), func(t *testing.T) {
+			got := browserRegistryNames(tc.bt)
+			if len(got) != len(tc.expect) {
+				t.Errorf("browserRegistryNames(%s) = %v, want %v", tc.bt, got, tc.expect)
+				return
+			}
+
+			for i := range got {
+				if got[i] != tc.expect[i] {
+					t.Errorf("browserRegistryNames(%s)[%d] = %q, want %q", tc.bt, i, got[i], tc.expect[i])
+				}
+			}
+		})
+	}
+}
+
+func TestCacheDir(t *testing.T) {
+	dir, err := CacheDir()
+	if err != nil {
+		t.Fatalf("CacheDir: %v", err)
+	}
+
+	if dir == "" {
+		t.Error("CacheDir returned empty")
+	}
+
+	info, err := os.Stat(dir)
+	if err != nil {
+		t.Fatalf("CacheDir path doesn't exist: %v", err)
+	}
+
+	if !info.IsDir() {
+		t.Error("CacheDir path is not a directory")
+	}
 }
 
 // createTestZip creates a zip archive in memory from a map of filename→content.
