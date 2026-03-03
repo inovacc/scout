@@ -5,20 +5,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"net"
 	"time"
 
+	"github.com/inovacc/scout/pkg/scout/archive"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/defaults"
 	"github.com/inovacc/scout/pkg/scout/rod/lib/utils"
-	"github.com/ysmood/fetchup"
 )
 
 // Host formats a revision number to a downloadable URL for the browser.
@@ -68,13 +68,17 @@ func HostPlaywright(revision int) string {
 	)
 }
 
-// DefaultBrowserDir for downloaded browser. For unix is "$HOME/.cache/scout/browser",
-// for Windows it's "%APPDATA%\scout\browser".
-var DefaultBrowserDir = filepath.Join(map[string]string{
-	"windows": os.Getenv("APPDATA"),
-	"darwin":  filepath.Join(os.Getenv("HOME"), ".cache"),
-	"linux":   filepath.Join(os.Getenv("HOME"), ".cache"),
-}[runtime.GOOS], "scout", "browser")
+// DefaultBrowserDir for downloaded browser. Uses "$HOME/.scout/browsers" on all platforms.
+var DefaultBrowserDir = defaultBrowserDir()
+
+func defaultBrowserDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = os.TempDir()
+	}
+
+	return filepath.Join(home, ".scout", "browsers")
+}
 
 // Browser is a helper to download browser smartly.
 type Browser struct {
@@ -114,7 +118,7 @@ func NewBrowser() *Browser {
 
 // Dir to download the browser.
 func (lc *Browser) Dir() string {
-	return filepath.Join(lc.RootDir, fmt.Sprintf("chromium-%d", lc.Revision))
+	return filepath.Join(lc.RootDir, "chromium", fmt.Sprintf("%d", lc.Revision))
 }
 
 // BinPath to download the browser executable.
@@ -129,7 +133,7 @@ func (lc *Browser) BinPath() string {
 }
 
 // Download browser from the fastest host.
-// It will race downloading a TCP packet from each host and use the fastest host.
+// It will try each host in order and use the first successful one.
 // If the hardcoded revision is unavailable, it queries LAST_CHANGE for the latest.
 func (lc *Browser) Download() error {
 	if err := lc.tryDownload(lc.Revision); err == nil {
@@ -148,26 +152,126 @@ func (lc *Browser) Download() error {
 }
 
 func (lc *Browser) tryDownload(revision int) error {
-	us := make([]string, 0, len(lc.Hosts))
-	for _, host := range lc.Hosts {
-		us = append(us, host(revision))
-	}
-
 	dir := lc.Dir()
 
-	fu := fetchup.New(dir, us...)
-	fu.Ctx = lc.Context
+	// Try each host in order.
+	for _, host := range lc.Hosts {
+		u := host(revision)
 
-	fu.Logger = lc.Logger
-	if lc.HTTPClient != nil {
-		fu.HttpClient = lc.HTTPClient
+		lc.Logger.Println("Download:", u)
+
+		data, err := lc.downloadURL(u)
+		if err != nil {
+			lc.Logger.Println("Failed:", err)
+
+			continue
+		}
+
+		// Clean and recreate dir.
+		_ = os.RemoveAll(dir)
+
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("create dir: %w", err)
+		}
+
+		if err := archive.Extract(data, hostConf.zipName, dir); err != nil {
+			return fmt.Errorf("extract: %w", err)
+		}
+
+		// Strip the single top-level directory (e.g. chrome-win/).
+		if err := stripFirstDir(dir); err != nil {
+			return fmt.Errorf("strip dir: %w", err)
+		}
+
+		lc.Logger.Println("Downloaded:", dir)
+
+		return nil
 	}
 
-	if err := fu.Fetch(); err != nil {
+	return fmt.Errorf("all download hosts failed for revision %d", revision)
+}
+
+// downloadURL fetches a URL with progress logging.
+func (lc *Browser) downloadURL(url string) ([]byte, error) {
+	client := lc.HTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: 10 * time.Minute}
+	}
+
+	req, err := http.NewRequestWithContext(lc.Context, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, url)
+	}
+
+	total := resp.ContentLength
+
+	var buf bytes.Buffer
+	if total > 0 {
+		buf.Grow(int(total))
+	}
+
+	var lastPct int
+
+	for {
+		n, readErr := io.CopyN(&buf, resp.Body, 1024*1024) // 1MB chunks
+		_ = n
+
+		if total > 0 {
+			pct := int(float64(buf.Len()) / float64(total) * 100)
+			if pct != lastPct {
+				lc.Logger.Println(fmt.Sprintf("Progress: %02d%%", pct))
+				lastPct = pct
+			}
+		}
+
+		if readErr != nil {
+			if readErr == io.EOF {
+				break
+			}
+
+			return nil, readErr
+		}
+	}
+
+	return buf.Bytes(), nil
+}
+
+// stripFirstDir promotes contents of a single top-level directory up one level.
+func stripFirstDir(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
 		return err
 	}
 
-	return fetchup.StripFirstDir(dir)
+	if len(entries) != 1 || !entries[0].IsDir() {
+		return nil
+	}
+
+	innerDir := filepath.Join(dir, entries[0].Name())
+
+	innerEntries, err := os.ReadDir(innerDir)
+	if err != nil {
+		return err
+	}
+
+	for _, e := range innerEntries {
+		if err := os.Rename(filepath.Join(innerDir, e.Name()), filepath.Join(dir, e.Name())); err != nil {
+			return err
+		}
+	}
+
+	return os.Remove(innerDir)
 }
 
 // latestRevision queries the LAST_CHANGE endpoint for the newest available snapshot.

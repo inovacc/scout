@@ -1,8 +1,6 @@
 package browser
 
 import (
-	"archive/zip"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher"
+	"github.com/inovacc/scout/pkg/scout/archive"
 )
 
 // downloadTimeout is the HTTP timeout for downloading browser archives.
@@ -37,11 +35,133 @@ var braveBins = map[string]string{
 	"linux":   "brave",
 }
 
-// DownloadChrome downloads Chrome/Chromium using rod's built-in launcher.
-// Returns the path to the executable. Rod manages its own cache internally.
-func DownloadChrome(_ string) (string, error) {
-	binPath := launcher.NewBrowser().MustGet()
+// DownloadChrome downloads Chromium and returns the path to the executable.
+// The cacheDir parameter is the base browsers directory (e.g. ~/.scout/browsers/).
+// If empty, it defaults to the standard browser cache directory.
+func DownloadChrome(cacheDir string) (string, error) {
+	return downloadChromium(context.Background(), cacheDir)
+}
+
+// downloadChromium implements Chromium download with CDN fallback.
+func downloadChromium(ctx context.Context, cacheDir string) (string, error) {
+	if cacheDir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("browser: user home dir: %w", err)
+		}
+
+		cacheDir = filepath.Join(home, ".scout", "browsers")
+	}
+
+	revision := 1592198 // pinned Chromium revision
+
+	conf, ok := chromiumHostConf[runtime.GOOS+"_"+runtime.GOARCH]
+	if !ok {
+		return "", fmt.Errorf("browser: no Chromium download for %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	revStr := fmt.Sprintf("%d", revision)
+	destDir := filepath.Join(cacheDir, "chromium", revStr)
+	binPath := filepath.Join(destDir, chromiumBinPath())
+
+	if fileExists(binPath) {
+		return binPath, nil
+	}
+
+	urls := chromiumDownloadURLs(revision, conf)
+
+	var data []byte
+	var dlErr error
+
+	for _, u := range urls {
+		data, dlErr = downloadFile(ctx, u)
+		if dlErr == nil {
+			break
+		}
+	}
+
+	if dlErr != nil {
+		return "", fmt.Errorf("browser: download chromium: %w", dlErr)
+	}
+
+	_ = os.RemoveAll(destDir)
+
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return "", fmt.Errorf("browser: create chromium dir: %w", err)
+	}
+
+	if err := archive.Extract(data, conf.zipName, destDir); err != nil {
+		return "", fmt.Errorf("browser: extract chromium: %w", err)
+	}
+
+	if err := stripFirstDir(destDir); err != nil {
+		return "", fmt.Errorf("browser: strip chromium dir: %w", err)
+	}
+
+	if runtime.GOOS != "windows" {
+		_ = os.Chmod(binPath, 0o755)
+	}
+
+	if !fileExists(binPath) {
+		return "", fmt.Errorf("browser: chromium binary not found at %s", binPath)
+	}
+
 	return binPath, nil
+}
+
+var chromiumHostConf = map[string]struct {
+	urlPrefix string
+	zipName   string
+}{
+	"darwin_amd64":  {"Mac", "chrome-mac.zip"},
+	"darwin_arm64":  {"Mac_Arm", "chrome-mac.zip"},
+	"linux_amd64":   {"Linux_x64", "chrome-linux.zip"},
+	"windows_386":   {"Win", "chrome-win.zip"},
+	"windows_amd64": {"Win_x64", "chrome-win.zip"},
+}
+
+func chromiumDownloadURLs(revision int, conf struct{ urlPrefix, zipName string }) []string {
+	return []string{
+		fmt.Sprintf("https://storage.googleapis.com/chromium-browser-snapshots/%s/%d/%s",
+			conf.urlPrefix, revision, conf.zipName),
+		fmt.Sprintf("https://registry.npmmirror.com/-/binary/chromium-browser-snapshots/%s/%d/%s",
+			conf.urlPrefix, revision, conf.zipName),
+	}
+}
+
+func chromiumBinPath() string {
+	return map[string]string{
+		"darwin":  filepath.Join("Chromium.app", "Contents", "MacOS", "Chromium"),
+		"linux":   "chrome",
+		"windows": "chrome.exe",
+	}[runtime.GOOS]
+}
+
+// stripFirstDir promotes contents of a single top-level directory up one level.
+func stripFirstDir(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	if len(entries) != 1 || !entries[0].IsDir() {
+		return nil
+	}
+
+	innerDir := filepath.Join(dir, entries[0].Name())
+
+	innerEntries, err := os.ReadDir(innerDir)
+	if err != nil {
+		return err
+	}
+
+	for _, e := range innerEntries {
+		if err := os.Rename(filepath.Join(innerDir, e.Name()), filepath.Join(dir, e.Name())); err != nil {
+			return err
+		}
+	}
+
+	return os.Remove(innerDir)
 }
 
 // DownloadBrave downloads the latest Brave browser release from GitHub
@@ -52,7 +172,7 @@ func DownloadBrave(ctx context.Context, cacheDir string) (string, error) {
 		return "", err
 	}
 
-	destDir := filepath.Join(cacheDir, "brave-"+version)
+	destDir := filepath.Join(cacheDir, "brave", version)
 	binPath := filepath.Join(destDir, braveBinPath())
 
 	// Already downloaded.
@@ -80,7 +200,7 @@ func DownloadBrave(ctx context.Context, cacheDir string) (string, error) {
 		return "", fmt.Errorf("browser: create brave dir: %w", err)
 	}
 
-	if err := extractZipArchive(data, destDir); err != nil {
+	if err := archive.Extract(data, asset, destDir); err != nil {
 		return "", fmt.Errorf("browser: extract brave: %w", err)
 	}
 
@@ -194,59 +314,3 @@ func downloadFile(ctx context.Context, url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// extractZipArchive extracts a zip archive to destDir.
-func extractZipArchive(data []byte, destDir string) error {
-	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	if err != nil {
-		return fmt.Errorf("browser: open zip: %w", err)
-	}
-
-	for _, f := range zr.File {
-		target := filepath.Join(destDir, f.Name) //nolint:gosec // trusted archive from GitHub releases
-
-		if !strings.HasPrefix(filepath.Clean(target), filepath.Clean(destDir)+string(os.PathSeparator)) {
-			return fmt.Errorf("browser: zip slip detected: %s", f.Name)
-		}
-
-		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(target, 0o755); err != nil {
-				return fmt.Errorf("browser: create dir %s: %w", f.Name, err)
-			}
-
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-			return fmt.Errorf("browser: create parent dir: %w", err)
-		}
-
-		if err := extractZipFile(f, target); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// extractZipFile extracts a single file from a zip archive.
-func extractZipFile(f *zip.File, target string) error {
-	rc, err := f.Open()
-	if err != nil {
-		return fmt.Errorf("browser: open zip entry %s: %w", f.Name, err)
-	}
-
-	defer func() { _ = rc.Close() }()
-
-	out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-	if err != nil {
-		return fmt.Errorf("browser: create file %s: %w", f.Name, err)
-	}
-
-	defer func() { _ = out.Close() }()
-
-	if _, err := io.Copy(out, rc); err != nil {
-		return fmt.Errorf("browser: write file %s: %w", f.Name, err)
-	}
-
-	return nil
-}

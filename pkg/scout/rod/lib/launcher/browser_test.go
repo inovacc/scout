@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -111,7 +112,7 @@ func TestNewBrowserDefaults(t *testing.T) {
 func TestBrowserDir(t *testing.T) {
 	b := NewBrowser()
 	dir := b.Dir()
-	expected := fmt.Sprintf("chromium-%d", RevisionDefault)
+	expected := fmt.Sprintf("chromium%c%d", os.PathSeparator, RevisionDefault)
 
 	if len(dir) == 0 {
 		t.Fatal("expected non-empty dir")
