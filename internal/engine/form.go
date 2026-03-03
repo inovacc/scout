@@ -6,8 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 // FormField describes a single field within an HTML form.
@@ -26,8 +25,8 @@ type Form struct {
 	Action string
 	Method string
 	Fields []FormField
-	page   *rod.Page
-	el     *rod.Element
+	page   *rodPage
+	el     *rodElement
 }
 
 // DetectForms finds all <form> elements on the page and returns parsed Form objects.
@@ -103,7 +102,7 @@ func (f *Form) FillStruct(data any) error {
 // Submit submits the form by clicking the submit button or triggering form submit via JS.
 func (f *Form) Submit() error {
 	// Try to find and click a submit button
-	submitBtn, err := f.page.ElementByJS(rod.Eval(`() => {
+	submitBtn, err := f.page.ElementByJS(Eval(`() => {
 		const btn = this.querySelector('button[type="submit"], input[type="submit"]');
 		return btn;
 	}`).This(f.el.Object))
@@ -215,7 +214,7 @@ func (w *FormWizard) Run() error {
 
 // --- internal helpers ---
 
-func parseForm(page *rod.Page, el *rod.Element) (*Form, error) {
+func parseForm(page *rodPage, el *rodElement) (*Form, error) {
 	f := &Form{page: page, el: el}
 
 	// Action
@@ -233,7 +232,7 @@ func parseForm(page *rod.Page, el *rod.Element) (*Form, error) {
 	}
 
 	// Parse fields: input, select, textarea
-	inputs, _ := page.ElementsByJS(rod.Eval(`() => this.querySelectorAll("input, select, textarea")`).This(el.Object))
+	inputs, _ := page.ElementsByJS(Eval(`() => this.querySelectorAll("input, select, textarea")`).This(el.Object))
 	for _, input := range inputs {
 		field, err := parseFormField(input)
 		if err != nil {
@@ -246,7 +245,7 @@ func parseForm(page *rod.Page, el *rod.Element) (*Form, error) {
 	return f, nil
 }
 
-func parseFormField(el *rod.Element) (FormField, error) {
+func parseFormField(el *rodElement) (FormField, error) {
 	ff := FormField{}
 
 	tagName, err := el.Eval(`() => this.tagName.toLowerCase()`)
@@ -309,7 +308,7 @@ func parseFormField(el *rod.Element) (FormField, error) {
 
 func (f *Form) fillField(key, value string) error {
 	// Try to find by name, then by id
-	el, err := f.page.ElementByJS(rod.Eval(`(key) => {
+	el, err := f.page.ElementByJS(Eval(`(key) => {
 		return this.querySelector('[name="' + key + '"]') ||
 			this.querySelector('#' + key) ||
 			this.querySelector('[id="' + key + '"]');

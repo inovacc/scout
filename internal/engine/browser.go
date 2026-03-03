@@ -11,20 +11,18 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher/flags"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
-	"github.com/inovacc/scout/pkg/scout/stealth"
+	launcher2 "github.com/inovacc/scout/internal/engine/lib/launcher"
+	"github.com/inovacc/scout/internal/engine/lib/launcher/flags"
+	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 // Browser wraps a rod browser instance with a simplified API.
 // For standalone browser detection, download, and cache management without the
 // full scout dependency, see the pkg/browser/ package.
 type Browser struct {
-	browser  *rod.Browser
+	browser  *rodBrowser
 	opts     *options
-	launcher *launcher.Launcher // nil for remote CDP connections
+	launcher *launcher2.Launcher // nil for remote CDP connections
 
 	// closeOnce ensures Close() is idempotent and safe for concurrent use.
 	closeOnce sync.Once
@@ -97,7 +95,7 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 
 	var (
 		u string
-		l *launcher.Launcher
+		l *launcher2.Launcher
 	)
 
 	switch {
@@ -124,7 +122,7 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 		if strings.Contains(o.remoteCDP, "/devtools/") {
 			u = o.remoteCDP
 		} else {
-			resolved, resolveErr := launcher.ResolveURL(o.remoteCDP)
+			resolved, resolveErr := launcher2.ResolveURL(o.remoteCDP)
 			if resolveErr != nil {
 				u = o.remoteCDP
 			} else {
@@ -140,7 +138,7 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 		}
 	}
 
-	b := rod.New().ControlURL(u)
+	b := newRodBrowser().ControlURL(u)
 	if o.slowMotion > 0 {
 		b = b.SlowMotion(o.slowMotion)
 	}
@@ -253,7 +251,7 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 }
 
 // launchLocal starts a local browser process and returns the CDP WebSocket URL and launcher.
-func launchLocal(o *options) (string, *launcher.Launcher, error) {
+func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 	// Session reuse: resolve data dir from explicit session ID, domain hash, or auto-find.
 	if o.userDataDir == "" {
 		if o.sessionID != "" {
@@ -289,7 +287,7 @@ func launchLocal(o *options) (string, *launcher.Launcher, error) {
 		}
 	}
 
-	l := launcher.New().HeadlessNew(o.headless)
+	l := launcher2.New().HeadlessNew(o.headless)
 
 	switch {
 	case o.execPath != "":
@@ -418,7 +416,7 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 	}
 
 	var (
-		rodPage *rod.Page
+		rodPage *rodPage
 		err     error
 	)
 
@@ -433,7 +431,7 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 
 	switch {
 	case b.opts.stealth:
-		rodPage, err = stealth.Page(b.browser)
+		rodPage, err = stealthPage(b.browser)
 		if err != nil {
 			return nil, fmt.Errorf("scout: create stealth page: %w", err)
 		}
@@ -457,7 +455,7 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 		}
 	case hasInject || hasFP:
 		// Create page blank, inject scripts, then navigate so scripts run before page JS.
-		rodPage, err = b.browser.Page(proto.TargetCreateTarget{})
+		rodPage, err = b.browser.Page(proto2.TargetCreateTarget{})
 		if err != nil {
 			return nil, fmt.Errorf("scout: create page: %w", err)
 		}
@@ -480,7 +478,7 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 			}
 		}
 	default:
-		rodPage, err = b.browser.Page(proto.TargetCreateTarget{URL: url})
+		rodPage, err = b.browser.Page(proto2.TargetCreateTarget{URL: url})
 		if err != nil {
 			return nil, fmt.Errorf("scout: create page: %w", err)
 		}
@@ -491,7 +489,7 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 	}
 
 	if b.opts.userAgent != "" {
-		override := &proto.NetworkSetUserAgentOverride{
+		override := &proto2.NetworkSetUserAgentOverride{
 			UserAgent: b.opts.userAgent,
 		}
 		if b.opts.userAgentMetadata != nil {

@@ -12,11 +12,11 @@ import (
 
 	"github.com/google/uuid"
 	pb "github.com/inovacc/scout/grpc/scoutpb"
+	input2 "github.com/inovacc/scout/internal/engine/lib/input"
+	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
 	"github.com/inovacc/scout/internal/idle"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/identity"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
@@ -1270,7 +1270,7 @@ func (s *ScoutServer) wireEvents(sess *session) {
 	page := sess.page.RodPage()
 
 	go page.EachEvent(
-		func(e *proto.NetworkRequestWillBeSent) {
+		func(e *proto2.NetworkRequestWillBeSent) {
 			headers := make(map[string]string)
 			for k, v := range e.Request.Headers {
 				headers[k] = v.String()
@@ -1289,7 +1289,7 @@ func (s *ScoutServer) wireEvents(sess *session) {
 				},
 			})
 		},
-		func(e *proto.NetworkResponseReceived) {
+		func(e *proto2.NetworkResponseReceived) {
 			headers := make(map[string]string)
 			for k, v := range e.Response.Headers {
 				headers[k] = v.String()
@@ -1315,7 +1315,7 @@ func (s *ScoutServer) wireEvents(sess *session) {
 				},
 			})
 		},
-		func(e *proto.RuntimeConsoleAPICalled) {
+		func(e *proto2.RuntimeConsoleAPICalled) {
 			var sb strings.Builder
 
 			for _, arg := range e.Args {
@@ -1333,7 +1333,7 @@ func (s *ScoutServer) wireEvents(sess *session) {
 				},
 			})
 		},
-		func(e *proto.PageLoadEventFired) {
+		func(e *proto2.PageLoadEventFired) {
 			_ = e // suppress unused warning
 			url, _ := sess.page.URL()
 			sess.broadcast(&pb.BrowserEvent{
@@ -1349,39 +1349,39 @@ func (s *ScoutServer) wireEvents(sess *session) {
 }
 
 // mapKey converts a string key name to an input.Key constant.
-func mapKey(key string) input.Key {
+func mapKey(key string) input2.Key {
 	switch key {
 	case "Enter":
-		return input.Enter
+		return input2.Enter
 	case "Tab":
-		return input.Tab
+		return input2.Tab
 	case "Escape":
-		return input.Escape
+		return input2.Escape
 	case "Space":
-		return input.Space
+		return input2.Space
 	case "Backspace":
-		return input.Backspace
+		return input2.Backspace
 	case "Delete":
-		return input.Delete
+		return input2.Delete
 	case "ArrowUp":
-		return input.ArrowUp
+		return input2.ArrowUp
 	case "ArrowDown":
-		return input.ArrowDown
+		return input2.ArrowDown
 	case "ArrowLeft":
-		return input.ArrowLeft
+		return input2.ArrowLeft
 	case "ArrowRight":
-		return input.ArrowRight
+		return input2.ArrowRight
 	case "Home":
-		return input.Home
+		return input2.Home
 	case "End":
-		return input.End
+		return input2.End
 	case "PageUp":
-		return input.PageUp
+		return input2.PageUp
 	case "PageDown":
-		return input.PageDown
+		return input2.PageDown
 	default:
 		if len(key) == 1 {
-			return input.Key(key[0])
+			return input2.Key(key[0])
 		}
 
 		return 0

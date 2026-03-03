@@ -4,19 +4,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/input"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/internal/engine/lib/input"
+	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 // Element wraps a rod element with a simplified API.
 type Element struct {
-	element *rod.Element
+	element *rodElement
 }
 
 // Click performs a left mouse click on the element.
 func (e *Element) Click() error {
-	if err := e.element.Click(proto.InputMouseButtonLeft, 1); err != nil {
+	if err := e.element.Click(proto2.InputMouseButtonLeft, 1); err != nil {
 		return fmt.Errorf("scout: click: %w", err)
 	}
 
@@ -25,7 +24,7 @@ func (e *Element) Click() error {
 
 // DoubleClick performs a double-click on the element.
 func (e *Element) DoubleClick() error {
-	if err := e.element.Click(proto.InputMouseButtonLeft, 2); err != nil {
+	if err := e.element.Click(proto2.InputMouseButtonLeft, 2); err != nil {
 		return fmt.Errorf("scout: double click: %w", err)
 	}
 
@@ -34,7 +33,7 @@ func (e *Element) DoubleClick() error {
 
 // RightClick performs a right mouse click on the element.
 func (e *Element) RightClick() error {
-	if err := e.element.Click(proto.InputMouseButtonRight, 1); err != nil {
+	if err := e.element.Click(proto2.InputMouseButtonRight, 1); err != nil {
 		return fmt.Errorf("scout: right click: %w", err)
 	}
 
@@ -128,7 +127,7 @@ func (e *Element) Press(key input.Key) error {
 
 // SelectOption selects option elements in a <select> element by their text.
 func (e *Element) SelectOption(selectors ...string) error {
-	if err := e.element.Select(selectors, true, SelectorText); err != nil {
+	if err := e.element.Select(selectors, true, SelectorTypeText); err != nil {
 		return fmt.Errorf("scout: select option: %w", err)
 	}
 
@@ -137,7 +136,7 @@ func (e *Element) SelectOption(selectors ...string) error {
 
 // SelectOptionByCSS selects option elements in a <select> element by CSS selector.
 func (e *Element) SelectOptionByCSS(selectors ...string) error {
-	if err := e.element.Select(selectors, true, SelectorCSS); err != nil {
+	if err := e.element.Select(selectors, true, SelectorTypeCSSSector); err != nil {
 		return fmt.Errorf("scout: select option by css: %w", err)
 	}
 
@@ -284,7 +283,7 @@ func (e *Element) Disabled() (bool, error) {
 
 // Screenshot captures a PNG screenshot of the element.
 func (e *Element) Screenshot() ([]byte, error) {
-	data, err := e.element.Screenshot(proto.PageCaptureScreenshotFormatPng, 0)
+	data, err := e.element.Screenshot(proto2.PageCaptureScreenshotFormatPng, 0)
 	if err != nil {
 		return nil, fmt.Errorf("scout: element screenshot: %w", err)
 	}
@@ -294,7 +293,7 @@ func (e *Element) Screenshot() ([]byte, error) {
 
 // ScreenshotJPEG captures a JPEG screenshot of the element with the given quality.
 func (e *Element) ScreenshotJPEG(quality int) ([]byte, error) {
-	data, err := e.element.Screenshot(proto.PageCaptureScreenshotFormatJpeg, quality)
+	data, err := e.element.Screenshot(proto2.PageCaptureScreenshotFormatJpeg, quality)
 	if err != nil {
 		return nil, fmt.Errorf("scout: element screenshot jpeg: %w", err)
 	}
@@ -396,7 +395,7 @@ func (e *Element) Parent() (*Element, error) {
 func (e *Element) Parents(selector string) ([]*Element, error) {
 	page := e.element.Page()
 
-	els, err := page.ElementsByJS(rod.Eval(`(sel) => {
+	els, err := page.ElementsByJS(Eval(`(sel) => {
 		const els = [];
 		let el = this.parentElement;
 		while (el) {
@@ -474,7 +473,7 @@ func (e *Element) Frame() (*Page, error) {
 func (e *Element) Element(selector string) (*Element, error) {
 	page := e.element.Page()
 
-	el, err := page.ElementByJS(rod.Eval(`(sel) => this.querySelector(sel)`, selector).This(e.element.Object))
+	el, err := page.ElementByJS(Eval(`(sel) => this.querySelector(sel)`, selector).This(e.element.Object))
 	if err != nil {
 		return nil, fmt.Errorf("scout: child element %q: %w", selector, err)
 	}
@@ -486,7 +485,7 @@ func (e *Element) Element(selector string) (*Element, error) {
 func (e *Element) Elements(selector string) ([]*Element, error) {
 	page := e.element.Page()
 
-	els, err := page.ElementsByJS(rod.Eval(`(sel) => this.querySelectorAll(sel)`, selector).This(e.element.Object))
+	els, err := page.ElementsByJS(Eval(`(sel) => this.querySelectorAll(sel)`, selector).This(e.element.Object))
 	if err != nil {
 		return nil, fmt.Errorf("scout: child elements %q: %w", selector, err)
 	}
@@ -498,7 +497,7 @@ func (e *Element) Elements(selector string) ([]*Element, error) {
 func (e *Element) ElementByXPath(xpath string) (*Element, error) {
 	page := e.element.Page()
 
-	el, err := page.ElementByJS(rod.Eval(`(xpath) => {
+	el, err := page.ElementByJS(Eval(`(xpath) => {
 		const result = document.evaluate(xpath, this, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
 		return result.singleNodeValue;
 	}`, xpath).This(e.element.Object))
@@ -513,7 +512,7 @@ func (e *Element) ElementByXPath(xpath string) (*Element, error) {
 func (e *Element) ElementsByXPath(xpath string) ([]*Element, error) {
 	page := e.element.Page()
 
-	els, err := page.ElementsByJS(rod.Eval(`(xpath) => {
+	els, err := page.ElementsByJS(Eval(`(xpath) => {
 		const result = document.evaluate(xpath, this, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 		const nodes = [];
 		for (let i = 0; i < result.snapshotLength; i++) nodes.push(result.snapshotItem(i));
@@ -530,7 +529,7 @@ func (e *Element) ElementsByXPath(xpath string) ([]*Element, error) {
 func (e *Element) ElementByText(selector, regex string) (*Element, error) {
 	page := e.element.Page()
 
-	el, err := page.ElementByJS(rod.Eval(`(sel, regex) => {
+	el, err := page.ElementByJS(Eval(`(sel, regex) => {
 		const re = new RegExp(regex);
 		const els = this.querySelectorAll(sel);
 		for (const el of els) {
@@ -628,6 +627,6 @@ func (e *Element) Eval(js string, args ...any) (*EvalResult, error) {
 }
 
 // RodElement returns the underlying rod.Element for advanced use cases.
-func (e *Element) RodElement() *rod.Element {
+func (e *Element) RodElement() *rodElement {
 	return e.element
 }

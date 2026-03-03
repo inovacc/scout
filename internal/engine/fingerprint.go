@@ -23,7 +23,7 @@ var (
 	WithFingerprintLocale = fingerprint.WithFingerprintLocale
 )
 
-// Internal aliases for browser.go compatibility.
+// Internal aliases for browser_rod.go compatibility.
 type fingerprintRotator = fingerprint.Rotator
 
 var (

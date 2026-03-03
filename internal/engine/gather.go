@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 // GatherResult holds all data collected from a single page in one pass.

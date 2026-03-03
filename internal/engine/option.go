@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
+	"github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 // BrowserType identifies a Chromium-based browser for auto-detection.

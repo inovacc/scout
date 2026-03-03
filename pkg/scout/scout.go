@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine/lib/proto"
 	"golang.org/x/oauth2"
 
 	"github.com/inovacc/scout/internal/engine"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/proto"
 )
 
 type AnthropicOption = engine.AnthropicOption
@@ -297,9 +297,9 @@ var (
 	ResearchDeep = engine.ResearchDeep
 	ResearchMedium = engine.ResearchMedium
 	ResearchShallow = engine.ResearchShallow
-	SelectorCSS = engine.SelectorCSS
-	SelectorRegex = engine.SelectorRegex
-	SelectorText = engine.SelectorText
+	SelectorCSS = engine.SelectorTypeCSSSector
+	SelectorRegex = engine.SelectorTypeRegex
+	SelectorText = engine.SelectorTypeText
 	SinkGoogleDrive = engine.SinkGoogleDrive
 	SinkOneDrive = engine.SinkOneDrive
 	Wikipedia = engine.Wikipedia

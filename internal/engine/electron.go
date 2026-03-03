@@ -6,19 +6,19 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher"
-	"github.com/inovacc/scout/pkg/scout/rod/lib/launcher/flags"
+	launcher2 "github.com/inovacc/scout/internal/engine/lib/launcher"
+	"github.com/inovacc/scout/internal/engine/lib/launcher/flags"
 )
 
 // launchElectron starts an Electron app with CDP debugging enabled
 // and returns the CDP WebSocket URL plus the launcher for cleanup.
-func launchElectron(o *options) (string, *launcher.Launcher, error) {
+func launchElectron(o *options) (string, *launcher2.Launcher, error) {
 	binPath, err := resolveElectron(context.Background(), o.electronVersion)
 	if err != nil {
 		return "", nil, fmt.Errorf("scout: resolve electron: %w", err)
 	}
 
-	l := launcher.New().
+	l := launcher2.New().
 		Bin(binPath).
 		RemoteDebuggingPort(0) // random port
 
@@ -80,7 +80,7 @@ func lookupElectronCDP(endpoint string) (string, error) { //nolint:unparam
 		return endpoint, nil
 	}
 
-	resolved, err := launcher.ResolveURL(endpoint)
+	resolved, err := launcher2.ResolveURL(endpoint)
 	if err != nil {
 		return endpoint, nil //nolint:nilerr
 	}
