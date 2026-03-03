@@ -136,6 +136,7 @@ type OllamaProvider = engine.OllamaProvider
 type OpenAIOption = engine.OpenAIOption
 type OpenAIProvider = engine.OpenAIProvider
 type Option = engine.Option
+type PDFFormField = engine.PDFFormField
 type PDFOptions = engine.PDFOptions
 type PWAInfo = engine.PWAInfo
 type Page = engine.Page

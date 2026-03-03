@@ -10,7 +10,7 @@ import (
 	"github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
-// Re-export recorder option types.
+// RecorderOption re-exports hijack.RecorderOption from sub-package.
 type RecorderOption = hijack.RecorderOption
 
 var (

@@ -26,10 +26,10 @@ const (
 
 // UploadConfig holds credentials and destination for cloud upload.
 type UploadConfig struct {
-	Sink       UploadSink `json:"sink"`
+	Sink       UploadSink    `json:"sink"`
 	Token      *oauth2.Token `json:"token,omitempty"`
-	FolderID   string     `json:"folder_id,omitempty"`   // GDrive folder ID or OneDrive folder path
-	FolderPath string     `json:"folder_path,omitempty"` // OneDrive folder path
+	FolderID   string        `json:"folder_id,omitempty"`   // GDrive folder ID or OneDrive folder path
+	FolderPath string        `json:"folder_path,omitempty"` // OneDrive folder path
 }
 
 // UploadResult describes the outcome of a cloud upload.
@@ -84,6 +84,7 @@ func (u *Uploader) UploadFile(ctx context.Context, path string) (*UploadResult, 
 func (u *Uploader) uploadGDrive(ctx context.Context, filename string, data []byte) (*UploadResult, error) {
 	// Use multipart upload to set metadata + content in one request.
 	var body bytes.Buffer
+
 	writer := multipart.NewWriter(&body)
 
 	// Metadata part.
@@ -197,9 +198,9 @@ func (u *Uploader) uploadOneDrive(ctx context.Context, filename string, data []b
 	}
 
 	var odResp struct {
-		ID      string `json:"id"`
-		Name    string `json:"name"`
-		WebURL  string `json:"webUrl"`
+		ID     string `json:"id"`
+		Name   string `json:"name"`
+		WebURL string `json:"webUrl"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&odResp); err != nil {

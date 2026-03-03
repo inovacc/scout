@@ -23,12 +23,12 @@ type TableData struct {
 
 // MetaData holds common page metadata (title, description, OG tags, etc.).
 type MetaData struct {
-	Title       string
-	Description string
-	Canonical   string
-	OG          map[string]string
-	Twitter     map[string]string
-	JSONLD      []json.RawMessage
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	Canonical   string            `json:"canonical,omitempty"`
+	OG          map[string]string `json:"og,omitempty"`
+	Twitter     map[string]string `json:"twitter,omitempty"`
+	JSONLD      []json.RawMessage `json:"jsonld,omitempty"`
 }
 
 // Extract populates a struct from the page DOM using `scout:"selector"` tags.

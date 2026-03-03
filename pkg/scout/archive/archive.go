@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -94,15 +93,6 @@ func pathSlipCheck(destDir, entryName string) (string, error) {
 	}
 
 	return target, nil
-}
-
-// makeExecutable sets +x on a file on Unix systems.
-func makeExecutable(path string) error {
-	if runtime.GOOS == "windows" {
-		return nil
-	}
-
-	return os.Chmod(path, 0o755)
 }
 
 // writeFile writes data to a file, creating parent directories as needed.

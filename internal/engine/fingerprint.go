@@ -6,7 +6,7 @@ import (
 	"github.com/inovacc/scout/internal/engine/fingerprint"
 )
 
-// Re-export fingerprint types and functions.
+// Fingerprint re-exports fingerprint.Fingerprint from sub-package.
 type Fingerprint = fingerprint.Fingerprint
 type FingerprintOption = fingerprint.FingerprintOption
 type FingerprintRotation = fingerprint.FingerprintRotation

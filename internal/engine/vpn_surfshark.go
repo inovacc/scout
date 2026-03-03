@@ -13,4 +13,3 @@ const (
 
 // Surfshark internal types re-exported for test compatibility.
 type surfsharkLoginRequest = vpn.SurfsharkLoginRequest
-type surfsharkProxyCreds = vpn.SurfsharkProxyCreds

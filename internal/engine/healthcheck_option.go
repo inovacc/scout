@@ -31,6 +31,7 @@ func WithHealthConcurrency(n int) HealthCheckOption {
 		if n < 1 {
 			n = 1
 		}
+
 		o.concurrency = n
 	}
 }

@@ -6,11 +6,7 @@ import (
 	"github.com/inovacc/scout/internal/engine/session"
 )
 
-// sessionsDir is kept as a package-level variable for backward compatibility.
-// It delegates to session.SessionsDir.
-var sessionsDir = session.SessionsDir
-
-// Type aliases for backward compatibility.
+// SessionInfo re-exports session.SessionInfo from sub-package.
 type SessionInfo = session.SessionInfo
 type SessionListing = session.SessionListing
 

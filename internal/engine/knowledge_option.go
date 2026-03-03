@@ -37,6 +37,7 @@ func WithKnowledgeConcurrency(n int) KnowledgeOption {
 	if n < 1 {
 		n = 1
 	}
+
 	return func(o *knowledgeOptions) { o.concurrency = n }
 }
 

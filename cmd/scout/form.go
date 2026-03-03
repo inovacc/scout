@@ -201,7 +201,7 @@ func outputForm(cmd *cobra.Command, form *scout.Form) error {
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
 
-		return enc.Encode(form) //nolint:musttag
+		return enc.Encode(form)
 	}
 
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Form: action=%s method=%s\n", form.Action, form.Method)

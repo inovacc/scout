@@ -26,6 +26,7 @@ func TestManifestDefaultRevision(t *testing.T) {
 
 func TestManifestHostURLs(t *testing.T) {
 	m := LoadManifest()
+
 	hosts := m.HostURLs(m.DefaultRevision())
 	if len(hosts) == 0 {
 		t.Skip("no host URLs for current platform")
@@ -36,6 +37,7 @@ func TestManifestHostURLs(t *testing.T) {
 		if u == "" {
 			t.Errorf("host[%d] returned empty URL", i)
 		}
+
 		if strings.Contains(u, "{revision}") {
 			t.Errorf("host[%d] URL still contains {revision}: %s", i, u)
 		}

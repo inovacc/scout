@@ -80,6 +80,7 @@ func main() {
 	if err := agent.Listen(agent.Options{ShutdownCleanup: true}); err != nil {
 		log.Printf("scout: gops agent: %v", err)
 	}
+
 	defer agent.Close()
 
 	Execute()

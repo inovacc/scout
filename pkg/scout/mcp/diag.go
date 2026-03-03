@@ -351,7 +351,7 @@ func pingViaBrowser(ctx context.Context, state *mcpState, rawURL string, count i
 	for i := range count {
 		start := time.Now()
 
-		if err := page.Navigate(rawURL); err != nil { //nolint:contextcheck
+		if err := page.Navigate(rawURL); err != nil {
 			resp.Error = err.Error()
 
 			pings = append(pings, pingResult{Seq: i + 1, TotalMS: ms(time.Since(start))})
@@ -359,12 +359,12 @@ func pingViaBrowser(ctx context.Context, state *mcpState, rawURL string, count i
 			continue
 		}
 
-		_ = page.WaitLoad() //nolint:contextcheck
+		_ = page.WaitLoad()
 		total := time.Since(start)
 		pings = append(pings, pingResult{Seq: i + 1, TotalMS: ms(total)})
 	}
 
-	if result, err := page.Eval(perfTimingJS); err == nil { //nolint:contextcheck
+	if result, err := page.Eval(perfTimingJS); err == nil {
 		s := result.String()
 		if s != "" && s != "null" {
 			var perf curlTiming
@@ -541,19 +541,19 @@ func curlViaBrowser(ctx context.Context, state *mcpState, rawURL string) (*mcp.C
 
 	start := time.Now()
 
-	if err := page.Navigate(rawURL); err != nil { //nolint:contextcheck
+	if err := page.Navigate(rawURL); err != nil {
 		return errResult(err.Error())
 	}
 
-	_ = page.WaitLoad() //nolint:contextcheck
+	_ = page.WaitLoad()
 	total := time.Since(start)
 
-	u, _ := page.URL()       //nolint:contextcheck
-	title, _ := page.Title() //nolint:contextcheck
+	u, _ := page.URL()
+	title, _ := page.Title()
 
 	// Get page content as text.
 	bodyText := ""
-	if result, err := page.Eval(`document.documentElement.outerHTML`); err == nil { //nolint:contextcheck
+	if result, err := page.Eval(`document.documentElement.outerHTML`); err == nil {
 		bodyText = result.String()
 		if len(bodyText) > maxBodySize {
 			bodyText = bodyText[:maxBodySize]
@@ -570,7 +570,7 @@ func curlViaBrowser(ctx context.Context, state *mcpState, rawURL string) (*mcp.C
 		Size:          &curlSize{Body: len(bodyText)},
 	}
 
-	if result, err := page.Eval(perfTimingJS); err == nil { //nolint:contextcheck
+	if result, err := page.Eval(perfTimingJS); err == nil {
 		s := result.String()
 		if s != "" && s != "null" {
 			var perf curlTiming

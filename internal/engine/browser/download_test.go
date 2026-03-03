@@ -41,6 +41,7 @@ func TestBraveBinPath(t *testing.T) {
 
 func TestBraveDownloadURL(t *testing.T) {
 	m := LoadManifest()
+
 	url := m.Brave.DownloadURL("1.87.188")
 	if url == "" {
 		t.Skip("no brave download URL for current platform")
@@ -139,6 +140,7 @@ func TestResolveBrowserChrome(t *testing.T) {
 	if err != nil {
 		t.Skipf("Chrome not available: %v", err)
 	}
+
 	if path != "" {
 		t.Logf("Chrome found at: %s", path)
 	}
@@ -180,13 +182,16 @@ func TestBrowserRegistry(t *testing.T) {
 	}
 
 	fakeDir := filepath.Join(cacheDir, "test-browser", "1.0.0")
+
 	fakeBin := filepath.Join(fakeDir, "test.exe")
 	if err := os.MkdirAll(fakeDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := os.WriteFile(fakeBin, []byte("fake"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+
 	defer func() { _ = os.RemoveAll(filepath.Join(cacheDir, "test-browser")) }()
 
 	RegisterBrowser("test-browser", "1.0.0", fakeBin)
@@ -198,27 +203,33 @@ func TestBrowserRegistry(t *testing.T) {
 
 	// Re-register (should be no-op).
 	RegisterBrowser("test-browser", "1.0.0", fakeBin)
+
 	entries, err := LoadRegistry()
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	count := 0
+
 	for _, e := range entries {
 		if e.Name == "test-browser" {
 			count++
 		}
 	}
+
 	if count != 1 {
 		t.Errorf("expected 1 test-browser entry, got %d", count)
 	}
 
 	// Clean up the test entry from registry.
 	var cleaned []BrowserEntry
+
 	for _, e := range entries {
 		if e.Name != "test-browser" {
 			cleaned = append(cleaned, e)
 		}
 	}
+
 	_ = SaveRegistry(cleaned)
 }
 

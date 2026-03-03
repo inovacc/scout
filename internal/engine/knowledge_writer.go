@@ -28,6 +28,7 @@ func (w *KnowledgeWriter) Init() error {
 			return fmt.Errorf("scout: knowledge writer: mkdir %s: %w", d, err)
 		}
 	}
+
 	return nil
 }
 
@@ -40,6 +41,7 @@ func (w *KnowledgeWriter) WritePage(kp *KnowledgePage) error {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return err
 		}
+
 		if err := os.WriteFile(path, []byte(kp.Markdown), 0o644); err != nil {
 			return fmt.Errorf("scout: knowledge writer: write markdown: %w", err)
 		}
@@ -52,6 +54,7 @@ func (w *KnowledgeWriter) WritePage(kp *KnowledgePage) error {
 			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 				return err
 			}
+
 			_ = os.WriteFile(path, data, 0o644)
 		}
 	}
@@ -61,6 +64,7 @@ func (w *KnowledgeWriter) WritePage(kp *KnowledgePage) error {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return err
 		}
+
 		_ = os.WriteFile(path, kp.HAR, 0o644)
 	}
 
@@ -69,6 +73,7 @@ func (w *KnowledgeWriter) WritePage(kp *KnowledgePage) error {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return err
 		}
+
 		_ = os.WriteFile(path, []byte(kp.Snapshot), 0o644)
 	}
 
@@ -77,6 +82,7 @@ func (w *KnowledgeWriter) WritePage(kp *KnowledgePage) error {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return err
 		}
+
 		_ = os.WriteFile(path, kp.PDF, 0o644)
 	}
 
@@ -124,9 +130,11 @@ func sanitizeFilename(s string) string {
 		"<", "", ">", "", ":", "", "\"", "",
 		"|", "", "?", "", "*", "", "\\", "",
 	)
+
 	s = replacer.Replace(s)
 	if s == "" {
 		return "page"
 	}
+
 	return s
 }

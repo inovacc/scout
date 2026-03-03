@@ -146,6 +146,7 @@ func (b *Browser) Gather(targetURL string, opts ...GatherOption) (*GatherResult,
 
 	// Set up HAR recorder.
 	var recorder *HijackRecorder
+
 	if wantHAR {
 		hijacker, hijackErr := page.NewSessionHijacker(WithHijackBodyCapture())
 		if hijackErr == nil {
@@ -158,6 +159,7 @@ func (b *Browser) Gather(targetURL string, opts ...GatherOption) (*GatherResult,
 
 	// Set up console capture.
 	var consoleLog []string
+
 	if wantConsole {
 		rodPage := page.RodPage()
 		rodPage.EachEvent(func(e *proto.RuntimeConsoleAPICalled) {

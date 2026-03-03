@@ -7,7 +7,7 @@ import (
 	"github.com/inovacc/scout/internal/engine/detect"
 )
 
-// Re-export detect types from sub-package.
+// FrameworkInfo re-exports detect.FrameworkInfo from sub-package.
 type FrameworkInfo = detect.FrameworkInfo
 type TechStack = detect.TechStack
 type RenderMode = detect.RenderMode

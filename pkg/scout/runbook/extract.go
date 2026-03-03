@@ -11,17 +11,17 @@ import (
 
 // runExtract executes an extraction runbook.
 func runExtract(ctx context.Context, browser *scout.Browser, r *Runbook) (*Result, error) {
-	page, err := browser.NewPage(r.URL) //nolint:contextcheck
+	page, err := browser.NewPage(r.URL)
 	if err != nil {
 		return nil, fmt.Errorf("runbook: navigate: %w", err)
 	}
 
-	if err := page.WaitLoad(); err != nil { //nolint:contextcheck
+	if err := page.WaitLoad(); err != nil {
 		return nil, fmt.Errorf("runbook: wait load: %w", err)
 	}
 
 	if r.WaitFor != "" {
-		if _, err := page.Element(r.WaitFor); err != nil { //nolint:contextcheck
+		if _, err := page.Element(r.WaitFor); err != nil {
 			return nil, fmt.Errorf("runbook: wait for %q: %w", r.WaitFor, err)
 		}
 	}
@@ -40,7 +40,7 @@ func runExtract(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resul
 			return result, ctx.Err()
 		}
 
-		items, err := extractPage(page, r.Items) //nolint:contextcheck
+		items, err := extractPage(page, r.Items)
 		if err != nil {
 			return result, fmt.Errorf("runbook: extract page %d: %w", pageNum+1, err)
 		}
@@ -67,15 +67,15 @@ func runExtract(ctx context.Context, browser *scout.Browser, r *Runbook) (*Resul
 			time.Sleep(time.Duration(r.Pagination.DelayMs) * time.Millisecond)
 		}
 
-		if !advancePage(page, r.Pagination) { //nolint:contextcheck
+		if !advancePage(page, r.Pagination) {
 			break
 		}
 
 		// Wait for content to settle after pagination
-		_ = page.WaitLoad() //nolint:contextcheck
+		_ = page.WaitLoad()
 		if r.WaitFor != "" {
-			if has, _ := page.Has(r.WaitFor); has { //nolint:contextcheck
-				_, _ = page.Element(r.WaitFor) //nolint:contextcheck
+			if has, _ := page.Has(r.WaitFor); has {
+				_, _ = page.Element(r.WaitFor)
 			}
 		}
 	}

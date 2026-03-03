@@ -11,7 +11,7 @@ import (
 	"github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
-// Re-export hijack types from sub-package.
+// HijackEventType re-exports hijack.EventType from sub-package.
 type HijackEventType = hijack.EventType
 type CapturedRequest = hijack.CapturedRequest
 type CapturedResponse = hijack.CapturedResponse
@@ -21,7 +21,7 @@ type HijackFilter = hijack.Filter
 type HijackOption = hijack.Option
 type HijackRecorder = hijack.Recorder
 
-// Re-export HAR types from sub-package.
+// HARLog re-exports hijack.HARLog from sub-package.
 type HARLog = hijack.HARLog
 type HARCreator = hijack.HARCreator
 type HAREntry = hijack.HAREntry

@@ -25,7 +25,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
   cookies, url, title, wait, back, forward, reload, tabs, tab, newtab,
   health, help, exit`,
 	Args: cobra.MaximumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error { //nolint:maintidx
+	RunE: func(cmd *cobra.Command, args []string) error {
 		opts := baseOpts(cmd)
 
 		b, err := scout.New(opts...)
@@ -50,6 +50,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 
 		for {
 			prompt := "> "
+
 			if page != nil {
 				if u, err := page.URL(); err == nil {
 					if parsed, err := url.Parse(u); err == nil {
@@ -251,7 +252,10 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 
 				enc := json.NewEncoder(out)
 				enc.SetIndent("", "  ")
-				_ = enc.Encode(cookies)
+
+				if err := enc.Encode(cookies); err != nil {
+					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
+				}
 
 			case "url":
 				if page == nil {
@@ -341,6 +345,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					t, _ := p.Title()
 
 					marker := "  "
+
 					if page != nil {
 						if pu, _ := page.URL(); pu == u {
 							marker = "* "
@@ -400,6 +405,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 				}
 
 				u, _ := page.URL()
+
 				report, err := b.HealthCheck(u, scout.WithHealthDepth(1), scout.WithHealthConcurrency(1))
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)

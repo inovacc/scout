@@ -28,7 +28,7 @@ func registerFormTools(server *mcp.Server, state *mcpState) {
 		}
 
 		if args.Selector != "" {
-			form, err := page.DetectForm(args.Selector) //nolint:contextcheck
+			form, err := page.DetectForm(args.Selector)
 			if err != nil {
 				return errResult(err.Error())
 			}
@@ -36,7 +36,7 @@ func registerFormTools(server *mcp.Server, state *mcpState) {
 			return jsonResult(form)
 		}
 
-		forms, err := page.DetectForms() //nolint:contextcheck
+		forms, err := page.DetectForms()
 		if err != nil {
 			return errResult(err.Error())
 		}
@@ -70,12 +70,12 @@ func registerFormTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
-		form, err := page.DetectForm(args.Selector) //nolint:contextcheck
+		form, err := page.DetectForm(args.Selector)
 		if err != nil {
 			return errResult(err.Error())
 		}
 
-		if err := form.Fill(args.Data); err != nil { //nolint:contextcheck
+		if err := form.Fill(args.Data); err != nil {
 			return errResult(err.Error())
 		}
 
@@ -103,12 +103,12 @@ func registerFormTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
-		form, err := page.DetectForm(args.Selector) //nolint:contextcheck
+		form, err := page.DetectForm(args.Selector)
 		if err != nil {
 			return errResult(err.Error())
 		}
 
-		if err := form.Submit(); err != nil { //nolint:contextcheck
+		if err := form.Submit(); err != nil {
 			return errResult(err.Error())
 		}
 

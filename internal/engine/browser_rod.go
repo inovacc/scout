@@ -1,5 +1,3 @@
-// Package rod is a high-level driver directly based on DevTools Protocol.
-// Internalized from github.com/go-rod/rod v0.116.2 (MIT License).
 package engine
 
 import (

@@ -38,6 +38,7 @@ type BrowserInfo struct {
 //
 // Usage: navigate to a login page, log in manually, then press Ctrl+C.
 // The returned CapturedCredentials can be saved with SaveCredentials.
+//nolint:contextcheck // Browser API doesn't accept context at construction time
 func CaptureCredentials(ctx context.Context, url string, opts ...Option) (*CapturedCredentials, error) {
 	// Force headed mode for manual interaction.
 	captureOpts := []Option{ //nolint:prealloc // complex init with conditional appends
