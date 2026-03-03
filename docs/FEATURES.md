@@ -164,6 +164,11 @@
 - **Status:** Completed
 - **Description:** TabGroup struct for coordinating actions across multiple browser pages. `Do()` for sequential, `DoAll()`/`DoParallel()` for concurrent execution, `Broadcast()` for same action on all tabs, `Navigate()`, `Wait()`, `Collect()` for data gathering. Implemented in `pkg/scout/tabgroup.go`.
 
+### Process Management & Browser Close Detection
+
+- **Status:** Completed
+- **Description:** gops agent registration for process discovery, `IsScoutProcess()` for reliable orphan detection immune to PID reuse, `Page.WaitClose()` for detecting browser window close via CDP `TargetTargetDestroyed` event, synchronous session directory cleanup, platform-specific process files. `mcp open` now exits cleanly when the user closes the browser window.
+
 ## Proposed Features
 
 ### Screen Recorder

@@ -44,7 +44,7 @@
 | 40 | Multi-tab orchestration (TabGroup), MCP expanded to 33 tools, ping/curl diagnostics | Done |
 | 41 | Electron Support (runtime download, CDP connection, CLI flags) | Done |
 | 42 | Command Logging (internal/flags, internal/logger, scout logger subcommand, PersistentPreRun capture) | Done |
-| 43 | Launcher `browser.json` manifest (per-platform revisions, zip names, download hosts, auto-update via LAST_CHANGE) | Planned |
+| 43 | Launcher `browser.json` manifest (per-platform revisions, zip names, download hosts, auto-update via LAST_CHANGE) | Done |
 | 44 | Session Reuse & Reset — `WithReusableSession()`, `WithTargetURL()`, domain-hash routing, `scout session reset [id|--all]`, orphan watchdog | Done |
 | 45 | Site Health Checker — `scout test-site <url>` crawls site, detects broken links, console errors, JS exceptions, network failures; structured report (JSON/table) | Done |
 | 46 | REPL Mode — `scout repl [url]` interactive local browser shell with 20 commands (navigate, eval, click, type, extract, screenshot, markdown, health, tabs, etc.) | Done |
@@ -52,12 +52,8 @@
 | 47 | Page Gather — `scout gather <url>` one-shot page intelligence: DOM state, HAR, links, screenshots, cookies, metadata, console log, frameworks, accessibility snapshot | Done |
 | 48 | Cloud Upload — `scout upload` with OAuth2 auth for Google Drive and OneDrive; `scout upload auth`, `scout upload file`, `scout upload status`; config persisted to `~/.scout/upload.json` | Done |
 | 49 | Internal Migration — Move `pkg/scout/` to `internal/engine/` with public facade, extract domain sub-packages (detect, fingerprint, hijack, llm, vpn, session), merge rod internals into engine | Done |
-
-### Next Phase
-
-| Phase | Feature | Status |
-|-------|---------|--------|
-| 50 | Browser Manifest — `browser.json` revision manifest replacing hardcoded `RevisionDefault`; per-platform revisions, zip names, download hosts; `LAST_CHANGE` fallback | Planned |
+| 49.5 | Process Management — `google/gops` agent for scout process discovery, `IsScoutProcess()` for reliable orphan detection (no PID reuse), `Page.WaitClose()` for browser window close detection, synchronous session dir cleanup, platform-specific process files (`_windows.go`, `_linux.go`) | Done |
+| 51 | PDF Form Filling — `Page.PDFFormFields()` detects fillable fields, `Page.FillPDFForm(fields)` fills them via browser rendering; CLI: `scout pdf-form fields`, `scout pdf-form fill` | Done |
 
 ### Remaining Work
 

@@ -1,6 +1,6 @@
 # Scout
 
-A Go-idiomatic API for headless browser automation, web scraping, and search built on [go-rod](https://github.com/go-rod/rod).
+A Go-idiomatic API for headless browser automation, web scraping, and search with an internalized rod fork.
 
 ## Features
 
@@ -434,8 +434,8 @@ task grpc:client   # Run interactive CLI client
 
 | Package                                                       | Purpose                                                       |
 |---------------------------------------------------------------|---------------------------------------------------------------|
-| [go-rod/rod](https://github.com/go-rod/rod)                   | Headless browser automation via Chrome DevTools Protocol      |
-| pkg/stealth (internalized)                                    | Anti-bot-detection page creation (forked from go-rod/stealth) |
+| internal/engine/lib (internalized rod)                        | Headless browser automation via Chrome DevTools Protocol      |
+| internal/engine/stealth (internalized)                        | Anti-bot-detection page creation (forked from go-rod/stealth) |
 | [ysmood/gson](https://github.com/ysmood/gson)                 | JSON number handling for JS evaluation results                |
 | [golang.org/x/time](https://pkg.go.dev/golang.org/x/time)     | Token bucket rate limiter                                     |
 | [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | Argon2id key derivation for session encryption                |
@@ -452,6 +452,7 @@ task grpc:client   # Run interactive CLI client
 | [google/uuid](https://github.com/google/uuid)                               | Session ID generation                     |
 | [spf13/cobra](https://github.com/spf13/cobra)                               | CLI framework                             |
 | [grandcat/zeroconf](https://github.com/grandcat/zeroconf)                   | mDNS service discovery for device pairing |
+| [google/gops](https://github.com/google/gops)                               | Process discovery and orphan detection    |
 
 ## License
 
