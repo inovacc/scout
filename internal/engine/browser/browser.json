@@ -2,7 +2,7 @@
   "chromium": {
     "description": "Open-source browser engine. Snapshot builds by revision number.",
     "revision": {
-      "default": 1588893,
+      "default": 1593218,
       "latest_api": {
         "windows_amd64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Win_x64/LAST_CHANGE",
         "linux_amd64": "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/LAST_CHANGE",
