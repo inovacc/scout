@@ -24,12 +24,12 @@ func TestAnthropicProviderRequiresKey(t *testing.T) {
 
 func TestAnthropicProviderComplete(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("x-api-key") != "test-key" {
-			t.Errorf("x-api-key = %q, want %q", r.Header.Get("x-api-key"), "test-key")
+		if r.Header.Get("X-Api-Key") != "test-key" {
+			t.Errorf("x-api-key = %q, want %q", r.Header.Get("X-Api-Key"), "test-key")
 		}
 
-		if r.Header.Get("anthropic-version") != AnthropicAPIVersion {
-			t.Errorf("anthropic-version = %q", r.Header.Get("anthropic-version"))
+		if r.Header.Get("Anthropic-Version") != AnthropicAPIVersion {
+			t.Errorf("anthropic-version = %q", r.Header.Get("Anthropic-Version"))
 		}
 
 		var req anthropicRequest

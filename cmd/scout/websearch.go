@@ -86,7 +86,7 @@ var websearchCmd = &cobra.Command{
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
 
-			return enc.Encode(result) //nolint:musttag
+			return enc.Encode(result)
 		}
 
 		// Text output
@@ -101,7 +101,7 @@ var websearchCmd = &cobra.Command{
 
 		outFile, _ := cmd.Flags().GetString("output")
 		if outFile != "" {
-			data, _ := json.MarshalIndent(result, "", "  ") //nolint:errchkjson,musttag
+			data, _ := json.MarshalIndent(result, "", "  ") //nolint:errchkjson
 
 			dest, writeErr := writeOutput(cmd, data, "websearch.json")
 			if writeErr != nil {

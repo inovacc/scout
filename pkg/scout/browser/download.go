@@ -70,8 +70,10 @@ func downloadChromium(ctx context.Context, cacheDir string) (string, error) {
 
 	urls := chromiumDownloadURLs(revision, conf)
 
-	var data []byte
-	var dlErr error
+	var (
+		data  []byte
+		dlErr error
+	)
 
 	for _, u := range urls {
 		data, dlErr = downloadFile(ctx, u)
@@ -313,4 +315,3 @@ func downloadFile(ctx context.Context, url string) ([]byte, error) {
 
 	return io.ReadAll(resp.Body)
 }
-

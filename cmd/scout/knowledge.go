@@ -49,16 +49,20 @@ Output is both a structured directory and optionally a single JSON blob.`,
 		}
 
 		opts := baseOpts(cmd)
+
 		b, err := scout.New(opts...)
 		if err != nil {
 			return fmt.Errorf("create browser: %w", err)
 		}
-		defer b.Close()
+
+		defer func() { _ = b.Close() }()
 
 		var kOpts []scout.KnowledgeOption
+
 		kOpts = append(kOpts, scout.WithKnowledgeDepth(depth))
 		kOpts = append(kOpts, scout.WithKnowledgeMaxPages(maxPages))
 		kOpts = append(kOpts, scout.WithKnowledgeConcurrency(concurrency))
+
 		kOpts = append(kOpts, scout.WithKnowledgeTimeout(timeout))
 		if outputDir != "" {
 			kOpts = append(kOpts, scout.WithKnowledgeOutput(outputDir))
@@ -74,6 +78,7 @@ Output is both a structured directory and optionally a single JSON blob.`,
 		if jsonOut {
 			enc := json.NewEncoder(os.Stdout)
 			enc.SetIndent("", "  ")
+
 			return enc.Encode(result)
 		}
 
@@ -81,15 +86,18 @@ Output is both a structured directory and optionally a single JSON blob.`,
 		_, _ = fmt.Fprintf(os.Stderr, "  Pages:  %d (%d ok, %d failed)\n",
 			result.Summary.PagesTotal, result.Summary.PagesSuccess, result.Summary.PagesFailed)
 		_, _ = fmt.Fprintf(os.Stderr, "  Links:  %d unique\n", result.Summary.UniqueLinks)
+
 		_, _ = fmt.Fprintf(os.Stderr, "  Time:   %s\n", result.Duration)
 		if outputDir != "" {
 			_, _ = fmt.Fprintf(os.Stderr, "  Output: %s/\n", outputDir)
 		}
+
 		if result.TechStack != nil && len(result.TechStack.Frameworks) > 0 {
 			names := make([]string, len(result.TechStack.Frameworks))
 			for i, f := range result.TechStack.Frameworks {
 				names[i] = f.Name
 			}
+
 			_, _ = fmt.Fprintf(os.Stderr, "  Stack:  %s\n", strings.Join(names, ", "))
 		}
 
@@ -100,9 +108,11 @@ Output is both a structured directory and optionally a single JSON blob.`,
 func domainFromURL(rawURL string) string {
 	s := rawURL
 	s = strings.TrimPrefix(s, "https://")
+
 	s = strings.TrimPrefix(s, "http://")
 	if i := strings.IndexByte(s, '/'); i >= 0 {
 		s = s[:i]
 	}
+
 	return s
 }

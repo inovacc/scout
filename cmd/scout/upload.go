@@ -53,6 +53,7 @@ var uploadAuthCmd = &cobra.Command{
 		}
 
 		sink := scout.UploadSink(sinkStr)
+
 		oauthCfg := scout.UploadOAuthConfig(sink, clientID, clientSecret, "urn:ietf:wg:oauth:2.0:oob")
 		if oauthCfg == nil {
 			return fmt.Errorf("unsupported sink: %s", sinkStr)
@@ -126,7 +127,10 @@ var uploadFileCmd = &cobra.Command{
 		if jsonOut {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
-			_ = enc.Encode(results)
+
+			if err := enc.Encode(results); err != nil {
+				return fmt.Errorf("scout: upload: encode: %w", err)
+			}
 		}
 
 		return nil

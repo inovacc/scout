@@ -47,9 +47,9 @@ func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 
 			var val string
 			if args.SessionStorage {
-				val, err = page.SessionStorageGet(args.Key) //nolint:contextcheck
+				val, err = page.SessionStorageGet(args.Key)
 			} else {
-				val, err = page.LocalStorageGet(args.Key) //nolint:contextcheck
+				val, err = page.LocalStorageGet(args.Key)
 			}
 
 			if err != nil {
@@ -64,9 +64,9 @@ func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			}
 
 			if args.SessionStorage {
-				err = page.SessionStorageSet(args.Key, args.Value) //nolint:contextcheck
+				err = page.SessionStorageSet(args.Key, args.Value)
 			} else {
-				err = page.LocalStorageSet(args.Key, args.Value) //nolint:contextcheck
+				err = page.LocalStorageSet(args.Key, args.Value)
 			}
 
 			if err != nil {
@@ -78,9 +78,9 @@ func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 		case "list":
 			var items map[string]string
 			if args.SessionStorage {
-				items, err = page.SessionStorageGetAll() //nolint:contextcheck
+				items, err = page.SessionStorageGetAll()
 			} else {
-				items, err = page.LocalStorageGetAll() //nolint:contextcheck
+				items, err = page.LocalStorageGetAll()
 			}
 
 			if err != nil {
@@ -91,9 +91,9 @@ func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 
 		case "clear":
 			if args.SessionStorage {
-				err = page.SessionStorageClear() //nolint:contextcheck
+				err = page.SessionStorageClear()
 			} else {
-				err = page.LocalStorageClear() //nolint:contextcheck
+				err = page.LocalStorageClear()
 			}
 
 			if err != nil {
@@ -142,7 +142,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			opts = append(opts, scout.WithHijackURLFilter(args.URLFilter))
 		}
 
-		hijacker, err := page.NewSessionHijacker(opts...) //nolint:contextcheck
+		hijacker, err := page.NewSessionHijacker(opts...)
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: hijack: %s", err))
 		}
@@ -194,7 +194,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			return errResult(err.Error())
 		}
 
-		result, err := page.Eval(`() => JSON.stringify(performance.getEntriesByType('resource'))`) //nolint:contextcheck
+		result, err := page.Eval(`() => JSON.stringify(performance.getEntriesByType('resource'))`)
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: har export: %s", err))
 		}
@@ -232,7 +232,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			opts = append(opts, scout.WithSwaggerEndpointsOnly(true))
 		}
 
-		spec, err := browser.ExtractSwagger(args.URL, opts...) //nolint:contextcheck
+		spec, err := browser.ExtractSwagger(args.URL, opts...)
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: swagger: %s", err))
 		}

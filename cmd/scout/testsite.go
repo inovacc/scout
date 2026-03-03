@@ -45,6 +45,7 @@ var testSiteCmd = &cobra.Command{
 		defer func() { _ = b.Close() }()
 
 		var healthOpts []scout.HealthCheckOption
+
 		healthOpts = append(healthOpts,
 			scout.WithHealthDepth(depth),
 			scout.WithHealthConcurrency(concurrency),

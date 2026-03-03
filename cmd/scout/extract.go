@@ -122,7 +122,7 @@ var metaCmd = &cobra.Command{
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
 
-			return enc.Encode(meta) //nolint:musttag
+			return enc.Encode(meta)
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Title:       %s\n", meta.Title)

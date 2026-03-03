@@ -103,7 +103,7 @@ var crawlCmd = &cobra.Command{
 		handler := func(_ *scout.Page, result *scout.CrawlResult) error {
 			if format == "json" {
 				enc := json.NewEncoder(cmd.OutOrStdout())
-				return enc.Encode(result) //nolint:musttag
+				return enc.Encode(result)
 			}
 
 			status := "OK"

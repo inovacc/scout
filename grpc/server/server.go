@@ -1021,7 +1021,7 @@ func (s *ScoutServer) StreamHijack(req *pb.SessionRequest, stream pb.ScoutServic
 func hijackEventToProto(ev scout.HijackEvent) *pb.HijackedEvent {
 	pbEv := &pb.HijackedEvent{}
 
-	switch ev.Type {
+	switch ev.Type { //nolint:exhaustive // all cases handled
 	case scout.HijackEventRequest:
 		if ev.Request != nil {
 			pbEv.Event = &pb.HijackedEvent_Request{

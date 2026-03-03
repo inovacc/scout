@@ -4,7 +4,7 @@ import (
 	"github.com/inovacc/scout/internal/engine/vpn"
 )
 
-// Type aliases for backward compatibility.
+// VPNProvider re-exports vpn.Provider from sub-package.
 type VPNProvider = vpn.Provider
 type VPNServer = vpn.Server
 type VPNConnection = vpn.Connection

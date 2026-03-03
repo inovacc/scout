@@ -50,7 +50,7 @@ func NewRotator(config FingerprintRotationConfig) *Rotator {
 	return r
 }
 
-// forPage returns the fingerprint to use for a given page URL domain.
+// ForPage returns the fingerprint to use for a given page URL domain.
 func (r *Rotator) ForPage(domain string) *Fingerprint {
 	if r == nil {
 		return nil
@@ -87,7 +87,7 @@ func (r *Rotator) ForPage(domain string) *Fingerprint {
 	}
 }
 
-// domainFromURL extracts the hostname from a URL string.
+// DomainFromURL extracts the hostname from a URL string.
 // Returns empty string if parsing fails.
 func DomainFromURL(rawURL string) string {
 	if rawURL == "" {

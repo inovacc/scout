@@ -10,7 +10,7 @@ import (
 	"github.com/inovacc/scout/internal/engine/llm"
 )
 
-// Re-export LLM types from sub-package.
+// LLMProvider re-exports llm.Provider from sub-package.
 type LLMProvider = llm.Provider
 type LLMJobResult = llm.JobResult
 type LLMWorkspace = llm.Workspace
@@ -21,7 +21,7 @@ type JobRef = llm.JobRef
 type JobIndex = llm.JobIndex
 type SessionIndex = llm.SessionIndex
 
-// Re-export provider types.
+// AnthropicProvider re-exports llm.AnthropicProvider from sub-package.
 type AnthropicProvider = llm.AnthropicProvider
 type AnthropicOption = llm.AnthropicOption
 type OllamaProvider = llm.OllamaProvider

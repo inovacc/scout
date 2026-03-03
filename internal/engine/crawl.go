@@ -286,10 +286,10 @@ func (b *Browser) CrawlWithJob(startURL string, handler CrawlHandler, opts ...Cr
 
 // SitemapURL represents a URL entry in a sitemap.
 type SitemapURL struct {
-	Loc        string `xml:"loc"`
-	LastMod    string `xml:"lastmod"`
-	ChangeFreq string `xml:"changefreq"`
-	Priority   string `xml:"priority"`
+	Loc        string `xml:"loc" json:"loc"`
+	LastMod    string `xml:"lastmod" json:"last_mod,omitempty"`
+	ChangeFreq string `xml:"changefreq" json:"change_freq,omitempty"`
+	Priority   string `xml:"priority" json:"priority,omitempty"`
 }
 
 type sitemapURLSet struct {

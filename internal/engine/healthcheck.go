@@ -47,6 +47,7 @@ func (b *Browser) HealthCheck(targetURL string, opts ...HealthCheckOption) (*Hea
 
 	addIssue := func(issue HealthIssue) {
 		mu.Lock()
+
 		issues = append(issues, issue)
 		mu.Unlock()
 	}
@@ -69,6 +70,7 @@ func (b *Browser) HealthCheck(targetURL string, opts ...HealthCheckOption) (*Hea
 
 		collectIssue := func(issue HealthIssue) {
 			pageMu.Lock()
+
 			pageIssues = append(pageIssues, issue)
 			pageMu.Unlock()
 		}
@@ -81,6 +83,7 @@ func (b *Browser) HealthCheck(targetURL string, opts ...HealthCheckOption) (*Hea
 				}
 
 				msg := consoleArgsToString(e.Args)
+
 				severity := "warning"
 				if e.Type == proto.RuntimeConsoleAPICalledTypeError {
 					severity = "error"
@@ -206,12 +209,14 @@ func (b *Browser) HealthCheck(targetURL string, opts ...HealthCheckOption) (*Hea
 
 func consoleArgsToString(args []*proto.RuntimeRemoteObject) string {
 	var parts []string
+
 	for _, arg := range args {
-		if arg.Value.Str() != "" {
+		switch {
+		case arg.Value.Str() != "":
 			parts = append(parts, arg.Value.Str())
-		} else if arg.ClassName != "" {
+		case arg.ClassName != "":
 			parts = append(parts, arg.ClassName)
-		} else {
+		default:
 			parts = append(parts, string(arg.Type))
 		}
 	}

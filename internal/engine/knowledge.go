@@ -110,15 +110,18 @@ func (b *Browser) Knowledge(targetURL string, opts ...KnowledgeOption) (*Knowled
 
 		// HAR recorder.
 		var recorder *HijackRecorder
+
 		hijacker, hijackErr := page.NewSessionHijacker(WithHijackBodyCapture())
 		if hijackErr == nil {
 			recorder = NewHijackRecorder()
+
 			go recorder.RecordAll(hijacker.Events())
 			defer hijacker.Stop()
 		}
 
 		// Console capture.
 		var consoleLog []string
+
 		rodPage := page.RodPage()
 		rodPage.EachEvent(func(e *proto.RuntimeConsoleAPICalled) {
 			msg := consoleArgsToString(e.Args)
@@ -144,6 +147,7 @@ func (b *Browser) Knowledge(targetURL string, opts ...KnowledgeOption) (*Knowled
 
 		if recorder != nil {
 			time.Sleep(500 * time.Millisecond)
+
 			if harData, count, harErr := recorder.ExportHAR(); harErr == nil {
 				kp.HAR = harData
 				kp.HAREntries = count
@@ -166,6 +170,7 @@ func (b *Browser) Knowledge(targetURL string, opts ...KnowledgeOption) (*Knowled
 		for _, link := range cr.Links {
 			allLinks[link] = true
 		}
+
 		result.Pages = append(result.Pages, kp)
 		mu.Unlock()
 
@@ -189,6 +194,7 @@ func (b *Browser) Knowledge(targetURL string, opts ...KnowledgeOption) (*Knowled
 	result.Duration = time.Since(start).Round(time.Millisecond).String()
 
 	var failed int
+
 	for _, p := range result.Pages {
 		if p.Error != "" {
 			failed++

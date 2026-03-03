@@ -13,15 +13,19 @@ func TestKnowledgeOptionDefaults(t *testing.T) {
 	if o.maxDepth != 3 {
 		t.Fatalf("expected maxDepth 3, got %d", o.maxDepth)
 	}
+
 	if o.maxPages != 100 {
 		t.Fatalf("expected maxPages 100, got %d", o.maxPages)
 	}
+
 	if o.concurrency != 1 {
 		t.Fatalf("expected concurrency 1, got %d", o.concurrency)
 	}
+
 	if o.timeout != 30*time.Second {
 		t.Fatalf("expected timeout 30s, got %v", o.timeout)
 	}
+
 	if o.outputDir != "" {
 		t.Fatalf("expected empty outputDir, got %q", o.outputDir)
 	}
@@ -38,15 +42,19 @@ func TestKnowledgeOptions(t *testing.T) {
 	if o.maxDepth != 5 {
 		t.Fatalf("expected maxDepth 5, got %d", o.maxDepth)
 	}
+
 	if o.maxPages != 50 {
 		t.Fatalf("expected maxPages 50, got %d", o.maxPages)
 	}
+
 	if o.concurrency != 4 {
 		t.Fatalf("expected concurrency 4, got %d", o.concurrency)
 	}
+
 	if o.timeout != 60*time.Second {
 		t.Fatalf("expected timeout 60s, got %v", o.timeout)
 	}
+
 	if o.outputDir != "/tmp/out" {
 		t.Fatalf("expected outputDir /tmp/out, got %q", o.outputDir)
 	}
@@ -71,9 +79,11 @@ func TestKnowledgeResultTypes(t *testing.T) {
 	if r.Domain != "example.com" {
 		t.Fatal("domain mismatch")
 	}
+
 	if len(r.Pages) != 1 {
 		t.Fatal("expected 1 page")
 	}
+
 	if r.Summary.PagesTotal != 1 {
 		t.Fatal("expected total 1")
 	}
@@ -92,6 +102,7 @@ func TestKnowledgeWriter(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected %s dir: %v", sub, err)
 		}
+
 		if !info.IsDir() {
 			t.Fatalf("expected %s to be a directory", sub)
 		}
@@ -113,6 +124,7 @@ func TestKnowledgeWriter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read markdown: %v", err)
 	}
+
 	if string(md) != "# About\nHello world" {
 		t.Fatalf("unexpected markdown: %q", md)
 	}
@@ -130,10 +142,12 @@ func TestKnowledgeWriter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read manifest: %v", err)
 	}
+
 	var manifest KnowledgeResult
 	if err := json.Unmarshal(mf, &manifest); err != nil {
 		t.Fatalf("unmarshal manifest: %v", err)
 	}
+
 	if manifest.Domain != "example.com" {
 		t.Fatalf("expected domain example.com, got %s", manifest.Domain)
 	}
@@ -163,9 +177,11 @@ func TestKnowledgeIntegration(t *testing.T) {
 	defer srv.Close()
 
 	b := newTestBrowser(t)
-	defer b.Close()
+
+	defer func() { _ = b.Close() }()
 
 	dir := t.TempDir()
+
 	result, err := b.Knowledge(srv.URL, WithKnowledgeDepth(1), WithKnowledgeMaxPages(5), WithKnowledgeOutput(dir))
 	if err != nil {
 		t.Fatalf("Knowledge failed: %v", err)

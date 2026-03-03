@@ -94,14 +94,14 @@ func AnalyzeSite(ctx context.Context, browser *scout.Browser, url string, opts .
 		fn(o)
 	}
 
-	page, err := browser.NewPage(url) //nolint:contextcheck
+	page, err := browser.NewPage(url)
 	if err != nil {
 		return nil, fmt.Errorf("runbook: analyze: navigate: %w", err)
 	}
 
-	defer func() { _ = page.Close() }() //nolint:contextcheck
+	defer func() { _ = page.Close() }()
 
-	if err := page.WaitLoad(); err != nil { //nolint:contextcheck
+	if err := page.WaitLoad(); err != nil {
 		return nil, fmt.Errorf("runbook: analyze: wait load: %w", err)
 	}
 
@@ -111,14 +111,14 @@ func AnalyzeSite(ctx context.Context, browser *scout.Browser, url string, opts .
 	}
 
 	// Detect framework and render mode
-	if fw, err := page.DetectFramework(); err == nil && fw != nil { //nolint:contextcheck
+	if fw, err := page.DetectFramework(); err == nil && fw != nil {
 		analysis.Framework = fw
 		if fw.SPA {
 			analysis.Metadata["wait_strategy"] = "spa: use WaitStable or WaitSelector before extraction"
 		}
 	}
 
-	if ri, err := page.DetectRenderMode(); err == nil { //nolint:contextcheck
+	if ri, err := page.DetectRenderMode(); err == nil {
 		analysis.RenderMode = ri
 		if ri.Mode == scout.RenderCSR {
 			analysis.Metadata["wait_strategy"] = "csr: content is client-rendered, use WaitStable or WaitSelector"
@@ -126,7 +126,7 @@ func AnalyzeSite(ctx context.Context, browser *scout.Browser, url string, opts .
 	}
 
 	// Extract metadata
-	meta, err := page.ExtractMeta() //nolint:contextcheck
+	meta, err := page.ExtractMeta()
 	if err == nil && meta != nil {
 		if meta.Title != "" {
 			analysis.Metadata["title"] = meta.Title
@@ -140,16 +140,16 @@ func AnalyzeSite(ctx context.Context, browser *scout.Browser, url string, opts .
 	}
 
 	// Detect containers
-	analysis.Containers = detectContainers(page, o.maxContainers) //nolint:contextcheck
+	analysis.Containers = detectContainers(page, o.maxContainers)
 
 	// Detect forms
-	analysis.Forms = detectForms(page) //nolint:contextcheck
+	analysis.Forms = detectForms(page)
 
 	// Detect pagination
-	analysis.Pagination = detectPagination(page) //nolint:contextcheck
+	analysis.Pagination = detectPagination(page)
 
 	// Detect interactables
-	analysis.Interactables = detectInteractables(page) //nolint:contextcheck
+	analysis.Interactables = detectInteractables(page)
 
 	// Determine page type
 	analysis.PageType = classifyPage(analysis)

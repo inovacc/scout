@@ -34,7 +34,7 @@ func registerNetworkTools(server *mcp.Server, state *mcpState) {
 
 		switch args.Action {
 		case "get":
-			cookies, err := page.GetCookies() //nolint:contextcheck
+			cookies, err := page.GetCookies()
 			if err != nil {
 				return errResult(err.Error())
 			}
@@ -56,13 +56,13 @@ func registerNetworkTools(server *mcp.Server, state *mcpState) {
 				Domain: args.Domain,
 				Path:   path,
 			}
-			if err := page.SetCookies(c); err != nil { //nolint:contextcheck
+			if err := page.SetCookies(c); err != nil {
 				return errResult(err.Error())
 			}
 
 			return textResult(fmt.Sprintf("cookie %q set", args.Name))
 		case "clear":
-			if err := page.ClearCookies(); err != nil { //nolint:contextcheck
+			if err := page.ClearCookies(); err != nil {
 				return errResult(err.Error())
 			}
 
@@ -89,7 +89,7 @@ func registerNetworkTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
-		_, err = page.SetHeaders(args.Headers) //nolint:contextcheck
+		_, err = page.SetHeaders(args.Headers)
 		if err != nil {
 			return errResult(err.Error())
 		}
@@ -114,7 +114,7 @@ func registerNetworkTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
-		if err := page.Block(args.Patterns...); err != nil { //nolint:contextcheck
+		if err := page.Block(args.Patterns...); err != nil {
 			return errResult(err.Error())
 		}
 

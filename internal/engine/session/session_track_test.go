@@ -181,9 +181,11 @@ func TestHashIncludesBrowserName(t *testing.T) {
 	if hChrome == hBrave {
 		t.Errorf("chrome and brave should have different hashes for same URL: %s", hChrome)
 	}
+
 	if hChrome == hEdge {
 		t.Errorf("chrome and edge should have different hashes for same URL: %s", hChrome)
 	}
+
 	if hBrave == hEdge {
 		t.Errorf("brave and edge should have different hashes for same URL: %s", hBrave)
 	}
@@ -195,6 +197,7 @@ func TestHashIncludesBrowserName(t *testing.T) {
 
 	// No URL → hash of label only; different labels → different hashes.
 	hNoURL1 := Hash("", "chrome")
+
 	hNoURL2 := Hash("", "brave")
 	if hNoURL1 == hNoURL2 {
 		t.Errorf("different labels without URL should produce different hashes: %s", hNoURL1)

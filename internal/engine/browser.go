@@ -308,13 +308,17 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 		}
 		// If detection fails, fall through to rod auto-detect.
 	case o.browserType != "":
-		var binPath string
-		var err error
+		var (
+			binPath string
+			err     error
+		)
+
 		if o.systemBrowser {
 			binPath, err = browser.Resolve(context.Background(), o.browserType)
 		} else {
 			binPath, err = browser.ResolveCached(context.Background(), o.browserType)
 		}
+
 		if err != nil {
 			return "", nil, fmt.Errorf("scout: resolve %s browser: %w", o.browserType, err)
 		}

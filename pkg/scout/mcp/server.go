@@ -83,7 +83,7 @@ func (s *mcpState) ensurePage(ctx context.Context) (*scout.Page, error) {
 		return s.page, nil
 	}
 
-	p, err := s.browser.NewPage("") //nolint:contextcheck
+	p, err := s.browser.NewPage("")
 	if err != nil {
 		return nil, fmt.Errorf("scout-mcp: create page: %w", err)
 	}
@@ -165,14 +165,14 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return errResult(err.Error())
 		}
 
-		if err := page.Navigate(args.URL); err != nil { //nolint:contextcheck
+		if err := page.Navigate(args.URL); err != nil {
 			return errResult(err.Error())
 		}
 
-		_ = page.WaitLoad() //nolint:contextcheck
+		_ = page.WaitLoad()
 
-		title, _ := page.Title() //nolint:contextcheck
-		url, _ := page.URL()     //nolint:contextcheck
+		title, _ := page.Title()
+		url, _ := page.URL()
 
 		return textResult(fmt.Sprintf("Navigated to %s (%s)", url, title))
 	})
@@ -194,12 +194,12 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return errResult(err.Error())
 		}
 
-		el, err := page.Element(args.Selector) //nolint:contextcheck
+		el, err := page.Element(args.Selector)
 		if err != nil {
 			return errResult(err.Error())
 		}
 
-		if err := el.Click(); err != nil { //nolint:contextcheck
+		if err := el.Click(); err != nil {
 			return errResult(err.Error())
 		}
 
@@ -224,12 +224,12 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return errResult(err.Error())
 		}
 
-		el, err := page.Element(args.Selector) //nolint:contextcheck
+		el, err := page.Element(args.Selector)
 		if err != nil {
 			return errResult(err.Error())
 		}
 
-		if err := el.Input(args.Text); err != nil { //nolint:contextcheck
+		if err := el.Input(args.Text); err != nil {
 			return errResult(err.Error())
 		}
 
@@ -254,9 +254,9 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 
 		var data []byte
 		if args.FullPage {
-			data, err = page.FullScreenshot() //nolint:contextcheck
+			data, err = page.FullScreenshot()
 		} else {
-			data, err = page.Screenshot() //nolint:contextcheck
+			data, err = page.Screenshot()
 		}
 
 		if err != nil {
@@ -292,7 +292,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			opts = append(opts, scout.WithSnapshotInteractableOnly())
 		}
 
-		snap, err := page.SnapshotWithOptions(opts...) //nolint:contextcheck
+		snap, err := page.SnapshotWithOptions(opts...)
 		if err != nil {
 			return errResult(err.Error())
 		}
@@ -317,12 +317,12 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return errResult(err.Error())
 		}
 
-		el, err := page.Element(args.Selector) //nolint:contextcheck
+		el, err := page.Element(args.Selector)
 		if err != nil {
 			return errResult(err.Error())
 		}
 
-		text, err := el.Text() //nolint:contextcheck
+		text, err := el.Text()
 		if err != nil {
 			return errResult(err.Error())
 		}
@@ -347,7 +347,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return errResult(err.Error())
 		}
 
-		result, err := page.Eval(args.Expression) //nolint:contextcheck
+		result, err := page.Eval(args.Expression)
 		if err != nil {
 			return errResult(err.Error())
 		}
@@ -365,7 +365,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return errResult(err.Error())
 		}
 
-		if err := page.NavigateBack(); err != nil { //nolint:contextcheck
+		if err := page.NavigateBack(); err != nil {
 			return errResult(err.Error())
 		}
 
@@ -382,7 +382,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return errResult(err.Error())
 		}
 
-		if err := page.NavigateForward(); err != nil { //nolint:contextcheck
+		if err := page.NavigateForward(); err != nil {
 			return errResult(err.Error())
 		}
 
@@ -406,14 +406,14 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 		}
 
 		if args.Selector != "" {
-			if _, err := page.WaitSelector(args.Selector); err != nil { //nolint:contextcheck
+			if _, err := page.WaitSelector(args.Selector); err != nil {
 				return errResult(err.Error())
 			}
 
 			return textResult(fmt.Sprintf("Found %s", args.Selector))
 		}
 
-		if err := page.WaitLoad(); err != nil { //nolint:contextcheck
+		if err := page.WaitLoad(); err != nil {
 			return errResult(err.Error())
 		}
 
@@ -431,7 +431,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return nil, err
 		}
 
-		md, err := page.Markdown() //nolint:contextcheck
+		md, err := page.Markdown()
 		if err != nil {
 			return nil, err
 		}
@@ -450,7 +450,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return nil, err
 		}
 
-		u, err := page.URL() //nolint:contextcheck
+		u, err := page.URL()
 		if err != nil {
 			return nil, err
 		}
@@ -489,7 +489,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			// google is the default
 		}
 
-		results, err := browser.Search(args.Query, opts...) //nolint:contextcheck
+		results, err := browser.Search(args.Query, opts...)
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: search: %s", err))
 		}
@@ -530,12 +530,12 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			opts = append(opts, scout.WithFetchMainContent())
 		}
 
-		result, err := browser.WebFetch(args.URL, opts...) //nolint:contextcheck
+		result, err := browser.WebFetch(args.URL, opts...)
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: fetch: %s", err))
 		}
 
-		data, err := json.Marshal(result) //nolint:musttag
+		data, err := json.Marshal(result)
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: marshal result: %s", err))
 		}
@@ -563,13 +563,13 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 
 		var data []byte
 		if args.Landscape || args.PrintBackground || args.Scale > 0 {
-			data, err = page.PDFWithOptions(scout.PDFOptions{ //nolint:contextcheck
+			data, err = page.PDFWithOptions(scout.PDFOptions{
 				Landscape:       args.Landscape,
 				PrintBackground: args.PrintBackground,
 				Scale:           args.Scale,
 			})
 		} else {
-			data, err = page.PDF() //nolint:contextcheck
+			data, err = page.PDF()
 		}
 
 		if err != nil {
@@ -603,8 +603,8 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return errResult(err.Error())
 		}
 
-		u, _ := page.URL()       //nolint:contextcheck
-		title, _ := page.Title() //nolint:contextcheck
+		u, _ := page.URL()
+		title, _ := page.Title()
 
 		info := map[string]string{
 			"status": "active",
@@ -622,7 +622,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		state.touch()
-		state.reset() //nolint:contextcheck
+		state.reset()
 
 		return textResult("Session reset")
 	})
@@ -659,16 +659,16 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return errResult(fmt.Sprintf("scout-mcp: open: %s", err))
 		}
 
-		page, err := b.NewPage(args.URL) //nolint:contextcheck
+		page, err := b.NewPage(args.URL)
 		if err != nil {
-			_ = b.Close() //nolint:contextcheck
+			_ = b.Close()
 			return errResult(fmt.Sprintf("scout-mcp: open: %s", err))
 		}
 
-		_ = page.WaitLoad() //nolint:contextcheck
+		_ = page.WaitLoad()
 
-		title, _ := page.Title() //nolint:contextcheck
-		u, _ := page.URL()       //nolint:contextcheck
+		title, _ := page.Title()
+		u, _ := page.URL()
 
 		return textResult(fmt.Sprintf("Opened %s (%s) in headed browser. Close the browser window when done.", u, title))
 	})
@@ -692,7 +692,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server { //nolint:
 			return nil, err
 		}
 
-		title, err := page.Title() //nolint:contextcheck
+		title, err := page.Title()
 		if err != nil {
 			return nil, err
 		}
@@ -784,7 +784,7 @@ func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool, bro
 		IdleTimeout: idleTimeout,
 	}
 
-	server := NewServer(cfg, cancel) //nolint:contextcheck
+	server := NewServer(cfg, cancel)
 
 	return server.Run(ctx, &mcp.StdioTransport{})
 }
@@ -803,7 +803,7 @@ func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, s
 		IdleTimeout: idleTimeout,
 	}
 
-	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server { //nolint:contextcheck
+	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
 		return NewServer(cfg, cancel)
 	}, nil)
 

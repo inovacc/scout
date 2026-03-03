@@ -1,4 +1,4 @@
-// Package scout provides a Go-idiomatic API for headless browser automation,
+// Package engine provides a Go-idiomatic API for headless browser automation,
 // web scraping, and search built on [go-rod]. It wraps rod's types (Browser,
 // Page, Element) with a simplified interface and adds higher-level scraping
 // capabilities.

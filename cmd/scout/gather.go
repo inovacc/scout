@@ -39,6 +39,7 @@ var gatherCmd = &cobra.Command{
 		targetURL := args[0]
 
 		opts := baseOpts(cmd)
+
 		b, err := scout.New(opts...)
 		if err != nil {
 			return fmt.Errorf("scout: gather: %w", err)
