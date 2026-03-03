@@ -273,7 +273,11 @@
       "Bash(tasklist:*)",
       "Bash(powershell:*)",
       "Bash(powershell.exe:*)",
-      "Skill(commit-commands:commit)"
+      "Skill(commit-commands:commit)",
+      "Bash(/d/shared/development/personal/projects/scout/.scripts/mcp-open-brave.sh:*)",
+      "Bash(/d/shared/development/personal/projects/scout/.scripts/install-and-open.sh:*)",
+      "Bash(go install:*)",
+      "Bash(scout:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
