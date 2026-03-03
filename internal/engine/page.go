@@ -652,7 +652,6 @@ func (p *Page) KeyType(keys ...input.Key) error {
 	return nil
 }
 
-// RodPage returns the underlying rod.Page for advanced use cases.
 // WaitClose returns a channel that is closed when the page's target is destroyed
 // (e.g., the user closes the browser window or tab). Useful for detecting when
 // the user manually closes a headed browser.
@@ -671,6 +670,7 @@ func (p *Page) WaitClose() <-chan struct{} {
 	return ch
 }
 
+// RodPage returns the underlying rod.Page for advanced use cases.
 func (p *Page) RodPage() *rodPage {
 	return p.page
 }
