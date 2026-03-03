@@ -65,3 +65,11 @@ func DomainHash(rawURL string) string { return session.DomainHash(rawURL) }
 
 // SessionHash returns a deterministic hash for a session directory name.
 func SessionHash(rawURL, label string) string { return session.Hash(rawURL, label) }
+
+// EnrichSessionInfo populates Exec and BuildVersion from gops if available.
+func EnrichSessionInfo(info *SessionInfo) {
+	if p := session.ScoutProcessInfo(info.ScoutPID); p != nil {
+		info.Exec = p.Exec
+		info.BuildVersion = p.BuildVersion
+	}
+}

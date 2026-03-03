@@ -35,15 +35,17 @@ func GetSessionsDir() string {
 // SessionInfo holds all metadata for a browser session, stored as scout.pid
 // inside the session's data directory.
 type SessionInfo struct {
-	ScoutPID   int       `json:"scout_pid"`
-	BrowserPID int       `json:"browser_pid"`
-	Reusable   bool      `json:"reusable"`
-	CreatedAt  time.Time `json:"created_at"`
-	LastUsed   time.Time `json:"last_used"`
-	Headless   bool      `json:"headless"`
-	Browser    string    `json:"browser"`
-	DomainHash string    `json:"domain_hash,omitempty"`
-	Domain     string    `json:"domain,omitempty"`
+	ScoutPID     int       `json:"scout_pid"`
+	BrowserPID   int       `json:"browser_pid"`
+	Reusable     bool      `json:"reusable"`
+	CreatedAt    time.Time `json:"created_at"`
+	LastUsed     time.Time `json:"last_used"`
+	Headless     bool      `json:"headless"`
+	Browser      string    `json:"browser"`
+	DomainHash   string    `json:"domain_hash,omitempty"`
+	Domain       string    `json:"domain,omitempty"`
+	Exec         string    `json:"exec,omitempty"`
+	BuildVersion string    `json:"build_version,omitempty"`
 }
 
 // SessionListing pairs a session ID with its directory and info.
@@ -183,7 +185,7 @@ func CleanOrphans() (int, error) {
 			continue
 		}
 
-		if ProcessAlive(s.Info.ScoutPID) {
+		if IsScoutProcess(s.Info.ScoutPID) {
 			continue
 		}
 

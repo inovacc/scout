@@ -1,9 +1,11 @@
 package main
 
 import (
+	"log"
 	"os"
 	"time"
 
+	"github.com/google/gops/agent"
 	"github.com/inovacc/scout/internal/flags"
 	"github.com/inovacc/scout/internal/logger"
 	"github.com/spf13/cobra"
@@ -75,5 +77,10 @@ func Execute() {
 }
 
 func main() {
+	if err := agent.Listen(agent.Options{ShutdownCleanup: true}); err != nil {
+		log.Printf("scout: gops agent: %v", err)
+	}
+	defer agent.Close()
+
 	Execute()
 }

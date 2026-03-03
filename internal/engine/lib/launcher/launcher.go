@@ -555,6 +555,12 @@ func (l *Launcher) PID() int {
 	return l.pid
 }
 
+// Exit returns a channel that is closed when the browser process exits.
+// This can be used to detect when the user closes the browser window.
+func (l *Launcher) Exit() <-chan struct{} {
+	return l.exit
+}
+
 // Kill the browser process.
 func (l *Launcher) Kill() {
 	// TODO: If kill too fast, the browser's children processes may not be ready.

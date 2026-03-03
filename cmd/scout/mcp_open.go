@@ -46,15 +46,14 @@ Examples:
 			opts = append(opts, scout.WithDevTools())
 		}
 
-		browser, err := scout.New(opts...)
+		b, err := scout.New(opts...)
 		if err != nil {
 			return fmt.Errorf("scout: launch browser: %w", err)
 		}
 
-		defer func() { _ = browser.Close() }()
-
-		page, err := browser.NewPage(url)
+		page, err := b.NewPage(url)
 		if err != nil {
+			_ = b.Close()
 			return fmt.Errorf("scout: new page: %w", err)
 		}
 
@@ -63,13 +62,20 @@ Examples:
 		title, _ := page.Title()
 		finalURL, _ := page.URL()
 		_, _ = fmt.Fprintf(os.Stderr, "Opened %s (%s)\n", finalURL, title)
-		_, _ = fmt.Fprintln(os.Stderr, "Press Ctrl+C to close the browser...")
+		_, _ = fmt.Fprintln(os.Stderr, "Press Ctrl+C or close the browser window to exit...")
 
 		sig := make(chan os.Signal, 1)
 		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-		<-sig
 
-		_, _ = fmt.Fprintln(os.Stderr, "\nClosing browser...")
+		// Wait for either Ctrl+C or browser window/tab close.
+		select {
+		case <-sig:
+		case <-page.WaitClose():
+			_, _ = fmt.Fprintln(os.Stderr, "\nBrowser window closed.")
+		}
+
+		_, _ = fmt.Fprintln(os.Stderr, "Closing browser...")
+		_ = b.Close()
 
 		return nil
 	},
