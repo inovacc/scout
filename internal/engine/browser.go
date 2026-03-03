@@ -683,8 +683,9 @@ func (b *Browser) Close() error {
 			if b.opts.reusableSession && b.sessionID != "" {
 				// Do NOT call Cleanup() — it would delete the data dir.
 			} else {
-				// Non-reusable: clean up data dir.
-				go b.launcher.Cleanup()
+				// Non-reusable: clean up data dir synchronously so the
+				// session directory is removed before the process exits.
+				b.launcher.Cleanup()
 			}
 
 			b.launcher = nil
@@ -767,8 +768,20 @@ func (b *Browser) registerSession() {
 		Domain:     RootDomain(b.opts.targetURL),
 	}
 
+	EnrichSessionInfo(info)
 	_ = WriteSessionInfo(sessionID, info)
 	b.sessionID = sessionID
+}
+
+// Done returns a channel that is closed when the browser process exits.
+// This allows callers to detect when the user closes the browser window.
+// Returns nil if the browser was connected via remote CDP (no launcher).
+func (b *Browser) Done() <-chan struct{} {
+	if b == nil || b.launcher == nil {
+		return nil
+	}
+
+	return b.launcher.Exit()
 }
 
 // SessionID returns the UUID v7 session identifier for this browser instance.
