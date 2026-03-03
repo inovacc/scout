@@ -3,4 +3,4 @@
 package launcher
 
 // RevisionDefault for chromium. Compile-time fallback; runtime value comes from browser.json.
-const RevisionDefault = 1588893
+const RevisionDefault = 1593218
