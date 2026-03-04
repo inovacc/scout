@@ -43,6 +43,8 @@ pkg/scout/browser/            Browser path resolution (public API)
 pkg/scout/runbook/            Runbook system (extract + automate + analyze + Plan/Apply)
 pkg/scout/recipe/             Deprecated compat aliases → runbook package
 pkg/scout/mcp/                MCP server (33 tools, 3 resources, stdio + SSE transport)
+pkg/scout/plugin/             Plugin system (subprocess JSON-RPC, manager, proxies)
+pkg/scout/plugin/sdk/         Go SDK for plugin authors
 pkg/scout/scraper/            Scraper framework + AES-256-GCM auth + 19 modes
 pkg/scout/archive/            Archive/compression utilities
 runbooks/                     Embedded preset runbooks (26 JSON files)
@@ -90,6 +92,7 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **Browser close detection**: `Page.WaitClose()` returns a channel closed when the page target is destroyed (CDP `TargetTargetDestroyed`). Used by `mcp open` to exit when user closes browser window. `Launcher.Exit()` exposes process-exit channel. `Browser.Done()` delegates to launcher.
 - **Session cleanup**: `launcher.Cleanup()` called synchronously (not `go`) for non-reusable sessions, ensuring session dir is removed before process exits. `EnrichSessionInfo()` populates `Exec` and `BuildVersion` from gops metadata.
 - **Process platform files**: `process_windows.go` and `process_linux.go` in `internal/engine/session/` — each contains platform-specific `ProcessAlive` + shared gops-based `IsScoutProcess`/`ScoutProcessInfo`.
+- **Plugin system**: Subprocess-based plugins communicate via JSON-RPC 2.0 on stdin/stdout. `plugin.Manager` discovers from `~/.scout/plugins/*/plugin.json` and `$SCOUT_PLUGIN_PATH`. Plugins declare capabilities (`scraper_mode`, `extractor`, `mcp_tool`) in manifest. Lazy process launch. `ModeProxy` bridges `scraper.Mode`, `ToolProxy` bridges MCP tools. Go SDK in `pkg/scout/plugin/sdk/` — `NewServer()`, `RegisterMode/Extractor/Tool()`, `Run()`.
 
 ## Dependencies
 

@@ -156,7 +156,13 @@ var scrapeRunCmd = &cobra.Command{
 
 		mode, err := scraper.GetMode(modeName)
 		if err != nil {
-			return fmt.Errorf("scout: scrape run: %w", err)
+			// Fallback to plugin-provided modes.
+			mgr := initPluginManager()
+			if pluginMode, ok := mgr.GetMode(modeName); ok {
+				mode = pluginMode
+			} else {
+				return fmt.Errorf("scout: scrape run: %w", err)
+			}
 		}
 
 		sessionFile, _ := cmd.Flags().GetString("session-file")
