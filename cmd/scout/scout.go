@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/google/gops/agent"
 	"github.com/inovacc/scout/internal/flags"
 	"github.com/inovacc/scout/internal/logger"
+	"github.com/inovacc/scout/internal/tracing"
 	"github.com/spf13/cobra"
 )
 
@@ -82,6 +84,13 @@ func main() {
 	}
 
 	defer agent.Close()
+
+	shutdown, err := tracing.Init(context.Background(), tracing.Config{ServiceName: "scout"})
+	if err != nil {
+		log.Printf("scout: tracing: %v", err)
+	} else {
+		defer func() { _ = shutdown(context.Background()) }()
+	}
 
 	Execute()
 }
