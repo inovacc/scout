@@ -587,11 +587,3 @@ func ms(d time.Duration) float64 {
 	return float64(d.Microseconds()) / 1000.0
 }
 
-func jsonResult(v any) (*mcp.CallToolResult, error) {
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return errResult(fmt.Sprintf("scout-mcp: marshal: %s", err))
-	}
-
-	return textResult(string(data))
-}
