@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/inovacc/scout/pkg/scout/archive"
 	"github.com/inovacc/scout/pkg/scout/plugin"
 	"github.com/spf13/cobra"
 )
@@ -96,52 +99,131 @@ var pluginListCmd = &cobra.Command{
 }
 
 var pluginInstallCmd = &cobra.Command{
-	Use:   "install <path>",
-	Short: "Install a plugin from a directory",
+	Use:   "install <path|url>",
+	Short: "Install a plugin from a directory or URL",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		srcDir := args[0]
+		src := args[0]
 
-		// Validate source has a manifest.
-		manifest, err := plugin.LoadManifest(srcDir)
-		if err != nil {
-			return fmt.Errorf("scout: plugin install: %w", err)
+		// Detect URL vs local path.
+		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
+			return installPluginFromURL(cmd, src)
 		}
 
-		// Destination: ~/.scout/plugins/<name>/
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("scout: plugin install: %w", err)
-		}
-
-		destDir := filepath.Join(home, ".scout", "plugins", manifest.Name)
-		if err := os.MkdirAll(destDir, 0o755); err != nil {
-			return fmt.Errorf("scout: plugin install: %w", err)
-		}
-
-		// Copy all files from source to destination.
-		entries, err := os.ReadDir(srcDir)
-		if err != nil {
-			return fmt.Errorf("scout: plugin install: %w", err)
-		}
-
-		for _, entry := range entries {
-			if entry.IsDir() {
-				continue
-			}
-
-			src := filepath.Join(srcDir, entry.Name())
-			dst := filepath.Join(destDir, entry.Name())
-
-			if err := copyFile(src, dst); err != nil {
-				return fmt.Errorf("scout: plugin install: copy %s: %w", entry.Name(), err)
-			}
-		}
-
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "installed plugin %s v%s to %s\n", manifest.Name, manifest.Version, destDir)
-
-		return nil
+		return installPluginFromDir(cmd, src)
 	},
+}
+
+func installPluginFromDir(cmd *cobra.Command, srcDir string) error {
+	manifest, err := plugin.LoadManifest(srcDir)
+	if err != nil {
+		return fmt.Errorf("scout: plugin install: %w", err)
+	}
+
+	destDir, err := pluginDestDir(manifest.Name)
+	if err != nil {
+		return err
+	}
+
+	entries, err := os.ReadDir(srcDir)
+	if err != nil {
+		return fmt.Errorf("scout: plugin install: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		s := filepath.Join(srcDir, entry.Name())
+		d := filepath.Join(destDir, entry.Name())
+
+		if err := copyFile(s, d); err != nil {
+			return fmt.Errorf("scout: plugin install: copy %s: %w", entry.Name(), err)
+		}
+	}
+
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "installed plugin %s v%s to %s\n", manifest.Name, manifest.Version, destDir)
+
+	return nil
+}
+
+func installPluginFromURL(cmd *cobra.Command, url string) error {
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "downloading %s...\n", url)
+
+	resp, err := http.Get(url) //nolint:gosec,noctx // user-provided URL
+	if err != nil {
+		return fmt.Errorf("scout: plugin install: download: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("scout: plugin install: download: HTTP %d", resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("scout: plugin install: read body: %w", err)
+	}
+
+	// Extract archive to temp dir.
+	tmpDir, err := os.MkdirTemp("", "scout-plugin-*")
+	if err != nil {
+		return fmt.Errorf("scout: plugin install: %w", err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// Determine filename from URL path.
+	filename := filepath.Base(url)
+	if err := archive.Extract(data, filename, tmpDir); err != nil {
+		return fmt.Errorf("scout: plugin install: extract: %w", err)
+	}
+
+	// Find plugin.json in extracted contents (may be nested one level).
+	manifestDir, err := findManifestDir(tmpDir)
+	if err != nil {
+		return err
+	}
+
+	return installPluginFromDir(cmd, manifestDir)
+}
+
+func findManifestDir(root string) (string, error) {
+	// Check root first.
+	if _, err := os.Stat(filepath.Join(root, "plugin.json")); err == nil {
+		return root, nil
+	}
+
+	// Check one level deep.
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return "", fmt.Errorf("scout: plugin install: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			dir := filepath.Join(root, entry.Name())
+			if _, err := os.Stat(filepath.Join(dir, "plugin.json")); err == nil {
+				return dir, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("scout: plugin install: no plugin.json found in archive")
+}
+
+func pluginDestDir(name string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("scout: plugin install: %w", err)
+	}
+
+	destDir := filepath.Join(home, ".scout", "plugins", name)
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return "", fmt.Errorf("scout: plugin install: %w", err)
+	}
+
+	return destDir, nil
 }
 
 var pluginRemoveCmd = &cobra.Command{
