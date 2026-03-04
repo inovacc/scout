@@ -2,13 +2,14 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/inovacc/scout/pkg/scout"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -22,6 +23,15 @@ func newTestHTTPServer() *httptest.Server {
 	mux.HandleFunc("/page2", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><title>Page Two</title></head><body><h1>Page 2</h1></body></html>`))
+	})
+
+	mux.HandleFunc("/form", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><title>Form Page</title></head><body><form><input type="text" name="username" id="username"><button type="submit">Submit</button></form></body></html>`))
+	})
+	mux.HandleFunc("/table", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><title>Table Page</title></head><body><table><thead><tr><th>Name</th><th>Age</th></tr></thead><tbody><tr><td>Alice</td><td>30</td></tr><tr><td>Bob</td><td>25</td></tr></tbody></table></body></html>`))
 	})
 
 	return httptest.NewServer(mux)
@@ -55,8 +65,6 @@ func connectTestClient(t *testing.T, cfg ServerConfig) *mcp.ClientSession {
 }
 
 // callTool wraps cs.CallTool with map[string]any arguments.
-// The MCP SDK's CallToolParams.Arguments is `any` and gets JSON-marshaled once,
-// so we must pass a map, not pre-marshaled json.RawMessage.
 func callTool(ctx context.Context, cs *mcp.ClientSession, name string, args map[string]any) (*mcp.CallToolResult, error) {
 	return cs.CallTool(ctx, &mcp.CallToolParams{
 		Name:      name,
@@ -97,203 +105,10 @@ func navigateHelper(t *testing.T, ctx context.Context, cs *mcp.ClientSession, ur
 	}
 }
 
-func TestNavigateTool(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
+// toolError wraps a string as an error for skipIfNoBrowser.
+type toolError struct{ msg string }
 
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	result, err := callTool(ctx, cs, "navigate", map[string]any{"url": ts.URL + "/"})
-	if err != nil {
-		skipIfNoBrowser(t, err)
-		t.Fatalf("CallTool navigate: %v", err)
-	}
-
-	if result.IsError {
-		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolError{text})
-		t.Fatalf("navigate returned error: %s", text)
-	}
-
-	text := result.Content[0].(*mcp.TextContent).Text
-	if !strings.Contains(text, "Test Page") {
-		t.Errorf("expected title in response, got: %s", text)
-	}
-}
-
-func TestNavigateToolBadParams(t *testing.T) {
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	// Invalid JSON arguments via raw message
-	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
-		Name:      "navigate",
-		Arguments: json.RawMessage(`{invalid`),
-	})
-	if err != nil {
-		// JSON-RPC level error is acceptable
-		return
-	}
-
-	if !result.IsError {
-		t.Error("expected error result for invalid JSON params")
-	}
-}
-
-func TestResourcePageURL(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	navigateHelper(t, ctx, cs, ts.URL+"/")
-
-	res, err := cs.ReadResource(ctx, &mcp.ReadResourceParams{URI: "scout://page/url"})
-	if err != nil {
-		t.Fatalf("ReadResource url: %v", err)
-	}
-
-	if len(res.Contents) == 0 {
-		t.Fatal("no resource contents returned")
-	}
-
-	if !strings.Contains(res.Contents[0].Text, ts.URL) {
-		t.Errorf("expected URL containing %s, got: %s", ts.URL, res.Contents[0].Text)
-	}
-}
-
-func TestResourcePageTitle(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	navigateHelper(t, ctx, cs, ts.URL+"/")
-
-	res, err := cs.ReadResource(ctx, &mcp.ReadResourceParams{URI: "scout://page/title"})
-	if err != nil {
-		t.Fatalf("ReadResource title: %v", err)
-	}
-
-	if len(res.Contents) == 0 {
-		t.Fatal("no resource contents returned")
-	}
-
-	if res.Contents[0].Text != "Test Page" {
-		t.Errorf("expected 'Test Page', got: %s", res.Contents[0].Text)
-	}
-}
-
-func TestExtractTool(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	navigateHelper(t, ctx, cs, ts.URL+"/")
-
-	result, err := callTool(ctx, cs, "extract", map[string]any{"selector": "h1"})
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
-
-	if result.IsError {
-		t.Fatalf("extract error: %s", result.Content[0].(*mcp.TextContent).Text)
-	}
-
-	text := result.Content[0].(*mcp.TextContent).Text
-	if !strings.Contains(text, "Hello Scout") {
-		t.Errorf("expected 'Hello Scout', got: %s", text)
-	}
-}
-
-func TestEvalTool(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	navigateHelper(t, ctx, cs, ts.URL+"/")
-
-	result, err := callTool(ctx, cs, "eval", map[string]any{"expression": "() => 1 + 2"})
-	if err != nil {
-		t.Fatalf("eval: %v", err)
-	}
-
-	if result.IsError {
-		t.Fatalf("eval error: %s", result.Content[0].(*mcp.TextContent).Text)
-	}
-
-	text := result.Content[0].(*mcp.TextContent).Text
-	if !strings.Contains(text, "3") {
-		t.Errorf("expected '3', got: %s", text)
-	}
-}
-
-func TestPDFTool(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	navigateHelper(t, ctx, cs, ts.URL+"/")
-
-	result, err := callTool(ctx, cs, "pdf", map[string]any{})
-	if err != nil {
-		t.Fatalf("pdf: %v", err)
-	}
-
-	if result.IsError {
-		t.Fatalf("pdf error: %s", result.Content[0].(*mcp.TextContent).Text)
-	}
-
-	img, ok := result.Content[0].(*mcp.ImageContent)
-	if !ok {
-		t.Fatal("expected ImageContent for PDF result")
-	}
-
-	if img.MIMEType != "application/pdf" {
-		t.Errorf("expected application/pdf, got: %s", img.MIMEType)
-	}
-
-	if len(img.Data) == 0 {
-		t.Error("expected non-empty PDF data")
-	}
-}
-
-func TestPDFToolWithOptions(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	navigateHelper(t, ctx, cs, ts.URL+"/")
-
-	result, err := callTool(ctx, cs, "pdf", map[string]any{"landscape": true, "printBackground": true})
-	if err != nil {
-		t.Fatalf("pdf with options: %v", err)
-	}
-
-	if result.IsError {
-		t.Fatalf("pdf error: %s", result.Content[0].(*mcp.TextContent).Text)
-	}
-
-	img, ok := result.Content[0].(*mcp.ImageContent)
-	if !ok {
-		t.Fatal("expected ImageContent")
-	}
-
-	if len(img.Data) == 0 {
-		t.Error("expected non-empty PDF data")
-	}
-}
+func (e *toolError) Error() string { return e.msg }
 
 func TestListTools(t *testing.T) {
 	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
@@ -336,162 +151,6 @@ func TestListResources(t *testing.T) {
 		if !uris[uri] {
 			t.Errorf("expected resource %q not found", uri)
 		}
-	}
-}
-
-func TestSearchTool(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	// Search requires a real browser and network; verify it returns an error or results gracefully.
-	result, err := callTool(ctx, cs, "search", map[string]any{"query": "test query", "engine": "google"})
-	if err != nil {
-		skipIfNoBrowser(t, err)
-		t.Fatalf("search: %v", err)
-	}
-
-	// Either a valid result or an error result (e.g., no network, CAPTCHA) is acceptable.
-	if result.IsError {
-		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolError{text})
-		t.Logf("search returned error (expected in test env): %s", text)
-	}
-}
-
-func TestFetchTool(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	result, err := callTool(ctx, cs, "fetch", map[string]any{"url": ts.URL + "/", "mode": "full"})
-	if err != nil {
-		skipIfNoBrowser(t, err)
-		t.Fatalf("fetch: %v", err)
-	}
-
-	if result.IsError {
-		text := result.Content[0].(*mcp.TextContent).Text
-		skipIfNoBrowser(t, &toolError{text})
-		t.Fatalf("fetch error: %s", text)
-	}
-
-	text := result.Content[0].(*mcp.TextContent).Text
-	if !strings.Contains(text, "Hello Scout") && !strings.Contains(text, "Test Page") {
-		t.Errorf("expected page content in fetch result, got: %s", text)
-	}
-}
-
-func TestSessionListTool(t *testing.T) {
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	// Before any navigation, session should report no active session.
-	result, err := callTool(ctx, cs, "session_list", map[string]any{})
-	if err != nil {
-		t.Fatalf("session_list: %v", err)
-	}
-
-	if result.IsError {
-		t.Fatalf("session_list error: %s", result.Content[0].(*mcp.TextContent).Text)
-	}
-
-	text := result.Content[0].(*mcp.TextContent).Text
-	if !strings.Contains(text, "no active session") {
-		t.Errorf("expected 'no active session' before navigation, got: %s", text)
-	}
-
-	// Navigate, then check again.
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	navigateHelper(t, ctx, cs, ts.URL+"/")
-
-	result, err = callTool(ctx, cs, "session_list", map[string]any{})
-	if err != nil {
-		t.Fatalf("session_list after navigate: %v", err)
-	}
-
-	text = result.Content[0].(*mcp.TextContent).Text
-	if !strings.Contains(text, "active") || !strings.Contains(text, "Test Page") {
-		t.Errorf("expected active session with title, got: %s", text)
-	}
-}
-
-func TestSessionResetTool(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	navigateHelper(t, ctx, cs, ts.URL+"/")
-
-	// Reset the session.
-	result, err := callTool(ctx, cs, "session_reset", map[string]any{})
-	if err != nil {
-		t.Fatalf("session_reset: %v", err)
-	}
-
-	if result.IsError {
-		t.Fatalf("session_reset error: %s", result.Content[0].(*mcp.TextContent).Text)
-	}
-
-	text := result.Content[0].(*mcp.TextContent).Text
-	if text != "Session reset" {
-		t.Errorf("expected 'Session reset', got: %s", text)
-	}
-
-	// After reset, session_list should show no active session.
-	result, err = callTool(ctx, cs, "session_list", map[string]any{})
-	if err != nil {
-		t.Fatalf("session_list after reset: %v", err)
-	}
-
-	text = result.Content[0].(*mcp.TextContent).Text
-	if !strings.Contains(text, "no active session") {
-		t.Errorf("expected 'no active session' after reset, got: %s", text)
-	}
-
-	// Navigate again to verify re-initialization works.
-	navigateHelper(t, ctx, cs, ts.URL+"/page2")
-
-	result, err = callTool(ctx, cs, "session_list", map[string]any{})
-	if err != nil {
-		t.Fatalf("session_list after re-navigate: %v", err)
-	}
-
-	text = result.Content[0].(*mcp.TextContent).Text
-	if !strings.Contains(text, "Page Two") {
-		t.Errorf("expected 'Page Two' after re-navigate, got: %s", text)
-	}
-}
-
-func TestSnapshotTool(t *testing.T) {
-	ts := newTestHTTPServer()
-	defer ts.Close()
-
-	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
-	ctx := context.Background()
-
-	navigateHelper(t, ctx, cs, ts.URL+"/")
-
-	result, err := callTool(ctx, cs, "snapshot", map[string]any{})
-	if err != nil {
-		t.Fatalf("snapshot: %v", err)
-	}
-
-	if result.IsError {
-		t.Fatalf("snapshot error: %s", result.Content[0].(*mcp.TextContent).Text)
-	}
-
-	text := result.Content[0].(*mcp.TextContent).Text
-	if text == "" {
-		t.Error("expected non-empty snapshot")
 	}
 }
 
@@ -550,7 +209,131 @@ func TestServeSSEListenError(t *testing.T) {
 	}
 }
 
-// toolError wraps a string as an error for skipIfNoBrowser.
-type toolError struct{ msg string }
+func TestSanitizeMCPName(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"hello", "hello"},
+		{"hello-world", "hello_world"},
+		{"https://example.com/api", "https_example_com_api"},
+		{"my tool name", "my_tool_name"},
+		{"CamelCase123", "CamelCase123"},
+		{"---leading", "leading"},
+		{"trailing---", "trailing"},
+		{"multi---dashes", "multi_dashes"},
+		{"a.b.c", "a_b_c"},
+		{"", ""},
+		{"@#$%", ""},
+	}
 
-func (e *toolError) Error() string { return e.msg }
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			got := sanitizeMCPName(tc.input)
+			if got != tc.want {
+				t.Errorf("sanitizeMCPName(%q) = %q, want %q", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestStorageKind(t *testing.T) {
+	if got := storageKind(true); got != "sessionStorage" {
+		t.Errorf("storageKind(true) = %q, want sessionStorage", got)
+	}
+
+	if got := storageKind(false); got != "localStorage" {
+		t.Errorf("storageKind(false) = %q, want localStorage", got)
+	}
+}
+
+func TestRegisterWebMCPTools(t *testing.T) {
+	cfg := ServerConfig{Headless: true}
+	server := NewServer(cfg)
+
+	tools := []scout.WebMCPTool{
+		{
+			Name:        "get_data",
+			Description: "Gets some data",
+			ServerURL:   "https://api.example.com",
+			Source:      "meta",
+		},
+		{
+			Name:        "post_form",
+			Description: "Posts a form",
+			ServerURL:   "",
+			Source:      "well-known",
+		},
+	}
+
+	callCount := 0
+	callFn := func(name string, params map[string]any) (*scout.WebMCPToolResult, error) {
+		callCount++
+		return &scout.WebMCPToolResult{Content: "ok"}, nil
+	}
+
+	RegisterWebMCPTools(server, tools, callFn)
+
+	// Connect and verify tools are registered.
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
+	t1, t2 := mcp.NewInMemoryTransports()
+	ctx := context.Background()
+
+	_, err := server.Connect(ctx, t1, nil)
+	if err != nil {
+		t.Fatalf("server connect: %v", err)
+	}
+
+	cs, err := client.Connect(ctx, t2, nil)
+	if err != nil {
+		t.Fatalf("client connect: %v", err)
+	}
+
+	defer func() { _ = cs.Close() }()
+
+	result, err := cs.ListTools(ctx, nil)
+	if err != nil {
+		t.Fatalf("list tools: %v", err)
+	}
+
+	// Look for our registered WebMCP tools.
+	foundGetData := false
+	foundPostForm := false
+
+	for _, tool := range result.Tools {
+		if strings.Contains(tool.Name, "get_data") {
+			foundGetData = true
+		}
+
+		if strings.Contains(tool.Name, "post_form") {
+			foundPostForm = true
+		}
+	}
+
+	if !foundGetData {
+		t.Error("expected webmcp tool containing 'get_data' in tool list")
+	}
+
+	if !foundPostForm {
+		t.Error("expected webmcp tool containing 'post_form' in tool list")
+	}
+}
+
+func TestNewServerIdleTimeout(t *testing.T) {
+	cfg := ServerConfig{
+		Headless:    true,
+		IdleTimeout: 5 * time.Second,
+	}
+
+	called := false
+	server := NewServer(cfg, func() { called = true })
+
+	if server == nil {
+		t.Fatal("NewServer returned nil")
+	}
+
+	// The cancel function should not have been called yet.
+	if called {
+		t.Error("cancelOnIdle should not be called at construction")
+	}
+}

@@ -65,7 +65,7 @@ flowchart TB
     end
 
     subgraph MCP["MCP Server (pkg/scout/mcp/)"]
-        MCPServer["MCP Server\n(33 tools, 3 resources)"]
+        MCPServer["MCP Server\n(33 tools, 3 resources)\n11 handler files"]
         MCPTransport["stdio / SSE\n(server.go)"]
     end
 
@@ -116,6 +116,64 @@ flowchart TB
     Browser -->|CDP protocol| Chrome
 ```
 
+## MCP Server Architecture
+
+The MCP server in `pkg/scout/mcp/` was refactored to use a clean handler pattern, extracting tool registrations from a monolithic function into focused, domain-organized files. The `NewServer()` function (~40 lines) acts as a thin orchestrator that calls specialized register functions, each responsible for a cohesive group of related tools.
+
+### Register Pattern
+
+Each handler file implements a `register*Tools(server *mcp.Server, state *mcpState)` function that:
+- Takes the MCP server instance and shared state
+- Calls `server.AddTool()` for each tool with its schema and handler
+- Uses the `mcpState` to access lazy-initialized browser and page instances
+- Returns nothing (mutations are direct on the server)
+
+### Handler Files and Tools
+
+| File | Register Function | Tools (Count) |
+|------|-------------------|---------------|
+| `tools_browser.go` | `registerBrowserTools` | navigate, click, type, extract, eval, back, forward, wait (8) |
+| `tools_capture.go` | `registerCaptureTools` | screenshot, snapshot, pdf (3) |
+| `tools_search.go` | `registerSearchTools` | search, fetch (2) |
+| `tools_session.go` | `registerSessionTools` | session_list, session_reset, open (3) |
+| `tools_content.go` | `registerContentTools` | markdown, table, meta (3) |
+| `tools_network.go` | `registerNetworkTools` | cookie, header, block (3) |
+| `tools_form.go` | `registerFormTools` | form_detect, form_fill, form_submit (3) |
+| `tools_analysis.go` | `registerAnalysisTools` | crawl, detect (2) |
+| `tools_inspect.go` | `registerInspectTools` | storage, hijack, har, swagger (4) |
+| `diag.go` | `registerDiagTools` | ping, curl (2) |
+| `resources.go` | `registerResources` | markdown, url, title (3 resources) |
+
+**Total: 33 tools + 3 resources across 11 handler files**
+
+### Organization Principles
+
+- **Browser Navigation & Interaction**: `tools_browser.go` handles page navigation, element manipulation, and basic waits
+- **Page Capture**: `tools_capture.go` covers screenshots, snapshots, and PDF export
+- **Search & Fetch**: `tools_search.go` provides web search and HTTP fetch capabilities
+- **Session Management**: `tools_session.go` tracks browser sessions and state
+- **Content Extraction**: `tools_content.go` exports page content as Markdown, tables, or metadata
+- **Network Control**: `tools_network.go` manages cookies, headers, and request blocking
+- **Form Automation**: `tools_form.go` detects and fills forms, submits them
+- **Page Analysis**: `tools_analysis.go` performs crawling and framework detection
+- **Inspection Tools**: `tools_inspect.go` provides storage access, HAR export, API inspection, and Swagger schema extraction
+- **Diagnostics**: `diag.go` includes connectivity checks (ping) and HTTP debugging (curl)
+- **Resources**: `resources.go` registers MCP resources for real-time page content (Markdown, URL, Title)
+
+### State Management
+
+The `mcpState` struct holds:
+- `browser`: Lazy-initialized `scout.Browser` instance
+- `page`: Current page (created on first tool access)
+- `config`: Runtime configuration (headless mode, stealth, binary path)
+- `idle`: Optional idle timer for auto-shutdown
+
+Methods:
+- `ensureBrowser(ctx)`: Initializes browser if needed
+- `ensurePage(ctx)`: Initializes page if needed
+- `reset()`: Cleans up browser and page
+- `touch()`: Resets idle timer on activity
+
 ## Core Library Flow
 
 ```mermaid
@@ -155,11 +213,11 @@ sequenceDiagram
     participant User as User Code
     participant Rec as NetworkRecorder
     participant Page as scout.Page
-    participant Rod as rod.Page
+    participant Engine as engine.Page
     participant Chrome as CDP Events
 
     User->>Rec: NewNetworkRecorder(page, opts...)
-    Rec->>Rod: page.EachEvent(...)
+    Rec->>Engine: page.EachEvent(...)
     Note over Rec,Chrome: Listening for CDP events
 
     User->>Page: page.Navigate(url)
@@ -171,8 +229,8 @@ sequenceDiagram
 
     Chrome-->>Rec: NetworkLoadingFinished
     alt CaptureBody enabled
-        Rec->>Rod: NetworkGetResponseBody
-        Rod->>Chrome: Fetch body
+        Rec->>Engine: NetworkGetResponseBody
+        Engine->>Chrome: Fetch body
         Chrome-->>Rec: Response body
     end
     Rec->>Rec: Move to completed entries

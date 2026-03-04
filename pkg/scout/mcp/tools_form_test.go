@@ -76,6 +76,28 @@ func TestFormDetectTool(t *testing.T) {
 	}
 }
 
+func TestFormFillNoData(t *testing.T) {
+	ts := newFormTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/form")
+
+	result, err := callTool(ctx, cs, "form_fill", map[string]any{
+		"data": map[string]any{},
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("form_fill no data: %v", err)
+	}
+
+	if !result.IsError {
+		t.Error("expected error for form_fill with empty data")
+	}
+}
+
 func TestFormFillTool(t *testing.T) {
 	ts := newFormTestServer()
 	defer ts.Close()
