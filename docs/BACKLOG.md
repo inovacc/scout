@@ -14,7 +14,7 @@
 
 | Item | Priority | Effort | Scope |
 |------|----------|--------|-------|
-| OpenTelemetry tracing | P3 | Large | Instrument core operations with span context propagation |
+| ~~OpenTelemetry tracing~~ | ~~P3~~ | ~~Large~~ | ~~Instrument core operations with span context propagation~~ — **Done (Phase 54)** |
 | ~~Plugin system~~ | ~~P3~~ | ~~XL~~ | ~~Dynamic loading of scraper modes and extractors~~ — **Done (Phase 53)** |
 
 ## Completed Items (Archive)

@@ -35,6 +35,7 @@ internal/engine/vpn/          VPN integration (Surfshark)
 internal/engine/lib/          Internalized rod: launcher, CDP, proto, input, utils
 internal/flags/               Feature flag persistence (~/.cache/scout/)
 internal/logger/              Command logging (KSUID log files, stdout/stderr capture)
+internal/tracing/             OpenTelemetry instrumentation (Init, MCPToolSpan, ScraperSpan)
 internal/idle/                Idle timer for auto-shutdown
 pkg/scout/                    Public facade (type aliases + New/Option re-exports)
 pkg/scout/identity/           Device identity, Luhn check digits
@@ -92,7 +93,8 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **Browser close detection**: `Page.WaitClose()` returns a channel closed when the page target is destroyed (CDP `TargetTargetDestroyed`). Used by `mcp open` to exit when user closes browser window. `Launcher.Exit()` exposes process-exit channel. `Browser.Done()` delegates to launcher.
 - **Session cleanup**: `launcher.Cleanup()` called synchronously (not `go`) for non-reusable sessions, ensuring session dir is removed before process exits. `EnrichSessionInfo()` populates `Exec` and `BuildVersion` from gops metadata.
 - **Process platform files**: `process_windows.go` and `process_linux.go` in `internal/engine/session/` — each contains platform-specific `ProcessAlive` + shared gops-based `IsScoutProcess`/`ScoutProcessInfo`.
-- **Plugin system**: Subprocess-based plugins communicate via JSON-RPC 2.0 on stdin/stdout. `plugin.Manager` discovers from `~/.scout/plugins/*/plugin.json` and `$SCOUT_PLUGIN_PATH`. Plugins declare capabilities (`scraper_mode`, `extractor`, `mcp_tool`) in manifest. Lazy process launch. `ModeProxy` bridges `scraper.Mode`, `ToolProxy` bridges MCP tools. Go SDK in `pkg/scout/plugin/sdk/` — `NewServer()`, `RegisterMode/Extractor/Tool()`, `Run()`.
+- **Plugin system**: Subprocess-based plugins communicate via JSON-RPC 2.0 on stdin/stdout. `plugin.Manager` discovers from `~/.scout/plugins/*/plugin.json` and `$SCOUT_PLUGIN_PATH`. Plugins declare capabilities (`scraper_mode`, `extractor`, `mcp_tool`) in manifest. Lazy process launch. `ModeProxy` bridges `scraper.Mode`, `ToolProxy` bridges MCP tools. Go SDK in `pkg/scout/plugin/sdk/` — `NewServer()`, `RegisterMode/Extractor/Tool()`, `Run()`. CLI: `scout plugin install <path|url>` supports local dirs and archive URLs.
+- **OpenTelemetry tracing**: `internal/tracing/` package. No-op unless `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT` is set. `tracing.Init(ctx, Config{})` in CLI bootstrap. All 33 MCP tools auto-instrumented via `addTracedTool()` wrapper in `pkg/scout/mcp/server.go`. Scraper CLI uses `ScraperSpan()`. Custom spans: `tracing.Start(ctx, "name", attrs...)`.
 
 ## Dependencies
 
@@ -102,6 +104,7 @@ Identity: `x/crypto`, `grandcat/zeroconf`.
 gRPC/CLI: `google.golang.org/grpc`, `google.golang.org/protobuf`, `google/uuid`, `spf13/cobra`.
 Process management: `google/gops` (agent registration + `goprocess.Find` for orphan detection).
 Logger: `segmentio/ksuid`.
+Tracing: `go.opentelemetry.io/otel`, `otel/sdk`, `otel/exporters/stdout/stdouttrace`.
 
 ## CI
 

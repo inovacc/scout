@@ -11,7 +11,7 @@ import (
 
 // registerCaptureTools adds screenshot, snapshot, and PDF tools.
 func registerCaptureTools(server *mcp.Server, state *mcpState) {
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "screenshot",
 		Description: "Take a screenshot of the current page",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"fullPage":{"type":"boolean","description":"capture full page"}}}`),
@@ -46,7 +46,7 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 		}, nil
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "snapshot",
 		Description: "Get the accessibility tree of the current page",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"interactableOnly":{"type":"boolean","description":"only include interactable elements"}}}`),
@@ -75,7 +75,7 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 		return textResult(snap)
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "pdf",
 		Description: "Generate a PDF of the current page",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"landscape":{"type":"boolean","description":"landscape orientation"},"printBackground":{"type":"boolean","description":"print background graphics"},"scale":{"type":"number","description":"scale factor (0.1 to 2.0)"}}}`),

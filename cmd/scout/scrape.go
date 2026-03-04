@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/inovacc/scout/internal/tracing"
 	"github.com/inovacc/scout/pkg/scout/scraper"
 	"github.com/inovacc/scout/pkg/scout/scraper/auth"
 	"github.com/spf13/cobra"
@@ -223,8 +224,11 @@ var scrapeRunCmd = &cobra.Command{
 			cancel()
 		}()
 
+		ctx, finishSpan := tracing.ScraperSpan(ctx, modeName)
+
 		results, err := mode.Scrape(ctx, session, opts)
 		if err != nil {
+			finishSpan(0, err)
 			return fmt.Errorf("scout: scrape run: %w", err)
 		}
 
@@ -235,6 +239,8 @@ var scrapeRunCmd = &cobra.Command{
 			_ = enc.Encode(result) //nolint:errchkjson
 			count++
 		}
+
+		finishSpan(count, nil)
 
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "scraped %d items\n", count)
 

@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Core library complete through Phase 52.** All phases delivered. See git history for details.
+**Core library complete through Phase 54.** All phases delivered. See git history for details.
 
 ### Completed Phases (Summary)
 
@@ -56,6 +56,7 @@
 | 51 | PDF Form Filling — `Page.PDFFormFields()` detects fillable fields, `Page.FillPDFForm(fields)` fills them via browser rendering; CLI: `scout pdf-form fields`, `scout pdf-form fill` | Done |
 | 52 | Test Coverage — browser package 25→34%, session package 47→78%, ARM64 removal, Chromium revision update | Done |
 | 53 | Plugin System — subprocess-based extensibility via JSON-RPC 2.0, plugin discovery (`~/.scout/plugins/`, `$SCOUT_PLUGIN_PATH`), scraper mode/extractor/MCP tool proxies, Go SDK for plugin authors, CLI `scout plugin list/install/remove/run` | Done |
+| 54 | OpenTelemetry Tracing & Plugin URL Install — `internal/tracing/` package with `Init()`, `MCPToolSpan()`, `ScraperSpan()`; all 33 MCP tools auto-instrumented via `addTracedTool()` wrapper; scraper CLI instrumented; `scout plugin install <url>` downloads and extracts plugin archives; test coverage improvements for browser, MCP, and plugin packages | Done |
 
 ### Remaining Work
 

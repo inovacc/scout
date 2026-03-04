@@ -11,7 +11,7 @@ import (
 
 // registerSessionTools adds session management and open tools.
 func registerSessionTools(server *mcp.Server, state *mcpState) {
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "session_list",
 		Description: "List current session info (URL, title of current page)",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
@@ -43,7 +43,7 @@ func registerSessionTools(server *mcp.Server, state *mcpState) {
 		return textResult(string(data))
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "session_reset",
 		Description: "Close the current browser and page, forcing re-initialization on next use",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
@@ -54,7 +54,7 @@ func registerSessionTools(server *mcp.Server, state *mcpState) {
 		return textResult("Session reset")
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "open",
 		Description: "Open a URL in a visible (headed) browser for manual inspection. The browser remains open for interactive analysis.",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"url":{"type":"string","description":"URL to open"},"devtools":{"type":"boolean","description":"open Chrome DevTools automatically"}},"required":["url"]}`),

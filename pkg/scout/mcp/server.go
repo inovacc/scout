@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/internal/idle"
+	"github.com/inovacc/scout/internal/tracing"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/plugin"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -105,6 +106,24 @@ func (s *mcpState) reset() {
 
 	s.browser = nil
 	s.page = nil
+}
+
+// addTracedTool registers an MCP tool with OpenTelemetry tracing instrumentation.
+func addTracedTool(server *mcp.Server, tool *mcp.Tool, handler func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error)) {
+	name := tool.Name
+	server.AddTool(tool, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		ctx, finish := tracing.MCPToolSpan(ctx, name)
+		result, err := handler(ctx, req)
+		if err != nil {
+			finish(err)
+		} else if result != nil && result.IsError {
+			finish(fmt.Errorf("tool error"))
+		} else {
+			finish(nil)
+		}
+
+		return result, err
+	})
 }
 
 func errResult(msg string) (*mcp.CallToolResult, error) {

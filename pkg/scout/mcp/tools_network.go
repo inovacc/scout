@@ -11,7 +11,7 @@ import (
 
 // registerNetworkTools adds cookie, header, and block tools.
 func registerNetworkTools(server *mcp.Server, state *mcpState) {
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "cookie",
 		Description: "Manage browser cookies (get, set, or clear)",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"action":{"type":"string","enum":["get","set","clear"],"description":"action to perform"},"name":{"type":"string","description":"cookie name (for set)"},"value":{"type":"string","description":"cookie value (for set)"},"domain":{"type":"string","description":"cookie domain (for set)"},"path":{"type":"string","description":"cookie path (for set, default /)"}},"required":["action"]}`),
@@ -72,7 +72,7 @@ func registerNetworkTools(server *mcp.Server, state *mcpState) {
 		}
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "header",
 		Description: "Set custom HTTP headers for subsequent requests",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"headers":{"type":"object","additionalProperties":{"type":"string"},"description":"header name-value pairs"}},"required":["headers"]}`),
@@ -97,7 +97,7 @@ func registerNetworkTools(server *mcp.Server, state *mcpState) {
 		return textResult(fmt.Sprintf("%d header(s) set", len(args.Headers)))
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "block",
 		Description: "Block URL patterns from loading (supports wildcards like *.css, *analytics*)",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"patterns":{"type":"array","items":{"type":"string"},"description":"URL patterns to block"}},"required":["patterns"]}`),
