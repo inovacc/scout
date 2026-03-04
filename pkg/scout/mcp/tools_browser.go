@@ -10,7 +10,7 @@ import (
 
 // registerBrowserTools adds navigation and interaction tools.
 func registerBrowserTools(server *mcp.Server, state *mcpState) {
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "navigate",
 		Description: "Navigate the browser to a URL",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"url":{"type":"string","description":"URL to navigate to"}},"required":["url"]}`),
@@ -39,7 +39,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) {
 		return textResult(fmt.Sprintf("Navigated to %s (%s)", url, title))
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "click",
 		Description: "Click an element by CSS selector",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector"}},"required":["selector"]}`),
@@ -68,7 +68,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) {
 		return textResult(fmt.Sprintf("Clicked %s", args.Selector))
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "type",
 		Description: "Type text into an element by CSS selector",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector"},"text":{"type":"string","description":"text to type"}},"required":["selector","text"]}`),
@@ -98,7 +98,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) {
 		return textResult(fmt.Sprintf("Typed into %s", args.Selector))
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "extract",
 		Description: "Extract text from an element by CSS selector",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector"}},"required":["selector"]}`),
@@ -128,7 +128,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) {
 		return textResult(text)
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "eval",
 		Description: "Evaluate JavaScript in the page",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"expression":{"type":"string","description":"JavaScript expression"}},"required":["expression"]}`),
@@ -153,7 +153,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) {
 		return textResult(result.String())
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "back",
 		Description: "Navigate back in browser history",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
@@ -170,7 +170,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) {
 		return textResult("Navigated back")
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "forward",
 		Description: "Navigate forward in browser history",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
@@ -187,7 +187,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) {
 		return textResult("Navigated forward")
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "wait",
 		Description: "Wait for a page condition (load, selector)",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector to wait for"}}}`),

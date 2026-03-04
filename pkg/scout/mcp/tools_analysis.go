@@ -10,7 +10,7 @@ import (
 
 // registerAnalysisTools adds crawl and detect tools.
 func registerAnalysisTools(server *mcp.Server, state *mcpState) {
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "crawl",
 		Description: "Crawl a website discovering linked pages via BFS",
 		InputSchema: json.RawMessage(`{"type":"object","required":["url"],"properties":{"url":{"type":"string","description":"start URL to crawl"},"maxDepth":{"type":"integer","description":"maximum crawl depth (default 2)"},"maxPages":{"type":"integer","description":"maximum pages to visit (default 50)"}}}`),
@@ -69,7 +69,7 @@ func registerAnalysisTools(server *mcp.Server, state *mcpState) {
 		return jsonResult(entries)
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "detect",
 		Description: "Detect technologies, frameworks, PWA support, and render mode on the current page",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),

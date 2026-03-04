@@ -19,7 +19,7 @@ func storageKind(sessionStorage bool) string {
 }
 
 func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:maintidx
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "storage",
 		Description: "Manage web storage (localStorage/sessionStorage): get, set, list, or clear",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"action":{"type":"string","enum":["get","set","list","clear"],"description":"action to perform"},"key":{"type":"string","description":"storage key (for get/set)"},"value":{"type":"string","description":"value to store (for set)"},"sessionStorage":{"type":"boolean","description":"use sessionStorage instead of localStorage"}},"required":["action"]}`),
@@ -107,7 +107,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 		}
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "hijack",
 		Description: "Capture network traffic (HTTP requests/responses and WebSocket frames) for a duration",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"urlFilter":{"type":"string","description":"URL pattern to filter (optional)"},"captureBody":{"type":"boolean","description":"capture request/response bodies"},"duration":{"type":"integer","description":"capture duration in seconds (default 10, max 30)"}}}`),
@@ -173,7 +173,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 		return jsonResult(events)
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "har",
 		Description: "Export network performance entries via the Performance API",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"action":{"type":"string","enum":["export"],"description":"action to perform"}},"required":["action"]}`),
@@ -209,7 +209,7 @@ func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 		return jsonResult(entries)
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "swagger",
 		Description: "Extract OpenAPI/Swagger specification from a URL",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"url":{"type":"string","description":"URL to extract OpenAPI spec from"},"endpointsOnly":{"type":"boolean","description":"extract only endpoint paths"}},"required":["url"]}`),

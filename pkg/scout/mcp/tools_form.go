@@ -10,7 +10,7 @@ import (
 
 // registerFormTools adds form detection, filling, and submission tools.
 func registerFormTools(server *mcp.Server, state *mcpState) {
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "form_detect",
 		Description: "Detect forms on the current page. Optionally target a specific form by CSS selector.",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector for a specific form element"}}}`),
@@ -44,7 +44,7 @@ func registerFormTools(server *mcp.Server, state *mcpState) {
 		return jsonResult(forms)
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "form_fill",
 		Description: "Fill a form with the provided field name-value pairs",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector for the form (default: form)"},"data":{"type":"object","description":"field name to value mapping","additionalProperties":{"type":"string"}}},"required":["data"]}`),
@@ -82,7 +82,7 @@ func registerFormTools(server *mcp.Server, state *mcpState) {
 		return textResult(fmt.Sprintf("filled %d field(s) in %s", len(args.Data), args.Selector))
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "form_submit",
 		Description: "Submit a form on the current page",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector for the form (default: form)"}}}`),

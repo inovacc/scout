@@ -10,7 +10,7 @@ import (
 
 // registerContentTools adds markdown, table, and meta extraction tools.
 func registerContentTools(server *mcp.Server, state *mcpState) {
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "markdown",
 		Description: "Extract the current page content as Markdown",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"mainOnly":{"type":"boolean","description":"extract only main content (readability mode)"},"includeImages":{"type":"boolean","description":"include images in output"},"includeLinks":{"type":"boolean","description":"render links as markdown links"}}}`),
@@ -50,7 +50,7 @@ func registerContentTools(server *mcp.Server, state *mcpState) {
 		return textResult(md)
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "table",
 		Description: "Extract table data from the current page as JSON (headers + rows)",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector for the table element (default: table)"}}}`),
@@ -79,7 +79,7 @@ func registerContentTools(server *mcp.Server, state *mcpState) {
 		return jsonResult(table)
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "meta",
 		Description: "Extract page metadata: title, description, canonical URL, Open Graph, and Twitter Card tags",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),

@@ -106,7 +106,7 @@ type curlResponse struct {
 
 // registerDiagTools adds ping and curl diagnostic tools to the MCP server.
 func registerDiagTools(server *mcp.Server, state *mcpState) {
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "ping",
 		Description: "Network diagnostic for a URL: DNS resolution, TCP connect, TLS handshake, and HTTP response timing",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"url":{"type":"string","description":"URL to ping (e.g. https://example.com)"},"count":{"type":"integer","description":"number of pings (default 3)","default":3},"useBrowser":{"type":"boolean","description":"use browser instead of raw HTTP for timing"}},"required":["url"]}`),
@@ -137,7 +137,7 @@ func registerDiagTools(server *mcp.Server, state *mcpState) {
 		return pingRaw(ctx, args.URL, args.Count)
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "curl",
 		Description: "Full HTTP client: send requests with custom method, headers, body; returns status, headers, body, timing, redirects, and TLS info",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"url":{"type":"string","description":"URL to request"},"method":{"type":"string","description":"HTTP method (default GET)","default":"GET"},"headers":{"type":"object","description":"request headers as key-value pairs","additionalProperties":{"type":"string"}},"body":{"type":"string","description":"request body"},"followRedirects":{"type":"boolean","description":"follow redirects (default true)","default":true},"maxRedirects":{"type":"integer","description":"max redirects to follow (default 10)","default":10},"timeout":{"type":"integer","description":"timeout in seconds (default 30)","default":30},"useBrowser":{"type":"boolean","description":"use browser instead of raw HTTP"}},"required":["url"]}`),

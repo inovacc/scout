@@ -11,7 +11,7 @@ import (
 
 // registerSearchTools adds search and fetch tools.
 func registerSearchTools(server *mcp.Server, state *mcpState) {
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "search",
 		Description: "Search the web using a search engine",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","description":"search query"},"engine":{"type":"string","description":"search engine: google, bing, duckduckgo","default":"google"}},"required":["query"]}`),
@@ -53,7 +53,7 @@ func registerSearchTools(server *mcp.Server, state *mcpState) {
 		return textResult(string(data))
 	})
 
-	server.AddTool(&mcp.Tool{
+	addTracedTool(server, &mcp.Tool{
 		Name:        "fetch",
 		Description: "Fetch a URL and extract its content as markdown, html, text, or metadata",
 		InputSchema: json.RawMessage(`{"type":"object","properties":{"url":{"type":"string","description":"URL to fetch"},"mode":{"type":"string","description":"extraction mode: markdown, html, text, links, meta, full","default":"full"},"mainOnly":{"type":"boolean","description":"extract main content only using readability scoring"}},"required":["url"]}`),

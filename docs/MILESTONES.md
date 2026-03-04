@@ -199,3 +199,17 @@
 - [x] MCP server integration via `ServerConfig.PluginManager`
 - [x] Unit tests for manifest, protocol, manager, mode proxy, tool proxy
 - **Coverage:** pkg/scout/plugin 36.2%
+
+## v0.54.0 - OpenTelemetry Tracing & Plugin URL Install [COMPLETE]
+
+**Goal:** Full observability for MCP tools and scraper operations, plus URL-based plugin installation.
+
+- [x] `internal/tracing/` package: `Init()`, `Tracer()`, `Start()`, `MCPToolSpan()`, `ScraperSpan()`
+- [x] No-op by default; enabled via `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT`
+- [x] All 33 MCP tools auto-instrumented via `addTracedTool()` wrapper
+- [x] Scraper CLI instrumented with `ScraperSpan()` in `scout scrape run`
+- [x] `tracing.Init()` wired into CLI bootstrap (`cmd/scout/scout.go`)
+- [x] `scout plugin install <url>` downloads archives, extracts, finds `plugin.json`, installs
+- [x] Test suite for tracing package (6 tests)
+- [x] Extended browser and MCP test coverage
+- **New dependencies:** `go.opentelemetry.io/otel` v1.41.0 and related packages
