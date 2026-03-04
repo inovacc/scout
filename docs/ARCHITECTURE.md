@@ -58,6 +58,16 @@ flowchart TB
         StealthPkg["Stealth\n(stealth/)"]
     end
 
+    subgraph Tracing["Observability"]
+        OTel["OpenTelemetry\n(internal/tracing/)"]
+    end
+
+    subgraph Plugins["Plugin System (pkg/scout/plugin/)"]
+        PluginMgr["Manager\n(discovery, routing)"]
+        PluginClient["Client\n(subprocess JSON-RPC)"]
+        PluginSDK["Go SDK\n(plugin/sdk/)"]
+    end
+
     subgraph Identity["Identity & Discovery"]
         DeviceID["DeviceIdentity\n(pkg/scout/identity/)"]
         Discovery["mDNS Discovery\n(pkg/scout/discovery/)"]
@@ -113,6 +123,11 @@ flowchart TB
     MCPTransport -->|serves| MCPServer
     CLI -->|starts| MCPServer
 
+    OTel -->|instruments| MCPServer
+    OTel -->|instruments| CLI
+    PluginMgr -->|registers tools| MCPServer
+    PluginClient -->|JSON-RPC| PluginSDK
+
     Browser -->|CDP protocol| Chrome
 ```
 
@@ -124,7 +139,7 @@ The MCP server in `pkg/scout/mcp/` was refactored to use a clean handler pattern
 
 Each handler file implements a `register*Tools(server *mcp.Server, state *mcpState)` function that:
 - Takes the MCP server instance and shared state
-- Calls `server.AddTool()` for each tool with its schema and handler
+- Calls `addTracedTool(server, tool, handler)` which wraps each handler with OpenTelemetry tracing via `tracing.MCPToolSpan()`
 - Uses the `mcpState` to access lazy-initialized browser and page instances
 - Returns nothing (mutations are direct on the server)
 

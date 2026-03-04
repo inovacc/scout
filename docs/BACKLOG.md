@@ -10,12 +10,7 @@
 
 ## Open Items
 
-### Infrastructure
-
-| Item | Priority | Effort | Scope |
-|------|----------|--------|-------|
-| ~~OpenTelemetry tracing~~ | ~~P3~~ | ~~Large~~ | ~~Instrument core operations with span context propagation~~ — **Done (Phase 54)** |
-| ~~Plugin system~~ | ~~P3~~ | ~~XL~~ | ~~Dynamic loading of scraper modes and extractors~~ — **Done (Phase 53)** |
+No open backlog items at this time. All planned features have been delivered.
 
 ## Completed Items (Archive)
 
@@ -68,6 +63,8 @@
 | gRPC reflection + health service | v0.27.0 — health.NewServer() registered |
 | CLI shell completions | v0.27.0 — scout completion bash/zsh/fish/powershell |
 | Rebrand rod references to scout | -rod to -scout, cache dir rod/ to scout/, error links updated |
+| Plugin system | Phase 53 — subprocess JSON-RPC 2.0, manager, proxies, Go SDK, CLI |
+| OpenTelemetry tracing | Phase 54 — internal/tracing/, MCPToolSpan, ScraperSpan, addTracedTool wrapper |
 </details>
 
 <details>

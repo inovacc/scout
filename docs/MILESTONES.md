@@ -179,7 +179,7 @@
 - [x] Session reuse (`WithReusableSession()`), REPL mode, health checker, page gather, cloud upload
 - [x] PDF form filling (`PDFFormFields()`, `FillPDFForm()`)
 - [x] Test coverage improvements for browser and session packages
-- **Coverage:** internal/engine/browser 33.6% | internal/engine/llm 70.4% | internal/engine/session 78.3%
+- **Coverage:** internal/engine/browser 53.7% | internal/engine/llm 70.4% | internal/engine/session 78.9%
 
 ## v0.53.0 - Plugin System [COMPLETE]
 
