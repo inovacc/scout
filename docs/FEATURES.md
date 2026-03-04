@@ -187,7 +187,12 @@
 ### Plugin System
 
 - **Status:** Completed
-- **Description:** Subprocess-based plugin extensibility via JSON-RPC 2.0. Plugins are separate executables discovered from `~/.scout/plugins/` and `$SCOUT_PLUGIN_PATH`. Supports three capability types: scraper modes, extractors, and MCP tools. Go SDK for plugin authors in `pkg/scout/plugin/sdk/`. CLI: `scout plugin list/install/remove/run`. Lazy process launch with graceful shutdown.
+- **Description:** Subprocess-based plugin extensibility via JSON-RPC 2.0. Plugins are separate executables discovered from `~/.scout/plugins/` and `$SCOUT_PLUGIN_PATH`. Supports three capability types: scraper modes, extractors, and MCP tools. Go SDK for plugin authors in `pkg/scout/plugin/sdk/`. CLI: `scout plugin list/install/remove/run`. Supports URL-based install with archive extraction. Lazy process launch with graceful shutdown.
+
+### OpenTelemetry Tracing
+
+- **Status:** Completed
+- **Description:** Full observability via OpenTelemetry. `internal/tracing/` package with `Init()`, `MCPToolSpan()`, `ScraperSpan()`, and `Start()` helpers. No-op by default; enabled via `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT`. All 33 MCP tools auto-instrumented via `addTracedTool()` wrapper. Scraper CLI instrumented with `ScraperSpan()`. Supports stdout and OTLP exporters.
 
 ## Proposed Features
 
