@@ -102,7 +102,7 @@
 - [x] CLI: `scout markdown --url=<url> [--main-only]`
 - [x] URL Map / Link Discovery (`map.go`) combining sitemap + BFS link harvesting
 - [x] CLI: `scout map <url> [--search=term] [--limit=N]`
-- [x] Internalized `go-rod/stealth` into `pkg/stealth/`
+- [x] Internalized `go-rod/stealth` into `internal/engine/stealth/`
 - [x] Multi-browser support: Brave, Edge auto-detection
 - [x] Chrome extension loading via `WithExtension()`
 - [x] Syncthing-style device identity (`pkg/identity/`)
@@ -178,4 +178,24 @@
 - [x] Browser manifest (`browser.json`) with per-platform download configuration
 - [x] Session reuse (`WithReusableSession()`), REPL mode, health checker, page gather, cloud upload
 - [x] PDF form filling (`PDFFormFields()`, `FillPDFForm()`)
-- **Coverage:** internal/engine/browser 25.2% | internal/engine/llm 70.4% | internal/engine/session 47.4%
+- [x] Test coverage improvements for browser and session packages
+- **Coverage:** internal/engine/browser 33.6% | internal/engine/llm 70.4% | internal/engine/session 78.3%
+
+## v0.53.0 - Plugin System [COMPLETE]
+
+**Goal:** Subprocess-based plugin extensibility for scraper modes, extractors, and MCP tools.
+
+- [x] Plugin manifest (`plugin.json`) with validation and capability declaration
+- [x] JSON-RPC 2.0 protocol (request/response/notification) over stdin/stdout
+- [x] Subprocess client with lazy launch, health monitoring, graceful shutdown
+- [x] Plugin manager with discovery from `~/.scout/plugins/` and `$SCOUT_PLUGIN_PATH`
+- [x] `ModeProxy` implementing `scraper.Mode` via JSON-RPC forwarding
+- [x] `ToolProxy` forwarding MCP tool calls to plugin subprocess
+- [x] `extractorProxy` implementing `Extractor` interface via JSON-RPC
+- [x] Go SDK for plugin authors (`pkg/scout/plugin/sdk/`) with `Server`, `RegisterMode/Extractor/Tool`, `Run()`
+- [x] Example plugin (`pkg/scout/plugin/sdk/example_plugin/`)
+- [x] CLI: `scout plugin list/install/remove/run`
+- [x] Scraper CLI fallback to plugin manager for unknown modes
+- [x] MCP server integration via `ServerConfig.PluginManager`
+- [x] Unit tests for manifest, protocol, manager, mode proxy, tool proxy
+- **Coverage:** pkg/scout/plugin 36.2%

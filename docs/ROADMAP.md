@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Core library complete through Phase 51.** All phases delivered. See git history for details.
+**Core library complete through Phase 52.** All phases delivered. See git history for details.
 
 ### Completed Phases (Summary)
 
@@ -54,6 +54,8 @@
 | 49 | Internal Migration — Move `pkg/scout/` to `internal/engine/` with public facade, extract domain sub-packages (detect, fingerprint, hijack, llm, vpn, session), merge rod internals into engine | Done |
 | 49.5 | Process Management — `google/gops` agent for scout process discovery, `IsScoutProcess()` for reliable orphan detection (no PID reuse), `Page.WaitClose()` for browser window close detection, synchronous session dir cleanup, platform-specific process files (`_windows.go`, `_linux.go`) | Done |
 | 51 | PDF Form Filling — `Page.PDFFormFields()` detects fillable fields, `Page.FillPDFForm(fields)` fills them via browser rendering; CLI: `scout pdf-form fields`, `scout pdf-form fill` | Done |
+| 52 | Test Coverage — browser package 25→34%, session package 47→78%, ARM64 removal, Chromium revision update | Done |
+| 53 | Plugin System — subprocess-based extensibility via JSON-RPC 2.0, plugin discovery (`~/.scout/plugins/`, `$SCOUT_PLUGIN_PATH`), scraper mode/extractor/MCP tool proxies, Go SDK for plugin authors, CLI `scout plugin list/install/remove/run` | Done |
 
 ### Remaining Work
 

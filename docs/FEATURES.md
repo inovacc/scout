@@ -91,7 +91,7 @@
 ### Internalized Stealth
 
 - **Status:** Completed
-- **Description:** `go-rod/stealth` forked and internalized into `pkg/stealth/`. Removes external dependency while maintaining anti-bot-detection capabilities.
+- **Description:** `go-rod/stealth` forked and internalized into `internal/engine/stealth/`. Removes external dependency while maintaining anti-bot-detection capabilities.
 
 ### Platform-Specific Server Defaults
 
@@ -183,6 +183,11 @@
 
 - **Status:** Completed
 - **Description:** Crawl a site and build a structured knowledge base with DOM, markdown, links, tech stack, and page metadata. `Browser.Knowledge(url, opts...)` with depth, concurrency, and timeout controls. CLI: `scout knowledge <url>`. Implemented in `internal/engine/knowledge.go`.
+
+### Plugin System
+
+- **Status:** Completed
+- **Description:** Subprocess-based plugin extensibility via JSON-RPC 2.0. Plugins are separate executables discovered from `~/.scout/plugins/` and `$SCOUT_PLUGIN_PATH`. Supports three capability types: scraper modes, extractors, and MCP tools. Go SDK for plugin authors in `pkg/scout/plugin/sdk/`. CLI: `scout plugin list/install/remove/run`. Lazy process launch with graceful shutdown.
 
 ## Proposed Features
 
