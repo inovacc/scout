@@ -53,6 +53,7 @@ type SessionListing struct {
 	ID   string
 	Dir  string
 	Info *SessionInfo
+	Job  *Job
 }
 
 // Dir returns the directory for a given session ID.
@@ -122,11 +123,17 @@ func List() ([]SessionListing, error) {
 			continue
 		}
 
-		result = append(result, SessionListing{
+		listing := SessionListing{
 			ID:   name,
 			Dir:  filepath.Join(sessDir, name),
 			Info: info,
-		})
+		}
+
+		if job, err := ReadJob(name); err == nil {
+			listing.Job = job
+		}
+
+		result = append(result, listing)
 	}
 
 	return result, nil

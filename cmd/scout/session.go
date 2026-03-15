@@ -281,6 +281,23 @@ var sessionDirListCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s  %s  headless=%v%s%s  last_used=%s\n",
 				s.ID, s.Info.Browser, s.Info.Headless, reusable, domain,
 				s.Info.LastUsed.Format("2006-01-02 15:04:05"))
+
+			if s.Job != nil {
+				pct := 0.0
+				msg := ""
+
+				if s.Job.Progress != nil {
+					pct = s.Job.Progress.Percentage
+					msg = s.Job.Progress.Message
+				}
+
+				line := fmt.Sprintf("  Job: %s [%s] %.0f%%", s.Job.Type, s.Job.Status, pct)
+				if msg != "" {
+					line += fmt.Sprintf(" — %s", msg)
+				}
+
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), line)
+			}
 		}
 
 		return nil

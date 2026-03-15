@@ -9,6 +9,10 @@ import (
 // SessionInfo re-exports session.SessionInfo from sub-package.
 type SessionInfo = session.SessionInfo
 type SessionListing = session.SessionListing
+type SessionJob = session.Job
+type SessionJobStep = session.JobStep
+type SessionJobStatus = session.JobStatus
+type SessionJobProgress = session.Progress
 
 // DefaultOrphanCheckInterval is the default interval for periodic orphan checks.
 const DefaultOrphanCheckInterval = session.DefaultOrphanCheckInterval
@@ -61,6 +65,45 @@ func DomainHash(rawURL string) string { return session.DomainHash(rawURL) }
 
 // SessionHash returns a deterministic hash for a session directory name.
 func SessionHash(rawURL, label string) string { return session.Hash(rawURL, label) }
+
+// NewSessionJob creates a new Job with a KSUID, pending status, and timestamps.
+func NewSessionJob(jobType string, targetURLs []string, command string) *SessionJob {
+	return session.NewJob(jobType, targetURLs, command)
+}
+
+// WriteSessionJob writes the job as JSON to <SessionsDir>/<sessionID>/job.json.
+func WriteSessionJob(sessionID string, job *SessionJob) error {
+	return session.WriteJob(sessionID, job)
+}
+
+// ReadSessionJob reads the job from <SessionsDir>/<sessionID>/job.json.
+func ReadSessionJob(sessionID string) (*SessionJob, error) { return session.ReadJob(sessionID) }
+
+// RemoveSessionJob removes the job.json file from a session directory.
+func RemoveSessionJob(sessionID string) error { return session.RemoveJob(sessionID) }
+
+// StartSessionJob transitions a job from pending to running.
+func StartSessionJob(sessionID string) error { return session.StartJob(sessionID) }
+
+// CompleteSessionJob marks a job as completed with output and timestamp.
+func CompleteSessionJob(sessionID string, output string) error {
+	return session.CompleteJob(sessionID, output)
+}
+
+// FailSessionJob marks a job as failed with an error message and timestamp.
+func FailSessionJob(sessionID string, errMsg string) error {
+	return session.FailJob(sessionID, errMsg)
+}
+
+// AddSessionJobStep appends a step to the job and auto-updates progress.
+func AddSessionJobStep(sessionID string, step SessionJobStep) error {
+	return session.AddJobStep(sessionID, step)
+}
+
+// UpdateSessionJobProgress updates the progress fields on a job.
+func UpdateSessionJobProgress(sessionID string, current, total int, message string) error {
+	return session.UpdateJobProgress(sessionID, current, total, message)
+}
 
 // EnrichSessionInfo populates Exec and BuildVersion from gops if available.
 func EnrichSessionInfo(info *SessionInfo) {

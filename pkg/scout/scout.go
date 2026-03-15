@@ -178,6 +178,10 @@ type SelectorType = engine.SelectorType
 type SessionHijacker = engine.SessionHijacker
 type SessionIndex = engine.SessionIndex
 type SessionInfo = engine.SessionInfo
+type SessionJob = engine.SessionJob
+type SessionJobProgress = engine.SessionJobProgress
+type SessionJobStatus = engine.SessionJobStatus
+type SessionJobStep = engine.SessionJobStep
 type SessionListing = engine.SessionListing
 type SessionState = engine.SessionState
 type SitemapOption = engine.SitemapOption
@@ -390,11 +394,20 @@ func ParseBrowserVersion(output string) string { return browser.ParseBrowserVers
 func ParseSurfsharkClusters(data []byte) ([]VPNServer, error) { return engine.ParseSurfsharkClusters(data) }
 func ProxyChainDescription(chain *ProxyChain) string { return engine.ProxyChainDescription(chain) }
 func ReadSessionInfo(id string) (*SessionInfo, error) { return engine.ReadSessionInfo(id) }
+func ReadSessionJob(sessionID string) (*SessionJob, error) { return engine.ReadSessionJob(sessionID) }
 func RemoveExtension(id string) error { return engine.RemoveExtension(id) }
 func RemoveSessionInfo(id string) { engine.RemoveSessionInfo(id) }
+func RemoveSessionJob(sessionID string) error { return engine.RemoveSessionJob(sessionID) }
 func RenderTemplate(tmpl ScriptTemplate, data map[string]any) (string, error) { return engine.RenderTemplate(tmpl, data) }
 func ResetAllSessions() (int, error) { return engine.ResetAllSessions() }
 func ResetSession(id string) error { return engine.ResetSession(id) }
+func AddSessionJobStep(sessionID string, step SessionJobStep) error { return engine.AddSessionJobStep(sessionID, step) }
+func CompleteSessionJob(sessionID string, output string) error { return engine.CompleteSessionJob(sessionID, output) }
+func FailSessionJob(sessionID string, errMsg string) error { return engine.FailSessionJob(sessionID, errMsg) }
+func NewSessionJob(jobType string, targetURLs []string, command string) *SessionJob { return engine.NewSessionJob(jobType, targetURLs, command) }
+func StartSessionJob(sessionID string) error { return engine.StartSessionJob(sessionID) }
+func UpdateSessionJobProgress(sessionID string, current, total int, message string) error { return engine.UpdateSessionJobProgress(sessionID, current, total, message) }
+func WriteSessionJob(sessionID string, job *SessionJob) error { return engine.WriteSessionJob(sessionID, job) }
 func ResolveExtensions(p *UserProfile) []string { return engine.ResolveExtensions(p) }
 func ResolveExtensionsWithBase(p *UserProfile, baseDir string) []string { return engine.ResolveExtensionsWithBase(p, baseDir) }
 func RootDomain(rawURL string) string { return engine.RootDomain(rawURL) }
