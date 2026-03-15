@@ -188,6 +188,64 @@ func TestHeaderTool(t *testing.T) {
 	}
 }
 
+func TestCookieToolSetWithPath(t *testing.T) {
+	ts := newNetworkTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/net")
+
+	result, err := callTool(ctx, cs, "cookie", map[string]any{
+		"action": "set", "name": "pathcookie", "value": "val", "path": "/test",
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("cookie set path: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("cookie set path error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if !strings.Contains(text, "pathcookie") {
+		t.Errorf("expected confirmation with cookie name, got: %s", text)
+	}
+}
+
+func TestHeaderToolMultiple(t *testing.T) {
+	ts := newNetworkTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/net")
+
+	result, err := callTool(ctx, cs, "header", map[string]any{
+		"headers": map[string]any{"X-First": "one", "X-Second": "two"},
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("header multiple: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("header multiple error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if !strings.Contains(text, "2 header(s) set") {
+		t.Errorf("expected '2 header(s) set', got: %s", text)
+	}
+}
+
 func TestBlockTool(t *testing.T) {
 	ts := newNetworkTestServer()
 	defer ts.Close()

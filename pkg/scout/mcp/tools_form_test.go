@@ -128,6 +128,64 @@ func TestFormFillTool(t *testing.T) {
 	}
 }
 
+func TestFormFillDefaultSelector(t *testing.T) {
+	ts := newFormTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/form")
+
+	// No selector means default "form" selector.
+	result, err := callTool(ctx, cs, "form_fill", map[string]any{
+		"data": map[string]any{"username": "user1"},
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("form_fill default: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("form_fill default error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if text == "" {
+		t.Error("expected non-empty confirmation")
+	}
+}
+
+func TestFormSubmitDefaultSelector(t *testing.T) {
+	ts := newFormTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/form")
+
+	// Submit without selector — uses default "form".
+	result, err := callTool(ctx, cs, "form_submit", map[string]any{})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("form_submit default: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("form_submit default error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if text == "" {
+		t.Error("expected non-empty confirmation")
+	}
+}
+
 func TestFormSubmitTool(t *testing.T) {
 	ts := newFormTestServer()
 	defer ts.Close()

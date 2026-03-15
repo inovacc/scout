@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -105,27 +106,35 @@ func registerSearchTools(server *mcp.Server, state *mcpState) {
 
 		limit := min(args.MaxResults, len(searchResults.Results))
 
-		extracted := make([]extractedResult, 0, limit)
+		extracted := make([]extractedResult, limit)
+
+		var wg sync.WaitGroup
 		for i := range limit {
-			r := searchResults.Results[i]
-			er := extractedResult{
-				Title:   r.Title,
-				URL:     r.URL,
-				Snippet: r.Snippet,
-			}
+			wg.Add(1)
 
-			fetchResult, fetchErr := browser.WebFetch(r.URL,
-				scout.WithFetchMode(args.Mode),
-				scout.WithFetchMainContent(),
-			)
-			if fetchErr != nil {
-				er.Error = fetchErr.Error()
-			} else {
-				er.Content = fetchResult.Markdown
-			}
+			go func(idx int) {
+				defer wg.Done()
 
-			extracted = append(extracted, er)
+				r := searchResults.Results[idx]
+				extracted[idx] = extractedResult{
+					Title:   r.Title,
+					URL:     r.URL,
+					Snippet: r.Snippet,
+				}
+
+				fetchResult, fetchErr := browser.WebFetch(r.URL,
+					scout.WithFetchMode(args.Mode),
+					scout.WithFetchMainContent(),
+				)
+				if fetchErr != nil {
+					extracted[idx].Error = fetchErr.Error()
+				} else {
+					extracted[idx].Content = fetchResult.Markdown
+				}
+			}(i)
 		}
+
+		wg.Wait()
 
 		data, err := json.MarshalIndent(extracted, "", "  ")
 		if err != nil {

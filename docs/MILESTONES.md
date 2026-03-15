@@ -213,3 +213,15 @@
 - [x] Test suite for tracing package (6 tests)
 - [x] Extended browser and MCP test coverage
 - **New dependencies:** `go.opentelemetry.io/otel` v1.41.0 and related packages
+
+## v0.55.0 - Phase 55: MCP Enhancements & CDP Connect [COMPLETE]
+
+**Goal:** New MCP tools, enhanced snapshot options, and CDP browser connection.
+
+- [x] `search_and_extract` MCP tool: combined web search + browser-rendered content extraction in one call
+- [x] `scout connect` CLI: connect to running browser via CDP endpoint for real-browser-profile automation (`cmd/scout/connect.go`)
+- [x] Enhanced `snapshot` MCP tool: `maxDepth`, `iframes`, `filter` options for fine-grained accessibility tree control
+- [x] MCP timeout fix: `WithTimeout(0)` disables rod 30s page timeout; `WaitLoad` best-effort with 15s cap
+- [x] Session reset fix: close page before browser + 500ms delay for OS cleanup
+- **Tag:** v0.49.0
+- **Coverage:** 20.8% overall

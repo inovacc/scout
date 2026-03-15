@@ -65,8 +65,12 @@ func init() {
 }
 
 var recipeCmd = &cobra.Command{
-	Use:   "recipe",
-	Short: "Run or validate declarative recipes",
+	Use:        "recipe",
+	Short:      "Run or validate declarative recipes",
+	Deprecated: "Use 'scout runbook' instead. Will be removed after 2026-04-15.",
+	PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "WARNING: 'scout recipe' is deprecated. Use 'scout runbook' instead. Will be removed after 2026-04-15.")
+	},
 }
 
 var recipeRunCmd = &cobra.Command{

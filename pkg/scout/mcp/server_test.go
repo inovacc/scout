@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -319,6 +320,521 @@ func TestRegisterWebMCPTools(t *testing.T) {
 	}
 }
 
+func TestNewServerNilLogger(t *testing.T) {
+	// Passing nil Logger should not panic.
+	server := NewServer(ServerConfig{Headless: true})
+	if server == nil {
+		t.Fatal("NewServer returned nil with nil logger")
+	}
+}
+
+func TestNewServerStealth(t *testing.T) {
+	server := NewServer(ServerConfig{Headless: true, Stealth: true, Logger: slog.Default()})
+	if server == nil {
+		t.Fatal("NewServer returned nil with stealth=true")
+	}
+}
+
+func TestNewServerBrowserBin(t *testing.T) {
+	server := NewServer(ServerConfig{Headless: true, BrowserBin: "/nonexistent/chrome", Logger: slog.Default()})
+	if server == nil {
+		t.Fatal("NewServer returned nil with browserBin set")
+	}
+}
+
+func TestCallToolSearchAndExtractBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "search_and_extract",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		// JSON-RPC level error is acceptable.
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolFetchBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "fetch",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolSearchBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "search",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolCrawlBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "crawl",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolClickBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "click",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolTypeBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "type",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolExtractBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "extract",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolEvalBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "eval",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolCookieBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "cookie",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolHeaderBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "header",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolBlockBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "block",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolFormDetectBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "form_detect",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolFormFillBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "form_fill",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolFormSubmitBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "form_submit",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolStorageBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "storage",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolHarBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "har",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolSwaggerBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "swagger",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolMarkdownBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "markdown",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolTableBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "table",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolOpenBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "open",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolPingBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "ping",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestCallToolCurlBadJSON(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "curl",
+		Arguments: json.RawMessage(`{invalid`),
+	})
+	if err != nil {
+		return
+	}
+
+	if !result.IsError {
+		t.Error("expected error for invalid JSON args")
+	}
+}
+
+func TestRegisterWebMCPToolsCall(t *testing.T) {
+	cfg := ServerConfig{Headless: true}
+	server := NewServer(cfg)
+
+	var (
+		calledName   string
+		calledParams map[string]any
+	)
+
+	tools := []scout.WebMCPTool{
+		{
+			Name:        "test_action",
+			Description: "Test action tool",
+			ServerURL:   "https://api.test.com",
+			Source:      "meta",
+		},
+	}
+
+	callFn := func(name string, params map[string]any) (*scout.WebMCPToolResult, error) {
+		calledName = name
+		calledParams = params
+
+		return &scout.WebMCPToolResult{Content: "result ok"}, nil
+	}
+
+	RegisterWebMCPTools(server, tools, callFn)
+
+	// Connect and call the tool.
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
+	t1, t2 := mcp.NewInMemoryTransports()
+	ctx := context.Background()
+
+	_, err := server.Connect(ctx, t1, nil)
+	if err != nil {
+		t.Fatalf("server connect: %v", err)
+	}
+
+	cs, err := client.Connect(ctx, t2, nil)
+	if err != nil {
+		t.Fatalf("client connect: %v", err)
+	}
+
+	defer func() { _ = cs.Close() }()
+
+	// Call the registered WebMCP tool.
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "webmcp_https_api_test_com_test_action",
+		Arguments: map[string]any{"key": "value"},
+	})
+	if err != nil {
+		t.Fatalf("call webmcp tool: %v", err)
+	}
+
+	if result.IsError {
+		t.Fatalf("webmcp tool error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if text != "result ok" {
+		t.Errorf("expected 'result ok', got: %s", text)
+	}
+
+	if calledName != "test_action" {
+		t.Errorf("expected callFn name 'test_action', got: %s", calledName)
+	}
+
+	if calledParams["key"] != "value" {
+		t.Errorf("expected params key=value, got: %v", calledParams)
+	}
+}
+
+func TestRegisterWebMCPToolsError(t *testing.T) {
+	cfg := ServerConfig{Headless: true}
+	server := NewServer(cfg)
+
+	tools := []scout.WebMCPTool{
+		{
+			Name:        "fail_tool",
+			Description: "Fails",
+			Source:      "well-known",
+		},
+	}
+
+	callFn := func(name string, params map[string]any) (*scout.WebMCPToolResult, error) {
+		return &scout.WebMCPToolResult{Content: "bad thing happened", IsError: true}, nil
+	}
+
+	RegisterWebMCPTools(server, tools, callFn)
+
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
+	t1, t2 := mcp.NewInMemoryTransports()
+	ctx := context.Background()
+
+	_, err := server.Connect(ctx, t1, nil)
+	if err != nil {
+		t.Fatalf("server connect: %v", err)
+	}
+
+	cs, err := client.Connect(ctx, t2, nil)
+	if err != nil {
+		t.Fatalf("client connect: %v", err)
+	}
+
+	defer func() { _ = cs.Close() }()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "webmcp_well_known_fail_tool",
+		Arguments: map[string]any{},
+	})
+	if err != nil {
+		t.Fatalf("call fail tool: %v", err)
+	}
+
+	if !result.IsError {
+		t.Error("expected error result for failing WebMCP tool")
+	}
+}
+
 func TestNewServerIdleTimeout(t *testing.T) {
 	cfg := ServerConfig{
 		Headless:    true,
@@ -335,5 +851,113 @@ func TestNewServerIdleTimeout(t *testing.T) {
 	// The cancel function should not have been called yet.
 	if called {
 		t.Error("cancelOnIdle should not be called at construction")
+	}
+}
+
+func TestNewServerIdleTimeoutNilCallback(t *testing.T) {
+	// Passing nil callback should not create an idle timer.
+	cfg := ServerConfig{
+		Headless:    true,
+		IdleTimeout: 5 * time.Second,
+	}
+
+	server := NewServer(cfg, nil)
+	if server == nil {
+		t.Fatal("NewServer returned nil with nil callback")
+	}
+}
+
+func TestNewServerNoIdleTimeout(t *testing.T) {
+	// IdleTimeout=0 with a callback should not create an idle timer.
+	cfg := ServerConfig{
+		Headless:    true,
+		IdleTimeout: 0,
+	}
+
+	server := NewServer(cfg, func() {})
+	if server == nil {
+		t.Fatal("NewServer returned nil with zero timeout")
+	}
+}
+
+func TestJsonResultMarshalError(t *testing.T) {
+	// channels can't be marshalled.
+	ch := make(chan int)
+
+	result, err := jsonResult(ch)
+	if err != nil {
+		t.Fatalf("jsonResult: %v", err)
+	}
+
+	if !result.IsError {
+		t.Error("expected error result for unmarshalable value")
+	}
+}
+
+func TestWebMCPToolsWithInputSchema(t *testing.T) {
+	cfg := ServerConfig{Headless: true}
+	server := NewServer(cfg)
+
+	tools := []scout.WebMCPTool{
+		{
+			Name:        "schema_tool",
+			Description: "Tool with schema",
+			Source:      "meta",
+			InputSchema: json.RawMessage(`{"type":"object","properties":{"name":{"type":"string"}}}`),
+		},
+	}
+
+	callFn := func(name string, params map[string]any) (*scout.WebMCPToolResult, error) {
+		return &scout.WebMCPToolResult{Content: "ok"}, nil
+	}
+
+	RegisterWebMCPTools(server, tools, callFn)
+
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
+	t1, t2 := mcp.NewInMemoryTransports()
+	ctx := context.Background()
+
+	_, err := server.Connect(ctx, t1, nil)
+	if err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+
+	cs, err := client.Connect(ctx, t2, nil)
+	if err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+
+	defer func() { _ = cs.Close() }()
+
+	// Verify tool is listed.
+	result, err := cs.ListTools(ctx, nil)
+	if err != nil {
+		t.Fatalf("list tools: %v", err)
+	}
+
+	found := false
+
+	for _, tool := range result.Tools {
+		if strings.Contains(tool.Name, "schema_tool") {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Error("expected webmcp tool containing 'schema_tool'")
+	}
+
+	// Call with no args.
+	callResult, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "webmcp_meta_schema_tool",
+		Arguments: map[string]any{},
+	})
+	if err != nil {
+		t.Fatalf("call schema tool: %v", err)
+	}
+
+	if callResult.IsError {
+		t.Errorf("unexpected error: %s", callResult.Content[0].(*mcp.TextContent).Text)
 	}
 }

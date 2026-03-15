@@ -13,6 +13,7 @@ import (
 	"github.com/inovacc/scout/internal/idle"
 	"github.com/inovacc/scout/internal/tracing"
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/guide"
 	"github.com/inovacc/scout/pkg/scout/plugin"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -29,11 +30,12 @@ type ServerConfig struct {
 
 // mcpState holds the lazy-initialized browser and current page.
 type mcpState struct {
-	mu      sync.Mutex
-	browser *scout.Browser
-	page    *scout.Page
-	config  ServerConfig
-	idle    *idle.Timer
+	mu             sync.Mutex
+	browser        *scout.Browser
+	page           *scout.Page
+	config         ServerConfig
+	idle           *idle.Timer
+	guideRecorder  *guide.Recorder
 }
 
 // touch resets the idle timer on activity.
@@ -163,7 +165,7 @@ func jsonResult(v any) (*mcp.CallToolResult, error) {
 // call cancelOnIdle when the timeout expires.
 // If cfg.PluginManager is set, plugin-provided MCP tools are registered.
 func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
-	state := &mcpState{config: cfg}
+	state := &mcpState{config: cfg, guideRecorder: guide.NewRecorder()}
 
 	if cfg.IdleTimeout > 0 && len(cancelOnIdle) > 0 && cancelOnIdle[0] != nil {
 		cb := cancelOnIdle[0]
@@ -197,6 +199,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 	registerFormTools(server, state)
 	registerAnalysisTools(server, state)
 	registerInspectTools(server, state)
+	registerGuideTools(server, state)
 	registerResources(server, state)
 
 	if cfg.PluginManager != nil {

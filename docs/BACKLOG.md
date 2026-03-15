@@ -10,7 +10,18 @@
 
 ## Open Items
 
-No open backlog items at this time. All planned features have been delivered.
+| Priority | Item | Notes |
+|----------|------|-------|
+| P1 | Web Search MCP tool improvements | `search_and_extract` added in Phase 55; consider parallel fetch for multi-result extraction |
+| P2 | Step-by-Step Guide Generator | Record browser sessions into how-to docs with annotated screenshots |
+| P2 | Deprecate `pkg/scout/recipe/` package | Still imported as compat aliases; plan removal after 2026-04-15 |
+
+### DEPRECATION: `pkg/scout/recipe/`
+
+- **Status:** Deprecated (compat aliases pointing to `pkg/scout/runbook/`)
+- **Removal date:** After 2026-04-15
+- **Migration:** Replace all imports of `pkg/scout/recipe` with `pkg/scout/runbook`. The recipe package re-exports runbook types unchanged.
+- **Tracking:** Update consumers before removal date; drop package in a dedicated cleanup commit.
 
 ## Completed Items (Archive)
 

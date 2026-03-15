@@ -75,7 +75,7 @@ flowchart TB
     end
 
     subgraph MCP["MCP Server (pkg/scout/mcp/)"]
-        MCPServer["MCP Server\n(33 tools, 3 resources)\n11 handler files"]
+        MCPServer["MCP Server\n(34 tools, 3 resources)\n11 handler files"]
         MCPTransport["stdio / SSE\n(server.go)"]
     end
 
@@ -149,7 +149,7 @@ Each handler file implements a `register*Tools(server *mcp.Server, state *mcpSta
 |------|-------------------|---------------|
 | `tools_browser.go` | `registerBrowserTools` | navigate, click, type, extract, eval, back, forward, wait (8) |
 | `tools_capture.go` | `registerCaptureTools` | screenshot, snapshot, pdf (3) |
-| `tools_search.go` | `registerSearchTools` | search, fetch (2) |
+| `tools_search.go` | `registerSearchTools` | search, fetch, search_and_extract (3) |
 | `tools_session.go` | `registerSessionTools` | session_list, session_reset, open (3) |
 | `tools_content.go` | `registerContentTools` | markdown, table, meta (3) |
 | `tools_network.go` | `registerNetworkTools` | cookie, header, block (3) |
@@ -159,13 +159,13 @@ Each handler file implements a `register*Tools(server *mcp.Server, state *mcpSta
 | `diag.go` | `registerDiagTools` | ping, curl (2) |
 | `resources.go` | `registerResources` | markdown, url, title (3 resources) |
 
-**Total: 33 tools + 3 resources across 11 handler files**
+**Total: 34 tools + 3 resources across 11 handler files**
 
 ### Organization Principles
 
 - **Browser Navigation & Interaction**: `tools_browser.go` handles page navigation, element manipulation, and basic waits
 - **Page Capture**: `tools_capture.go` covers screenshots, snapshots, and PDF export
-- **Search & Fetch**: `tools_search.go` provides web search and HTTP fetch capabilities
+- **Search & Fetch**: `tools_search.go` provides web search, HTTP fetch, and combined search+extract capabilities
 - **Session Management**: `tools_session.go` tracks browser sessions and state
 - **Content Extraction**: `tools_content.go` exports page content as Markdown, tables, or metadata
 - **Network Control**: `tools_network.go` manages cookies, headers, and request blocking

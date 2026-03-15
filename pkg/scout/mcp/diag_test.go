@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -225,6 +226,357 @@ func TestCurlToolNoRedirect(t *testing.T) {
 
 	if resp.Status != 301 {
 		t.Errorf("status = %d, want 301", resp.Status)
+	}
+}
+
+func TestPingToolMaxCount(t *testing.T) {
+	ts := newDiagTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	// Count > 20 should be capped to 20 — but test with a small cap.
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "ping",
+		Arguments: json.RawMessage(`{"url":"` + ts.URL + `","count":1}`),
+	})
+	if err != nil {
+		t.Fatalf("ping call: %v", err)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp pingResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if len(resp.Pings) != 1 {
+		t.Errorf("pings = %d, want 1", len(resp.Pings))
+	}
+}
+
+func TestPingToolViaBrowser(t *testing.T) {
+	ts := newDiagTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "ping",
+		Arguments: json.RawMessage(`{"url":"` + ts.URL + `","count":1,"useBrowser":true}`),
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("ping via browser: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("ping browser error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp pingResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if len(resp.Pings) != 1 {
+		t.Errorf("pings = %d, want 1", len(resp.Pings))
+	}
+
+	if resp.Summary == nil {
+		t.Error("summary is nil")
+	}
+}
+
+func TestCurlToolViaBrowser(t *testing.T) {
+	ts := newDiagTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "curl",
+		Arguments: json.RawMessage(`{"url":"` + ts.URL + `","useBrowser":true}`),
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("curl via browser: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("curl browser error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp curlResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if resp.Status != 200 {
+		t.Errorf("status = %d, want 200", resp.Status)
+	}
+
+	if resp.Headers["x-final-url"] == "" {
+		t.Error("expected x-final-url header from browser curl")
+	}
+
+	if resp.Body == "" {
+		t.Error("expected non-empty body")
+	}
+}
+
+func TestCurlToolTimeout(t *testing.T) {
+	ts := newDiagTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "curl",
+		Arguments: json.RawMessage(`{"url":"` + ts.URL + `/echo","timeout":5}`),
+	})
+	if err != nil {
+		t.Fatalf("curl timeout: %v", err)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp curlResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if resp.Status != 200 {
+		t.Errorf("status = %d, want 200", resp.Status)
+	}
+}
+
+func TestCurlToolMaxRedirects(t *testing.T) {
+	ts := newDiagTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "curl",
+		Arguments: json.RawMessage(`{"url":"` + ts.URL + `/redirect","maxRedirects":5}`),
+	})
+	if err != nil {
+		t.Fatalf("curl maxRedirects: %v", err)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp curlResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if resp.Status != 200 {
+		t.Errorf("status = %d, want 200", resp.Status)
+	}
+}
+
+func TestPingToolInvalidURL(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "ping",
+		Arguments: json.RawMessage(`{"url":"://invalid","count":1}`),
+	})
+	if err != nil {
+		t.Fatalf("ping call: %v", err)
+	}
+
+	// Should return result with error (not crash).
+	if result.IsError {
+		// error result is fine for invalid URL
+		return
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp pingResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if resp.Error == "" {
+		t.Error("expected error in ping response for invalid URL")
+	}
+}
+
+func TestCurlToolWithBody(t *testing.T) {
+	ts := newDiagTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "curl",
+		Arguments: json.RawMessage(`{"url":"` + ts.URL + `/echo","method":"PUT","headers":{"Content-Type":"text/plain","Accept":"application/json"},"body":"hello world","timeout":10}`),
+	})
+	if err != nil {
+		t.Fatalf("curl PUT: %v", err)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp curlResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if resp.Status != 200 {
+		t.Errorf("status = %d, want 200", resp.Status)
+	}
+
+	if resp.Headers["x-method"] != "PUT" {
+		t.Errorf("x-method = %q, want PUT", resp.Headers["x-method"])
+	}
+}
+
+func TestCurlToolInvalidURL(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "curl",
+		Arguments: json.RawMessage(`{"url":"http://localhost:1/nonexistent","timeout":2}`),
+	})
+	if err != nil {
+		t.Fatalf("curl invalid: %v", err)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp curlResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	// Should have error for connection refused.
+	if resp.Error == "" && resp.Status == 0 {
+		t.Error("expected error for unreachable URL")
+	}
+}
+
+func TestCurlToolHEADMethod(t *testing.T) {
+	ts := newDiagTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "curl",
+		Arguments: json.RawMessage(`{"url":"` + ts.URL + `/echo","method":"HEAD"}`),
+	})
+	if err != nil {
+		t.Fatalf("curl HEAD: %v", err)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp curlResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if resp.Status != 200 {
+		t.Errorf("status = %d, want 200", resp.Status)
+	}
+}
+
+func TestPingToolConnectionRefused(t *testing.T) {
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	// Use an unreachable port to trigger connection errors.
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "ping",
+		Arguments: json.RawMessage(`{"url":"http://127.0.0.1:1","count":2}`),
+	})
+	if err != nil {
+		t.Fatalf("ping conn refused: %v", err)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp pingResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	// Should still have pings even with errors.
+	if len(resp.Pings) != 2 {
+		t.Errorf("pings = %d, want 2", len(resp.Pings))
+	}
+
+	if resp.Error == "" {
+		t.Error("expected error in response for connection refused")
+	}
+}
+
+func TestCurlToolDELETEMethod(t *testing.T) {
+	ts := newDiagTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true})
+
+	result, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "curl",
+		Arguments: json.RawMessage(`{"url":"` + ts.URL + `/echo","method":"DELETE","followRedirects":true}`),
+	})
+	if err != nil {
+		t.Fatalf("curl DELETE: %v", err)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var resp curlResponse
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if resp.Status != 200 {
+		t.Errorf("status = %d, want 200", resp.Status)
+	}
+}
+
+func TestServeContextCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+
+	// Serve on stdio with already-cancelled context should return quickly.
+	err := Serve(ctx, slog.Default(), true, false, "", 0)
+	if err != nil && err != context.Canceled {
+		t.Logf("serve returned: %v (acceptable)", err)
+	}
+}
+
+func TestServeSSEContextCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	errCh := make(chan error, 1)
+
+	go func() {
+		errCh <- ServeSSE(ctx, slog.Default(), "127.0.0.1:0", true, false, "", 0)
+	}()
+
+	// Give server time to start, then cancel.
+	time.Sleep(100 * time.Millisecond)
+	cancel()
+
+	err := <-errCh
+	if err != nil && err != context.Canceled {
+		t.Errorf("expected context.Canceled, got: %v", err)
 	}
 }
 

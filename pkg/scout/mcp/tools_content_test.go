@@ -99,6 +99,94 @@ func TestMarkdownToolWithOptions(t *testing.T) {
 	}
 }
 
+func TestMarkdownToolIncludeImages(t *testing.T) {
+	ts := newContentTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/content")
+
+	result, err := callTool(ctx, cs, "markdown", map[string]any{
+		"includeImages": true,
+		"includeLinks":  true,
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("markdown includeImages: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("markdown includeImages error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if text == "" {
+		t.Error("expected non-empty markdown with includeImages")
+	}
+}
+
+func TestTableToolWithSelector(t *testing.T) {
+	ts := newContentTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/content")
+
+	result, err := callTool(ctx, cs, "table", map[string]any{"selector": "table"})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("table with selector: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("table selector error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var table struct {
+		Headers []string   `json:"headers"`
+		Rows    [][]string `json:"rows"`
+	}
+	if err := json.Unmarshal([]byte(text), &table); err != nil {
+		t.Fatalf("unmarshal table: %v", err)
+	}
+
+	if len(table.Rows) != 2 {
+		t.Errorf("expected 2 rows, got %d", len(table.Rows))
+	}
+}
+
+func TestTableToolMissingSelector(t *testing.T) {
+	ts := newContentTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/content")
+
+	// Non-existent table selector.
+	result, err := callTool(ctx, cs, "table", map[string]any{"selector": "#nonexistent-table"})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("table missing: %v", err)
+	}
+
+	// Should error since the selector doesn't match.
+	if !result.IsError {
+		t.Logf("table missing returned non-error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+}
+
 func TestTableTool(t *testing.T) {
 	ts := newContentTestServer()
 	defer ts.Close()

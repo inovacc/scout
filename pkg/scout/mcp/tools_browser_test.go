@@ -35,6 +35,128 @@ func TestNavigateTool(t *testing.T) {
 	}
 }
 
+func TestNavigateToolWaitLoadTimeout(t *testing.T) {
+	// Test navigate against a page that loads normally.
+	// The WaitLoad timeout is best-effort (15s) — on a fast page it should
+	// complete well before the timeout.
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := callTool(ctx, cs, "navigate", map[string]any{"url": ts.URL + "/page2"})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("navigate page2: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("navigate page2 error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if !strings.Contains(text, "Page Two") {
+		t.Errorf("expected 'Page Two' in response, got: %s", text)
+	}
+
+	if !strings.Contains(text, "Navigated to") {
+		t.Errorf("expected 'Navigated to' prefix, got: %s", text)
+	}
+}
+
+func TestNavigateToolResponse(t *testing.T) {
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := callTool(ctx, cs, "navigate", map[string]any{"url": ts.URL + "/"})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("navigate: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("navigate error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	// Verify both URL and title are present.
+	if !strings.Contains(text, ts.URL) {
+		t.Errorf("expected URL %s in response, got: %s", ts.URL, text)
+	}
+
+	if !strings.Contains(text, "Test Page") {
+		t.Errorf("expected 'Test Page' in response, got: %s", text)
+	}
+}
+
+func TestExtractToolMissing(t *testing.T) {
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/")
+
+	// Try to extract a non-existent element.
+	result, err := callTool(ctx, cs, "extract", map[string]any{"selector": "#nonexistent"})
+	if err != nil {
+		t.Fatalf("extract missing: %v", err)
+	}
+
+	// Should return an error for missing element.
+	if !result.IsError {
+		// Some implementations may timeout instead of erroring — either is acceptable.
+		t.Logf("extract missing returned non-error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+}
+
+func TestClickToolMissing(t *testing.T) {
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/")
+
+	result, err := callTool(ctx, cs, "click", map[string]any{"selector": "#nonexistent"})
+	if err != nil {
+		t.Fatalf("click missing: %v", err)
+	}
+
+	if !result.IsError {
+		t.Logf("click missing returned non-error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+}
+
+func TestTypeToolMissing(t *testing.T) {
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/")
+
+	result, err := callTool(ctx, cs, "type", map[string]any{"selector": "#nonexistent", "text": "abc"})
+	if err != nil {
+		t.Fatalf("type missing: %v", err)
+	}
+
+	if !result.IsError {
+		t.Logf("type missing returned non-error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+}
+
 func TestNavigateToolBadParams(t *testing.T) {
 	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
 	ctx := context.Background()

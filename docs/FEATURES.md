@@ -154,10 +154,10 @@
 - **Status:** Completed
 - **Description:** Automatically analyze a target website and generate a ready-to-run recipe JSON file. `AnalyzeSite()` navigates, inspects DOM, classifies page type (listing/form/article/table), detects containers, fields, forms, pagination, and interactable elements. `GenerateRecipe()` produces extract or automate recipes from analysis. CLI `scout recipe create <url>`. Implemented in `pkg/scout/recipe/analyze.go`, `pkg/scout/recipe/generate.go`.
 
-### MCP Server (33 Tools)
+### MCP Server (34 Tools)
 
 - **Status:** Completed
-- **Description:** Model Context Protocol server exposing Scout browser automation as 33 LLM-callable tools across 7 categories: Browser (navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open), Content (markdown, table, meta, pdf, search, fetch), Network (cookie, header, block, ping, curl), Forms (form_detect, form_fill, form_submit), Analysis (crawl, detect), Inspection (storage, hijack, har, swagger), Session (session_list, session_reset). 3 resources: scout://page/markdown, scout://page/url, scout://page/title. Supports stdio and HTTP+SSE transport. CLI `scout mcp`, `scout mcp --install`, `scout mcp screenshot`, `scout mcp open`. Implemented in `pkg/scout/mcp/`.
+- **Description:** Model Context Protocol server exposing Scout browser automation as 34 LLM-callable tools across 7 categories: Browser (navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open), Content (markdown, table, meta, pdf, search, fetch, search_and_extract), Network (cookie, header, block, ping, curl), Forms (form_detect, form_fill, form_submit), Analysis (crawl, detect), Inspection (storage, hijack, har, swagger), Session (session_list, session_reset). 3 resources: scout://page/markdown, scout://page/url, scout://page/title. Supports stdio and HTTP+SSE transport. CLI `scout mcp`, `scout mcp --install`, `scout mcp screenshot`, `scout mcp open`. Implemented in `pkg/scout/mcp/`.
 
 ### Multi-Tab Orchestration
 
@@ -192,7 +192,22 @@
 ### OpenTelemetry Tracing
 
 - **Status:** Completed
-- **Description:** Full observability via OpenTelemetry. `internal/tracing/` package with `Init()`, `MCPToolSpan()`, `ScraperSpan()`, and `Start()` helpers. No-op by default; enabled via `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT`. All 33 MCP tools auto-instrumented via `addTracedTool()` wrapper. Scraper CLI instrumented with `ScraperSpan()`. Supports stdout and OTLP exporters.
+- **Description:** Full observability via OpenTelemetry. `internal/tracing/` package with `Init()`, `MCPToolSpan()`, `ScraperSpan()`, and `Start()` helpers. No-op by default; enabled via `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT`. All 34 MCP tools auto-instrumented via `addTracedTool()` wrapper. Scraper CLI instrumented with `ScraperSpan()`. Supports stdout and OTLP exporters.
+
+### `search_and_extract` MCP Tool
+
+- **Status:** Completed
+- **Description:** Combined web search and browser-rendered content extraction in a single MCP tool call. Searches the web, then navigates to the top result and extracts rendered content as markdown, eliminating the need for separate `search` + `navigate` + `markdown` tool calls. Implemented in `pkg/scout/mcp/`.
+
+### `scout connect` CLI
+
+- **Status:** Completed
+- **Description:** Connect to a running browser instance via Chrome DevTools Protocol endpoint. Enables automation of real browser profiles with existing login sessions, cookies, and extensions. CLI: `scout connect <cdp-endpoint>`. Implemented in `cmd/scout/connect.go`.
+
+### Enhanced `snapshot` MCP Tool
+
+- **Status:** Completed
+- **Description:** Fine-grained accessibility tree control with `maxDepth`, `iframes`, and `filter` options. `maxDepth` limits tree traversal depth, `iframes` includes cross-origin iframe content, and `filter` restricts output to matching node roles or names. Provides more targeted accessibility snapshots for LLM consumption.
 
 ## Proposed Features
 

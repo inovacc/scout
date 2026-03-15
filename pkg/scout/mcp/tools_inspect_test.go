@@ -227,6 +227,108 @@ func TestHarToolBadAction(t *testing.T) {
 	}
 }
 
+func TestStorageToolRemoveKey(t *testing.T) {
+	ts := newInspectTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/inspect")
+
+	// Set then get via sessionStorage.
+	_, err := callTool(ctx, cs, "storage", map[string]any{
+		"action": "set", "key": "tempkey", "value": "tempval", "sessionStorage": true,
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("storage set session: %v", err)
+	}
+
+	// List sessionStorage.
+	result, err := callTool(ctx, cs, "storage", map[string]any{
+		"action": "list", "sessionStorage": true,
+	})
+	if err != nil {
+		t.Fatalf("storage list session: %v", err)
+	}
+
+	if result.IsError {
+		t.Fatalf("storage list session error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+
+	listText := result.Content[0].(*mcp.TextContent).Text
+	if !strings.Contains(listText, "tempkey") {
+		t.Errorf("expected 'tempkey' in session list, got: %s", listText)
+	}
+
+	// Clear sessionStorage.
+	result, err = callTool(ctx, cs, "storage", map[string]any{
+		"action": "clear", "sessionStorage": true,
+	})
+	if err != nil {
+		t.Fatalf("storage clear session: %v", err)
+	}
+
+	if result.IsError {
+		t.Fatalf("storage clear session error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+
+	if !strings.Contains(result.Content[0].(*mcp.TextContent).Text, "sessionStorage cleared") {
+		t.Errorf("expected 'sessionStorage cleared' confirmation")
+	}
+}
+
+func TestStorageToolSetNoKey(t *testing.T) {
+	ts := newInspectTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/inspect")
+
+	result, err := callTool(ctx, cs, "storage", map[string]any{
+		"action": "set", "value": "nokey",
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("storage set no key: %v", err)
+	}
+
+	if !result.IsError {
+		t.Error("expected error for set without key")
+	}
+}
+
+func TestSwaggerToolEndpointsOnly(t *testing.T) {
+	ts := newInspectTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	result, err := callTool(ctx, cs, "swagger", map[string]any{
+		"url":           ts.URL + "/swagger.json",
+		"endpointsOnly": true,
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("swagger endpoints only: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Skipf("swagger endpointsOnly not supported in test env: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+	if text == "" {
+		t.Error("expected non-empty swagger endpoints result")
+	}
+}
+
 func TestSwaggerTool(t *testing.T) {
 	ts := newInspectTestServer()
 	defer ts.Close()

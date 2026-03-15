@@ -138,6 +138,44 @@ func TestCrawlTool(t *testing.T) {
 	}
 }
 
+func TestCrawlToolDefaults(t *testing.T) {
+	ts := newAnalysisTestServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	// Call without maxDepth/maxPages to test defaults.
+	result, err := callTool(ctx, cs, "crawl", map[string]any{
+		"url": ts.URL + "/",
+	})
+	if err != nil {
+		skipIfNoBrowser(t, err)
+		t.Fatalf("crawl defaults: %v", err)
+	}
+
+	if result.IsError {
+		text := result.Content[0].(*mcp.TextContent).Text
+		skipIfNoBrowser(t, &toolError{text})
+		t.Fatalf("crawl defaults error: %s", text)
+	}
+
+	text := result.Content[0].(*mcp.TextContent).Text
+
+	var entries []struct {
+		URL   string `json:"url"`
+		Title string `json:"title"`
+		Depth int    `json:"depth"`
+	}
+	if err := json.Unmarshal([]byte(text), &entries); err != nil {
+		t.Fatalf("crawl defaults result is not valid JSON: %v", err)
+	}
+
+	if len(entries) < 1 {
+		t.Errorf("expected at least 1 crawled page, got %d", len(entries))
+	}
+}
+
 func TestCrawlToolMissingURL(t *testing.T) {
 	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
 	ctx := context.Background()

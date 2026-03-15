@@ -43,14 +43,14 @@ pkg/scout/discovery/          mDNS service discovery
 pkg/scout/browser/            Browser path resolution (public API)
 pkg/scout/runbook/            Runbook system (extract + automate + analyze + Plan/Apply)
 pkg/scout/recipe/             Deprecated compat aliases → runbook package
-pkg/scout/mcp/                MCP server (33 tools, 3 resources, stdio + SSE transport)
+pkg/scout/mcp/                MCP server (34 tools, 3 resources, stdio + SSE transport)
 pkg/scout/plugin/             Plugin system (subprocess JSON-RPC, manager, proxies)
 pkg/scout/plugin/sdk/         Go SDK for plugin authors
 pkg/scout/scraper/            Scraper framework + AES-256-GCM auth + 19 modes
 pkg/scout/archive/            Archive/compression utilities
 runbooks/                     Embedded preset runbooks (26 JSON files)
 extensions/                   Embedded Chrome extensions (scout-bridge)
-cmd/scout/                    Unified Cobra CLI (50+ subcommands, gops agent, logger)
+cmd/scout/                    Unified Cobra CLI (50+ subcommands, gops agent, logger, connect.go)
 grpc/                         gRPC service (proto, server, mTLS, pairing)
 examples/                     18 runnable examples (simple/ and advanced/)
 ```
@@ -71,6 +71,7 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **Stealth**: `WithStealth()` or `SCOUT_STEALTH=true/1`. Adds `disable-blink-features=AutomationControlled` + JS evasions via `stealth.Page()`.
 - **Bridge**: Enabled by default. Embedded via `embed.FS`. Disable with `WithoutBridge()` or `SCOUT_BRIDGE=false`.
 - **Remote CDP**: `WithRemoteCDP(endpoint)` connects to existing Chrome DevTools endpoint.
+- **Remote CDP connect**: `scout connect --cdp ws://...` connects to running browser. Uses `WithRemoteCDP()` internally.
 - **Platform-specific**: `WithXvfb()` in `option_unix.go`. gRPC `platform_*.go` for OS defaults.
 - **gRPC port**: Default `9551`. Daemon state in `~/.scout/`.
 - **LLM providers**: `LLMProvider` interface with `Name()` + `Complete()`. Ollama, OpenAI-compatible, Anthropic implementations.
@@ -94,7 +95,7 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **Session cleanup**: `launcher.Cleanup()` called synchronously (not `go`) for non-reusable sessions, ensuring session dir is removed before process exits. `EnrichSessionInfo()` populates `Exec` and `BuildVersion` from gops metadata.
 - **Process platform files**: `process_windows.go` and `process_linux.go` in `internal/engine/session/` — each contains platform-specific `ProcessAlive` + shared gops-based `IsScoutProcess`/`ScoutProcessInfo`.
 - **Plugin system**: Subprocess-based plugins communicate via JSON-RPC 2.0 on stdin/stdout. `plugin.Manager` discovers from `~/.scout/plugins/*/plugin.json` and `$SCOUT_PLUGIN_PATH`. Plugins declare capabilities (`scraper_mode`, `extractor`, `mcp_tool`) in manifest. Lazy process launch. `ModeProxy` bridges `scraper.Mode`, `ToolProxy` bridges MCP tools. Go SDK in `pkg/scout/plugin/sdk/` — `NewServer()`, `RegisterMode/Extractor/Tool()`, `Run()`. CLI: `scout plugin install <path|url>` supports local dirs and archive URLs.
-- **OpenTelemetry tracing**: `internal/tracing/` package. No-op unless `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT` is set. `tracing.Init(ctx, Config{})` in CLI bootstrap. All 33 MCP tools auto-instrumented via `addTracedTool()` wrapper in `pkg/scout/mcp/server.go`. Scraper CLI uses `ScraperSpan()`. Custom spans: `tracing.Start(ctx, "name", attrs...)`.
+- **OpenTelemetry tracing**: `internal/tracing/` package. No-op unless `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT` is set. `tracing.Init(ctx, Config{})` in CLI bootstrap. All 34 MCP tools auto-instrumented via `addTracedTool()` wrapper in `pkg/scout/mcp/server.go`. Scraper CLI uses `ScraperSpan()`. Custom spans: `tracing.Start(ctx, "name", attrs...)`.
 
 ## Dependencies
 
