@@ -212,6 +212,7 @@ func CleanOrphans() (int, error) {
 
 // Reset removes an entire session directory (all browser data + scout.pid).
 // If the session's browser process is still running, it is killed first.
+// On Windows, retries removal if files are still locked by Chrome.
 func Reset(id string) error {
 	dir := Dir(id)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -223,29 +224,47 @@ func Reset(id string) error {
 		if ProcessAlive(info.BrowserPID) {
 			if p, err := os.FindProcess(info.BrowserPID); err == nil {
 				_ = p.Kill()
+				// Give the process time to exit and release file locks.
+				time.Sleep(500 * time.Millisecond)
 			}
 		}
 	}
 
-	if err := os.RemoveAll(dir); err != nil {
-		return fmt.Errorf("scout: reset session %s: %w", id, err)
+	// Retry removal — Chrome may hold file locks briefly after exit.
+	var err error
+	for range 3 {
+		if err = os.RemoveAll(dir); err == nil {
+			return nil
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
 
-	return nil
+	return fmt.Errorf("scout: reset session %s: %w", id, err)
 }
 
-// ResetAll removes all session directories under SessionsDir.
+// ResetAll removes all session directories under SessionsDir, including
+// orphaned directories without scout.pid.
 // Returns the number of sessions removed.
 func ResetAll() (int, error) {
-	sessions, err := List()
+	sessDir := GetSessionsDir()
+
+	entries, err := os.ReadDir(sessDir)
 	if err != nil {
-		return 0, err
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+
+		return 0, fmt.Errorf("scout: read sessions dir: %w", err)
 	}
 
 	removed := 0
 
-	for _, s := range sessions {
-		if err := Reset(s.ID); err != nil {
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+
+		if err := Reset(e.Name()); err != nil {
 			continue
 		}
 
