@@ -8,7 +8,7 @@ import (
 	"github.com/inovacc/scout/pkg/scout"
 )
 
-func ExampleNew() {
+func ExampleNew() { //nolint:testableexamples // requires browser
 	b, err := scout.New(scout.WithHeadless(true))
 	if err != nil {
 		fmt.Println("error:", err)
@@ -30,8 +30,6 @@ func ExampleNew() {
 	}
 
 	fmt.Println(title)
-	// Output:
-	// Example Domain
 }
 
 func ExampleBrowser_NewPage() { //nolint:testableexamples // requires browser

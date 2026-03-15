@@ -107,7 +107,15 @@ func ProxyChainDescription(chain *ProxyChain) string {
 		}
 
 		if u.User != nil {
-			u.User = url.User("***")
+			// Build masked URL manually to avoid percent-encoding of '*'.
+			u.User = nil
+			raw := u.String()
+			// Insert "***@" after "scheme://".
+			if idx := strings.Index(raw, "://"); idx >= 0 {
+				raw = raw[:idx+3] + "***@" + raw[idx+3:]
+			}
+			parts[i] = raw
+			continue
 		}
 
 		parts[i] = u.String()
