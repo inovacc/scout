@@ -53,7 +53,12 @@ To check status:
 			return fmt.Errorf("--path is required (or use --disable to turn off logging)")
 		}
 
-		return flags.EnableFeature("logger", logPath)
+		absPath, err := filepath.Abs(logPath)
+		if err != nil {
+			return fmt.Errorf("scout: logger: resolve path: %w", err)
+		}
+
+		return flags.EnableFeature("logger", absPath)
 	},
 }
 
