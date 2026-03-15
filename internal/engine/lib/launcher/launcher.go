@@ -580,9 +580,15 @@ func (l *Launcher) Kill() {
 }
 
 // Cleanup wait until the Browser exits and remove [flags.UserDataDir].
+// Retries removal on failure (Windows may hold file locks briefly after Chrome exits).
 func (l *Launcher) Cleanup() {
 	<-l.exit
 
 	dir := l.Get(flags.UserDataDir)
-	_ = os.RemoveAll(dir)
+	for range 3 {
+		if err := os.RemoveAll(dir); err == nil {
+			return
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
 }
