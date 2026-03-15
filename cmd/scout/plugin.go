@@ -56,6 +56,7 @@ var pluginListCmd = &cobra.Command{
 
 			if len(p.Modes) > 0 {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "    modes: ")
+
 				for i, m := range p.Modes {
 					if i > 0 {
 						_, _ = fmt.Fprint(cmd.OutOrStdout(), ", ")
@@ -69,6 +70,7 @@ var pluginListCmd = &cobra.Command{
 
 			if len(p.Tools) > 0 {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "    tools: ")
+
 				for i, t := range p.Tools {
 					if i > 0 {
 						_, _ = fmt.Fprint(cmd.OutOrStdout(), ", ")
@@ -82,6 +84,7 @@ var pluginListCmd = &cobra.Command{
 
 			if len(p.Extractors) > 0 {
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "    extractors: ")
+
 				for i, e := range p.Extractors {
 					if i > 0 {
 						_, _ = fmt.Fprint(cmd.OutOrStdout(), ", ")
@@ -155,6 +158,7 @@ func installPluginFromURL(cmd *cobra.Command, url string) error {
 	if err != nil {
 		return fmt.Errorf("scout: plugin install: download: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -171,6 +175,7 @@ func installPluginFromURL(cmd *cobra.Command, url string) error {
 	if err != nil {
 		return fmt.Errorf("scout: plugin install: %w", err)
 	}
+
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Determine filename from URL path.
@@ -262,6 +267,7 @@ var pluginRunCmd = &cobra.Command{
 		mgr := initPluginManager()
 
 		var manifest *plugin.Manifest
+
 		for _, p := range mgr.Plugins() {
 			if p.Name == name {
 				manifest = p

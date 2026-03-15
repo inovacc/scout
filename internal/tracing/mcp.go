@@ -10,13 +10,13 @@ import (
 
 // MCPToolSpan starts a span for an MCP tool call and returns a finish function.
 func MCPToolSpan(ctx context.Context, toolName string) (context.Context, func(err error)) {
-	ctx, span := Tracer().Start(ctx, "mcp.tool."+toolName,
+	ctx, span := Tracer().Start(ctx, "mcp.tool."+toolName, //nolint:spancheck // span.End() called by returned finish function
 		trace.WithAttributes(
 			attribute.String("mcp.tool.name", toolName),
 		),
 	)
 
-	return ctx, func(err error) {
+	return ctx, func(err error) { //nolint:spancheck // span.End() called inside this closure
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
@@ -30,13 +30,13 @@ func MCPToolSpan(ctx context.Context, toolName string) (context.Context, func(er
 
 // ScraperSpan starts a span for a scraper operation.
 func ScraperSpan(ctx context.Context, mode string) (context.Context, func(itemCount int, err error)) {
-	ctx, span := Tracer().Start(ctx, "scraper.scrape",
+	ctx, span := Tracer().Start(ctx, "scraper.scrape", //nolint:spancheck // span.End() called by returned finish function
 		trace.WithAttributes(
 			attribute.String("scraper.mode", mode),
 		),
 	)
 
-	return ctx, func(itemCount int, err error) {
+	return ctx, func(itemCount int, err error) { //nolint:spancheck // span.End() called inside this closure
 		span.SetAttributes(attribute.Int("scraper.items", itemCount))
 
 		if err != nil {

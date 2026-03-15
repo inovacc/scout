@@ -16,13 +16,13 @@ type ModeProxy struct {
 	manager  *Manager
 }
 
-func (m *ModeProxy) Name() string        { return m.entry.Name }
-func (m *ModeProxy) Description() string  { return m.entry.Description }
+func (m *ModeProxy) Name() string                       { return m.entry.Name }
+func (m *ModeProxy) Description() string                { return m.entry.Description }
 func (m *ModeProxy) AuthProvider() scraper.AuthProvider { return nil }
 
 // Scrape launches the plugin (if needed), sends a scrape request, and streams results.
 func (m *ModeProxy) Scrape(ctx context.Context, session scraper.SessionData, opts scraper.ScrapeOptions) (<-chan scraper.Result, error) {
-	client, err := m.manager.getClient(m.manifest)
+	client, err := m.manager.getClient(m.manifest) //nolint:contextcheck // getClient manages process lifecycle, not request context
 	if err != nil {
 		return nil, fmt.Errorf("plugin: start %s: %w", m.manifest.Name, err)
 	}
@@ -84,7 +84,8 @@ func (m *ModeProxy) Scrape(ctx context.Context, session scraper.SessionData, opt
 					return
 				}
 
-				if notif.Method == "result" {
+				switch notif.Method {
+				case "result":
 					var r scraper.Result
 					if err := json.Unmarshal(notif.Params, &r); err == nil {
 						select {
@@ -93,7 +94,7 @@ func (m *ModeProxy) Scrape(ctx context.Context, session scraper.SessionData, opt
 							return
 						}
 					}
-				} else if notif.Method == "log" {
+				case "log":
 					var logMsg struct {
 						Level   string `json:"level"`
 						Message string `json:"message"`

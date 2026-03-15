@@ -279,7 +279,7 @@ func (s *Server) sendResult(id int64, result any) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	_ = s.encoder.Encode(map[string]any{
+	_ = s.encoder.Encode(map[string]any{ //nolint:errchkjson // fire-and-forget JSON-RPC response
 		"jsonrpc": "2.0",
 		"id":      id,
 		"result":  result,
@@ -290,7 +290,7 @@ func (s *Server) sendError(id int64, code int, message string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	_ = s.encoder.Encode(map[string]any{
+	_ = s.encoder.Encode(map[string]any{ //nolint:errchkjson // fire-and-forget JSON-RPC error
 		"jsonrpc": "2.0",
 		"id":      id,
 		"error":   map[string]any{"code": code, "message": message},

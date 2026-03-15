@@ -487,6 +487,7 @@ func TestIsEdgeArtifact(t *testing.T) {
 	for _, a := range artifacts {
 		if isEdgeArtifact(a) {
 			found = true
+
 			t.Logf("isEdgeArtifact(%q) = true", a)
 		}
 	}

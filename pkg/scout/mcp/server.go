@@ -23,8 +23,8 @@ type ServerConfig struct {
 	Stealth       bool
 	BrowserBin    string
 	Logger        *slog.Logger
-	IdleTimeout   time.Duration      // auto-shutdown after inactivity (0 disables)
-	PluginManager *plugin.Manager     // optional plugin manager for dynamic tools
+	IdleTimeout   time.Duration   // auto-shutdown after inactivity (0 disables)
+	PluginManager *plugin.Manager // optional plugin manager for dynamic tools
 }
 
 // mcpState holds the lazy-initialized browser and current page.
@@ -55,6 +55,7 @@ func (s *mcpState) ensureBrowser(_ context.Context) (*scout.Browser, error) {
 	opts := []scout.Option{
 		scout.WithHeadless(s.config.Headless),
 		scout.WithNoSandbox(),
+		scout.WithTimeout(0), // disable rod's 30s page timeout; MCP manages its own lifecycle
 	}
 	if s.config.BrowserBin != "" {
 		opts = append(opts, scout.WithExecPath(s.config.BrowserBin))
@@ -100,8 +101,15 @@ func (s *mcpState) reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	// Close page first to terminate its CDP session before killing the browser process.
+	if s.page != nil {
+		_ = s.page.Close()
+	}
+
 	if s.browser != nil {
 		_ = s.browser.Close()
+		// Allow the OS to fully release CDP port and temp dirs before re-init.
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	s.browser = nil
@@ -113,12 +121,14 @@ func addTracedTool(server *mcp.Server, tool *mcp.Tool, handler func(ctx context.
 	name := tool.Name
 	server.AddTool(tool, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		ctx, finish := tracing.MCPToolSpan(ctx, name)
+
 		result, err := handler(ctx, req)
-		if err != nil {
+		switch {
+		case err != nil:
 			finish(err)
-		} else if result != nil && result.IsError {
+		case result != nil && result.IsError:
 			finish(fmt.Errorf("tool error"))
-		} else {
+		default:
 			finish(nil)
 		}
 

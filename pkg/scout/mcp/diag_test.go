@@ -306,7 +306,6 @@ func TestSummarizePings(t *testing.T) {
 	if s.AvgMS != 20.0 {
 		t.Errorf("AvgMS = %f, want 20.0", s.AvgMS)
 	}
-
 }
 
 func TestSummarizePingsEmpty(t *testing.T) {

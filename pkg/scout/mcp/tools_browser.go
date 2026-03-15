@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // registerBrowserTools adds navigation and interaction tools.
-func registerBrowserTools(server *mcp.Server, state *mcpState) {
+func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:maintidx // tool registration function is necessarily long
 	addTracedTool(server, &mcp.Tool{
 		Name:        "navigate",
 		Description: "Navigate the browser to a URL",
@@ -28,10 +29,22 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) {
 		}
 
 		if err := page.Navigate(args.URL); err != nil {
-			return errResult(err.Error())
+			return errResult(fmt.Sprintf("scout: navigate to %s: %s", args.URL, err))
 		}
 
-		_ = page.WaitLoad()
+		// Best-effort WaitLoad with 15s timeout — SPAs may never fire the load event.
+		done := make(chan struct{})
+
+		go func() {
+			_ = page.WaitLoad()
+
+			close(done)
+		}()
+
+		select {
+		case <-done:
+		case <-time.After(15 * time.Second):
+		}
 
 		title, _ := page.Title()
 		url, _ := page.URL()

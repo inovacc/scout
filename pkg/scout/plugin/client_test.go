@@ -47,6 +47,7 @@ func newTestClient(t *testing.T) (*Client, io.Writer, io.Reader) {
 // mockResponder reads JSON-RPC requests from r and writes responses to w using the handler function.
 func mockResponder(t *testing.T, r io.Reader, w io.Writer, handler func(req *Request) *Response) {
 	t.Helper()
+
 	scanner := bufio.NewScanner(r)
 	encoder := json.NewEncoder(w)
 
@@ -190,7 +191,11 @@ func TestClient_ReadLoop_Notification(t *testing.T) {
 		Params:  json.RawMessage(`{"type":"post"}`),
 	}
 
-	data, _ := json.Marshal(notif)
+	data, err := json.Marshal(notif)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	_, _ = fmt.Fprintf(pluginW, "%s\n", data)
 
 	select {
@@ -215,7 +220,12 @@ func TestClient_ReadLoop_InvalidJSON(t *testing.T) {
 		Method:  "ping",
 		Params:  json.RawMessage(`{}`),
 	}
-	data, _ := json.Marshal(notif)
+
+	data, err := json.Marshal(notif)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	_, _ = fmt.Fprintf(pluginW, "%s\n", data)
 
 	select {
@@ -234,7 +244,12 @@ func TestClient_ReadLoop_EmptyLine(t *testing.T) {
 	// Write empty line then valid notification.
 	_, _ = fmt.Fprintf(pluginW, "\n")
 	notif := Notification{JSONRPC: "2.0", Method: "test"}
-	data, _ := json.Marshal(notif)
+
+	data, err := json.Marshal(notif)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	_, _ = fmt.Fprintf(pluginW, "%s\n", data)
 
 	select {
@@ -254,6 +269,7 @@ func TestClient_Initialize(t *testing.T) {
 		if req.Method != "initialize" {
 			t.Errorf("method = %q, want %q", req.Method, "initialize")
 		}
+
 		return &Response{JSONRPC: "2.0", ID: req.ID, Result: json.RawMessage(`{"ok":true}`)}
 	})
 
@@ -300,15 +316,18 @@ func TestClient_Call_MultipleConcurrent(t *testing.T) {
 	defer cancel()
 
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		wg.Add(1)
+
 		go func(i int) {
 			defer wg.Done()
+
 			result, err := c.Call(ctx, "test", map[string]int{"i": i})
 			if err != nil {
 				t.Errorf("Call(%d) error: %v", i, err)
 				return
 			}
+
 			if result == nil {
 				t.Errorf("Call(%d) returned nil result", i)
 			}
@@ -327,6 +346,7 @@ func TestClient_NewClient_NilLogger(t *testing.T) {
 
 func TestClient_Notifications_Channel(t *testing.T) {
 	c := NewClient(&Manifest{Name: "test"}, nil)
+
 	ch := c.Notifications()
 	if ch == nil {
 		t.Error("expected non-nil channel")
@@ -335,6 +355,7 @@ func TestClient_Notifications_Channel(t *testing.T) {
 
 func TestClient_Done_Channel(t *testing.T) {
 	c := NewClient(&Manifest{Name: "test"}, nil)
+
 	ch := c.Done()
 	if ch == nil {
 		t.Error("expected non-nil channel")
@@ -390,9 +411,14 @@ func TestClient_ReadLoop_NotificationBufferFull(t *testing.T) {
 	})
 
 	// Send 3 notifications — the buffer is 1, so at least one should be dropped.
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		notif := Notification{JSONRPC: "2.0", Method: "test", Params: json.RawMessage(`{}`)}
-		data, _ := json.Marshal(notif)
+
+		data, err := json.Marshal(notif)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		_, _ = fmt.Fprintf(stdoutW, "%s\n", data)
 	}
 
@@ -409,12 +435,22 @@ func TestClient_ReadLoop_ResponseWithoutPending(t *testing.T) {
 
 	// Send a response with an ID that nobody is waiting for.
 	resp := Response{JSONRPC: "2.0", ID: 99999, Result: json.RawMessage(`{}`)}
-	data, _ := json.Marshal(resp)
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	_, _ = fmt.Fprintf(pluginW, "%s\n", data)
 
 	// Send a notification to verify the readLoop is still working.
 	notif := Notification{JSONRPC: "2.0", Method: "alive"}
-	data, _ = json.Marshal(notif)
+
+	data, err = json.Marshal(notif)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	_, _ = fmt.Fprintf(pluginW, "%s\n", data)
 
 	select {

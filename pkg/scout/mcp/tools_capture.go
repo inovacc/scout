@@ -48,11 +48,14 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 
 	addTracedTool(server, &mcp.Tool{
 		Name:        "snapshot",
-		Description: "Get the accessibility tree of the current page",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"interactableOnly":{"type":"boolean","description":"only include interactable elements"}}}`),
+		Description: "Get the accessibility tree of the current page. Lightweight alternative to screenshot for AI reasoning about page structure.",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{"interactableOnly":{"type":"boolean","description":"only include interactable elements (buttons, links, inputs)"},"maxDepth":{"type":"integer","description":"maximum tree depth (0 = unlimited)"},"iframes":{"type":"boolean","description":"include iframe content in the tree"},"filter":{"type":"string","description":"filter nodes by role or name substring"}}}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		var args struct {
-			InteractableOnly bool `json:"interactableOnly"`
+			InteractableOnly bool   `json:"interactableOnly"`
+			MaxDepth         int    `json:"maxDepth"`
+			Iframes          bool   `json:"iframes"`
+			Filter           string `json:"filter"`
 		}
 
 		_ = json.Unmarshal(req.Params.Arguments, &args)
@@ -65,6 +68,18 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 		var opts []scout.SnapshotOption
 		if args.InteractableOnly {
 			opts = append(opts, scout.WithSnapshotInteractableOnly())
+		}
+
+		if args.MaxDepth > 0 {
+			opts = append(opts, scout.WithSnapshotMaxDepth(args.MaxDepth))
+		}
+
+		if args.Iframes {
+			opts = append(opts, scout.WithSnapshotIframes())
+		}
+
+		if args.Filter != "" {
+			opts = append(opts, scout.WithSnapshotFilter(args.Filter))
 		}
 
 		snap, err := page.SnapshotWithOptions(opts...)

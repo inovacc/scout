@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 )
 
 // Manifest describes a plugin's capabilities and how to launch it.
 type Manifest struct {
-	Name        string           `json:"name"`
-	Version     string           `json:"version"`
-	Description string           `json:"description"`
-	Author      string           `json:"author,omitempty"`
-	Command     string           `json:"command"`
-	Capabilities []string        `json:"capabilities"`
-	Modes       []ModeEntry      `json:"modes,omitempty"`
-	Extractors  []ExtractorEntry `json:"extractors,omitempty"`
-	Tools       []ToolEntry      `json:"tools,omitempty"`
+	Name         string           `json:"name"`
+	Version      string           `json:"version"`
+	Description  string           `json:"description"`
+	Author       string           `json:"author,omitempty"`
+	Command      string           `json:"command"`
+	Capabilities []string         `json:"capabilities"`
+	Modes        []ModeEntry      `json:"modes,omitempty"`
+	Extractors   []ExtractorEntry `json:"extractors,omitempty"`
+	Tools        []ToolEntry      `json:"tools,omitempty"`
 
 	// Dir is the directory containing the manifest (set during loading).
 	Dir string `json:"-"`
@@ -93,14 +94,8 @@ func (m *Manifest) validate() error {
 }
 
 // HasCapability returns true if the manifest declares the given capability.
-func (m *Manifest) HasCapability(cap string) bool {
-	for _, c := range m.Capabilities {
-		if c == cap {
-			return true
-		}
-	}
-
-	return false
+func (m *Manifest) HasCapability(capability string) bool {
+	return slices.Contains(m.Capabilities, capability)
 }
 
 // CommandPath returns the absolute path to the plugin command.

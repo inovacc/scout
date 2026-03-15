@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -18,10 +19,10 @@ func TestLatestChromiumRevision_MockEndpoint(t *testing.T) {
 	t.Helper()
 
 	tests := []struct {
-		name       string
-		handler    http.HandlerFunc
-		wantRev    int
-		wantOK     bool
+		name    string
+		handler http.HandlerFunc
+		wantRev int
+		wantOK  bool
 	}{
 		{
 			name: "valid_revision",
@@ -83,6 +84,7 @@ func TestLatestChromiumRevision_MockEndpoint(t *testing.T) {
 			if ok != tc.wantOK {
 				t.Errorf("ok = %v, want %v", ok, tc.wantOK)
 			}
+
 			if rev != tc.wantRev {
 				t.Errorf("rev = %d, want %d", rev, tc.wantRev)
 			}
@@ -104,11 +106,14 @@ func parseLastChange(t *testing.T, url string) (int, bool) {
 		if resp != nil {
 			_ = resp.Body.Close()
 		}
+
 		return 0, false
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	var buf [20]byte
+
 	n, _ := resp.Body.Read(buf[:])
 	body := strings.TrimSpace(string(buf[:n]))
 
@@ -130,11 +135,11 @@ func TestLatestChromeForTesting_MockAPI(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		handler   http.HandlerFunc
-		wantVer   string
-		wantURL   string
-		wantErr   bool
+		name    string
+		handler http.HandlerFunc
+		wantVer string
+		wantURL string
+		wantErr bool
 	}{
 		{
 			name: "valid_response",
@@ -151,8 +156,13 @@ func TestLatestChromeForTesting_MockAPI(t *testing.T) {
 						},
 					},
 				}
+
 				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(resp)
+
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			},
 			wantVer: "130.0.6723.58",
 			wantURL: "https://example.com/chrome.zip",
@@ -169,7 +179,10 @@ func TestLatestChromeForTesting_MockAPI(t *testing.T) {
 						},
 					},
 				}
-				_ = json.NewEncoder(w).Encode(resp)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			},
 			wantErr: true,
 		},
@@ -188,7 +201,10 @@ func TestLatestChromeForTesting_MockAPI(t *testing.T) {
 						},
 					},
 				}
-				_ = json.NewEncoder(w).Encode(resp)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			},
 			wantErr: true,
 		},
@@ -218,14 +234,18 @@ func TestLatestChromeForTesting_MockAPI(t *testing.T) {
 				if err == nil {
 					t.Error("expected error, got nil")
 				}
+
 				return
 			}
+
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
+
 			if ver != tc.wantVer {
 				t.Errorf("version = %q, want %q", ver, tc.wantVer)
 			}
+
 			if dlURL != tc.wantURL {
 				t.Errorf("url = %q, want %q", dlURL, tc.wantURL)
 			}
@@ -246,6 +266,7 @@ func parseChromeForTesting(t *testing.T, apiURL, wantPlatform string) (string, s
 	if err != nil {
 		return "", "", err
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -315,7 +336,10 @@ func TestLatestEdgeRelease_MockAPI(t *testing.T) {
 						},
 					},
 				}
-				_ = json.NewEncoder(w).Encode(resp)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			},
 			wantVer: "130.0.2849.46",
 			wantURL: "https://example.com/edge.msi",
@@ -327,7 +351,10 @@ func TestLatestEdgeRelease_MockAPI(t *testing.T) {
 				resp := []map[string]any{
 					{"Product": "Beta", "Releases": []any{}},
 				}
-				_ = json.NewEncoder(w).Encode(resp)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			},
 			wantErr: true,
 		},
@@ -347,7 +374,10 @@ func TestLatestEdgeRelease_MockAPI(t *testing.T) {
 						},
 					},
 				}
-				_ = json.NewEncoder(w).Encode(resp)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			},
 			wantErr: true,
 		},
@@ -384,14 +414,18 @@ func TestLatestEdgeRelease_MockAPI(t *testing.T) {
 				if err == nil {
 					t.Error("expected error, got nil")
 				}
+
 				return
 			}
+
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
+
 			if ver != tc.wantVer {
 				t.Errorf("version = %q, want %q", ver, tc.wantVer)
 			}
+
 			if dlURL != tc.wantURL {
 				t.Errorf("url = %q, want %q", dlURL, tc.wantURL)
 			}
@@ -426,6 +460,7 @@ func parseEdgeUpdates(t *testing.T, apiURL, wantPlatform, wantArch string) (stri
 	if err != nil {
 		return "", "", err
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -453,10 +488,12 @@ func parseEdgeUpdates(t *testing.T, apiURL, wantPlatform, wantArch string) (stri
 		if p.Product != "Stable" {
 			continue
 		}
+
 		for _, r := range p.Releases {
 			if !strings.EqualFold(r.Platform, wantPlatform) || !strings.EqualFold(r.Architecture, wantArch) {
 				continue
 			}
+
 			for _, a := range r.Artifacts {
 				if isEdgeArtifact(a.ArtifactName) {
 					return r.ProductVersion, a.Location, nil
@@ -495,13 +532,7 @@ func TestChromeCfTPlatformID_NonEmpty(t *testing.T) {
 
 	// Should be one of the known CfT platform IDs.
 	known := []string{"win32", "win64", "mac-x64", "mac-arm64", "linux64"}
-	found := false
-	for _, k := range known {
-		if id == k {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(known, id)
 
 	if !found {
 		t.Logf("platform ID %q not in known set %v", id, known)
@@ -616,21 +647,30 @@ func TestLatestBraveVersion_MockVariants(t *testing.T) {
 		{
 			name: "valid_tag",
 			handler: func(w http.ResponseWriter, _ *http.Request) {
-				_ = json.NewEncoder(w).Encode(map[string]string{"tag_name": "v1.87.188"})
+				if err := json.NewEncoder(w).Encode(map[string]string{"tag_name": "v1.87.188"}); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			},
 			wantVer: "1.87.188",
 		},
 		{
 			name: "no_v_prefix",
 			handler: func(w http.ResponseWriter, _ *http.Request) {
-				_ = json.NewEncoder(w).Encode(map[string]string{"tag_name": "1.87.188"})
+				if err := json.NewEncoder(w).Encode(map[string]string{"tag_name": "1.87.188"}); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			},
 			wantVer: "1.87.188",
 		},
 		{
 			name: "empty_tag",
 			handler: func(w http.ResponseWriter, _ *http.Request) {
-				_ = json.NewEncoder(w).Encode(map[string]string{"tag_name": ""})
+				if err := json.NewEncoder(w).Encode(map[string]string{"tag_name": ""}); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			},
 			wantErr: true,
 		},
@@ -660,11 +700,14 @@ func TestLatestBraveVersion_MockVariants(t *testing.T) {
 				if err == nil {
 					t.Error("expected error")
 				}
+
 				return
 			}
+
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
+
 			if ver != tc.wantVer {
 				t.Errorf("version = %q, want %q", ver, tc.wantVer)
 			}
@@ -685,6 +728,7 @@ func parseBraveRelease(t *testing.T, apiURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -725,6 +769,7 @@ func TestDownloadFile_MultipleStatusCodes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(tc.status)
+
 				if tc.body != "" {
 					_, _ = w.Write([]byte(tc.body))
 				}
@@ -736,13 +781,12 @@ func TestDownloadFile_MultipleStatusCodes(t *testing.T) {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
+
 				if string(data) != tc.body {
 					t.Errorf("body = %q, want %q", data, tc.body)
 				}
-			} else {
-				if err == nil {
-					t.Error("expected error")
-				}
+			} else if err == nil {
+				t.Error("expected error")
 			}
 		})
 	}

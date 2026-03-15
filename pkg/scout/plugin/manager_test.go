@@ -202,10 +202,12 @@ func TestManager_RegisterMCPTools(t *testing.T) {
 	// We can't call Register without a valid InputSchema for the SDK, so test
 	// that the manager iterates correctly by checking it creates ToolProxy instances.
 	count := 0
+
 	for _, manifest := range mgr.manifests {
 		if !manifest.HasCapability("mcp_tool") {
 			continue
 		}
+
 		for range manifest.Tools {
 			count++
 		}
@@ -265,6 +267,7 @@ func TestManager_GetExtractor_NoCapability(t *testing.T) {
 
 func TestManager_Discover_InvalidManifest(t *testing.T) {
 	dir := t.TempDir()
+
 	pluginDir := filepath.Join(dir, "bad-plugin")
 	if err := os.MkdirAll(pluginDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -356,6 +359,7 @@ func TestExtractorProxy_Extract_Success(t *testing.T) {
 		started:  true,
 	}
 	client.scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
+
 	go client.readLoop()
 
 	mgr := NewManager(nil, nil)
@@ -364,16 +368,20 @@ func TestExtractorProxy_Extract_Success(t *testing.T) {
 	go func() {
 		scanner := bufio.NewScanner(stdinR)
 		encoder := json.NewEncoder(stdoutW)
+
 		for scanner.Scan() {
 			var req Request
 			if err := json.Unmarshal(scanner.Bytes(), &req); err != nil {
 				continue
 			}
-			_ = encoder.Encode(&Response{
+
+			if err := encoder.Encode(&Response{
 				JSONRPC: "2.0",
 				ID:      req.ID,
 				Result:  json.RawMessage(`{"title":"Test Page"}`),
-			})
+			}); err != nil {
+				return
+			}
 		}
 	}()
 
@@ -419,6 +427,7 @@ func TestExtractorProxy_Extract_RPCError(t *testing.T) {
 		started:  true,
 	}
 	client.scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
+
 	go client.readLoop()
 
 	mgr := NewManager(nil, nil)
@@ -427,16 +436,20 @@ func TestExtractorProxy_Extract_RPCError(t *testing.T) {
 	go func() {
 		scanner := bufio.NewScanner(stdinR)
 		encoder := json.NewEncoder(stdoutW)
+
 		for scanner.Scan() {
 			var req Request
 			if err := json.Unmarshal(scanner.Bytes(), &req); err != nil {
 				continue
 			}
-			_ = encoder.Encode(&Response{
+
+			if err := encoder.Encode(&Response{
 				JSONRPC: "2.0",
 				ID:      req.ID,
 				Error:   &RPCError{Code: CodeInternalError, Message: "extraction failed"},
-			})
+			}); err != nil {
+				return
+			}
 		}
 	}()
 

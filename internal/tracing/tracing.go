@@ -73,5 +73,5 @@ func Start(ctx context.Context, name string, attrs ...attribute.KeyValue) (conte
 		opts = append(opts, trace.WithAttributes(attrs...))
 	}
 
-	return Tracer().Start(ctx, name, opts...)
+	return Tracer().Start(ctx, name, opts...) //nolint:spancheck // caller manages span lifecycle
 }

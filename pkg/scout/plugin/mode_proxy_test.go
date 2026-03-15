@@ -73,6 +73,7 @@ func setupModeProxyWithMock(t *testing.T, handler func(req *Request) *Response) 
 		started:  true,
 	}
 	client.scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
+
 	go client.readLoop()
 
 	mgr := NewManager(nil, nil)
@@ -99,6 +100,7 @@ func TestModeProxy_Scrape_BatchResults(t *testing.T) {
 			{Source: "test", ID: "2"},
 		}
 		data, _ := json.Marshal(results)
+
 		return &Response{JSONRPC: "2.0", ID: req.ID, Result: data}
 	})
 
@@ -110,7 +112,7 @@ func TestModeProxy_Scrape_BatchResults(t *testing.T) {
 		t.Fatalf("Scrape() error: %v", err)
 	}
 
-	var results []scraper.Result
+	var results []scraper.Result //nolint:prealloc // length unknown; results streamed from channel
 	for r := range ch {
 		results = append(results, r)
 	}
@@ -124,6 +126,7 @@ func TestModeProxy_Scrape_SingleResult(t *testing.T) {
 	proxy := setupModeProxyWithMock(t, func(req *Request) *Response {
 		result := scraper.Result{Source: "test", ID: "single"}
 		data, _ := json.Marshal(result)
+
 		return &Response{JSONRPC: "2.0", ID: req.ID, Result: data}
 	})
 
@@ -135,7 +138,7 @@ func TestModeProxy_Scrape_SingleResult(t *testing.T) {
 		t.Fatalf("Scrape() error: %v", err)
 	}
 
-	var results []scraper.Result
+	var results []scraper.Result //nolint:prealloc // length unknown; results streamed from channel
 	for r := range ch {
 		results = append(results, r)
 	}
@@ -167,7 +170,7 @@ func TestModeProxy_Scrape_CallError(t *testing.T) {
 	}
 
 	// Channel should close with no results since Call returned error.
-	var results []scraper.Result
+	var results []scraper.Result //nolint:prealloc // length unknown; results streamed from channel
 	for r := range ch {
 		results = append(results, r)
 	}

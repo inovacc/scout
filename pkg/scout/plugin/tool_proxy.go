@@ -33,7 +33,7 @@ func (t *ToolProxy) Register(server *mcp.Server) {
 }
 
 func (t *ToolProxy) handler(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	client, err := t.manager.getClient(t.manifest)
+	client, err := t.manager.getClient(t.manifest) //nolint:contextcheck // getClient manages process lifecycle, not request context
 	if err != nil {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.TextContent{Text: fmt.Sprintf("plugin: start failed: %s", err)}},
@@ -63,7 +63,7 @@ func (t *ToolProxy) handler(ctx context.Context, req *mcp.CallToolRequest) (*mcp
 	}
 
 	if err := json.Unmarshal(result, &toolResult); err != nil {
-		return &mcp.CallToolResult{
+		return &mcp.CallToolResult{ //nolint:nilerr // graceful fallback: return raw text when JSON parse fails
 			Content: []mcp.Content{&mcp.TextContent{Text: string(result)}},
 		}, nil
 	}

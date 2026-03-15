@@ -122,6 +122,7 @@ func TestManifest_CommandPath(t *testing.T) {
 	}
 
 	absCmd := filepath.Join(os.TempDir(), "plugin")
+
 	m2 := &Manifest{Command: absCmd, Dir: "/tmp"}
 	if m2.CommandPath() != absCmd {
 		t.Errorf("absolute command should be returned as-is, got %q", m2.CommandPath())

@@ -56,6 +56,7 @@ const (
 // NewRequest creates a new JSON-RPC 2.0 request with an auto-incremented ID.
 func NewRequest(method string, params any) (*Request, error) {
 	var raw json.RawMessage
+
 	if params != nil {
 		data, err := json.Marshal(params)
 		if err != nil {
@@ -76,6 +77,7 @@ func NewRequest(method string, params any) (*Request, error) {
 // NewNotification creates a JSON-RPC 2.0 notification.
 func NewNotification(method string, params any) (*Notification, error) {
 	var raw json.RawMessage
+
 	if params != nil {
 		data, err := json.Marshal(params)
 		if err != nil {
@@ -94,12 +96,12 @@ func NewNotification(method string, params any) (*Notification, error) {
 
 // message is used by the decoder to determine if a line is a request, response, or notification.
 type message struct {
-	JSONRPC string           `json:"jsonrpc"`
-	ID      *int64           `json:"id,omitempty"`
-	Method  string           `json:"method,omitempty"`
-	Params  json.RawMessage  `json:"params,omitempty"`
-	Result  json.RawMessage  `json:"result,omitempty"`
-	Error   *RPCError        `json:"error,omitempty"`
+	JSONRPC string          `json:"jsonrpc"`
+	ID      *int64          `json:"id,omitempty"`
+	Method  string          `json:"method,omitempty"`
+	Params  json.RawMessage `json:"params,omitempty"`
+	Result  json.RawMessage `json:"result,omitempty"`
+	Error   *RPCError       `json:"error,omitempty"`
 }
 
 // IsRequest returns true if the message has both an ID and a method.

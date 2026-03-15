@@ -46,6 +46,7 @@ func TestInit_WithExporter(t *testing.T) {
 
 	ctx, span := Start(context.Background(), "test-span")
 	_ = ctx
+
 	span.End()
 
 	spans := exp.GetSpans()
@@ -63,13 +64,16 @@ func TestMCPToolSpan_Success(t *testing.T) {
 
 	ctx, finish := MCPToolSpan(context.Background(), "navigate")
 	_ = ctx
+
 	finish(nil)
 
 	spans := exp.GetSpans()
 	found := false
+
 	for _, s := range spans {
 		if s.Name == "mcp.tool.navigate" {
 			found = true
+
 			if s.Status.Code != codes.Ok {
 				t.Errorf("status = %v, want Ok", s.Status.Code)
 			}
@@ -86,13 +90,16 @@ func TestMCPToolSpan_Error(t *testing.T) {
 
 	ctx, finish := MCPToolSpan(context.Background(), "click")
 	_ = ctx
+
 	finish(errors.New("element not found"))
 
 	spans := exp.GetSpans()
 	found := false
+
 	for _, s := range spans {
 		if s.Name == "mcp.tool.click" {
 			found = true
+
 			if s.Status.Code != codes.Error {
 				t.Errorf("status = %v, want Error", s.Status.Code)
 			}
@@ -109,13 +116,16 @@ func TestScraperSpan(t *testing.T) {
 
 	ctx, finish := ScraperSpan(context.Background(), "google")
 	_ = ctx
+
 	finish(5, nil)
 
 	spans := exp.GetSpans()
 	found := false
+
 	for _, s := range spans {
 		if s.Name == "scraper.scrape" {
 			found = true
+
 			for _, attr := range s.Attributes {
 				if string(attr.Key) == "scraper.items" && attr.Value.AsInt64() != 5 {
 					t.Errorf("scraper.items = %d, want 5", attr.Value.AsInt64())

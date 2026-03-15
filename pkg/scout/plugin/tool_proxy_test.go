@@ -45,6 +45,7 @@ func setupToolProxyWithMock(t *testing.T, handler func(req *Request) *Response) 
 		started:  true,
 	}
 	client.scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
+
 	go client.readLoop()
 
 	mgr := NewManager(nil, nil)
@@ -105,6 +106,7 @@ func TestToolProxy_Handler_RPCError(t *testing.T) {
 	defer cancel()
 
 	callReq := &mcp.CallToolRequest{Params: &mcp.CallToolParamsRaw{Name: "greet"}}
+
 	result, err := proxy.handler(ctx, callReq)
 	if err != nil {
 		t.Fatalf("handler() should not return Go error, got: %v", err)
@@ -130,6 +132,7 @@ func TestToolProxy_Handler_ClientStartFailed(t *testing.T) {
 	defer cancel()
 
 	callReq := &mcp.CallToolRequest{Params: &mcp.CallToolParamsRaw{Name: "greet"}}
+
 	result, err := proxy.handler(ctx, callReq)
 	if err != nil {
 		t.Fatalf("handler() should not return Go error, got: %v", err)
@@ -154,6 +157,7 @@ func TestToolProxy_Handler_UnmarshalFallback(t *testing.T) {
 	defer cancel()
 
 	callReq := &mcp.CallToolRequest{Params: &mcp.CallToolParamsRaw{Name: "greet"}}
+
 	result, err := proxy.handler(ctx, callReq)
 	if err != nil {
 		t.Fatalf("handler() error: %v", err)
@@ -178,6 +182,7 @@ func TestToolProxy_Handler_EmptyContent(t *testing.T) {
 	defer cancel()
 
 	callReq := &mcp.CallToolRequest{Params: &mcp.CallToolParamsRaw{Name: "greet"}}
+
 	result, err := proxy.handler(ctx, callReq)
 	if err != nil {
 		t.Fatalf("handler() error: %v", err)
@@ -205,6 +210,7 @@ func TestToolProxy_Register(t *testing.T) {
 		started:  true,
 	}
 	client.scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
+
 	go client.readLoop()
 
 	mgr := NewManager(nil, nil)
@@ -214,16 +220,20 @@ func TestToolProxy_Register(t *testing.T) {
 	go func() {
 		scanner := bufio.NewScanner(stdinR)
 		encoder := json.NewEncoder(stdoutW)
+
 		for scanner.Scan() {
 			var req Request
 			if err := json.Unmarshal(scanner.Bytes(), &req); err != nil {
 				continue
 			}
-			_ = encoder.Encode(&Response{
+
+			if err := encoder.Encode(&Response{
 				JSONRPC: "2.0",
 				ID:      req.ID,
 				Result:  json.RawMessage(`{"content":[{"type":"text","text":"ok"}]}`),
-			})
+			}); err != nil {
+				return
+			}
 		}
 	}()
 

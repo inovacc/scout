@@ -65,6 +65,7 @@ func (m *Manager) Discover() error {
 			}
 
 			m.logger.Warn("plugin: scan dir", "dir", dir, "error", err)
+
 			continue
 		}
 
@@ -74,6 +75,7 @@ func (m *Manager) Discover() error {
 			}
 
 			pluginDir := filepath.Join(dir, entry.Name())
+
 			manifest, err := LoadManifest(pluginDir)
 			if err != nil {
 				m.logger.Warn("plugin: load manifest", "dir", pluginDir, "error", err)
@@ -188,6 +190,7 @@ func (m *Manager) RegisterMCPTools(server *mcp.Server) {
 // ListModes returns all plugin-provided mode names.
 func (m *Manager) ListModes() []string {
 	var names []string
+
 	for _, manifest := range m.manifests {
 		for _, entry := range manifest.Modes {
 			names = append(names, entry.Name)
@@ -200,6 +203,7 @@ func (m *Manager) ListModes() []string {
 // ListExtractors returns all plugin-provided extractor names.
 func (m *Manager) ListExtractors() []string {
 	var names []string
+
 	for _, manifest := range m.manifests {
 		for _, entry := range manifest.Extractors {
 			names = append(names, entry.Name)
@@ -232,10 +236,10 @@ type extractorProxy struct {
 }
 
 func (e *extractorProxy) Name() string        { return e.entry.Name }
-func (e *extractorProxy) Description() string  { return e.entry.Description }
+func (e *extractorProxy) Description() string { return e.entry.Description }
 
 func (e *extractorProxy) Extract(ctx context.Context, html, url string, params map[string]any) (any, error) {
-	client, err := e.manager.getClient(e.manifest)
+	client, err := e.manager.getClient(e.manifest) //nolint:contextcheck // getClient manages process lifecycle, not request context
 	if err != nil {
 		return nil, fmt.Errorf("plugin: start %s: %w", e.manifest.Name, err)
 	}

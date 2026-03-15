@@ -18,11 +18,11 @@ type Client struct {
 	scanner  *bufio.Scanner
 	logger   *slog.Logger
 
-	mu       sync.Mutex
-	pending  map[int64]chan *Response
-	notify   chan *Notification
-	done     chan struct{}
-	started  bool
+	mu      sync.Mutex
+	pending map[int64]chan *Response
+	notify  chan *Notification
+	done    chan struct{}
+	started bool
 }
 
 // NewClient creates a plugin client from a manifest. The subprocess is not started until Start is called.
@@ -97,6 +97,7 @@ func (c *Client) readLoop() {
 
 		if msg.IsResponse() {
 			c.mu.Lock()
+
 			ch, ok := c.pending[*msg.ID]
 			if ok {
 				delete(c.pending, *msg.ID)
