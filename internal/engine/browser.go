@@ -296,17 +296,6 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 	switch {
 	case o.execPath != "":
 		l = l.Bin(o.execPath)
-	case o.autoDetect && o.browserType == "":
-		if o.systemBrowser {
-			if path, _, err := browser.BestDetected(); err == nil && path != "" {
-				l = l.Bin(path)
-			}
-		} else {
-			if path, err := browser.BestCached(); err == nil && path != "" {
-				l = l.Bin(path)
-			}
-		}
-		// If detection fails, fall through to rod auto-detect.
 	case o.browserType != "":
 		var (
 			binPath string
@@ -324,6 +313,19 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 		}
 
 		l = l.Bin(binPath)
+	default:
+		// No explicit browser type or exec path: prefer cached browsers
+		// over rod's legacy auto-download which may use stale validation.
+		if o.systemBrowser {
+			if path, _, err := browser.BestDetected(); err == nil && path != "" {
+				l = l.Bin(path)
+			}
+		} else {
+			if path, err := browser.BestCached(); err == nil && path != "" {
+				l = l.Bin(path)
+			}
+		}
+		// If detection fails, fall through to rod auto-detect/download.
 	}
 
 	if o.proxy != "" {
