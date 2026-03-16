@@ -11,6 +11,10 @@ import (
 )
 
 func TestCreateDestroySession(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
+
 	env := setupTestServer(t)
 	ctx := context.Background()
 
@@ -1064,6 +1068,10 @@ func TestHijack_DoubleStart(t *testing.T) {
 }
 
 func TestCreateSession_WithOptions(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
+
 	env := setupTestServer(t)
 	ctx := context.Background()
 
@@ -1092,6 +1100,10 @@ func TestCreateSession_WithOptions(t *testing.T) {
 }
 
 func TestCreateSession_WithInitialURL(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
+
 	env := setupTestServer(t)
 	ctx := context.Background()
 

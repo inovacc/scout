@@ -63,9 +63,13 @@ func setupTestServer(t *testing.T) *testEnv {
 }
 
 // createSession is a helper that creates a headless session and skips the test
-// if the browser is unavailable.
+// if the browser is unavailable or running in -short mode.
 func (e *testEnv) createSession(t *testing.T) string {
 	t.Helper()
+
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
