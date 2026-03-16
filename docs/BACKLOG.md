@@ -14,14 +14,7 @@
 |----------|------|-------|
 | P1 | ~~Web Search MCP tool improvements~~ | Done — `search_and_extract` already uses goroutines + WaitGroup for parallel fetch |
 | P2 | ~~Step-by-Step Guide Generator~~ | Done — `pkg/scout/guide/` with Recorder, Step, Guide, RenderMarkdown |
-| P2 | Deprecate `pkg/scout/recipe/` package | Still imported as compat aliases; plan removal after 2026-04-15 |
-
-### DEPRECATION: `pkg/scout/recipe/`
-
-- **Status:** Deprecated (compat aliases pointing to `pkg/scout/runbook/`)
-- **Removal date:** After 2026-04-15
-- **Migration:** Replace all imports of `pkg/scout/recipe` with `pkg/scout/runbook`. The recipe package re-exports runbook types unchanged.
-- **Tracking:** Update consumers before removal date; drop package in a dedicated cleanup commit.
+| P2 | ~~Deprecate `pkg/scout/recipe/` package~~ | Done — removed 2026-03-16, consumers migrated to `runbook` directly |
 
 ## Completed Items (Archive)
 

@@ -157,7 +157,7 @@
 ### MCP Server (34 Tools)
 
 - **Status:** Completed
-- **Description:** Model Context Protocol server exposing Scout browser automation as 34 LLM-callable tools across 7 categories: Browser (navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open), Content (markdown, table, meta, pdf, search, fetch, search_and_extract), Network (cookie, header, block, ping, curl), Forms (form_detect, form_fill, form_submit), Analysis (crawl, detect), Inspection (storage, hijack, har, swagger), Session (session_list, session_reset). 3 resources: scout://page/markdown, scout://page/url, scout://page/title. Supports stdio and HTTP+SSE transport. CLI `scout mcp`, `scout mcp --install`, `scout mcp screenshot`, `scout mcp open`. Implemented in `pkg/scout/mcp/`.
+- **Description:** Model Context Protocol server exposing Scout browser automation as 37 LLM-callable tools across 8 categories: Browser (navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open), Content (markdown, table, meta, pdf, search, fetch, search_and_extract), Network (cookie, header, block, ping, curl), Forms (form_detect, form_fill, form_submit), Analysis (crawl, detect), Inspection (storage, hijack, har, swagger), Session (session_list, session_reset). 3 resources: scout://page/markdown, scout://page/url, scout://page/title. Supports stdio and HTTP+SSE transport. CLI `scout mcp`, `scout mcp --install`, `scout mcp screenshot`, `scout mcp open`. Implemented in `pkg/scout/mcp/`.
 
 ### Multi-Tab Orchestration
 

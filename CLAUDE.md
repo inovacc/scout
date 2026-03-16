@@ -43,8 +43,7 @@ pkg/scout/discovery/          mDNS service discovery
 pkg/scout/browser/            Browser path resolution (public API)
 pkg/scout/guide/              Step-by-step guide recording (Recorder, Guide, RenderMarkdown)
 pkg/scout/runbook/            Runbook system (extract + automate + analyze + Plan/Apply)
-pkg/scout/recipe/             Deprecated compat aliases → runbook package
-pkg/scout/mcp/                MCP server (34 tools, 3 resources, stdio + SSE transport)
+pkg/scout/mcp/                MCP server (37 tools, 3 resources, stdio + SSE transport)
 pkg/scout/plugin/             Plugin system (subprocess JSON-RPC, manager, proxies)
 pkg/scout/plugin/sdk/         Go SDK for plugin authors
 pkg/scout/scraper/            Scraper framework + AES-256-GCM auth + 19 modes

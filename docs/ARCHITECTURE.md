@@ -75,7 +75,7 @@ flowchart TB
     end
 
     subgraph MCP["MCP Server (pkg/scout/mcp/)"]
-        MCPServer["MCP Server\n(34 tools, 3 resources)\n11 handler files"]
+        MCPServer["MCP Server\n(37 tools, 3 resources)\n12 handler files"]
         MCPTransport["stdio / SSE\n(server.go)"]
     end
 
@@ -157,9 +157,10 @@ Each handler file implements a `register*Tools(server *mcp.Server, state *mcpSta
 | `tools_analysis.go` | `registerAnalysisTools` | crawl, detect (2) |
 | `tools_inspect.go` | `registerInspectTools` | storage, hijack, har, swagger (4) |
 | `diag.go` | `registerDiagTools` | ping, curl (2) |
+| `tools_guide.go` | `registerGuideTools` | guide_start, guide_step, guide_finish (3) |
 | `resources.go` | `registerResources` | markdown, url, title (3 resources) |
 
-**Total: 34 tools + 3 resources across 11 handler files**
+**Total: 37 tools + 3 resources across 12 handler files**
 
 ### Organization Principles
 
