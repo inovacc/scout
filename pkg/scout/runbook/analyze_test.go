@@ -297,6 +297,9 @@ func TestGenerateRunbook_ForceType(t *testing.T) {
 }
 
 func TestGenerateRunbook_Validate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
 
@@ -318,6 +321,9 @@ func TestGenerateRunbook_Validate(t *testing.T) {
 }
 
 func TestGenerateRunbook_RunEndToEnd(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
 	ts := newAnalyzeServer(t)
 	defer ts.Close()
 

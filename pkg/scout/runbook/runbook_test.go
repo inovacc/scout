@@ -361,6 +361,9 @@ func TestRun_UnknownType(t *testing.T) {
 // ── runExtract (browser tests) ─────────────────────────────────────────────
 
 func TestRunExtract_BasicFields(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
 	ts := newTestServer()
 	defer ts.Close()
 

@@ -177,6 +177,9 @@ func TestSnapshotMaxDepth(t *testing.T) {
 }
 
 func TestSnapshotMaxDepthOne(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
 	ts := newTestHTTPServer()
 	defer ts.Close()
 
@@ -310,6 +313,9 @@ func TestSnapshotCombinedOptions(t *testing.T) {
 }
 
 func TestScreenshotWithSelector(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
 	ts := newTestHTTPServer()
 	defer ts.Close()
 
@@ -339,6 +345,9 @@ func TestScreenshotWithSelector(t *testing.T) {
 }
 
 func TestPDFToolScale(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
 	ts := newTestHTTPServer()
 	defer ts.Close()
 
@@ -367,6 +376,9 @@ func TestPDFToolScale(t *testing.T) {
 }
 
 func TestPDFToolWithOptions(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
 	ts := newTestHTTPServer()
 	defer ts.Close()
 

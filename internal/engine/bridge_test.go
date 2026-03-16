@@ -733,6 +733,9 @@ func TestBridgeDOMMarkdown(t *testing.T) {
 }
 
 func TestBridgeDOMSelector(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
 	browser := newBridgeBrowser(t)
 
 	ts := newTestServer()
