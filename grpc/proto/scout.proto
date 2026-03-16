@@ -59,6 +59,13 @@ service ScoutService {
 
   // Bidirectional: client sends commands, server streams events
   rpc Interactive(stream Command)           returns (stream BrowserEvent);
+
+  // Swarm RPCs (distributed crawling)
+  rpc JoinSwarm(JoinSwarmRequest)           returns (JoinSwarmResponse);
+  rpc LeaveSwarm(LeaveSwarmRequest)         returns (LeaveSwarmResponse);
+  rpc FetchBatch(FetchBatchRequest)         returns (FetchBatchResponse);
+  rpc SubmitResults(SubmitResultsRequest)   returns (SubmitResultsResponse);
+  rpc SwarmStatus(SwarmStatusRequest)       returns (SwarmStatusResponse);
 }
 
 // ---------------------- Messages ----------------------
@@ -352,4 +359,82 @@ message PairRequest {
 message PairResponse {
   string server_device_id = 1;  // server's device ID
   bytes  server_cert_der = 2;  // server's certificate in DER encoding
+}
+
+// -------------------- Swarm (Distributed Crawling) --------------------
+
+message JoinSwarmRequest {
+  string worker_id = 1;       // unique worker identifier
+  string proxy = 2;           // optional proxy URL this worker uses
+  map<string, string> labels = 3; // optional metadata (region, etc.)
+}
+
+message JoinSwarmResponse {
+  bool   accepted = 1;
+  string message = 2;         // human-readable status or rejection reason
+  int32  batch_size = 3;      // coordinator-assigned batch size for this worker
+  int32  heartbeat_interval_ms = 4; // how often the worker should call FetchBatch
+}
+
+message LeaveSwarmRequest {
+  string worker_id = 1;
+}
+
+message LeaveSwarmResponse {
+  bool   acknowledged = 1;
+  int32  urls_requeued = 2;   // how many in-flight URLs were returned to the queue
+}
+
+message FetchBatchRequest {
+  string worker_id = 1;
+  int32  max_urls = 2;        // max URLs the worker wants (0 = use coordinator default)
+}
+
+message FetchBatchResponse {
+  repeated CrawlURL urls = 1;
+  bool   drain = 2;           // true when queue is empty and no more URLs expected
+}
+
+message CrawlURL {
+  string url = 1;
+  int32  depth = 2;
+  string domain = 3;
+}
+
+message SubmitResultsRequest {
+  string worker_id = 1;
+  repeated CrawlResultEntry results = 2;
+}
+
+message CrawlResultEntry {
+  string url = 1;
+  int32  status_code = 2;
+  string error = 3;
+  repeated string discovered_urls = 4;
+  string data_json = 5;       // JSON-encoded extracted data
+  double duration_ms = 6;
+}
+
+message SubmitResultsResponse {
+  int32  accepted = 1;        // number of results accepted
+  int32  new_urls_queued = 2; // number of discovered URLs added to the queue
+}
+
+message SwarmStatusRequest {}
+
+message SwarmStatusResponse {
+  int32  total_workers = 1;
+  int32  active_workers = 2;
+  int64  urls_queued = 3;
+  int64  urls_processed = 4;
+  int64  urls_failed = 5;
+  repeated SwarmWorkerInfo workers = 6;
+}
+
+message SwarmWorkerInfo {
+  string worker_id = 1;
+  string status = 2;          // "idle", "busy", "disconnected"
+  string proxy = 3;
+  int64  processed = 4;
+  int64  last_seen_unix = 5;  // unix timestamp of last heartbeat
 }
