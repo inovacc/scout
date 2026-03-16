@@ -209,6 +209,26 @@
 - **Status:** Completed
 - **Description:** Fine-grained accessibility tree control with `maxDepth`, `iframes`, and `filter` options. `maxDepth` limits tree traversal depth, `iframes` includes cross-origin iframe content, and `filter` restricts output to matching node roles or names. Provides more targeted accessibility snapshots for LLM consumption.
 
+### Step-by-Step Guide Generator
+
+- **Status:** Completed
+- **Description:** Record browser sessions into step-by-step how-to guides. `Recorder` captures actions as `Step` entries (action, selector, value, screenshot path), produces a `Guide` struct rendered to Markdown via `RenderMarkdown()`. Implemented in `pkg/scout/guide/`.
+
+### Session Startup Cleanup
+
+- **Status:** Completed
+- **Description:** `CleanStaleSessions()` runs automatically on every `scout` invocation to remove leftover session directories. Removes non-reusable sessions unconditionally, dead reusable sessions, and orphaned directories without `scout.pid`. Kills orphaned browser processes. Retries removal 3× with 200ms delays for Windows file locks. Implemented in `internal/engine/session/session_track.go`, called from `cmd/scout/scout.go`.
+
+### Session Directory Restructure
+
+- **Status:** Completed
+- **Description:** Session directories restructured from flat `<hash>/` (mixed browser data and metadata) to `<hash>/{scout.pid, job.json, data/}` separating session metadata from the Chrome user-data-dir. `DataDir(id)` returns the `data/` subdirectory path. `SessionDataDir(id)` exposed via engine and public facades. Implemented in `internal/engine/session/session_track.go`.
+
+### Job Tracking
+
+- **Status:** Completed
+- **Description:** `job.json` metadata file tracks session jobs with type, status (pending/running/completed/failed), progress (current/total/message), steps, timestamps, and output. `NewJob()`, `WriteJob()`, `StartJob()`, `CompleteJob()`, `FailJob()`, `AddJobStep()`, `UpdateJobProgress()` API. Implemented in `internal/engine/session/job.go`.
+
 ## Proposed Features
 
 ### Distributed Crawling (Swarm Mode)

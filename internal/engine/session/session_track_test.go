@@ -265,6 +265,21 @@ func TestDir(t *testing.T) {
 	}
 }
 
+func TestDataDir(t *testing.T) {
+	dir := t.TempDir()
+	origFunc := SessionsDir
+	SessionsDir = func() string { return dir }
+
+	defer func() { SessionsDir = origFunc }()
+
+	got := DataDir("test-session")
+	want := filepath.Join(dir, "test-session", "data")
+
+	if got != want {
+		t.Errorf("DataDir(test-session) = %q, want %q", got, want)
+	}
+}
+
 func TestReset(t *testing.T) {
 	dir := t.TempDir()
 	origFunc := SessionsDir
@@ -390,6 +405,133 @@ func TestStartOrphanWatchdog(t *testing.T) {
 
 	// Give goroutine time to exit.
 	time.Sleep(20 * time.Millisecond)
+}
+
+func TestCleanStaleSessions(t *testing.T) {
+	dir := t.TempDir()
+	origFunc := SessionsDir
+	SessionsDir = func() string { return dir }
+
+	defer func() { SessionsDir = origFunc }()
+
+	now := time.Now()
+
+	// 1. Orphaned dir with no scout.pid — should be removed.
+	orphanDir := filepath.Join(dir, "orphan-no-pid")
+	if err := os.MkdirAll(orphanDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	_ = os.WriteFile(filepath.Join(orphanDir, "data.txt"), []byte("leftover"), 0o644)
+
+	// 2. Non-reusable session with dead scout PID — should be removed.
+	_ = WriteInfo("dead-nonreusable", &SessionInfo{
+		ScoutPID:   999999999,
+		BrowserPID: 999999998,
+		Browser:    "chrome",
+		CreatedAt:  now,
+		LastUsed:   now,
+		Reusable:   false,
+	})
+
+	// 3. Non-reusable session with live scout PID — should STILL be removed
+	//    (non-reusable sessions are always cleaned on startup).
+	_ = WriteInfo("live-nonreusable", &SessionInfo{
+		ScoutPID:   os.Getpid(),
+		BrowserPID: 0,
+		Browser:    "chrome",
+		CreatedAt:  now,
+		LastUsed:   now,
+		Reusable:   false,
+	})
+
+	// 4. Reusable session with dead PIDs — should be removed.
+	_ = WriteInfo("dead-reusable", &SessionInfo{
+		ScoutPID:   999999997,
+		BrowserPID: 999999996,
+		Browser:    "chrome",
+		CreatedAt:  now,
+		LastUsed:   now,
+		Reusable:   true,
+	})
+
+	// 5. Reusable session with live scout PID — should be kept.
+	_ = WriteInfo("live-reusable", &SessionInfo{
+		ScoutPID:   os.Getpid(),
+		BrowserPID: 0,
+		Browser:    "chrome",
+		CreatedAt:  now,
+		LastUsed:   now,
+		Reusable:   true,
+	})
+
+	cleaned, err := CleanStaleSessions()
+	if err != nil {
+		t.Fatalf("CleanStaleSessions: %v", err)
+	}
+
+	// Should clean: orphan-no-pid, dead-nonreusable, live-nonreusable, dead-reusable = 4.
+	if cleaned != 4 {
+		t.Errorf("CleanStaleSessions cleaned %d, want 4", cleaned)
+	}
+
+	// Verify orphan dir is gone.
+	if _, err := os.Stat(orphanDir); !os.IsNotExist(err) {
+		t.Error("orphan-no-pid dir should be removed")
+	}
+
+	// Verify dead non-reusable is gone.
+	if _, err := os.Stat(Dir("dead-nonreusable")); !os.IsNotExist(err) {
+		t.Error("dead-nonreusable should be removed")
+	}
+
+	// Verify live non-reusable is also gone (not explicitly persistent).
+	if _, err := os.Stat(Dir("live-nonreusable")); !os.IsNotExist(err) {
+		t.Error("live-nonreusable should be removed (not reusable)")
+	}
+
+	// Verify dead reusable is gone.
+	if _, err := os.Stat(Dir("dead-reusable")); !os.IsNotExist(err) {
+		t.Error("dead-reusable should be removed")
+	}
+
+	// Verify live reusable is kept.
+	if _, err := os.Stat(Dir("live-reusable")); err != nil {
+		t.Error("live-reusable should be kept")
+	}
+}
+
+func TestCleanStaleSessionsEmptyDir(t *testing.T) {
+	dir := t.TempDir()
+	origFunc := SessionsDir
+	SessionsDir = func() string { return dir }
+
+	defer func() { SessionsDir = origFunc }()
+
+	cleaned, err := CleanStaleSessions()
+	if err != nil {
+		t.Fatalf("CleanStaleSessions: %v", err)
+	}
+
+	if cleaned != 0 {
+		t.Errorf("expected 0, got %d", cleaned)
+	}
+}
+
+func TestCleanStaleSessionsNonexistentDir(t *testing.T) {
+	origFunc := SessionsDir
+	SessionsDir = func() string { return filepath.Join(t.TempDir(), "nonexistent") }
+
+	defer func() { SessionsDir = origFunc }()
+
+	cleaned, err := CleanStaleSessions()
+	if err != nil {
+		t.Fatalf("CleanStaleSessions: %v", err)
+	}
+
+	if cleaned != 0 {
+		t.Errorf("expected 0, got %d", cleaned)
+	}
 }
 
 func TestProcessAlive(t *testing.T) {

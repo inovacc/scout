@@ -320,6 +320,7 @@ func CaptureCredentials(ctx context.Context, url string, opts ...Option) (*Captu
 func CaptureProfile(page *Page, opts ...ProfileOption) (*UserProfile, error) { return engine.CaptureProfile(page, opts...) }
 func ChromiumDownloadURLs(revision int) []string { return browser.ChromiumDownloadURLs(revision) }
 func CleanOrphans() (int, error) { return engine.CleanOrphans() }
+func CleanStaleSessions() (int, error) { return engine.CleanStaleSessions() }
 func ConvertHTMLToMarkdown(rawHTML string, opts ...MarkdownOption) (string, error) { return engine.ConvertHTMLToMarkdown(rawHTML, opts...) }
 func DetectBrowsers() []DetectedBrowser { return browser.DetectBrowsers() }
 func DiffProfiles(a, b *UserProfile) ProfileDiff { return engine.DiffProfiles(a, b) }
@@ -416,6 +417,7 @@ func SaveProfile(p *UserProfile, path string) error { return engine.SaveProfile(
 func SaveProfileEncrypted(p *UserProfile, path, passphrase string) error { return engine.SaveProfileEncrypted(p, path, passphrase) }
 func SaveSessionToFile(state *SessionState, path string) error { return engine.SaveSessionToFile(state, path) }
 func SaveUploadConfig(cfg *UploadConfig) error { return engine.SaveUploadConfig(cfg) }
+func SessionDataDir(id string) string { return engine.SessionDataDir(id) }
 func SessionDir(id string) string { return engine.SessionDir(id) }
 func SessionHash(rawURL, label string) string { return engine.SessionHash(rawURL, label) }
 func SessionsDir() string { return engine.SessionsDir() }

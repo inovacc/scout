@@ -61,6 +61,13 @@ func Dir(id string) string {
 	return filepath.Join(GetSessionsDir(), id)
 }
 
+// DataDir returns the browser user-data directory for a given session ID.
+// This is the subdirectory where Chrome stores its profile data, separated
+// from session metadata (scout.pid, job.json) at the parent level.
+func DataDir(id string) string {
+	return filepath.Join(GetSessionsDir(), id, "data")
+}
+
 // WriteInfo writes the session info as JSON to <SessionsDir>/<id>/scout.pid.
 func WriteInfo(id string, info *SessionInfo) error {
 	dir := Dir(id)
@@ -272,6 +279,78 @@ func ResetAll() (int, error) {
 	}
 
 	return removed, nil
+}
+
+// CleanStaleSessions removes leftover session directories on startup.
+// It removes:
+//   - All non-reusable sessions unconditionally (kills browser if still alive)
+//   - Reusable sessions where both scout and browser processes are dead
+//   - Orphaned directories that have no scout.pid file at all
+//
+// Only explicitly reusable sessions with a live process are preserved.
+// Returns the number of sessions cleaned.
+func CleanStaleSessions() (int, error) {
+	sessDir := GetSessionsDir()
+
+	entries, err := os.ReadDir(sessDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+
+		return 0, fmt.Errorf("scout: read sessions dir: %w", err)
+	}
+
+	cleaned := 0
+
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+
+		id := e.Name()
+		info, err := ReadInfo(id)
+
+		// No scout.pid — orphaned directory, remove it.
+		if err != nil {
+			if removeErr := os.RemoveAll(filepath.Join(sessDir, id)); removeErr == nil {
+				cleaned++
+			}
+
+			continue
+		}
+
+		// Reusable sessions are preserved if any owning process is still alive.
+		if info.Reusable {
+			if info.ScoutPID != 0 && ProcessAlive(info.ScoutPID) {
+				continue
+			}
+
+			if info.BrowserPID != 0 && ProcessAlive(info.BrowserPID) {
+				continue
+			}
+		}
+
+		// Non-reusable session or dead reusable — kill orphaned browser.
+		if info.BrowserPID != 0 && ProcessAlive(info.BrowserPID) {
+			if p, err := os.FindProcess(info.BrowserPID); err == nil {
+				_ = p.Kill()
+			}
+		}
+
+		// Retry removal for Windows file locks.
+		for range 3 {
+			if err := os.RemoveAll(filepath.Join(sessDir, id)); err == nil {
+				cleaned++
+
+				break
+			}
+
+			time.Sleep(200 * time.Millisecond)
+		}
+	}
+
+	return cleaned, nil
 }
 
 // DefaultOrphanCheckInterval is the default interval for periodic orphan checks.

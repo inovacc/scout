@@ -24,7 +24,8 @@ import (
 
 // DefaultUserDataDirPrefix is the base directory for browser user data.
 // Resolves to ~/.scout/sessions on all platforms. Each session is a hash-based
-// subdirectory containing both browser data and a scout.pid metadata file.
+// subdirectory containing metadata (scout.pid, job.json) and a data/ subdir
+// for the browser's user-data-dir.
 var DefaultUserDataDirPrefix = defaultUserDataDirPrefix()
 
 // launcherSeq is used to generate unique directory names per launcher instance.
@@ -68,7 +69,7 @@ func New() *Launcher {
 	if dir == "" {
 		seq := launcherSeq.Add(1)
 		h := sha256.Sum256([]byte(strconv.Itoa(os.Getpid()) + "-" + strconv.FormatInt(seq, 10) + "-" + strconv.FormatInt(time.Now().UnixNano(), 10)))
-		dir = filepath.Join(DefaultUserDataDirPrefix, hex.EncodeToString(h[:12]))
+		dir = filepath.Join(DefaultUserDataDirPrefix, hex.EncodeToString(h[:12]), "data")
 	}
 
 	defaultFlags := map[flags.Flag][]string{

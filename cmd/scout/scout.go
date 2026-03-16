@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/gops/agent"
+	"github.com/inovacc/scout/internal/engine/session"
 	"github.com/inovacc/scout/internal/flags"
 	"github.com/inovacc/scout/internal/logger"
 	"github.com/inovacc/scout/internal/tracing"
@@ -84,6 +85,9 @@ func main() {
 	}
 
 	defer agent.Close()
+
+	// Clean leftover sessions from previous runs (dead processes, orphaned dirs).
+	_, _ = session.CleanStaleSessions()
 
 	shutdown, err := tracing.Init(context.Background(), tracing.Config{ServiceName: "scout"})
 	if err != nil {

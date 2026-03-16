@@ -553,8 +553,8 @@ func curlViaBrowser(ctx context.Context, state *mcpState, rawURL string) (*mcp.C
 
 	// Get page content as text.
 	bodyText := ""
-	if result, err := page.Eval(`document.documentElement.outerHTML`); err == nil {
-		bodyText = result.String()
+	if html, err := page.HTML(); err == nil {
+		bodyText = html
 		if len(bodyText) > maxBodySize {
 			bodyText = bodyText[:maxBodySize]
 		}

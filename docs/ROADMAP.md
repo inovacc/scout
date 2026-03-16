@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Core library complete through Phase 55.** All phases delivered. See git history for details.
+**Core library complete through Phase 57.** All phases delivered. See git history for details.
 
 ### Completed Phases (Summary)
 
@@ -58,6 +58,8 @@
 | 53 | Plugin System — subprocess-based extensibility via JSON-RPC 2.0, plugin discovery (`~/.scout/plugins/`, `$SCOUT_PLUGIN_PATH`), scraper mode/extractor/MCP tool proxies, Go SDK for plugin authors, CLI `scout plugin list/install/remove/run` | Done |
 | 54 | OpenTelemetry Tracing & Plugin URL Install — `internal/tracing/` package with `Init()`, `MCPToolSpan()`, `ScraperSpan()`; all 33 MCP tools auto-instrumented via `addTracedTool()` wrapper; scraper CLI instrumented; `scout plugin install <url>` downloads and extracts plugin archives; test coverage improvements for browser, MCP, and plugin packages | Done |
 | 55 | MCP Reliability & New Tools — fix screenshot/navigate timeouts (`WithTimeout(0)`, best-effort `WaitLoad`), fix session reset (close page before browser, 500ms delay), enhanced snapshot tool (`maxDepth`/iframes/filter), `search_and_extract` MCP tool, `scout connect` CLI command, resolve all 28 golangci-lint issues | Done |
+| 56 | Guide Generator & MCP Coverage — `pkg/scout/guide/` Recorder for step-by-step guides, `search_and_extract` parallel fetch, recipe→runbook deprecation aliases, MCP test coverage expansion | Done |
+| 57 | Session Lifecycle — `CleanStaleSessions()` on startup removes non-reusable/orphaned sessions, session dir restructured to `<hash>/{scout.pid, job.json, data/}` separating metadata from browser profile, `DataDir()` API, Windows file lock retries (3×200ms), `job.json` tracking for session jobs | Done |
 
 ### Remaining Work
 

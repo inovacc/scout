@@ -13,7 +13,7 @@
 | Priority | Item | Notes |
 |----------|------|-------|
 | P1 | Web Search MCP tool improvements | `search_and_extract` added in Phase 55; consider parallel fetch for multi-result extraction |
-| P2 | Step-by-Step Guide Generator | Record browser sessions into how-to docs with annotated screenshots |
+| P2 | ~~Step-by-Step Guide Generator~~ | Done — `pkg/scout/guide/` with Recorder, Step, Guide, RenderMarkdown |
 | P2 | Deprecate `pkg/scout/recipe/` package | Still imported as compat aliases; plan removal after 2026-04-15 |
 
 ### DEPRECATION: `pkg/scout/recipe/`
@@ -76,6 +76,10 @@
 | Rebrand rod references to scout | -rod to -scout, cache dir rod/ to scout/, error links updated |
 | Plugin system | Phase 53 — subprocess JSON-RPC 2.0, manager, proxies, Go SDK, CLI |
 | OpenTelemetry tracing | Phase 54 — internal/tracing/, MCPToolSpan, ScraperSpan, addTracedTool wrapper |
+| Guide generator | Phase 56 — `pkg/scout/guide/` Recorder for step-by-step how-to docs |
+| Session startup cleanup | Phase 57 — `CleanStaleSessions()` removes dead/orphaned sessions on start |
+| Session dir restructure | Phase 57 — `<hash>/{scout.pid, job.json, data/}` separates metadata from browser profile |
+| Job tracking | Phase 55 — `job.json` session job metadata (type, status, progress, steps) |
 </details>
 
 <details>

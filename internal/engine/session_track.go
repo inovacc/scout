@@ -23,6 +23,9 @@ func SessionsDir() string { return session.GetSessionsDir() }
 // SessionDir returns the directory for a given session ID.
 func SessionDir(id string) string { return session.Dir(id) }
 
+// SessionDataDir returns the browser user-data directory for a given session ID.
+func SessionDataDir(id string) string { return session.DataDir(id) }
+
 // WriteSessionInfo writes the session info as JSON to <SessionsDir>/<id>/scout.pid.
 func WriteSessionInfo(id string, info *SessionInfo) error { return session.WriteInfo(id, info) }
 
@@ -45,6 +48,9 @@ func FindReusableSession(browser string, headless bool) *SessionListing {
 
 // CleanOrphans scans for orphaned browser processes and kills them.
 func CleanOrphans() (int, error) { return session.CleanOrphans() }
+
+// CleanStaleSessions removes leftover session directories on startup.
+func CleanStaleSessions() (int, error) { return session.CleanStaleSessions() }
 
 // ResetSession removes an entire session directory.
 func ResetSession(id string) error { return session.Reset(id) }

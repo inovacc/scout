@@ -189,6 +189,38 @@ Methods:
 - `reset()`: Cleans up browser and page
 - `touch()`: Resets idle timer on activity
 
+## Session Directory Structure
+
+Sessions are stored under `~/.scout/sessions/` with metadata separated from browser data:
+
+```
+~/.scout/sessions/
+  <domain_hash>/                   # SHA-256 hash of root domain + browser label
+    scout.pid                      # SessionInfo JSON (scout_pid, browser_pid, reusable, domain, etc.)
+    job.json                       # Job metadata (type, status, progress, steps) — optional
+    data/                          # Chrome user-data-dir (browser profile data)
+      Default/                     # Chrome profile directory
+      Local State                  # Chrome local state
+      ...
+```
+
+### Session Lifecycle
+
+1. **Launch**: `SessionHash(url, browser)` generates deterministic hash → `SessionDataDir(hash)` → passed to launcher as `--user-data-dir`
+2. **Register**: `registerSession()` writes `scout.pid` with PIDs, timestamps, domain info
+3. **Cleanup on close**: Non-reusable sessions call `ResetSession()` to remove entire dir; reusable sessions preserve data
+4. **Startup cleanup**: `CleanStaleSessions()` runs in `main()` before any command:
+   - Removes dirs without `scout.pid` (orphaned)
+   - Removes non-reusable sessions unconditionally (kills browser if alive)
+   - Removes reusable sessions only when both scout + browser processes are dead
+   - Retries removal 3× with 200ms delays for Windows file locks
+
+### Session Lookup
+
+- **By domain**: `FindByDomain(url)` → direct path check via `DomainHash()`
+- **By reusability**: `FindReusable(browser, headless)` → scan all sessions
+- **Orphan detection**: `CleanOrphans()` uses `IsScoutProcess()` (gops) to avoid PID reuse false positives
+
 ## Core Library Flow
 
 ```mermaid

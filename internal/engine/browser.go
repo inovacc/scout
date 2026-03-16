@@ -259,8 +259,8 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 	// Session reuse: resolve data dir from explicit session ID, domain hash, or auto-find.
 	if o.userDataDir == "" {
 		if o.sessionID != "" {
-			// Explicit session ID — data dir is SessionsDir/<id>.
-			o.userDataDir = SessionDir(o.sessionID)
+			// Explicit session ID — data dir is SessionsDir/<id>/data.
+			o.userDataDir = SessionDataDir(o.sessionID)
 		} else if o.reusableSession {
 			// Auto-find a matching reusable session.
 			browserName := string(o.browserType)
@@ -269,7 +269,7 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 			}
 
 			if found := FindReusableSession(browserName, o.headless); found != nil {
-				o.userDataDir = found.Dir
+				o.userDataDir = SessionDataDir(found.ID)
 				o.sessionID = found.ID
 			}
 		}
@@ -283,7 +283,7 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 		}
 
 		hash := SessionHash(o.targetURL, browserName)
-		o.userDataDir = SessionDir(hash)
+		o.userDataDir = SessionDataDir(hash)
 		o.sessionID = hash
 		// If scout.pid already exists, this is a reuse.
 		if _, err := ReadSessionInfo(hash); err == nil {
@@ -680,16 +680,20 @@ func (b *Browser) Close() error {
 			}
 		}
 
-		// 7. Kill process tree and clean up temp user-data-dir.
+		// 7. Kill process tree and clean up session directory.
 		if b.launcher != nil {
 			b.launcher.Kill()
 
 			if b.opts.reusableSession && b.sessionID != "" {
-				// Do NOT call Cleanup() — it would delete the data dir.
+				// Do NOT clean up — session is persistent.
 			} else {
-				// Non-reusable: clean up data dir synchronously so the
-				// session directory is removed before the process exits.
+				// Non-reusable: remove the entire session dir (data + metadata)
+				// synchronously so it is cleaned before the process exits.
 				b.launcher.Cleanup()
+
+				if b.sessionID != "" {
+					_ = ResetSession(b.sessionID)
+				}
 			}
 
 			b.launcher = nil
@@ -736,7 +740,8 @@ func (b *Browser) registerSession() {
 		return
 	}
 
-	sessionID := filepath.Base(dataDir)
+	// The data dir is sessions/<hash>/data — session ID is the parent dir name.
+	sessionID := filepath.Base(filepath.Dir(dataDir))
 
 	browserName := string(b.opts.browserType)
 	if browserName == "" {

@@ -225,3 +225,18 @@
 - [x] Session reset fix: close page before browser + 500ms delay for OS cleanup
 - **Tag:** v0.49.0
 - **Coverage:** 20.8% overall
+
+## v0.56.0 - Phase 56–57: Guide Generator & Session Lifecycle [COMPLETE]
+
+**Goal:** Step-by-step guide recording, session startup cleanup, and directory restructure.
+
+- [x] `pkg/scout/guide/` — Recorder for capturing browser sessions as step-by-step guides with `RenderMarkdown()`
+- [x] `CleanStaleSessions()` — startup cleanup removes non-reusable/orphaned session directories
+- [x] Session dir restructured: `<hash>/{scout.pid, job.json, data/}` separates metadata from browser profile
+- [x] `DataDir(id)` / `SessionDataDir(id)` API for browser user-data directory
+- [x] `job.json` session tracking with type, status, progress, steps
+- [x] Windows file lock retries (3×200ms) in `Reset()` and `CleanStaleSessions()`
+- [x] Launcher cleanup made synchronous for non-reusable sessions
+- [x] Recipe→runbook deprecation compat aliases
+- [x] MCP test coverage expansion (ping, curl, redirect, browser tools)
+- **Coverage:** internal/engine/session 83.1% | pkg/scout/guide 100% | internal/tracing 82.7% | Total 13.0%
