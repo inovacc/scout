@@ -77,12 +77,7 @@ func (w *Worker) Connect(c *Coordinator) error {
 // Disconnect unregisters this worker from the coordinator and closes the
 // browser if one was created.
 func (w *Worker) Disconnect() error {
-	if w.browser != nil {
-		if err := w.browser.Close(); err != nil {
-			w.logger.Warn("scout: swarm: browser close error", "worker", w.ID, "error", err)
-		}
-		w.browser = nil
-	}
+	w.closeBrowser()
 
 	if w.coordinator == nil {
 		return nil
@@ -157,6 +152,14 @@ func (w *Worker) Stop() {
 	<-w.done
 }
 
+// closeBrowser safely closes and nils the browser so ensureBrowser retries.
+func (w *Worker) closeBrowser() {
+	if w.browser != nil {
+		_ = w.browser.Close()
+		w.browser = nil
+	}
+}
+
 // ensureBrowser lazily creates a browser instance with the configured options.
 func (w *Worker) ensureBrowser() error {
 	if w.browser != nil {
@@ -187,7 +190,9 @@ func (w *Worker) processBatch(ctx context.Context, batch []CrawlRequest) []Crawl
 	results := make([]CrawlResult, 0, len(batch))
 
 	if err := w.ensureBrowser(); err != nil {
-		w.logger.Error("scout: swarm: browser init failed", "worker", w.ID, "error", err)
+		// Reset so next batch retries a fresh browser launch.
+		w.closeBrowser()
+		w.logger.Error("scout: swarm: browser init failed, will retry next batch", "worker", w.ID, "error", err)
 		for _, req := range batch {
 			results = append(results, CrawlResult{
 				URL:   req.URL,
