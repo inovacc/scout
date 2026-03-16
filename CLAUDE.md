@@ -32,6 +32,7 @@ internal/engine/llm/          LLM provider interface + implementations
 internal/engine/session/      Session tracking, orphan cleanup, gops process checks
 internal/engine/stealth/      Anti-bot-detection (internalized go-rod/stealth + ExtraJS)
 internal/engine/vpn/          VPN integration (Surfshark)
+internal/engine/swarm/        Distributed crawling (coordinator, worker, domain queue)
 internal/engine/lib/          Internalized rod: launcher, CDP, proto, input, utils
 internal/flags/               Feature flag persistence (~/.cache/scout/)
 internal/logger/              Command logging (KSUID log files, stdout/stderr capture)
@@ -98,7 +99,10 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **Session cleanup**: `launcher.Cleanup()` called synchronously (not `go`) for non-reusable sessions, ensuring session dir is removed before process exits. `EnrichSessionInfo()` populates `Exec` and `BuildVersion` from gops metadata.
 - **Process platform files**: `process_windows.go` and `process_linux.go` in `internal/engine/session/` — each contains platform-specific `ProcessAlive` + shared gops-based `IsScoutProcess`/`ScoutProcessInfo`.
 - **Plugin system**: Subprocess-based plugins communicate via JSON-RPC 2.0 on stdin/stdout. `plugin.Manager` discovers from `~/.scout/plugins/*/plugin.json` and `$SCOUT_PLUGIN_PATH`. Plugins declare capabilities (`scraper_mode`, `extractor`, `mcp_tool`) in manifest. Lazy process launch. `ModeProxy` bridges `scraper.Mode`, `ToolProxy` bridges MCP tools. Go SDK in `pkg/scout/plugin/sdk/` — `NewServer()`, `RegisterMode/Extractor/Tool()`, `Run()`. CLI: `scout plugin install <path|url>` supports local dirs and archive URLs.
-- **OpenTelemetry tracing**: `internal/tracing/` package. No-op unless `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT` is set. `tracing.Init(ctx, Config{})` in CLI bootstrap. All 34 MCP tools auto-instrumented via `addTracedTool()` wrapper in `pkg/scout/mcp/server.go`. Scraper CLI uses `ScraperSpan()`. Custom spans: `tracing.Start(ctx, "name", attrs...)`.
+- **OpenTelemetry tracing**: `internal/tracing/` package. No-op unless `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT` is set. `tracing.Init(ctx, Config{})` in CLI bootstrap. All 37 MCP tools auto-instrumented via `addTracedTool()` wrapper in `pkg/scout/mcp/server.go`. Scraper CLI uses `ScraperSpan()`. Custom spans: `tracing.Start(ctx, "name", attrs...)`.
+- **Reports**: `SaveReport()` persists AI-consumable markdown to `~/.scout/reports/{uuidv7}.txt`. Three types: `health_check`, `gather`, `crawl`. Each report includes metadata, structured findings, AI analysis instructions, and embedded raw JSON. CLI: `scout test-site --report`, `scout gather --report`, `scout report list/show/delete`.
+- **Swarm mode**: `internal/engine/swarm/` distributed crawling. `Coordinator` manages domain-partitioned BFS queue with URL dedup and worker health. `Worker` pulls batches, navigates with real browser, extracts title+links. CLI: `scout swarm start <url> [--workers N --depth N --max-pages N --report]`.
+- **Default browser fallback**: When no `--browser` flag is given, `launchLocal()` calls `browser.BestCached()` to find cached browsers before falling back to rod auto-download. Fixes "Failed to get debug url" on Windows.
 
 ## Dependencies
 

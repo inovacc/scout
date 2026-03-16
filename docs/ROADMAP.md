@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Core library complete through Phase 57.** All phases delivered. See git history for details.
+**Core library complete through Phase 58.** All phases delivered. See git history for details.
 
 ### Completed Phases (Summary)
 
@@ -60,6 +60,7 @@
 | 55 | MCP Reliability & New Tools — fix screenshot/navigate timeouts (`WithTimeout(0)`, best-effort `WaitLoad`), fix session reset (close page before browser, 500ms delay), enhanced snapshot tool (`maxDepth`/iframes/filter), `search_and_extract` MCP tool, `scout connect` CLI command, resolve all 28 golangci-lint issues | Done |
 | 56 | Guide Generator & MCP Coverage — `pkg/scout/guide/` Recorder for step-by-step guides, `search_and_extract` parallel fetch, recipe→runbook deprecation aliases, MCP test coverage expansion | Done |
 | 57 | Session Lifecycle — `CleanStaleSessions()` on startup removes non-reusable/orphaned sessions, session dir restructured to `<hash>/{scout.pid, job.json, data/}` separating metadata from browser profile, `DataDir()` API, Windows file lock retries (3×200ms), `job.json` tracking for session jobs | Done |
+| 58 | Swarm Mode & Reports — `internal/engine/swarm/` distributed crawling (coordinator, worker, domain-partitioned queue), `scout swarm start <url>`, report system (`~/.scout/reports/{uuidv7}.txt`) with AI-consumable markdown format, gather/crawl/health report types, `scout report list/show/delete`, default browser `BestCached()` fallback, deprecated recipe package removed, 700+ tests added across all scraper modes | Done |
 
 ### Remaining Work
 
