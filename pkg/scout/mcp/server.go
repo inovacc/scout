@@ -201,6 +201,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 	registerInspectTools(server, state)
 	registerGuideTools(server, state)
 	registerReportTools(server, state)
+	registerSwarmTools(server, state)
 	registerResources(server, state)
 
 	if cfg.PluginManager != nil {
