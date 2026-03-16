@@ -140,6 +140,7 @@ type OpenAIOption = engine.OpenAIOption
 type OpenAIProvider = engine.OpenAIProvider
 type Option = engine.Option
 type PDFFormField = engine.PDFFormField
+type ManagedPagePool = engine.ManagedPagePool
 type PDFOptions = engine.PDFOptions
 type PWAInfo = engine.PWAInfo
 type Page = engine.Page
@@ -370,6 +371,7 @@ func NewHijackRecorder() *HijackRecorder { return engine.NewHijackRecorder() }
 func NewKnowledgeWriter(dir string) *KnowledgeWriter { return engine.NewKnowledgeWriter(dir) }
 func NewLLMWorkspace(path string) (*LLMWorkspace, error) { return engine.NewLLMWorkspace(path) }
 func NewNetworkRecorder(page *Page, opts ...RecorderOption) *NetworkRecorder { return engine.NewNetworkRecorder(page, opts...) }
+func NewManagedPagePool(browser *Browser, size int) (*ManagedPagePool, error) { return engine.NewManagedPagePool(browser, size) }
 func NewOllamaProvider(opts ...OllamaOption) (*OllamaProvider, error) { return engine.NewOllamaProvider(opts...) }
 func NewOpenAIProvider(opts ...OpenAIOption) (*OpenAIProvider, error) { return engine.NewOpenAIProvider(opts...) }
 func NewOpenRouterProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIProvider, error) { return engine.NewOpenRouterProvider(apiKey, model, opts...) }
