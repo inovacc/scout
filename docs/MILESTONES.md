@@ -240,3 +240,28 @@
 - [x] Recipe→runbook deprecation compat aliases
 - [x] MCP test coverage expansion (ping, curl, redirect, browser tools)
 - **Coverage:** internal/engine/session 83.1% | pkg/scout/guide 100% | internal/tracing 82.7% | Total 13.0%
+
+## v0.58.0 - Phase 58: Swarm Mode, Reports & Coverage [COMPLETE]
+
+**Goal:** Distributed crawling, AI-consumable reports, ManagedPagePool, massive test coverage expansion.
+
+- [x] Distributed crawling: `internal/engine/swarm/` with Coordinator, Worker, DomainQueue
+- [x] gRPC swarm transport: JoinSwarm, LeaveSwarm, FetchBatch, SubmitResults, SwarmStatus RPCs
+- [x] CLI: `scout swarm start <url>`, `scout swarm join <addr>`, `scout swarm status`
+- [x] Swarm proxy support: `--proxy` flag with round-robin assignment per worker
+- [x] Report system: `~/.scout/reports/{uuidv7}.txt` with AI-consumable markdown format
+- [x] Three report types: health_check, gather, crawl — each with tailored AI instructions
+- [x] Report CLI: `scout report list/show/delete`, `scout report schedule <url> --every 1h`
+- [x] `--report` flag on: test-site, gather, crawl, swarm start
+- [x] MCP report tools: report_list, report_show, report_delete (40 tools total)
+- [x] `ManagedPagePool` for concurrent page scraping with acquire/release lifecycle
+- [x] Default browser fallback via `BestCached()` — fixes "Failed to get debug url" on Windows
+- [x] Deprecated `pkg/scout/recipe/` removed, consumers migrated to `runbook` directly
+- [x] ADR-0008: Distributed Crawling design document
+- [x] Scroll-capture example (`examples/simple/scroll-capture/`)
+- [x] E2E gRPC swarm integration tests (5 tests)
+- [x] ~850+ new tests: all 19 scraper modes, archive, fingerprint, plugin/sdk, hijack, vpn, detect, stealth, llm, report system
+- [x] Fixed 8 browser-dependent tests to skip in -short mode
+- [x] Taskfile test targets fixed (`./scraper/...` → `./internal/...`)
+- [x] `task test:unit` passes with 0 failures
+- **Coverage:** All 19 scraper modes tested | internal/engine/report 100% | 40 MCP tools

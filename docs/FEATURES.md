@@ -229,16 +229,21 @@
 - **Status:** Completed
 - **Description:** `job.json` metadata file tracks session jobs with type, status (pending/running/completed/failed), progress (current/total/message), steps, timestamps, and output. `NewJob()`, `WriteJob()`, `StartJob()`, `CompleteJob()`, `FailJob()`, `AddJobStep()`, `UpdateJobProgress()` API. Implemented in `internal/engine/session/job.go`.
 
-## Proposed Features
-
 ### Distributed Crawling (Swarm Mode)
 
-- **Priority:** P2
-- **Status:** Proposed
-- **Description:** Split crawl workloads across multiple browser instances running on different IPs/proxies. Browser cluster management, shared BFS queue, result aggregation, headless swarm configuration.
+- **Status:** Completed
+- **Description:** Split crawl workloads across multiple browser instances with different IPs/proxies. `internal/engine/swarm/` with Coordinator (domain-partitioned BFS queue, URL dedup, worker health monitoring), Worker (pull-based batch processing with real browser), and DomainQueue (per-domain rate limiting). gRPC transport: JoinSwarm, LeaveSwarm, FetchBatch, SubmitResults, SwarmStatus RPCs. CLI: `scout swarm start <url> --workers N --proxy list`, `scout swarm join <addr> --proxy url`. ADR-0008 design document.
 
-### Page Pool
+### ManagedPagePool
 
-- **Priority:** P3
-- **Status:** Proposed
-- **Description:** Page pooling for concurrent scraping workloads, managing a fixed number of pages and recycling them across tasks.
+- **Status:** Completed
+- **Description:** Fixed-size pool of pre-created browser pages for concurrent scraping. Context-aware `Acquire()` blocks until a page is available or context cancelled. `Release()` resets page state via `about:blank` navigation. `Close()` drains and closes all pages. Implemented in `internal/engine/pagepool.go`.
+
+### Report System
+
+- **Status:** Completed
+- **Description:** AI-consumable reports saved to `~/.scout/reports/{uuidv7}.txt` as structured markdown with metadata, findings, analysis instructions, and embedded JSON. Three report types: health_check, gather, crawl — each with tailored AI analysis prompts. `--report` flag on test-site, gather, crawl, swarm start. `scout report list/show/delete` CLI. `scout report schedule <url> --every 1h` for recurring health checks. MCP tools: report_list, report_show, report_delete. Implemented in `internal/engine/report.go`, `cmd/scout/report.go`, `cmd/scout/report_schedule.go`, `pkg/scout/mcp/tools_report.go`.
+
+## Proposed Features
+
+(No proposed features at this time. See [BACKLOG.md](BACKLOG.md) for future work.)

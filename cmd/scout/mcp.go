@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/inovacc/scout/internal/engine/browser"
 	scoutmcp "github.com/inovacc/scout/pkg/scout/mcp"
 	"github.com/spf13/cobra"
 )
@@ -99,7 +100,15 @@ Subcommands:
 		useSSE, _ := cmd.Flags().GetBool("sse")
 		addr, _ := cmd.Flags().GetString("addr")
 		bin, _ := cmd.Flags().GetString("bin")
+		browserType, _ := cmd.Flags().GetString("browser")
 		idleTimeout, _ := cmd.Flags().GetDuration("idle-timeout")
+
+		// Resolve --browser type name to a binary path if --bin is not set.
+		if bin == "" && browserType != "" {
+			if resolved, err := browser.ResolveCached(context.Background(), browser.BrowserType(browserType)); err == nil {
+				bin = resolved
+			}
+		}
 
 		if useSSE {
 			return scoutmcp.ServeSSE(context.Background(), logger, addr, headless, stealth, bin, idleTimeout)
@@ -116,4 +125,5 @@ func init() {
 	mcpCmd.Flags().Bool("sse", false, "Use HTTP+SSE transport instead of stdio")
 	mcpCmd.Flags().String("addr", "localhost:8080", "Listen address for SSE transport")
 	mcpCmd.Flags().String("bin", "", "Path to browser executable")
+	mcpCmd.Flags().String("browser", "", "Browser type: chrome, brave, edge (resolves to cached binary)")
 }

@@ -73,6 +73,11 @@
 | Session startup cleanup | Phase 57 — `CleanStaleSessions()` removes dead/orphaned sessions on start |
 | Session dir restructure | Phase 57 — `<hash>/{scout.pid, job.json, data/}` separates metadata from browser profile |
 | Job tracking | Phase 55 — `job.json` session job metadata (type, status, progress, steps) |
+| Swarm mode | Phase 58 — distributed crawling with coordinator, workers, gRPC transport, proxy support |
+| Report system | Phase 58 — AI-consumable reports (`~/.scout/reports/`), 3 types, MCP tools, scheduling |
+| ManagedPagePool | Phase 58 — concurrent page pool with acquire/release lifecycle |
+| Recipe removal | Phase 58 — deprecated `pkg/scout/recipe/` deleted, consumers migrated to `runbook` |
+| Default browser BestCached | Phase 58 — fixes "Failed to get debug url" by preferring cached browsers |
 </details>
 
 <details>
