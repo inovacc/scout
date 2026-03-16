@@ -54,7 +54,7 @@ tasks:
   test:
     desc: Run all tests with coverage
     cmds:
-      - go test -v -race -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./scraper/... ./grpc/...
+      - go test -v -race -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./internal/... ./grpc/...
 
   test:coverage:
     desc: Generate HTML coverage report
@@ -66,7 +66,7 @@ tasks:
   test:cover:
     desc: Run tests and show coverage percentage
     cmds:
-      - go test -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./scraper/... ./grpc/...
+      - go test -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./internal/... ./grpc/...
       - cmd: go tool cover -func={{.COVERAGE_FILE}} | findstr "total:"
         platforms: [ windows ]
       - cmd: go tool cover -func={{.COVERAGE_FILE}} | grep "total:"
@@ -75,7 +75,7 @@ tasks:
   test:unit:
     desc: Run unit tests only (skip integration)
     cmds:
-      - go test -v -short ./pkg/scout/... ./scraper/... ./grpc/...
+      - go test -v -short ./pkg/scout/... ./internal/... ./grpc/...
 
   # === CODE QUALITY ===
   fmt:

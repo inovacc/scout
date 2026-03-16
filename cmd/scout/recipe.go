@@ -1,4 +1,4 @@
-//nolint:staticcheck // recipe package is intentional compat alias for runbook
+//nolint:staticcheck // recipe package is intentional compat alias for runbook — removal after 2026-04-15
 package main
 
 import (
