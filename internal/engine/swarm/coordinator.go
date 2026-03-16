@@ -227,6 +227,24 @@ func (c *Coordinator) QueueLen() int {
 	return c.queue.Len()
 }
 
+// Config returns the coordinator's swarm configuration.
+func (c *Coordinator) Config() SwarmConfig {
+	return c.config
+}
+
+// InFlightCount returns the number of in-flight URLs for the given worker.
+// Returns 0 if the worker is unknown.
+func (c *Coordinator) InFlightCount(workerID string) int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	w, ok := c.workers[workerID]
+	if !ok {
+		return 0
+	}
+	return len(w.InFlight)
+}
+
 // Workers returns a snapshot of all registered workers.
 func (c *Coordinator) Workers() []WorkerInfo {
 	c.mu.Lock()

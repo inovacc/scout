@@ -80,11 +80,6 @@ var DefaultSleeper = func() utils2.Sleeper {
 	return utils2.BackoffSleeper(100*time.Millisecond, time.Second, nil)
 }
 
-// NewPagePool instance.
-func NewPagePool(limit int) Pool[Page] {
-	return NewPool[Page](limit)
-}
-
 // NewBrowserPool instance.
 func NewBrowserPool(limit int) Pool[Browser] {
 	return NewPool[Browser](limit)

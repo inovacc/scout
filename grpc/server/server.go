@@ -14,6 +14,7 @@ import (
 	pb "github.com/inovacc/scout/grpc/scoutpb"
 	input2 "github.com/inovacc/scout/internal/engine/lib/input"
 	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
+	"github.com/inovacc/scout/internal/engine/swarm"
 	"github.com/inovacc/scout/internal/idle"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/identity"
@@ -116,6 +117,9 @@ type ScoutServer struct {
 
 	idle *idle.Timer
 
+	// swarmCoord is the optional swarm coordinator for distributed crawling.
+	swarmCoord *swarm.Coordinator
+
 	stats struct {
 		sync.Mutex
 
@@ -128,6 +132,11 @@ type ScoutServer struct {
 // New creates a new ScoutServer.
 func New() *ScoutServer {
 	return &ScoutServer{}
+}
+
+// SetSwarm attaches a swarm coordinator for distributed crawling RPCs.
+func (s *ScoutServer) SetSwarm(c *swarm.Coordinator) {
+	s.swarmCoord = c
 }
 
 // StartIdleTimer initializes the idle timer if IdleTimeout > 0.
