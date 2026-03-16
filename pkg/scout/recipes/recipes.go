@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/inovacc/scout/pkg/scout/recipe"
+	"github.com/inovacc/scout/pkg/scout/runbook"
 )
 
 //go:embed presets
@@ -63,7 +63,7 @@ func All() []Preset {
 }
 
 // Load reads and parses a preset recipe by ID.
-func Load(id string) (*recipe.Recipe, error) {
+func Load(id string) (*runbook.Runbook, error) {
 	p, ok := index[id]
 	if !ok {
 		return nil, fmt.Errorf("recipes: unknown preset %q", id)
@@ -74,7 +74,7 @@ func Load(id string) (*recipe.Recipe, error) {
 		return nil, fmt.Errorf("recipes: read %s: %w", p.File, err)
 	}
 
-	return recipe.Parse(data)
+	return runbook.Parse(data)
 }
 
 // FS returns the embedded presets filesystem.

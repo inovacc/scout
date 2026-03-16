@@ -1,4 +1,3 @@
-//nolint:staticcheck // recipe package is intentional compat alias for runbook — removal after 2026-04-15
 package main
 
 import (
@@ -10,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/inovacc/scout/pkg/scout"
-	"github.com/inovacc/scout/pkg/scout/recipe"
 	"github.com/inovacc/scout/pkg/scout/recipes"
+	"github.com/inovacc/scout/pkg/scout/runbook"
 	"github.com/spf13/cobra"
 )
 
@@ -80,7 +79,7 @@ var recipeRunCmd = &cobra.Command{
 		file, _ := cmd.Flags().GetString("file")
 		output, _ := cmd.Flags().GetString("output")
 
-		r, err := recipe.LoadFile(file)
+		r, err := runbook.LoadFile(file)
 		if err != nil {
 			return err
 		}
@@ -92,7 +91,7 @@ var recipeRunCmd = &cobra.Command{
 
 		defer func() { _ = browser.Close() }()
 
-		result, err := recipe.Run(context.Background(), browser, r)
+		result, err := runbook.Apply(context.Background(), browser, r)
 		if err != nil {
 			return err
 		}
@@ -140,7 +139,7 @@ var recipeValidateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		file, _ := cmd.Flags().GetString("file")
 
-		r, err := recipe.LoadFile(file)
+		r, err := runbook.LoadFile(file)
 		if err != nil {
 			return err
 		}
@@ -158,7 +157,7 @@ var recipeTestCmd = &cobra.Command{
 		file, _ := cmd.Flags().GetString("file")
 		format, _ := cmd.Flags().GetString("format")
 
-		r, err := recipe.LoadFile(file)
+		r, err := runbook.LoadFile(file)
 		if err != nil {
 			return err
 		}
@@ -170,13 +169,13 @@ var recipeTestCmd = &cobra.Command{
 
 		defer func() { _ = browser.Close() }()
 
-		result, err := recipe.ValidateRecipe(browser, r)
+		result, err := runbook.ValidateRunbook(browser, r)
 		if err != nil {
 			return err
 		}
 
 		// Print selector resilience warnings.
-		scores := recipe.ScoreRecipeSelectors(r)
+		scores := runbook.ScoreRunbookSelectors(r)
 		for name, s := range scores {
 			if s.Tier == "fragile" {
 				_, _ = fmt.Fprintf(os.Stderr, "warning: fragile selector for %s: %s (score: %.2f, consider using data-* attributes)\n",
@@ -223,13 +222,13 @@ var recipeTestCmd = &cobra.Command{
 				var samples []map[string]any
 
 				if r.Type == "extract" {
-					items, sampleErr := recipe.SampleExtract(browser, r)
+					items, sampleErr := runbook.SampleExtract(browser, r)
 					if sampleErr == nil {
 						samples = items
 					}
 				}
 
-				llmResult, llmErr := recipe.ValidateWithLLM(provider, r, samples)
+				llmResult, llmErr := runbook.ValidateWithLLM(provider, r, samples)
 				if llmErr != nil {
 					_, _ = fmt.Fprintf(os.Stderr, "warning: LLM validation failed: %v\n", llmErr)
 				} else {
@@ -279,10 +278,10 @@ var recipeCreateCmd = &cobra.Command{
 
 		interactive, _ := cmd.Flags().GetBool("interactive")
 
-		var r *recipe.Recipe
+		var r *runbook.Runbook
 
 		if interactive {
-			r, err = recipe.InteractiveCreate(recipe.InteractiveConfig{
+			r, err = runbook.InteractiveCreate(runbook.InteractiveConfig{
 				Browser: browser,
 				URL:     url,
 				Writer:  os.Stderr,
@@ -304,23 +303,23 @@ var recipeCreateCmd = &cobra.Command{
 				_, _ = fmt.Fprintf(os.Stderr, "warning: LLM provider setup failed (%v), falling back to rule-based\n", provErr)
 			}
 
-			var aiOpts []recipe.AIRecipeOption
+			var aiOpts []runbook.AIRunbookOption
 			if provider != nil {
-				aiOpts = append(aiOpts, recipe.WithAI(provider))
+				aiOpts = append(aiOpts, runbook.WithAI(provider))
 			}
 
 			if goal != "" {
-				aiOpts = append(aiOpts, recipe.WithGoal(goal))
+				aiOpts = append(aiOpts, runbook.WithGoal(goal))
 			}
 
-			r, err = recipe.GenerateWithAI(browser, url, aiOpts...)
+			r, err = runbook.GenerateWithAI(browser, url, aiOpts...)
 			if err != nil {
 				return err
 			}
 		} else {
 			_, _ = fmt.Fprintf(os.Stderr, "analyzing %s...\n", url)
 
-			analysis, analysisErr := recipe.AnalyzeSite(context.Background(), browser, url)
+			analysis, analysisErr := runbook.AnalyzeSite(context.Background(), browser, url)
 			if analysisErr != nil {
 				return analysisErr
 			}
@@ -328,16 +327,16 @@ var recipeCreateCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(os.Stderr, "detected page type: %s\n", analysis.PageType)
 			_, _ = fmt.Fprintf(os.Stderr, "containers: %d, forms: %d\n", len(analysis.Containers), len(analysis.Forms))
 
-			var genOpts []recipe.GenerateOption
+			var genOpts []runbook.GenerateOption
 			if forceType != "" {
-				genOpts = append(genOpts, recipe.WithGenerateType(forceType))
+				genOpts = append(genOpts, runbook.WithGenerateType(forceType))
 			}
 
 			if maxPages > 0 {
-				genOpts = append(genOpts, recipe.WithGenerateMaxPages(maxPages))
+				genOpts = append(genOpts, runbook.WithGenerateMaxPages(maxPages))
 			}
 
-			r, err = recipe.GenerateRecipe(analysis, genOpts...)
+			r, err = runbook.GenerateRunbook(analysis, genOpts...)
 			if err != nil {
 				return err
 			}
@@ -376,7 +375,7 @@ var recipeFixCmd = &cobra.Command{
 		file, _ := cmd.Flags().GetString("file")
 		output, _ := cmd.Flags().GetString("output")
 
-		r, err := recipe.LoadFile(file)
+		r, err := runbook.LoadFile(file)
 		if err != nil {
 			return err
 		}
@@ -388,7 +387,7 @@ var recipeFixCmd = &cobra.Command{
 
 		defer func() { _ = browser.Close() }()
 
-		fixed, changes, err := recipe.FixRecipe(browser, r)
+		fixed, changes, err := runbook.FixRunbook(browser, r)
 		if err != nil {
 			return err
 		}
@@ -428,7 +427,7 @@ var recipeSampleCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		file, _ := cmd.Flags().GetString("file")
 
-		r, err := recipe.LoadFile(file)
+		r, err := runbook.LoadFile(file)
 		if err != nil {
 			return err
 		}
@@ -440,7 +439,7 @@ var recipeSampleCmd = &cobra.Command{
 
 		defer func() { _ = browser.Close() }()
 
-		items, err := recipe.SampleExtract(browser, r)
+		items, err := runbook.SampleExtract(browser, r)
 		if err != nil {
 			return err
 		}
@@ -532,7 +531,7 @@ var recipeRunPresetCmd = &cobra.Command{
 
 		defer func() { _ = browser.Close() }()
 
-		result, err := recipe.Run(context.Background(), browser, r)
+		result, err := runbook.Apply(context.Background(), browser, r)
 		if err != nil {
 			return err
 		}
@@ -561,7 +560,7 @@ var recipeRunPresetCmd = &cobra.Command{
 }
 
 // applyVars replaces {{key}} placeholders in recipe URLs and step fields.
-func applyVars(r *recipe.Recipe, vars map[string]string) {
+func applyVars(r *runbook.Runbook, vars map[string]string) {
 	for k, v := range vars {
 		placeholder := "{{" + k + "}}"
 
@@ -574,7 +573,7 @@ func applyVars(r *recipe.Recipe, vars map[string]string) {
 }
 
 // findUnresolvedVars returns placeholder names that were not substituted.
-func findUnresolvedVars(r *recipe.Recipe) []string {
+func findUnresolvedVars(r *runbook.Runbook) []string {
 	seen := make(map[string]bool)
 	scan := func(s string) {
 		for {
@@ -628,7 +627,7 @@ var recipeFlowCmd = &cobra.Command{
 
 		_, _ = fmt.Fprintf(os.Stderr, "detecting flow across %d URL(s)...\n", len(args))
 
-		steps, err := recipe.DetectFlow(browser, args)
+		steps, err := runbook.DetectFlow(browser, args)
 		if err != nil {
 			return err
 		}
@@ -638,7 +637,7 @@ var recipeFlowCmd = &cobra.Command{
 				i+1, step.URL, step.PageType, step.IsLogin, step.IsSearch)
 		}
 
-		r, err := recipe.GenerateFlowRecipe(steps, name)
+		r, err := runbook.GenerateFlowRunbook(steps, name)
 		if err != nil {
 			return err
 		}
