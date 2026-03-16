@@ -4,7 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
+	"strings"
 	"time"
+
+	"github.com/inovacc/scout/internal/engine"
 )
 
 // Worker represents a crawl worker that pulls batches from a coordinator,
@@ -19,17 +23,31 @@ type Worker struct {
 	logger      *slog.Logger
 	cancel      context.CancelFunc
 	done        chan struct{}
+
+	browser     *engine.Browser
+	browserOpts []engine.Option
+}
+
+// WorkerOption is a functional option for configuring a Worker.
+type WorkerOption func(*Worker)
+
+// WithWorkerBrowser sets the browser options used when the worker creates its
+// browser instance for crawling.
+func WithWorkerBrowser(opts ...engine.Option) WorkerOption {
+	return func(w *Worker) {
+		w.browserOpts = append(w.browserOpts, opts...)
+	}
 }
 
 // NewWorker creates a new worker with the given ID and optional proxy.
-func NewWorker(id string, proxy string, batchSize int, logger *slog.Logger) *Worker {
+func NewWorker(id string, proxy string, batchSize int, logger *slog.Logger, opts ...WorkerOption) *Worker {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	if batchSize <= 0 {
 		batchSize = 10
 	}
-	return &Worker{
+	w := &Worker{
 		ID:        id,
 		Status:    WorkerIdle,
 		Proxy:     proxy,
@@ -37,6 +55,10 @@ func NewWorker(id string, proxy string, batchSize int, logger *slog.Logger) *Wor
 		logger:    logger,
 		done:      make(chan struct{}),
 	}
+	for _, o := range opts {
+		o(w)
+	}
+	return w
 }
 
 // Connect registers this worker with the given coordinator.
@@ -52,8 +74,16 @@ func (w *Worker) Connect(c *Coordinator) error {
 	return nil
 }
 
-// Disconnect unregisters this worker from the coordinator.
+// Disconnect unregisters this worker from the coordinator and closes the
+// browser if one was created.
 func (w *Worker) Disconnect() error {
+	if w.browser != nil {
+		if err := w.browser.Close(); err != nil {
+			w.logger.Warn("scout: swarm: browser close error", "worker", w.ID, "error", err)
+		}
+		w.browser = nil
+	}
+
 	if w.coordinator == nil {
 		return nil
 	}
@@ -127,19 +157,140 @@ func (w *Worker) Stop() {
 	<-w.done
 }
 
-// processBatch is a stub that simulates crawling each URL.
-// This will be wired to scout.Browser in a future iteration.
-func (w *Worker) processBatch(_ context.Context, batch []CrawlRequest) []CrawlResult {
+// ensureBrowser lazily creates a browser instance with the configured options.
+func (w *Worker) ensureBrowser() error {
+	if w.browser != nil {
+		return nil
+	}
+
+	opts := []engine.Option{
+		engine.WithHeadless(true),
+		engine.WithNoSandbox(),
+	}
+	opts = append(opts, w.browserOpts...)
+
+	if w.Proxy != "" {
+		opts = append(opts, engine.WithProxy(w.Proxy))
+	}
+
+	b, err := engine.New(opts...)
+	if err != nil {
+		return fmt.Errorf("scout: swarm: create browser: %w", err)
+	}
+	w.browser = b
+	return nil
+}
+
+// processBatch crawls each URL in the batch using a real browser.
+// If the browser cannot be created the results contain error strings.
+func (w *Worker) processBatch(ctx context.Context, batch []CrawlRequest) []CrawlResult {
 	results := make([]CrawlResult, 0, len(batch))
+
+	if err := w.ensureBrowser(); err != nil {
+		w.logger.Error("scout: swarm: browser init failed", "worker", w.ID, "error", err)
+		for _, req := range batch {
+			results = append(results, CrawlResult{
+				URL:   req.URL,
+				Error: err.Error(),
+			})
+		}
+		return results
+	}
+
 	for _, req := range batch {
-		start := time.Now()
-		results = append(results, CrawlResult{
-			URL:            req.URL,
-			StatusCode:     200,
-			DiscoveredURLs: nil, // stub: no link extraction yet
-			Data:           nil,
-			Duration:       time.Since(start),
-		})
+		select {
+		case <-ctx.Done():
+			return results
+		default:
+		}
+
+		result := w.crawlURL(req)
+		results = append(results, result)
 	}
 	return results
+}
+
+// crawlURL navigates to a single URL and extracts title + links.
+func (w *Worker) crawlURL(req CrawlRequest) CrawlResult {
+	start := time.Now()
+
+	page, err := w.browser.NewPage(req.URL)
+	if err != nil {
+		return CrawlResult{
+			URL:      req.URL,
+			Error:    fmt.Sprintf("scout: swarm: new page: %v", err),
+			Duration: time.Since(start),
+		}
+	}
+	defer func() { _ = page.Close() }()
+
+	if err := page.WaitLoad(); err != nil {
+		return CrawlResult{
+			URL:      req.URL,
+			Error:    fmt.Sprintf("scout: swarm: wait load: %v", err),
+			Duration: time.Since(start),
+		}
+	}
+
+	// Extract page title.
+	data := make(map[string]any)
+	title, err := page.Eval(`() => document.title`)
+	if err == nil && title != nil {
+		data["title"] = title.String()
+	}
+
+	// Extract links from the page.
+	links, err := page.Eval(`() => {
+		const anchors = document.querySelectorAll('a[href]');
+		const urls = [];
+		for (const a of anchors) {
+			const href = a.href;
+			if (href && href.startsWith('http')) {
+				urls.push(href);
+			}
+		}
+		return [...new Set(urls)];
+	}`)
+
+	var discovered []string
+	if err == nil && links != nil {
+		if arr, ok := links.Value.([]any); ok {
+			for _, v := range arr {
+				if u, ok := v.(string); ok && u != "" && isSameDomain(req.URL, u) {
+					discovered = append(discovered, u)
+				}
+			}
+		}
+	}
+
+	w.logger.Debug("scout: swarm: crawled url",
+		"worker", w.ID,
+		"url", req.URL,
+		"title", data["title"],
+		"links", len(discovered),
+	)
+
+	return CrawlResult{
+		URL:            req.URL,
+		StatusCode:     200,
+		DiscoveredURLs: discovered,
+		Data:           data,
+		Duration:       time.Since(start),
+	}
+}
+
+// isSameDomain returns true if two URLs share the same root domain.
+func isSameDomain(base, candidate string) bool {
+	bu, err := url.Parse(base)
+	if err != nil {
+		return false
+	}
+	cu, err := url.Parse(candidate)
+	if err != nil {
+		return false
+	}
+
+	bHost := strings.TrimPrefix(bu.Hostname(), "www.")
+	cHost := strings.TrimPrefix(cu.Hostname(), "www.")
+	return strings.EqualFold(bHost, cHost)
 }

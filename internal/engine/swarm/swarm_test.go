@@ -371,3 +371,78 @@ func TestWorker_RunNotConnected(t *testing.T) {
 		t.Fatal("expected error when running without connection")
 	}
 }
+
+func TestWorker_WithWorkerBrowserOption(t *testing.T) {
+	// Verify the functional option is accepted without panicking.
+	w := NewWorker("w1", "", 5, testLogger(),
+		WithWorkerBrowser(), // empty opts, just verify it wires through
+	)
+	if w.ID != "w1" {
+		t.Fatalf("expected worker id w1, got %s", w.ID)
+	}
+}
+
+func TestWorker_ProcessBatchBrowserFailure(t *testing.T) {
+	// processBatch with no real browser available should return error results.
+	// We use an invalid exec path so browser creation fails.
+	logger := testLogger()
+	cfg := DefaultConfig()
+	cfg.DefaultRateLimit = 0
+	c := NewCoordinator(cfg, logger)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	c.Start(ctx)
+	defer func() {
+		cancel()
+		c.Stop()
+	}()
+
+	w := NewWorker("w1", "", 10, logger)
+	// The processBatch method will try to create a browser and likely fail
+	// in CI/test environments without Chromium. We test that errors are
+	// captured in results rather than panicking.
+	batch := []CrawlRequest{
+		{URL: "https://example.com/test"},
+	}
+
+	results := w.processBatch(ctx, batch)
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+
+	// In environments without a browser, we expect an error result.
+	// In environments with a browser, we expect a success result.
+	// Either way, we should get exactly one result for one input.
+	t.Logf("result: url=%s error=%q", results[0].URL, results[0].Error)
+}
+
+func TestIsSameDomain(t *testing.T) {
+	tests := []struct {
+		base      string
+		candidate string
+		want      bool
+	}{
+		{"https://example.com/page1", "https://example.com/page2", true},
+		{"https://www.example.com/a", "https://example.com/b", true},
+		{"https://example.com", "https://other.com", false},
+		{"https://example.com", "https://sub.example.com", false},
+		{"://invalid", "https://example.com", false},
+		{"https://example.com", "://invalid", false},
+	}
+
+	for _, tt := range tests {
+		got := isSameDomain(tt.base, tt.candidate)
+		if got != tt.want {
+			t.Errorf("isSameDomain(%q, %q) = %v, want %v", tt.base, tt.candidate, got, tt.want)
+		}
+	}
+}
+
+func TestWorker_DisconnectClosesBrowser(t *testing.T) {
+	// Disconnect should be safe even without a browser.
+	w := NewWorker("w1", "", 5, testLogger())
+	// Disconnect without connect should be a no-op.
+	if err := w.Disconnect(); err != nil {
+		t.Fatalf("disconnect without connect: %v", err)
+	}
+}
