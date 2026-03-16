@@ -17,6 +17,7 @@ func init() {
 	crawlCmd.Flags().Duration("delay", 500*time.Millisecond, "delay between page visits")
 	crawlCmd.Flags().StringSlice("domains", nil, "restrict crawling to these domains")
 	crawlCmd.Flags().Bool("async", false, "run in background, print job ID and return immediately")
+	crawlCmd.Flags().Bool("report", false, "save report to ~/.scout/reports/")
 }
 
 var crawlCmd = &cobra.Command{
@@ -117,9 +118,44 @@ var crawlCmd = &cobra.Command{
 			return nil
 		}
 
+		startTime := time.Now()
+
 		results, err := browser.Crawl(args[0], handler, opts...)
 		if err != nil {
 			return fmt.Errorf("scout: crawl: %w", err)
+		}
+
+		// Auto-save report to ~/.scout/reports/ if --report flag is set.
+		saveReport, _ := cmd.Flags().GetBool("report")
+		if saveReport {
+			var links []string
+			var errs []string
+
+			for _, r := range results {
+				links = append(links, r.URL)
+				if r.Error != nil {
+					errs = append(errs, fmt.Sprintf("%s: %v", r.URL, r.Error))
+				}
+			}
+
+			r := &scout.Report{
+				Type: "crawl",
+				URL:  args[0],
+				Crawl: &scout.CrawlReport{
+					URL:      args[0],
+					Pages:    len(results),
+					Duration: time.Since(startTime).Round(time.Millisecond).String(),
+					Links:    links,
+					Errors:   errs,
+				},
+			}
+
+			id, saveErr := scout.SaveReport(r)
+			if saveErr != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: save report: %v\n", saveErr)
+			} else {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Report saved: %s\n", id)
+			}
 		}
 
 		if format != "json" {
