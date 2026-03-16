@@ -1,0 +1,83 @@
+services:
+  coordinator:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: scout:latest
+    command: ["swarm", "start", "--workers", "0"]
+    ports:
+      - "9551:9551"
+    environment:
+      - SCOUT_HEADLESS=true
+    tmpfs:
+      - /dev/shm:size=2g
+    volumes:
+      - reports:/home/scout/.scout/reports
+    networks:
+      - swarm
+    healthcheck:
+      test: ["CMD", "scout", "version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  worker-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.swarm
+    image: scout:swarm
+    command: ["coordinator:9551"]
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    environment:
+      - SCOUT_HEADLESS=true
+    tmpfs:
+      - /dev/shm:size=2g
+    volumes:
+      - reports:/home/scout/.scout/reports
+    networks:
+      - swarm
+
+  worker-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.swarm
+    image: scout:swarm
+    command: ["coordinator:9551"]
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    environment:
+      - SCOUT_HEADLESS=true
+    tmpfs:
+      - /dev/shm:size=2g
+    volumes:
+      - reports:/home/scout/.scout/reports
+    networks:
+      - swarm
+
+  worker-3:
+    build:
+      context: .
+      dockerfile: Dockerfile.swarm
+    image: scout:swarm
+    command: ["coordinator:9551"]
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    environment:
+      - SCOUT_HEADLESS=true
+    tmpfs:
+      - /dev/shm:size=2g
+    volumes:
+      - reports:/home/scout/.scout/reports
+    networks:
+      - swarm
+
+volumes:
+  reports:
+
+networks:
+  swarm:
+    driver: bridge

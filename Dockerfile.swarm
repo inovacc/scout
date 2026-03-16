@@ -1,0 +1,45 @@
+# Scout — swarm worker image (CLI + Chromium for distributed crawling)
+# Usage: docker build -f Dockerfile.swarm -t scout:swarm .
+# Run:   docker run --rm --shm-size=2g scout:swarm coordinator:9551
+
+# Stage 1: Build the scout binary
+FROM golang:1.25-bookworm AS builder
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o /scout ./cmd/scout/
+
+# Stage 2: Runtime with Chromium
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    chromium-common \
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    ca-certificates \
+    dumb-init \
+    && rm -rf /var/lib/apt/lists/*
+
+# Non-root user
+RUN groupadd -r scout && useradd -r -g scout -m -d /home/scout scout
+
+COPY --from=builder /scout /usr/local/bin/scout
+
+ENV SCOUT_HEADLESS=true \
+    SCOUT_NO_SANDBOX=true \
+    SCOUT_BROWSER_BIN=/usr/bin/chromium
+
+# gRPC port for coordinator communication
+EXPOSE 9551
+
+USER scout
+WORKDIR /home/scout
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD ["scout", "version"]
+
+ENTRYPOINT ["dumb-init", "--", "scout", "swarm", "join"]
+CMD []
