@@ -17,15 +17,29 @@ type ReportType string
 
 const (
 	ReportHealthCheck ReportType = "health_check"
+	ReportGather      ReportType = "gather"
+	ReportCrawl       ReportType = "crawl"
+	ReportSwarm       ReportType = "swarm"
 )
 
-// Report wraps a health check (or future report types) with metadata.
+// CrawlReport holds the results of a site crawl for report rendering.
+type CrawlReport struct {
+	URL      string   `json:"url"`
+	Pages    int      `json:"pages"`
+	Duration string   `json:"duration"`
+	Links    []string `json:"links"`
+	Errors   []string `json:"errors"`
+}
+
+// Report wraps a health check, gather, or crawl result with metadata.
 type Report struct {
 	ID        string        `json:"id"`
 	Type      ReportType    `json:"type"`
 	URL       string        `json:"url"`
 	CreatedAt time.Time     `json:"created_at"`
 	Health    *HealthReport `json:"health,omitempty"`
+	Gather    *GatherResult `json:"gather,omitempty"`
+	Crawl     *CrawlReport  `json:"crawl,omitempty"`
 }
 
 // ReportsDir returns the base directory for reports: ~/.scout/reports.
@@ -85,8 +99,13 @@ func renderReport(r *Report) string {
 	fmt.Fprintf(&b, "- **Tool:** Scout (browser automation health checker)\n")
 	b.WriteString("\n---\n\n")
 
-	if r.Health != nil {
+	switch {
+	case r.Health != nil:
 		renderHealthReport(&b, r)
+	case r.Gather != nil:
+		renderGatherReport(&b, r)
+	case r.Crawl != nil:
+		renderCrawlReport(&b, r)
 	}
 
 	// Append raw JSON for machine parsing.
@@ -170,6 +189,138 @@ func renderHealthReport(b *strings.Builder, r *Report) {
 
 	if total == 0 {
 		b.WriteString("The site has no issues. Confirm the site is healthy and suggest proactive improvements (performance, SEO, accessibility).\n\n")
+	}
+}
+
+func renderGatherReport(b *strings.Builder, r *Report) {
+	g := r.Gather
+
+	b.WriteString("## Summary\n\n")
+	fmt.Fprintf(b, "- **Page URL:** %s\n", g.URL)
+	fmt.Fprintf(b, "- **Page Title:** %s\n", g.Title)
+	fmt.Fprintf(b, "- **Duration:** %s\n", g.Duration)
+	fmt.Fprintf(b, "- **Links found:** %d\n", len(g.Links))
+	fmt.Fprintf(b, "- **Frameworks detected:** %d\n", len(g.Frameworks))
+	fmt.Fprintf(b, "- **Console messages:** %d\n", len(g.ConsoleLog))
+
+	if len(g.Frameworks) > 0 {
+		b.WriteString("\n### Detected Frameworks\n\n")
+
+		for _, fw := range g.Frameworks {
+			fmt.Fprintf(b, "- %s", fw.Name)
+
+			if fw.Version != "" {
+				fmt.Fprintf(b, " (%s)", fw.Version)
+			}
+
+			b.WriteString("\n")
+		}
+	}
+
+	if len(g.Links) > 0 {
+		b.WriteString("\n### Links\n\n")
+
+		limit := len(g.Links)
+		if limit > 50 {
+			limit = 50
+		}
+
+		for _, link := range g.Links[:limit] {
+			fmt.Fprintf(b, "- %s\n", link)
+		}
+
+		if len(g.Links) > 50 {
+			fmt.Fprintf(b, "\n... and %d more links (see raw JSON)\n", len(g.Links)-50)
+		}
+	}
+
+	if len(g.ConsoleLog) > 0 {
+		b.WriteString("\n### Console Output\n\n")
+
+		limit := len(g.ConsoleLog)
+		if limit > 20 {
+			limit = 20
+		}
+
+		for _, msg := range g.ConsoleLog[:limit] {
+			fmt.Fprintf(b, "- `%s`\n", msg)
+		}
+
+		if len(g.ConsoleLog) > 20 {
+			fmt.Fprintf(b, "\n... and %d more messages (see raw JSON)\n", len(g.ConsoleLog)-20)
+		}
+	}
+
+	b.WriteString("\n---\n\n")
+
+	// Instructions for AI processing.
+	b.WriteString("## Instructions\n\n")
+	b.WriteString("You are reviewing a page gather report. Analyze the collected data and provide:\n\n")
+	b.WriteString("1. **Page Structure Analysis** — Describe the page layout, main content areas, and navigation elements.\n")
+	b.WriteString("2. **Content Quality Assessment** — Evaluate the content for completeness, clarity, and relevance.\n")
+	b.WriteString("3. **SEO Suggestions** — Check for proper meta tags, heading hierarchy, link structure, and discoverability.\n")
+	b.WriteString("4. **Accessibility Concerns** — Identify missing alt text, ARIA attributes, color contrast, or keyboard navigation issues.\n")
+	b.WriteString("5. **Performance Observations** — Note large resources, excessive scripts/frameworks, or inefficient patterns.\n\n")
+
+	fmt.Fprintf(b, "Target page: %s\n", g.URL)
+	fmt.Fprintf(b, "Title: %s\n", g.Title)
+	fmt.Fprintf(b, "Links found: %d\n", len(g.Links))
+	fmt.Fprintf(b, "Frameworks: %d\n\n", len(g.Frameworks))
+}
+
+func renderCrawlReport(b *strings.Builder, r *Report) {
+	c := r.Crawl
+
+	b.WriteString("## Summary\n\n")
+	fmt.Fprintf(b, "- **Start URL:** %s\n", c.URL)
+	fmt.Fprintf(b, "- **Pages crawled:** %d\n", c.Pages)
+	fmt.Fprintf(b, "- **Duration:** %s\n", c.Duration)
+	fmt.Fprintf(b, "- **Links discovered:** %d\n", len(c.Links))
+	fmt.Fprintf(b, "- **Errors encountered:** %d\n", len(c.Errors))
+
+	if len(c.Errors) > 0 {
+		b.WriteString("\n### Errors\n\n")
+
+		for i, e := range c.Errors {
+			fmt.Fprintf(b, "%d. %s\n", i+1, e)
+		}
+	}
+
+	if len(c.Links) > 0 {
+		b.WriteString("\n### Discovered Links\n\n")
+
+		limit := len(c.Links)
+		if limit > 100 {
+			limit = 100
+		}
+
+		for _, link := range c.Links[:limit] {
+			fmt.Fprintf(b, "- %s\n", link)
+		}
+
+		if len(c.Links) > 100 {
+			fmt.Fprintf(b, "\n... and %d more links (see raw JSON)\n", len(c.Links)-100)
+		}
+	}
+
+	b.WriteString("\n---\n\n")
+
+	// Instructions for AI processing.
+	b.WriteString("## Instructions\n\n")
+	b.WriteString("You are reviewing a site crawl report. Analyze the crawl results and provide:\n\n")
+	b.WriteString("1. **Site Structure Analysis** — Describe the overall site architecture, page hierarchy, and URL patterns.\n")
+	b.WriteString("2. **Broken Link Identification** — Highlight any errors that indicate dead links or unreachable pages.\n")
+	b.WriteString("3. **Orphaned Page Detection** — Identify pages that may not be reachable from the main navigation.\n")
+	b.WriteString("4. **Navigation Flow Assessment** — Evaluate whether the site has a logical, user-friendly navigation structure.\n")
+	b.WriteString("5. **Content Organization Suggestions** — Recommend improvements to URL structure, page grouping, or sitemap coverage.\n\n")
+
+	fmt.Fprintf(b, "Start URL: %s\n", c.URL)
+	fmt.Fprintf(b, "Pages crawled: %d\n", c.Pages)
+	fmt.Fprintf(b, "Links discovered: %d\n", len(c.Links))
+	fmt.Fprintf(b, "Errors: %d\n\n", len(c.Errors))
+
+	if len(c.Errors) == 0 {
+		b.WriteString("No errors found during crawl. Confirm the site structure is healthy and suggest proactive improvements.\n\n")
 	}
 }
 

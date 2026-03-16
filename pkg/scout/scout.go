@@ -102,6 +102,7 @@ type HARTimings = engine.HARTimings
 type HealthCheckOption = engine.HealthCheckOption
 type HealthIssue = engine.HealthIssue
 type HealthReport = engine.HealthReport
+type CrawlReport = engine.CrawlReport
 type Report = engine.Report
 type ReportType = engine.ReportType
 type HijackContext = engine.HijackContext

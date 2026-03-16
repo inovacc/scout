@@ -29,6 +29,7 @@ func init() {
 	gatherCmd.Flags().Bool("save-screenshot", false, "save screenshot as PNG file alongside JSON")
 	gatherCmd.Flags().Bool("save-har", false, "save HAR as separate file alongside JSON")
 	gatherCmd.Flags().Duration("timeout", 30*time.Second, "page load timeout")
+	gatherCmd.Flags().Bool("report", false, "save report to ~/.scout/reports/")
 }
 
 var gatherCmd = &cobra.Command{
@@ -84,6 +85,23 @@ var gatherCmd = &cobra.Command{
 		result, err := b.Gather(targetURL, gatherOpts...)
 		if err != nil {
 			return err
+		}
+
+		// Auto-save report to ~/.scout/reports/ if --report flag is set.
+		saveReport, _ := cmd.Flags().GetBool("report")
+		if saveReport {
+			r := &scout.Report{
+				Type:   "gather",
+				URL:    targetURL,
+				Gather: result,
+			}
+
+			id, saveErr := scout.SaveReport(r)
+			if saveErr != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: save report: %v\n", saveErr)
+			} else {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Report saved: %s\n", id)
+			}
 		}
 
 		outFile, _ := cmd.Flags().GetString("output")
