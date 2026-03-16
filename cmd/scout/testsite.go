@@ -19,6 +19,7 @@ func init() {
 	testSiteCmd.Flags().Bool("click", false, "click interactive elements to discover JS errors")
 	testSiteCmd.Flags().Bool("json", false, "output as JSON")
 	testSiteCmd.Flags().Duration("timeout", 60*time.Second, "overall timeout")
+	testSiteCmd.Flags().Bool("report", false, "save report to ~/.scout/reports/")
 }
 
 var testSiteCmd = &cobra.Command{
@@ -59,6 +60,23 @@ var testSiteCmd = &cobra.Command{
 		report, err := b.HealthCheck(targetURL, healthOpts...)
 		if err != nil {
 			return err
+		}
+
+		// Auto-save report to ~/.scout/reports/ if --report flag is set.
+		saveReport, _ := cmd.Flags().GetBool("report")
+		if saveReport {
+			r := &scout.Report{
+				Type:   "health_check",
+				URL:    targetURL,
+				Health: report,
+			}
+
+			id, saveErr := scout.SaveReport(r)
+			if saveErr != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: save report: %v\n", saveErr)
+			} else {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Report saved: %s\n", id)
+			}
 		}
 
 		if jsonOut {

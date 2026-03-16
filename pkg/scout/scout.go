@@ -102,6 +102,8 @@ type HARTimings = engine.HARTimings
 type HealthCheckOption = engine.HealthCheckOption
 type HealthIssue = engine.HealthIssue
 type HealthReport = engine.HealthReport
+type Report = engine.Report
+type ReportType = engine.ReportType
 type HijackContext = engine.HijackContext
 type HijackEvent = engine.HijackEvent
 type HijackEventType = engine.HijackEventType
@@ -412,6 +414,11 @@ func WriteSessionJob(sessionID string, job *SessionJob) error { return engine.Wr
 func ResolveExtensions(p *UserProfile) []string { return engine.ResolveExtensions(p) }
 func ResolveExtensionsWithBase(p *UserProfile, baseDir string) []string { return engine.ResolveExtensionsWithBase(p, baseDir) }
 func RootDomain(rawURL string) string { return engine.RootDomain(rawURL) }
+func SaveReport(r *Report) (string, error) { return engine.SaveReport(r) }
+func ReadReport(id string) (*Report, error) { return engine.ReadReport(id) }
+func ListReports() ([]Report, error) { return engine.ListReports() }
+func DeleteReport(id string) error { return engine.DeleteReport(id) }
+func ReportsDir() string { return engine.ReportsDir() }
 func SaveCredentials(creds *CapturedCredentials, path string) error { return engine.SaveCredentials(creds, path) }
 func SaveProfile(p *UserProfile, path string) error { return engine.SaveProfile(p, path) }
 func SaveProfileEncrypted(p *UserProfile, path, passphrase string) error { return engine.SaveProfileEncrypted(p, path, passphrase) }
