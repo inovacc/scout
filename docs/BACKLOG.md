@@ -12,7 +12,7 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P1 | Web Search MCP tool improvements | `search_and_extract` added in Phase 55; consider parallel fetch for multi-result extraction |
+| P1 | ~~Web Search MCP tool improvements~~ | Done — `search_and_extract` already uses goroutines + WaitGroup for parallel fetch |
 | P2 | ~~Step-by-Step Guide Generator~~ | Done — `pkg/scout/guide/` with Recorder, Step, Guide, RenderMarkdown |
 | P2 | Deprecate `pkg/scout/recipe/` package | Still imported as compat aliases; plan removal after 2026-04-15 |
 
