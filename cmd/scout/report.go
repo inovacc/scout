@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"text/tabwriter"
 
@@ -53,18 +52,17 @@ var reportListCmd = &cobra.Command{
 
 var reportShowCmd = &cobra.Command{
 	Use:   "show <id>",
-	Short: "Show a saved report",
+	Short: "Show a saved report (full AI-consumable text)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		r, err := scout.ReadReport(args[0])
+		content, err := scout.ReadReportRaw(args[0])
 		if err != nil {
 			return err
 		}
 
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
+		_, _ = fmt.Fprint(cmd.OutOrStdout(), content)
 
-		return enc.Encode(r)
+		return nil
 	},
 }
 

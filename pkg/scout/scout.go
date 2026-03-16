@@ -416,6 +416,7 @@ func ResolveExtensionsWithBase(p *UserProfile, baseDir string) []string { return
 func RootDomain(rawURL string) string { return engine.RootDomain(rawURL) }
 func SaveReport(r *Report) (string, error) { return engine.SaveReport(r) }
 func ReadReport(id string) (*Report, error) { return engine.ReadReport(id) }
+func ReadReportRaw(id string) (string, error) { return engine.ReadReportRaw(id) }
 func ListReports() ([]Report, error) { return engine.ListReports() }
 func DeleteReport(id string) error { return engine.DeleteReport(id) }
 func ReportsDir() string { return engine.ReportsDir() }
