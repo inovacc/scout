@@ -42,8 +42,11 @@ type Report struct {
 	Crawl     *CrawlReport  `json:"crawl,omitempty"`
 }
 
-// ReportsDir returns the base directory for reports: ~/.scout/reports.
-func ReportsDir() string {
+// ReportsDir is the function that returns the base directory for reports.
+// It is a variable so tests can override it.
+var ReportsDir = defaultReportsDir
+
+func defaultReportsDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return filepath.Join(os.TempDir(), "scout", "reports")
