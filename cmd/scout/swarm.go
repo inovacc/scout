@@ -31,9 +31,11 @@ func init() {
 	swarmStartCmd.Flags().Int("max-pages", 100, "maximum total pages to crawl")
 	swarmStartCmd.Flags().String("browser", "chrome", "browser type: chrome, brave, edge")
 	swarmStartCmd.Flags().Bool("report", false, "save crawl report to ~/.scout/reports/")
+	swarmStartCmd.Flags().StringSlice("proxy", nil, "proxy per worker (round-robin), e.g. --proxy socks5://ip1:port --proxy http://ip2:port")
 
 	swarmJoinCmd.Flags().String("browser", "", "browser type: chrome, brave, edge (default: coordinator's choice)")
 	swarmJoinCmd.Flags().Bool("headless", true, "run browser in headless mode")
+	swarmJoinCmd.Flags().String("proxy", "", "proxy URL for this worker (e.g. socks5://ip:port)")
 
 	rootCmd.AddCommand(swarmCmd)
 }
@@ -80,11 +82,7 @@ var swarmStartCmd = &cobra.Command{
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Seed: %s\n\n", seedURL)
 
 		// Build browser options for workers.
-		browserOpts := []engine.Option{
-			engine.WithHeadless(isHeadless(cmd)),
-			engine.WithNoSandbox(),
-			engine.WithBrowser(engine.BrowserType(browserType)),
-		}
+		proxies, _ := cmd.Flags().GetStringSlice("proxy")
 
 		// Spawn workers.
 		workers := make([]*swarm.Worker, numWorkers)
@@ -92,8 +90,21 @@ var swarmStartCmd = &cobra.Command{
 
 		for i := range numWorkers {
 			id := fmt.Sprintf("worker-%d", i)
+			opts := []engine.Option{
+				engine.WithHeadless(isHeadless(cmd)),
+				engine.WithNoSandbox(),
+				engine.WithBrowser(engine.BrowserType(browserType)),
+			}
+
+			// Round-robin proxy assignment.
+			if len(proxies) > 0 {
+				proxy := proxies[i%len(proxies)]
+				opts = append(opts, engine.WithProxy(proxy))
+				logger.Info("worker proxy assigned", "worker", id, "proxy", proxy)
+			}
+
 			w := swarm.NewWorker(id, "", cfg.BatchSize, logger,
-				swarm.WithWorkerBrowser(browserOpts...),
+				swarm.WithWorkerBrowser(opts...),
 			)
 			if err := w.Connect(coord); err != nil {
 				cancel()
@@ -277,12 +288,17 @@ var swarmJoinCmd = &cobra.Command{
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Joined swarm at %s as %s (batch_size=%d)\n", addr, workerID, batchSize)
 
 		// Build browser options.
+		proxyURL, _ := cmd.Flags().GetString("proxy")
 		browserOpts := []engine.Option{
 			engine.WithHeadless(headless),
 			engine.WithNoSandbox(),
 		}
 		if browserType != "" {
 			browserOpts = append(browserOpts, engine.WithBrowser(engine.BrowserType(browserType)))
+		}
+		if proxyURL != "" {
+			browserOpts = append(browserOpts, engine.WithProxy(proxyURL))
+			logger.Info("using proxy", "proxy", proxyURL)
 		}
 
 		// Create a browser for local crawling.
