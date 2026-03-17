@@ -24,6 +24,8 @@ type Manifest struct {
 	Resources         []ResourceEntry       `json:"resources,omitempty"`
 	ResourceTemplates []ResourceTplEntry    `json:"resource_templates,omitempty"`
 	Prompts           []PromptEntry         `json:"prompts,omitempty"`
+	Sinks             []SinkEntry           `json:"sinks,omitempty"`
+	Middleware        *MiddlewareEntry      `json:"middleware,omitempty"`
 
 	// Dir is the directory containing the manifest (set during loading).
 	Dir string `json:"-"`
@@ -75,6 +77,19 @@ type PromptArgEntry struct {
 	Required    bool   `json:"required,omitempty"`
 }
 
+// MiddlewareEntry declares browser middleware in the manifest.
+type MiddlewareEntry struct {
+	Hooks    []string `json:"hooks"`    // before_navigate, after_load, before_extract, on_error
+	Priority int      `json:"priority"` // 0=first, 100=last
+}
+
+// SinkEntry declares an output sink in the manifest.
+type SinkEntry struct {
+	Name         string         `json:"name"`
+	Description  string         `json:"description"`
+	ConfigSchema map[string]any `json:"config_schema,omitempty"`
+}
+
 // AuthEntry declares an auth provider in the manifest.
 type AuthEntry struct {
 	Name          string   `json:"name"`
@@ -123,7 +138,7 @@ func (m *Manifest) validate() error {
 		return fmt.Errorf("at least one capability is required")
 	}
 
-	valid := map[string]bool{"scraper_mode": true, "extractor": true, "mcp_tool": true, "cli_command": true, "auth_provider": true, "mcp_resource": true, "mcp_prompt": true}
+	valid := map[string]bool{"scraper_mode": true, "extractor": true, "mcp_tool": true, "cli_command": true, "auth_provider": true, "mcp_resource": true, "mcp_prompt": true, "output_sink": true, "browser_middleware": true}
 	for _, c := range m.Capabilities {
 		if !valid[c] {
 			return fmt.Errorf("unknown capability: %s", c)

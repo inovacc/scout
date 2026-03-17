@@ -1,0 +1,57 @@
+{
+  "name": "scout-content",
+  "version": "1.0.0",
+  "description": "Content extraction: markdown, table, meta, and PDF generation from browser pages",
+  "author": "inovacc",
+  "command": "scout-content",
+  "capabilities": ["mcp_tool"],
+  "tools": [
+    {
+      "name": "markdown",
+      "description": "Extract the current page content as Markdown",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "description": "URL to extract (navigates if provided)"},
+          "mainOnly": {"type": "boolean", "description": "extract only main content (readability mode)"},
+          "includeImages": {"type": "boolean", "description": "include images in output"},
+          "includeLinks": {"type": "boolean", "description": "render links as markdown links"}
+        }
+      }
+    },
+    {
+      "name": "table",
+      "description": "Extract table data from the current page or a specific table element",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "description": "URL to extract tables from"},
+          "selector": {"type": "string", "description": "CSS selector for a specific table"},
+          "format": {"type": "string", "description": "output format: json (default) or csv", "default": "json"}
+        }
+      }
+    },
+    {
+      "name": "meta",
+      "description": "Extract page metadata: title, description, OG tags, Twitter cards, JSON-LD, canonical URL",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "description": "URL to extract metadata from"}
+        }
+      }
+    },
+    {
+      "name": "pdf",
+      "description": "Generate a PDF of the current page",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "description": "URL to generate PDF from"},
+          "landscape": {"type": "boolean", "description": "landscape orientation"},
+          "path": {"type": "string", "description": "output file path (default: page-title.pdf)"}
+        }
+      }
+    }
+  ]
+}

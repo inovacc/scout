@@ -19,6 +19,8 @@ type Server struct {
 	auth        AuthHandler
 	resources   map[string]ResourceHandler
 	prompts     map[string]PromptHandler
+	sinks       map[string]SinkHandler
+	middleware  MiddlewareHandler
 	encoder     *json.Encoder
 	mu          sync.Mutex
 }
@@ -108,6 +110,7 @@ func NewServer() *Server {
 		completions: make(map[string]CompletionHandler),
 		resources:   make(map[string]ResourceHandler),
 		prompts:     make(map[string]PromptHandler),
+		sinks:       make(map[string]SinkHandler),
 		encoder:     json.NewEncoder(os.Stdout),
 	}
 }
@@ -140,6 +143,16 @@ func (s *Server) RegisterResource(uri string, handler ResourceHandler) {
 // RegisterPrompt registers a prompt handler by name.
 func (s *Server) RegisterPrompt(name string, handler PromptHandler) {
 	s.prompts[name] = handler
+}
+
+// RegisterSink registers an output sink handler by name.
+func (s *Server) RegisterSink(name string, handler SinkHandler) {
+	s.sinks[name] = handler
+}
+
+// RegisterMiddleware registers a browser middleware handler.
+func (s *Server) RegisterMiddleware(handler MiddlewareHandler) {
+	s.middleware = handler
 }
 
 // RegisterCommand registers a CLI command handler.
@@ -259,6 +272,133 @@ func (s *Server) handleRequest(ctx context.Context, req *request) {
 		}
 
 		s.sendResult(req.ID, result)
+
+	case "middleware/before_navigate", "middleware/after_load", "middleware/before_extract", "middleware/on_error":
+		if s.middleware == nil {
+			s.sendError(req.ID, -32601, "no middleware handler registered")
+			return
+		}
+
+		var hookCtx MiddlewareContext
+		if err := json.Unmarshal(req.Params, &hookCtx); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		var result *MiddlewareResult
+		var mwErr error
+
+		switch req.Method {
+		case "middleware/before_navigate":
+			result, mwErr = s.middleware.BeforeNavigate(ctx, hookCtx)
+		case "middleware/after_load":
+			result, mwErr = s.middleware.AfterLoad(ctx, hookCtx)
+		case "middleware/before_extract":
+			result, mwErr = s.middleware.BeforeExtract(ctx, hookCtx)
+		case "middleware/on_error":
+			result, mwErr = s.middleware.OnError(ctx, hookCtx)
+		}
+
+		if mwErr != nil {
+			s.sendError(req.ID, -32603, mwErr.Error())
+			return
+		}
+
+		s.sendResult(req.ID, result)
+
+	case "sink/init":
+		var params struct {
+			Name   string         `json:"name"`
+			Config map[string]any `json:"config"`
+		}
+
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		handler, ok := s.sinks[params.Name]
+		if !ok {
+			s.sendError(req.ID, -32601, fmt.Sprintf("unknown sink: %s", params.Name))
+			return
+		}
+
+		if err := handler.Init(ctx, params.Config); err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, map[string]any{"ok": true})
+
+	case "sink/write":
+		var params struct {
+			Name    string           `json:"name"`
+			Results []map[string]any `json:"results"`
+		}
+
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		handler, ok := s.sinks[params.Name]
+		if !ok {
+			s.sendError(req.ID, -32601, fmt.Sprintf("unknown sink: %s", params.Name))
+			return
+		}
+
+		if err := handler.Write(ctx, params.Results); err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, map[string]any{"ok": true})
+
+	case "sink/flush":
+		var params struct {
+			Name string `json:"name"`
+		}
+
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		handler, ok := s.sinks[params.Name]
+		if !ok {
+			s.sendError(req.ID, -32601, fmt.Sprintf("unknown sink: %s", params.Name))
+			return
+		}
+
+		if err := handler.Flush(ctx); err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, map[string]any{"ok": true})
+
+	case "sink/close":
+		var params struct {
+			Name string `json:"name"`
+		}
+
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		handler, ok := s.sinks[params.Name]
+		if !ok {
+			s.sendError(req.ID, -32601, fmt.Sprintf("unknown sink: %s", params.Name))
+			return
+		}
+
+		if err := handler.Close(ctx); err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, map[string]any{"ok": true})
 
 	case "resource/read":
 		var params struct {
@@ -475,6 +615,14 @@ func (s *Server) capabilities() []string {
 
 	if s.auth != nil {
 		caps = append(caps, "auth_provider")
+	}
+
+	if s.middleware != nil {
+		caps = append(caps, "browser_middleware")
+	}
+
+	if len(s.sinks) > 0 {
+		caps = append(caps, "output_sink")
 	}
 
 	if len(s.resources) > 0 {

@@ -8,7 +8,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// registerContentTools adds markdown, table, and meta extraction tools.
+// Deprecated: registerContentTools adds markdown, table, and meta extraction tools.
+// These tools are now available as the scout-content plugin. Built-in versions will be
+// removed after 2026-04-16. Install: scout plugin install ./plugins/scout-content
 func registerContentTools(server *mcp.Server, state *mcpState) {
 	addTracedTool(server, &mcp.Tool{
 		Name:        "markdown",

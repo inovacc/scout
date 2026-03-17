@@ -12,25 +12,17 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P1 | 59c: MCP resources & prompts plugin capability | Simplest new capability — extends existing MCP registration |
-| P1 | 59b: Auth provider plugin capability | Unblocks mode migration — `AuthProxy` implements `auth.Provider` via RPC |
 | P1 | 59e: Output sink plugin capability | Custom result destinations (S3, DB, webhook) via `sink/*` RPC |
 | P2 | 59a: Browser middleware plugin capability | Hook points in Navigate/WaitLoad/Extract with priority chain |
 | P2 | 59d: Event hook plugin capability | Bridge + hijack event forwarding to plugins with rate limiting |
 | P2 | 59f: Scraper modes → plugins (4 batches, 19 modes) | Depends on 59b+59d — modes use auth and events |
 | P2 | Plugin distribution via GitHub Releases | Ship pre-built plugin binaries per OS/arch |
 | P1 | Phase 60: TikTok scraper mode | Video metadata, comments, profiles, trending; API interception |
-| P1 | Phase 61: Strategy files | Declarative YAML workflows: auth, steps, sinks, orchestration |
 | P2 | Phase 62: API middleware proxy | HTTP reverse proxy turning legacy sites into REST/JSON endpoints |
-| P1 | Phase 63: CLI command plugin capability | `cli_command` capability, `CommandProxy`, `command/execute` RPC — Done |
-| P1 | Phase 64: Wave 1 — Diagnostics plugin migration | DEPRECATION: remove diag.go, tools_report.go after plugin release +30 days |
 | P1 | Phase 65: Wave 2 — Content plugin migration | DEPRECATION: remove tools_content.go, pdf from tools_capture.go after +30 days |
 | P2 | Phase 66: Wave 3 — Search plugin migration | DEPRECATION: remove tools_search.go after +30 days |
 | P2 | Phase 67: Wave 4 — Network/Forms plugin migration | DEPRECATION: remove tools_network.go, tools_form.go, tools_inspect.go after +30 days |
 | P2 | Phase 68: Wave 5 — Analysis/Guides plugin migration | DEPRECATION: remove tools_analysis.go, tools_swarm.go, tools_guide.go after +30 days |
-| P1 | ~~Web Search MCP tool improvements~~ | Done — `search_and_extract` already uses goroutines + WaitGroup for parallel fetch |
-| P2 | ~~Step-by-Step Guide Generator~~ | Done — `pkg/scout/guide/` with Recorder, Step, Guide, RenderMarkdown |
-| P2 | ~~Deprecate `pkg/scout/recipe/` package~~ | Done — removed 2026-03-16, consumers migrated to `runbook` directly |
 
 ## Completed Items (Archive)
 
@@ -94,6 +86,12 @@
 | ManagedPagePool | Phase 58 — concurrent page pool with acquire/release lifecycle |
 | Recipe removal | Phase 58 — deprecated `pkg/scout/recipe/` deleted, consumers migrated to `runbook` |
 | Default browser BestCached | Phase 58 — fixes "Failed to get debug url" by preferring cached browsers |
+| Strategy files | Phase 61 — `pkg/scout/strategy/` YAML/JSON workflows with env expansion, validation, executor, 3 sinks, CLI |
+| CLI command plugin capability | Phase 63 — `CommandProxy`, `command/execute` RPC, `BrowserContext` CDP forwarding |
+| Auth provider plugin capability | Phase 59b — `AuthProxy` via JSON-RPC, SDK `RegisterAuth()`, `auth/detect/capture/validate` |
+| MCP resources & prompts plugin capability | Phase 59c — `ResourceProxy`, `PromptProxy`, SDK `RegisterResource/RegisterPrompt` |
+| Diagnostics plugin migration | Phase 64 Wave 1 — `scout-diag` (ping, curl) + `scout-reports` (report_list/show/delete) plugins |
+| Browser isolation | Default `browser list` shows only cached; system scan behind `--detect` flag |
 </details>
 
 <details>

@@ -34,6 +34,7 @@ import (
 	_ "github.com/inovacc/scout/pkg/scout/scraper/modes/slack"
 	_ "github.com/inovacc/scout/pkg/scout/scraper/modes/teams"
 	_ "github.com/inovacc/scout/pkg/scout/scraper/modes/twitter"
+	_ "github.com/inovacc/scout/pkg/scout/scraper/modes/tiktok"
 	_ "github.com/inovacc/scout/pkg/scout/scraper/modes/youtube"
 )
 
