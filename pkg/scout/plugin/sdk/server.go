@@ -21,6 +21,7 @@ type Server struct {
 	prompts     map[string]PromptHandler
 	sinks       map[string]SinkHandler
 	middleware  MiddlewareHandler
+	eventHandler EventHandler
 	encoder     *json.Encoder
 	mu          sync.Mutex
 }
@@ -155,6 +156,11 @@ func (s *Server) RegisterMiddleware(handler MiddlewareHandler) {
 	s.middleware = handler
 }
 
+// OnEvent registers an event handler for browser events.
+func (s *Server) OnEvent(handler EventHandler) {
+	s.eventHandler = handler
+}
+
 // RegisterCommand registers a CLI command handler.
 func (s *Server) RegisterCommand(name string, handler CommandHandler) {
 	s.commands[name] = handler
@@ -272,6 +278,17 @@ func (s *Server) handleRequest(ctx context.Context, req *request) {
 		}
 
 		s.sendResult(req.ID, result)
+
+	case "event/emit":
+		if s.eventHandler != nil {
+			var event EventData
+			if err := json.Unmarshal(req.Params, &event); err == nil {
+				s.eventHandler.OnEvent(ctx, event)
+			}
+		}
+		// Notifications don't get responses, but since this comes as a request
+		// (with an ID), acknowledge it.
+		s.sendResult(req.ID, map[string]any{"ok": true})
 
 	case "middleware/before_navigate", "middleware/after_load", "middleware/before_extract", "middleware/on_error":
 		if s.middleware == nil {
@@ -619,6 +636,10 @@ func (s *Server) capabilities() []string {
 
 	if s.middleware != nil {
 		caps = append(caps, "browser_middleware")
+	}
+
+	if s.eventHandler != nil {
+		caps = append(caps, "event_hook")
 	}
 
 	if len(s.sinks) > 0 {

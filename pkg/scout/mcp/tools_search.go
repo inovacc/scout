@@ -10,7 +10,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// registerSearchTools adds search and fetch tools.
+// Deprecated: registerSearchTools adds search and fetch tools.
+// These tools are now available as the scout-search plugin. Built-in versions will be
+// removed after 2026-04-16. Install: scout plugin install ./plugins/scout-search
 func registerSearchTools(server *mcp.Server, state *mcpState) {
 	addTracedTool(server, &mcp.Tool{
 		Name:        "search",

@@ -1,0 +1,50 @@
+{
+  "name": "scout-search",
+  "version": "1.0.0",
+  "description": "Web search and content fetching: search, search_and_extract, fetch",
+  "author": "inovacc",
+  "command": "scout-search",
+  "capabilities": ["mcp_tool"],
+  "tools": [
+    {
+      "name": "search",
+      "description": "Search the web using Google, Bing, or DuckDuckGo and return structured SERP results",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {"type": "string", "description": "search query"},
+          "engine": {"type": "string", "description": "search engine: google, bing, duckduckgo (default google)", "default": "google"},
+          "limit": {"type": "integer", "description": "max results (default 10)", "default": 10}
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "search_and_extract",
+      "description": "Search the web and extract full page content from top results in parallel",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {"type": "string", "description": "search query"},
+          "engine": {"type": "string", "description": "search engine (default google)"},
+          "limit": {"type": "integer", "description": "max results to fetch (default 3)", "default": 3},
+          "format": {"type": "string", "description": "content format: markdown or text (default markdown)", "default": "markdown"}
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "fetch",
+      "description": "Fetch a URL and extract structured content (title, text, links, metadata)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "description": "URL to fetch"},
+          "format": {"type": "string", "description": "output format: markdown, text, html (default markdown)", "default": "markdown"},
+          "selector": {"type": "string", "description": "CSS selector to extract specific content"}
+        },
+        "required": ["url"]
+      }
+    }
+  ]
+}

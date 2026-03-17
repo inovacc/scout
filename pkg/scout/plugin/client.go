@@ -169,6 +169,17 @@ func (c *Client) Call(ctx context.Context, method string, params any) (json.RawM
 	}
 }
 
+// Notify sends a JSON-RPC notification (no response expected) to the plugin.
+func (c *Client) Notify(method string, params any) error {
+	msg := map[string]any{
+		"jsonrpc": "2.0",
+		"method":  method,
+		"params":  params,
+	}
+
+	return c.encoder.Encode(msg)
+}
+
 // Notifications returns the channel for receiving plugin notifications.
 func (c *Client) Notifications() <-chan *Notification {
 	return c.notify

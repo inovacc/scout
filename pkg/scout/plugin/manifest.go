@@ -26,6 +26,7 @@ type Manifest struct {
 	Prompts           []PromptEntry         `json:"prompts,omitempty"`
 	Sinks             []SinkEntry           `json:"sinks,omitempty"`
 	Middleware        *MiddlewareEntry      `json:"middleware,omitempty"`
+	Events           *EventEntry           `json:"events,omitempty"`
 
 	// Dir is the directory containing the manifest (set during loading).
 	Dir string `json:"-"`
@@ -75,6 +76,12 @@ type PromptArgEntry struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Required    bool   `json:"required,omitempty"`
+}
+
+// EventEntry declares event subscriptions in the manifest.
+type EventEntry struct {
+	Subscribe []string `json:"subscribe"` // dom.mutation, navigation, console.log, network.request, etc.
+	Actions   []string `json:"actions"`   // inject_js, screenshot, navigate
 }
 
 // MiddlewareEntry declares browser middleware in the manifest.
@@ -138,7 +145,7 @@ func (m *Manifest) validate() error {
 		return fmt.Errorf("at least one capability is required")
 	}
 
-	valid := map[string]bool{"scraper_mode": true, "extractor": true, "mcp_tool": true, "cli_command": true, "auth_provider": true, "mcp_resource": true, "mcp_prompt": true, "output_sink": true, "browser_middleware": true}
+	valid := map[string]bool{"scraper_mode": true, "extractor": true, "mcp_tool": true, "cli_command": true, "auth_provider": true, "mcp_resource": true, "mcp_prompt": true, "output_sink": true, "browser_middleware": true, "event_hook": true}
 	for _, c := range m.Capabilities {
 		if !valid[c] {
 			return fmt.Errorf("unknown capability: %s", c)
