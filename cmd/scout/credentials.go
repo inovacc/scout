@@ -16,12 +16,17 @@ var credentialsCmd = &cobra.Command{
 
 var credentialsCaptureCmd = &cobra.Command{
 	Use:   "capture <url>",
-	Short: "Open browser for manual login, capture all auth state on Ctrl+C",
+	Short: "Open browser for manual login, capture all auth state",
 	Long: `Opens a visible browser to the given URL. Log in manually, navigate freely.
-Press Ctrl+C when done — all authentication state is captured to a JSON file:
-cookies, localStorage, sessionStorage, user agent, browser version.
 
-The output file can be used with 'scout credentials replay' to restore the session.`,
+By default, press Ctrl+C when done. With --on-close, simply close the browser
+window — credentials are captured automatically (snapshots taken every 2s).
+
+Captures: cookies, localStorage, sessionStorage, user agent, browser version.
+The output file can be used with 'scout credentials replay' to restore the session.
+
+With --on-close, the session directory is deleted after capture unless --persist
+is set.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		outFile, _ := cmd.Flags().GetString("output")
@@ -29,21 +34,46 @@ The output file can be used with 'scout credentials replay' to restore the sessi
 			outFile = "credentials.json"
 		}
 
+		onClose, _ := cmd.Flags().GetBool("on-close")
+		persist, _ := cmd.Flags().GetBool("persist")
+
 		w := cmd.OutOrStdout()
 		_, _ = fmt.Fprintf(w, "Launching browser to %s\n", args[0])
-		_, _ = fmt.Fprintln(w, "Log in manually, then press Ctrl+C to capture credentials.")
 
 		opts := baseOpts(cmd)
-		// Force headed mode — override headless.
 		opts = append(opts, scout.WithHeadless(false))
 
-		creds, err := scout.CaptureCredentials(context.Background(), args[0], opts...)
-		if err != nil {
-			return err
-		}
+		var creds *scout.CapturedCredentials
 
-		if err := scout.SaveCredentials(creds, outFile); err != nil {
-			return err
+		if onClose {
+			_, _ = fmt.Fprintln(w, "Log in manually, then close the browser to capture credentials.")
+
+			captureOpts := []scout.CaptureOption{
+				scout.WithCaptureSavePath(outFile),
+			}
+			if persist {
+				captureOpts = append(captureOpts, scout.WithCapturePersist())
+			}
+
+			var err error
+
+			creds, err = scout.CaptureOnClose(context.Background(), args[0], opts, captureOpts...)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, _ = fmt.Fprintln(w, "Log in manually, then press Ctrl+C to capture credentials.")
+
+			var err error
+
+			creds, err = scout.CaptureCredentials(context.Background(), args[0], opts...)
+			if err != nil {
+				return err
+			}
+
+			if err := scout.SaveCredentials(creds, outFile); err != nil {
+				return err
+			}
 		}
 
 		_, _ = fmt.Fprintf(w, "\nCredentials saved to: %s\n", outFile)
@@ -55,6 +85,10 @@ The output file can be used with 'scout credentials replay' to restore the sessi
 		_, _ = fmt.Fprintf(w, "  LocalStorage:     %d keys\n", len(creds.LocalStorage))
 		_, _ = fmt.Fprintf(w, "  SessionStorage:   %d keys\n", len(creds.SessionStorage))
 		_, _ = fmt.Fprintf(w, "  Captured at:      %s\n", creds.CapturedAt.Format(time.RFC3339))
+
+		if persist {
+			_, _ = fmt.Fprintln(w, "  Session:          persisted")
+		}
 
 		return nil
 	},
@@ -152,6 +186,9 @@ var credentialsShowCmd = &cobra.Command{
 }
 
 func init() {
+	credentialsCaptureCmd.Flags().Bool("on-close", false, "Capture when browser window is closed (instead of Ctrl+C)")
+	credentialsCaptureCmd.Flags().Bool("persist", false, "Keep session directory after capture (use with --on-close)")
+
 	credentialsCmd.AddCommand(credentialsCaptureCmd, credentialsReplayCmd, credentialsShowCmd)
 	rootCmd.AddCommand(credentialsCmd)
 }

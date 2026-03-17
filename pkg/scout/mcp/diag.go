@@ -104,7 +104,9 @@ type curlResponse struct {
 	Error         string            `json:"error,omitempty"`
 }
 
-// registerDiagTools adds ping and curl diagnostic tools to the MCP server.
+// Deprecated: registerDiagTools adds ping and curl diagnostic tools to the MCP server.
+// These tools are now available as the scout-diag plugin. Built-in versions will be
+// removed after 2026-04-16. Install: scout plugin install ./plugins/scout-diag
 func registerDiagTools(server *mcp.Server, state *mcpState) {
 	addTracedTool(server, &mcp.Tool{
 		Name:        "ping",

@@ -27,3 +27,5 @@ No open issues at this time.
 | Session directory not cleaned on close | Fixed: `launcher.Cleanup()` made synchronous (was `go` goroutine, racing process exit) | 2026-03 |
 | MCP `screenshot`/`navigate` timeout (`context deadline exceeded`) | Fixed: `WithTimeout(0)` disables rod 30s page timeout for MCP; `WaitLoad` made best-effort with 15s cap | 2026-03 |
 | MCP session disconnect after `session_reset` | Fixed: close page before browser + 500ms delay for OS port/dir cleanup | 2026-03 |
+| Sitemap extract drops CDP connection on Chrome for Testing | Fixed: `Bridge.ResetReady()` clears stale `available` flag before each navigation; Chrome for Testing kills WebSocket on stale binding access | 2026-03 |
+| `scout browser list` leaks system browser paths | Fixed: default mode shows only `~/.scout/browsers/` cache; system scan moved behind `--detect` flag | 2026-03 |

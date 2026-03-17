@@ -40,6 +40,7 @@ type BrowserInfo = engine.BrowserInfo
 type BrowserType = engine.BrowserType
 type CapSolverService = engine.CapSolverService
 type CaptchaSolverService = engine.CaptchaSolverService
+type CaptureOption = engine.CaptureOption
 type CapturedCredentials = engine.CapturedCredentials
 type CapturedRequest = engine.CapturedRequest
 type CapturedResponse = engine.CapturedResponse
@@ -257,6 +258,7 @@ var (
 	BridgeEventUserInput = engine.BridgeEventUserInput
 	BrowserBrave = engine.BrowserBrave
 	BrowserChrome = engine.BrowserChrome
+	BrowserChromium = engine.BrowserChromium
 	BrowserEdge = engine.BrowserEdge
 	BrowserElectron = engine.BrowserElectron
 	BuiltinTemplates = engine.BuiltinTemplates
@@ -321,6 +323,7 @@ var (
 
 func BrowserCacheDir() (string, error) { return browser.CacheDir() }
 func CaptureCredentials(ctx context.Context, url string, opts ...Option) (*CapturedCredentials, error) { return engine.CaptureCredentials(ctx, url, opts...) }
+func CaptureOnClose(ctx context.Context, url string, browserOpts []Option, opts ...CaptureOption) (*CapturedCredentials, error) { return engine.CaptureOnClose(ctx, url, browserOpts, opts...) }
 func CaptureProfile(page *Page, opts ...ProfileOption) (*UserProfile, error) { return engine.CaptureProfile(page, opts...) }
 func ChromiumDownloadURLs(revision int) []string { return browser.ChromiumDownloadURLs(revision) }
 func CleanOrphans() (int, error) { return engine.CleanOrphans() }
@@ -443,6 +446,8 @@ func WithAnthropicHTTPClient(c *http.Client) AnthropicOption { return engine.Wit
 func WithAnthropicKey(key string) AnthropicOption { return engine.WithAnthropicKey(key) }
 func WithAnthropicModel(model string) AnthropicOption { return engine.WithAnthropicModel(model) }
 func WithAutoBypass(solver *ChallengeSolver) Option { return engine.WithAutoBypass(solver) }
+func WithCaptureSavePath(path string) CaptureOption { return engine.WithCaptureSavePath(path) }
+func WithCapturePersist() CaptureOption { return engine.WithCapturePersist() }
 func WithAutoDetect() Option { return engine.WithAutoDetect() }
 func WithAutoFree(interval time.Duration) Option { return engine.WithAutoFree(interval) }
 func WithAutoFreeCallback(fn func()) Option { return engine.WithAutoFreeCallback(fn) }

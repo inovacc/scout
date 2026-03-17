@@ -4,8 +4,10 @@ package browser
 type BrowserType string
 
 const (
-	// Chrome uses rod's default Chrome/Chromium auto-detection.
+	// Chrome selects Google Chrome for Testing.
 	Chrome BrowserType = "chrome"
+	// Chromium selects open-source Chromium (rod default).
+	Chromium BrowserType = "chromium"
 	// Brave selects Brave Browser.
 	Brave BrowserType = "brave"
 	// Edge selects Microsoft Edge.
@@ -17,7 +19,7 @@ const (
 // DetectedBrowser represents a browser found on the system.
 type DetectedBrowser struct {
 	Name    string      `json:"name"`    // "Google Chrome", "Brave Browser", "Microsoft Edge", "Chromium"
-	Type    BrowserType `json:"type"`    // Chrome, Brave, Edge
+	Type    BrowserType `json:"type"`    // Chrome, Chromium, Brave, Edge
 	Path    string      `json:"path"`    // executable path
 	Version string      `json:"version"` // e.g. "120.0.6099.109"
 }

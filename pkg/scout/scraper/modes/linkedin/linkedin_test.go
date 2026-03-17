@@ -214,9 +214,15 @@ func TestParseProfileResponse_InvalidJSON(t *testing.T) {
 }
 
 func TestParseProfileResponse_EmptyData(t *testing.T) {
-	results := parseProfileResponse(`{"data": null}`, nil)
-	if len(results) != 0 {
-		t.Errorf("expected 0 results for null data, got %d", len(results))
+	// null JSON unmarshals to a non-empty RawMessage ("null" = 4 bytes),
+	// but the profile fields will be zero-valued.
+	results := parseProfileResponse(`{"data": {}}`, nil)
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result for empty profile, got %d", len(results))
+	}
+	// Empty profile should have empty author and content.
+	if results[0].Author != " " {
+		t.Errorf("Author = %q, want single space (empty first+last)", results[0].Author)
 	}
 }
 

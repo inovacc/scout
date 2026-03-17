@@ -10,7 +10,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// registerReportTools adds report management tools.
+// Deprecated: registerReportTools adds report management tools.
+// These tools are now available as the scout-reports plugin. Built-in versions will be
+// removed after 2026-04-16. Install: scout plugin install ./plugins/scout-reports
 func registerReportTools(server *mcp.Server, state *mcpState) {
 	addTracedTool(server, &mcp.Tool{
 		Name:        "report_list",

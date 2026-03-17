@@ -14,3 +14,4 @@
 | Window maximize blank space | Fixed: `setWindowState()` clears `EmulationDeviceMetricsOverride` after maximize/fullscreen | 2026-02 |
 | MCP `screenshot`/`navigate` timeout (`context deadline exceeded`) | Fixed: `WithTimeout(0)` disables rod 30s page timeout for MCP; `WaitLoad` made best-effort with 15s cap | 2026-03 |
 | MCP session disconnect after `session_reset` | Fixed: close page before browser + 500ms delay for OS port/dir cleanup | 2026-03 |
+| Sitemap extract fails on Chrome for Testing after first page | Fixed: stale `Bridge.available` flag never reset between navigations; `ResetReady()` added before each `page.Navigate()` | 2026-03 |

@@ -173,6 +173,20 @@ const commandDispatcherExpr = `function() {
   }
 }`
 
+// ResetReady clears the ready/available flags so that waitBridgeReady will
+// block until the next __bridge_ready event fires. Call this before navigating
+// to a new URL when reusing the same page and bridge.
+func (b *Bridge) ResetReady() {
+	if b == nil {
+		return
+	}
+
+	b.mu.Lock()
+	b.ready = false
+	b.available = false
+	b.mu.Unlock()
+}
+
 // Available returns true if the bridge extension's content script has loaded
 // and signaled readiness.
 func (b *Bridge) Available() bool {

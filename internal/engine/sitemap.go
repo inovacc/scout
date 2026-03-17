@@ -161,6 +161,10 @@ func (b *Browser) SitemapExtract(startURL string, opts ...SitemapOption) (*Sitem
 
 		sp := SitemapPage{URL: item.url, Depth: item.depth}
 
+		// Reset bridge readiness before navigating so waitBridgeReady
+		// blocks until the new page's __bridge_ready event fires.
+		bridge.ResetReady()
+
 		if err := page.Navigate(item.url); err != nil {
 			sp.Error = err.Error()
 			result.Pages = append(result.Pages, sp)

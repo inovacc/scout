@@ -12,8 +12,10 @@ import (
 type BrowserType = browser.BrowserType
 
 const (
-	// BrowserChrome uses rod's default Chrome/Chromium auto-detection.
+	// BrowserChrome selects Google Chrome for Testing.
 	BrowserChrome = browser.Chrome
+	// BrowserChromium selects open-source Chromium (rod default).
+	BrowserChromium = browser.Chromium
 	// BrowserBrave selects Brave Browser.
 	BrowserBrave = browser.Brave
 	// BrowserEdge selects Microsoft Edge.

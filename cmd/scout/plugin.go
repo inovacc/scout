@@ -95,10 +95,30 @@ var pluginListCmd = &cobra.Command{
 
 				_, _ = fmt.Fprintln(cmd.OutOrStdout())
 			}
+
+			printPluginCommands(cmd, p)
 		}
 
 		return nil
 	},
+}
+
+func printPluginCommands(cmd *cobra.Command, p *plugin.Manifest) {
+	if len(p.Commands) == 0 {
+		return
+	}
+
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "    commands: ")
+
+	for i, c := range p.Commands {
+		if i > 0 {
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), ", ")
+		}
+
+		_, _ = fmt.Fprint(cmd.OutOrStdout(), c.Name)
+	}
+
+	_, _ = fmt.Fprintln(cmd.OutOrStdout())
 }
 
 var pluginInstallCmd = &cobra.Command{

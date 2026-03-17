@@ -11,11 +11,16 @@ import (
 
 // Server is the plugin-side framework for handling JSON-RPC 2.0 requests from Scout.
 type Server struct {
-	modes      map[string]ModeHandler
-	extractors map[string]ExtractorHandler
-	tools      map[string]ToolHandler
-	encoder    *json.Encoder
-	mu         sync.Mutex
+	modes       map[string]ModeHandler
+	extractors  map[string]ExtractorHandler
+	tools       map[string]ToolHandler
+	commands    map[string]CommandHandler
+	completions map[string]CompletionHandler
+	auth        AuthHandler
+	resources   map[string]ResourceHandler
+	prompts     map[string]PromptHandler
+	encoder     *json.Encoder
+	mu          sync.Mutex
 }
 
 // ModeHandler handles scrape requests.
@@ -96,10 +101,14 @@ func ErrorResult(msg string) *ToolResult {
 // NewServer creates a new plugin server.
 func NewServer() *Server {
 	return &Server{
-		modes:      make(map[string]ModeHandler),
-		extractors: make(map[string]ExtractorHandler),
-		tools:      make(map[string]ToolHandler),
-		encoder:    json.NewEncoder(os.Stdout),
+		modes:       make(map[string]ModeHandler),
+		extractors:  make(map[string]ExtractorHandler),
+		tools:       make(map[string]ToolHandler),
+		commands:    make(map[string]CommandHandler),
+		completions: make(map[string]CompletionHandler),
+		resources:   make(map[string]ResourceHandler),
+		prompts:     make(map[string]PromptHandler),
+		encoder:     json.NewEncoder(os.Stdout),
 	}
 }
 
@@ -116,6 +125,31 @@ func (s *Server) RegisterExtractor(name string, handler ExtractorHandler) {
 // RegisterTool registers an MCP tool handler.
 func (s *Server) RegisterTool(name string, handler ToolHandler) {
 	s.tools[name] = handler
+}
+
+// RegisterAuth registers an auth provider handler.
+func (s *Server) RegisterAuth(handler AuthHandler) {
+	s.auth = handler
+}
+
+// RegisterResource registers a resource handler by URI.
+func (s *Server) RegisterResource(uri string, handler ResourceHandler) {
+	s.resources[uri] = handler
+}
+
+// RegisterPrompt registers a prompt handler by name.
+func (s *Server) RegisterPrompt(name string, handler PromptHandler) {
+	s.prompts[name] = handler
+}
+
+// RegisterCommand registers a CLI command handler.
+func (s *Server) RegisterCommand(name string, handler CommandHandler) {
+	s.commands[name] = handler
+}
+
+// RegisterCompletion registers a completion handler for a command.
+func (s *Server) RegisterCompletion(name string, handler CompletionHandler) {
+	s.completions[name] = handler
 }
 
 // Run starts the JSON-RPC 2.0 message loop, reading from stdin and writing to stdout.
@@ -226,6 +260,195 @@ func (s *Server) handleRequest(ctx context.Context, req *request) {
 
 		s.sendResult(req.ID, result)
 
+	case "resource/read":
+		var params struct {
+			URI string `json:"uri"`
+		}
+
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		handler, ok := s.resources[params.URI]
+		if !ok {
+			// Try prefix matching for templates.
+			for uri, h := range s.resources {
+				if params.URI == uri {
+					handler = h
+					ok = true
+
+					break
+				}
+			}
+		}
+
+		if !ok {
+			s.sendError(req.ID, -32601, fmt.Sprintf("unknown resource: %s", params.URI))
+			return
+		}
+
+		content, mimeType, err := handler.Read(ctx, params.URI)
+		if err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, map[string]string{"content": content, "mimeType": mimeType})
+
+	case "resource/list":
+		var resources []map[string]string
+
+		for uri := range s.resources {
+			resources = append(resources, map[string]string{"uri": uri})
+		}
+
+		s.sendResult(req.ID, resources)
+
+	case "prompt/get":
+		var params struct {
+			Name      string            `json:"name"`
+			Arguments map[string]string `json:"arguments"`
+		}
+
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		handler, ok := s.prompts[params.Name]
+		if !ok {
+			s.sendError(req.ID, -32601, fmt.Sprintf("unknown prompt: %s", params.Name))
+			return
+		}
+
+		messages, err := handler.Get(ctx, params.Name, params.Arguments)
+		if err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, messages)
+
+	case "prompt/list":
+		var prompts []map[string]string
+
+		for name := range s.prompts {
+			prompts = append(prompts, map[string]string{"name": name})
+		}
+
+		s.sendResult(req.ID, prompts)
+
+	case "auth/login_url":
+		if s.auth == nil {
+			s.sendError(req.ID, -32601, "no auth handler registered")
+			return
+		}
+
+		s.sendResult(req.ID, map[string]string{"url": s.auth.LoginURL()})
+
+	case "auth/detect":
+		if s.auth == nil {
+			s.sendError(req.ID, -32601, "no auth handler registered")
+			return
+		}
+
+		var state PageState
+		if err := json.Unmarshal(req.Params, &state); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		detected, err := s.auth.Detect(ctx, state)
+		if err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, map[string]bool{"detected": detected})
+
+	case "auth/capture":
+		if s.auth == nil {
+			s.sendError(req.ID, -32601, "no auth handler registered")
+			return
+		}
+
+		var state PageState
+		if err := json.Unmarshal(req.Params, &state); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		session, err := s.auth.Capture(ctx, state)
+		if err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, session)
+
+	case "auth/validate":
+		if s.auth == nil {
+			s.sendError(req.ID, -32601, "no auth handler registered")
+			return
+		}
+
+		var session SessionData
+		if err := json.Unmarshal(req.Params, &session); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		valid, reason, err := s.auth.Validate(ctx, session)
+		if err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, map[string]any{"valid": valid, "reason": reason})
+
+	case "command/execute":
+		var params CommandParams
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		handler, ok := s.commands[params.Command]
+		if !ok {
+			s.sendError(req.ID, -32601, fmt.Sprintf("unknown command: %s", params.Command))
+			return
+		}
+
+		result, err := handler.Execute(ctx, params)
+		if err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, result)
+
+	case "command/complete":
+		var params CompletionParams
+		if err := json.Unmarshal(req.Params, &params); err != nil {
+			s.sendError(req.ID, -32602, "invalid params")
+			return
+		}
+
+		handler, ok := s.completions[params.Command]
+		if !ok {
+			s.sendResult(req.ID, []string{})
+			return
+		}
+
+		suggestions, err := handler.Complete(ctx, params)
+		if err != nil {
+			s.sendError(req.ID, -32603, err.Error())
+			return
+		}
+
+		s.sendResult(req.ID, suggestions)
+
 	case "shutdown":
 		s.sendResult(req.ID, map[string]any{})
 
@@ -248,6 +471,22 @@ func (s *Server) capabilities() []string {
 
 	if len(s.tools) > 0 {
 		caps = append(caps, "mcp_tool")
+	}
+
+	if s.auth != nil {
+		caps = append(caps, "auth_provider")
+	}
+
+	if len(s.resources) > 0 {
+		caps = append(caps, "mcp_resource")
+	}
+
+	if len(s.prompts) > 0 {
+		caps = append(caps, "mcp_prompt")
+	}
+
+	if len(s.commands) > 0 {
+		caps = append(caps, "cli_command")
 	}
 
 	return caps

@@ -1,0 +1,37 @@
+{
+  "name": "scout-reports",
+  "version": "1.0.0",
+  "description": "Report management: list, show, and delete saved health check, gather, and crawl reports",
+  "author": "inovacc",
+  "command": "scout-reports",
+  "capabilities": ["mcp_tool"],
+  "tools": [
+    {
+      "name": "report_list",
+      "description": "List all saved reports (health checks, gathers, crawls) with ID, type, URL, issues count, and creation date",
+      "inputSchema": {"type": "object", "properties": {}}
+    },
+    {
+      "name": "report_show",
+      "description": "Show the full AI-consumable text of a saved report by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "description": "Report ID (UUID)"}
+        },
+        "required": ["id"]
+      }
+    },
+    {
+      "name": "report_delete",
+      "description": "Delete a saved report by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "description": "Report ID (UUID)"}
+        },
+        "required": ["id"]
+      }
+    }
+  ]
+}

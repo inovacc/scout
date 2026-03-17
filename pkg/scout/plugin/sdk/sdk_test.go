@@ -42,11 +42,14 @@ func (m *mockTool) Call(_ context.Context, _ map[string]any) (*ToolResult, error
 // newTestServer creates a Server whose encoder writes to buf instead of stdout.
 func newTestServer(buf *bytes.Buffer) *Server {
 	s := &Server{
-		modes:      make(map[string]ModeHandler),
-		extractors: make(map[string]ExtractorHandler),
-		tools:      make(map[string]ToolHandler),
-		encoder:    json.NewEncoder(buf),
+		modes:       make(map[string]ModeHandler),
+		extractors:  make(map[string]ExtractorHandler),
+		tools:       make(map[string]ToolHandler),
+		commands:    make(map[string]CommandHandler),
+		completions: make(map[string]CompletionHandler),
+		encoder:     json.NewEncoder(buf),
 	}
+
 	return s
 }
 
@@ -65,10 +68,12 @@ type rpcError struct {
 
 func decodeResponse(t *testing.T, buf *bytes.Buffer) rpcResponse {
 	t.Helper()
+
 	var resp rpcResponse
 	if err := json.NewDecoder(buf).Decode(&resp); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
+
 	return resp
 }
 
@@ -79,9 +84,11 @@ func TestNewServer(t *testing.T) {
 	if s == nil {
 		t.Fatal("NewServer returned nil")
 	}
+
 	if s.modes == nil || s.extractors == nil || s.tools == nil {
 		t.Fatal("NewServer did not initialize maps")
 	}
+
 	if s.encoder == nil {
 		t.Fatal("NewServer did not initialize encoder")
 	}
@@ -128,12 +135,15 @@ func TestTextResult(t *testing.T) {
 	if r.IsError {
 		t.Fatal("TextResult should not be an error")
 	}
+
 	if len(r.Content) != 1 {
 		t.Fatalf("expected 1 content item, got %d", len(r.Content))
 	}
+
 	if r.Content[0].Type != "text" {
 		t.Fatalf("expected type 'text', got %q", r.Content[0].Type)
 	}
+
 	if r.Content[0].Text != "hello" {
 		t.Fatalf("expected text 'hello', got %q", r.Content[0].Text)
 	}
@@ -144,9 +154,11 @@ func TestErrorResult(t *testing.T) {
 	if !r.IsError {
 		t.Fatal("ErrorResult should have IsError=true")
 	}
+
 	if len(r.Content) != 1 {
 		t.Fatalf("expected 1 content item, got %d", len(r.Content))
 	}
+
 	if r.Content[0].Text != "bad thing" {
 		t.Fatalf("expected text 'bad thing', got %q", r.Content[0].Text)
 	}
@@ -157,6 +169,7 @@ func TestToolHandlerFunc(t *testing.T) {
 	fn := ToolHandlerFunc(func(_ context.Context, args map[string]any) (*ToolResult, error) {
 		called = true
 		name, _ := args["name"].(string)
+
 		return TextResult("hi " + name), nil
 	})
 
@@ -164,9 +177,11 @@ func TestToolHandlerFunc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+
 	if !called {
 		t.Fatal("handler function was not called")
 	}
+
 	if res.Content[0].Text != "hi world" {
 		t.Fatalf("unexpected result text: %q", res.Content[0].Text)
 	}
@@ -218,6 +233,7 @@ func TestCapabilities(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
+
 			s := newTestServer(&buf)
 			tc.setup(s)
 			caps := s.capabilities()
@@ -225,6 +241,7 @@ func TestCapabilities(t *testing.T) {
 			if len(caps) != len(tc.expected) {
 				t.Fatalf("expected %d capabilities, got %d: %v", len(tc.expected), len(caps), caps)
 			}
+
 			for i, exp := range tc.expected {
 				if caps[i] != exp {
 					t.Errorf("capability[%d] = %q, want %q", i, caps[i], exp)
@@ -236,6 +253,7 @@ func TestCapabilities(t *testing.T) {
 
 func TestHandleRequest_Initialize(t *testing.T) {
 	var buf bytes.Buffer
+
 	s := newTestServer(&buf)
 	s.RegisterMode("m1", &mockMode{})
 	s.RegisterTool("t1", &mockTool{})
@@ -247,6 +265,7 @@ func TestHandleRequest_Initialize(t *testing.T) {
 	if resp.Error != nil {
 		t.Fatalf("unexpected error: %v", resp.Error)
 	}
+
 	if resp.ID != 1 {
 		t.Fatalf("expected id 1, got %d", resp.ID)
 	}
@@ -255,9 +274,11 @@ func TestHandleRequest_Initialize(t *testing.T) {
 	if err := json.Unmarshal(resp.Result, &result); err != nil {
 		t.Fatalf("failed to unmarshal result: %v", err)
 	}
+
 	if result["name"] != "plugin" {
 		t.Fatalf("expected name 'plugin', got %q", result["name"])
 	}
+
 	if result["version"] != "1.0.0" {
 		t.Fatalf("expected version '1.0.0', got %q", result["version"])
 	}
@@ -274,10 +295,10 @@ func TestHandleRequest_Scrape(t *testing.T) {
 		wantCount int
 	}{
 		{
-			name:    "success",
-			mode:    "news",
-			handler: &mockMode{results: []Result{{Type: "article", ID: "1", Content: "hello"}}},
-			params:  `{"mode":"news"}`,
+			name:      "success",
+			mode:      "news",
+			handler:   &mockMode{results: []Result{{Type: "article", ID: "1", Content: "hello"}}},
+			params:    `{"mode":"news"}`,
 			wantCount: 1,
 		},
 		{
@@ -309,7 +330,9 @@ func TestHandleRequest_Scrape(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
+
 			s := newTestServer(&buf)
+
 			if tc.handler != nil {
 				s.RegisterMode(tc.mode, tc.handler)
 			}
@@ -327,6 +350,7 @@ func TestHandleRequest_Scrape(t *testing.T) {
 				if resp.Error == nil {
 					t.Fatal("expected error response")
 				}
+
 				if resp.Error.Code != tc.errCode {
 					t.Fatalf("expected error code %d, got %d", tc.errCode, resp.Error.Code)
 				}
@@ -334,10 +358,12 @@ func TestHandleRequest_Scrape(t *testing.T) {
 				if resp.Error != nil {
 					t.Fatalf("unexpected error: %+v", resp.Error)
 				}
+
 				var results []Result
 				if err := json.Unmarshal(resp.Result, &results); err != nil {
 					t.Fatalf("failed to unmarshal results: %v", err)
 				}
+
 				if len(results) != tc.wantCount {
 					t.Fatalf("expected %d results, got %d", tc.wantCount, len(results))
 				}
@@ -390,6 +416,7 @@ func TestHandleRequest_Extract(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
+
 			s := newTestServer(&buf)
 			if tc.handler != nil {
 				s.RegisterExtractor(tc.extName, tc.handler)
@@ -408,13 +435,12 @@ func TestHandleRequest_Extract(t *testing.T) {
 				if resp.Error == nil {
 					t.Fatal("expected error response")
 				}
+
 				if resp.Error.Code != tc.errCode {
 					t.Fatalf("expected error code %d, got %d", tc.errCode, resp.Error.Code)
 				}
-			} else {
-				if resp.Error != nil {
-					t.Fatalf("unexpected error: %+v", resp.Error)
-				}
+			} else if resp.Error != nil {
+				t.Fatalf("unexpected error: %+v", resp.Error)
 			}
 		})
 	}
@@ -464,7 +490,9 @@ func TestHandleRequest_ToolCall(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
+
 			s := newTestServer(&buf)
+
 			if tc.handler != nil {
 				s.RegisterTool(tc.tool, tc.handler)
 			}
@@ -482,6 +510,7 @@ func TestHandleRequest_ToolCall(t *testing.T) {
 				if resp.Error == nil {
 					t.Fatal("expected error response")
 				}
+
 				if resp.Error.Code != tc.errCode {
 					t.Fatalf("expected error code %d, got %d", tc.errCode, resp.Error.Code)
 				}
@@ -489,10 +518,12 @@ func TestHandleRequest_ToolCall(t *testing.T) {
 				if resp.Error != nil {
 					t.Fatalf("unexpected error: %+v", resp.Error)
 				}
+
 				var result ToolResult
 				if err := json.Unmarshal(resp.Result, &result); err != nil {
 					t.Fatalf("failed to unmarshal tool result: %v", err)
 				}
+
 				if len(result.Content) == 0 {
 					t.Fatal("expected non-empty content")
 				}
@@ -503,6 +534,7 @@ func TestHandleRequest_ToolCall(t *testing.T) {
 
 func TestHandleRequest_UnknownMethod(t *testing.T) {
 	var buf bytes.Buffer
+
 	s := newTestServer(&buf)
 
 	req := &request{JSONRPC: "2.0", ID: 5, Method: "bogus"}
@@ -512,6 +544,7 @@ func TestHandleRequest_UnknownMethod(t *testing.T) {
 	if resp.Error == nil {
 		t.Fatal("expected error for unknown method")
 	}
+
 	if resp.Error.Code != -32601 {
 		t.Fatalf("expected error code -32601, got %d", resp.Error.Code)
 	}
@@ -519,6 +552,7 @@ func TestHandleRequest_UnknownMethod(t *testing.T) {
 
 func TestEmit(t *testing.T) {
 	var buf bytes.Buffer
+
 	s := newTestServer(&buf)
 
 	err := s.Emit("progress", map[string]any{"pct": 50})
@@ -530,12 +564,15 @@ func TestEmit(t *testing.T) {
 	if err := json.NewDecoder(&buf).Decode(&msg); err != nil {
 		t.Fatalf("failed to decode emitted message: %v", err)
 	}
+
 	if msg["jsonrpc"] != "2.0" {
 		t.Fatalf("expected jsonrpc 2.0, got %v", msg["jsonrpc"])
 	}
+
 	if msg["method"] != "progress" {
 		t.Fatalf("expected method 'progress', got %v", msg["method"])
 	}
+
 	if msg["id"] != nil {
 		t.Fatal("notification should not have an id")
 	}
@@ -543,6 +580,7 @@ func TestEmit(t *testing.T) {
 
 func TestEmitResult(t *testing.T) {
 	var buf bytes.Buffer
+
 	s := newTestServer(&buf)
 
 	err := s.EmitResult(Result{Type: "article", ID: "abc", Content: "test"})
@@ -554,13 +592,16 @@ func TestEmitResult(t *testing.T) {
 	if err := json.NewDecoder(&buf).Decode(&msg); err != nil {
 		t.Fatalf("failed to decode: %v", err)
 	}
+
 	if msg["method"] != "result" {
 		t.Fatalf("expected method 'result', got %v", msg["method"])
 	}
+
 	params, ok := msg["params"].(map[string]any)
 	if !ok {
 		t.Fatal("params not a map")
 	}
+
 	if params["id"] != "abc" {
 		t.Fatalf("expected id 'abc', got %v", params["id"])
 	}
@@ -568,6 +609,7 @@ func TestEmitResult(t *testing.T) {
 
 func TestEmitLog(t *testing.T) {
 	var buf bytes.Buffer
+
 	s := newTestServer(&buf)
 
 	err := s.EmitLog("info", "starting up")
@@ -579,16 +621,20 @@ func TestEmitLog(t *testing.T) {
 	if err := json.NewDecoder(&buf).Decode(&msg); err != nil {
 		t.Fatalf("failed to decode: %v", err)
 	}
+
 	if msg["method"] != "log" {
 		t.Fatalf("expected method 'log', got %v", msg["method"])
 	}
+
 	params, ok := msg["params"].(map[string]any)
 	if !ok {
 		t.Fatal("params not a map")
 	}
+
 	if params["level"] != "info" {
 		t.Fatalf("expected level 'info', got %v", params["level"])
 	}
+
 	if params["message"] != "starting up" {
 		t.Fatalf("expected message 'starting up', got %v", params["message"])
 	}
@@ -596,20 +642,23 @@ func TestEmitLog(t *testing.T) {
 
 func TestSendError(t *testing.T) {
 	var buf bytes.Buffer
-	s := newTestServer(&buf)
 
+	s := newTestServer(&buf)
 	s.sendError(10, -32600, "invalid request")
 
 	resp := decodeResponse(t, &buf)
 	if resp.ID != 10 {
 		t.Fatalf("expected id 10, got %d", resp.ID)
 	}
+
 	if resp.Error == nil {
 		t.Fatal("expected error in response")
 	}
+
 	if resp.Error.Code != -32600 {
 		t.Fatalf("expected code -32600, got %d", resp.Error.Code)
 	}
+
 	if resp.Error.Message != "invalid request" {
 		t.Fatalf("expected message 'invalid request', got %q", resp.Error.Message)
 	}
@@ -617,6 +666,7 @@ func TestSendError(t *testing.T) {
 
 func TestSendResult(t *testing.T) {
 	var buf bytes.Buffer
+
 	s := newTestServer(&buf)
 
 	s.sendResult(20, map[string]string{"status": "ok"})
@@ -625,6 +675,7 @@ func TestSendResult(t *testing.T) {
 	if resp.ID != 20 {
 		t.Fatalf("expected id 20, got %d", resp.ID)
 	}
+
 	if resp.Error != nil {
 		t.Fatalf("unexpected error: %+v", resp.Error)
 	}
@@ -633,6 +684,7 @@ func TestSendResult(t *testing.T) {
 	if err := json.Unmarshal(resp.Result, &result); err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
+
 	if result["status"] != "ok" {
 		t.Fatalf("expected status 'ok', got %q", result["status"])
 	}
@@ -647,6 +699,7 @@ func TestToolHandlerFunc_Error(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
+
 	if res != nil {
 		t.Fatal("expected nil result on error")
 	}
@@ -684,9 +737,11 @@ func TestScrapeResultFields(t *testing.T) {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
+
 	if decoded.Type != "post" || decoded.Source != "reddit" || decoded.ID != "xyz" {
 		t.Fatal("fields mismatch after round-trip")
 	}
+
 	if decoded.Metadata["score"] != float64(42) {
 		t.Fatalf("metadata score mismatch: %v", decoded.Metadata["score"])
 	}
@@ -710,9 +765,11 @@ func TestToolResultJSON(t *testing.T) {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
+
 	if len(decoded.Content) != 2 {
 		t.Fatalf("expected 2 content items, got %d", len(decoded.Content))
 	}
+
 	if !decoded.IsError {
 		t.Fatal("expected IsError=true")
 	}
@@ -735,6 +792,7 @@ func TestExtractParamsJSON(t *testing.T) {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
+
 	if decoded.Name != "price" || decoded.URL != "https://shop.example.com" {
 		t.Fatal("field mismatch after round-trip")
 	}
@@ -755,6 +813,7 @@ func TestScrapeParamsJSON(t *testing.T) {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
+
 	if decoded.Mode != "news" {
 		t.Fatalf("expected mode 'news', got %q", decoded.Mode)
 	}

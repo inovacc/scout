@@ -19,6 +19,11 @@ type Manifest struct {
 	Modes        []ModeEntry      `json:"modes,omitempty"`
 	Extractors   []ExtractorEntry `json:"extractors,omitempty"`
 	Tools        []ToolEntry      `json:"tools,omitempty"`
+	Commands     []CommandEntry   `json:"commands,omitempty"`
+	Auth              *AuthEntry            `json:"auth,omitempty"`
+	Resources         []ResourceEntry       `json:"resources,omitempty"`
+	ResourceTemplates []ResourceTplEntry    `json:"resource_templates,omitempty"`
+	Prompts           []PromptEntry         `json:"prompts,omitempty"`
 
 	// Dir is the directory containing the manifest (set during loading).
 	Dir string `json:"-"`
@@ -41,6 +46,41 @@ type ToolEntry struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
 	InputSchema map[string]any `json:"inputSchema,omitempty"`
+}
+
+// ResourceEntry declares an MCP resource in the manifest.
+type ResourceEntry struct {
+	URI      string `json:"uri"`
+	Name     string `json:"name"`
+	MimeType string `json:"mimeType,omitempty"`
+}
+
+// ResourceTplEntry declares an MCP resource template in the manifest.
+type ResourceTplEntry struct {
+	URITemplate string `json:"uriTemplate"`
+	Name        string `json:"name"`
+}
+
+// PromptEntry declares an MCP prompt in the manifest.
+type PromptEntry struct {
+	Name        string               `json:"name"`
+	Description string               `json:"description"`
+	Arguments   []PromptArgEntry     `json:"arguments,omitempty"`
+}
+
+// PromptArgEntry declares a prompt argument.
+type PromptArgEntry struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Required    bool   `json:"required,omitempty"`
+}
+
+// AuthEntry declares an auth provider in the manifest.
+type AuthEntry struct {
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	LoginURL      string   `json:"login_url"`
+	SessionFields []string `json:"session_fields,omitempty"`
 }
 
 // LoadManifest reads and validates a plugin.json from the given directory.
@@ -83,7 +123,7 @@ func (m *Manifest) validate() error {
 		return fmt.Errorf("at least one capability is required")
 	}
 
-	valid := map[string]bool{"scraper_mode": true, "extractor": true, "mcp_tool": true}
+	valid := map[string]bool{"scraper_mode": true, "extractor": true, "mcp_tool": true, "cli_command": true, "auth_provider": true, "mcp_resource": true, "mcp_prompt": true}
 	for _, c := range m.Capabilities {
 		if !valid[c] {
 			return fmt.Errorf("unknown capability: %s", c)

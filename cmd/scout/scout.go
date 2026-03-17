@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"github.com/inovacc/scout/internal/flags"
 	"github.com/inovacc/scout/internal/logger"
 	"github.com/inovacc/scout/internal/tracing"
+	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/plugin"
 	"github.com/spf13/cobra"
 )
 
@@ -53,7 +56,7 @@ func init() {
 	rootCmd.PersistentFlags().String("format", "text", "output format (text, json)")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().Bool("headless", true, "run browser in headless mode")
-	rootCmd.PersistentFlags().String("browser", "chrome", "browser type: chrome, brave, edge")
+	rootCmd.PersistentFlags().String("browser", "chrome", "browser type: chrome, chromium, brave, edge")
 	rootCmd.PersistentFlags().Bool("maximized", false, "start browser window maximized")
 	rootCmd.PersistentFlags().Bool("devtools", false, "open Chrome DevTools automatically")
 	rootCmd.PersistentFlags().Bool("stealth", false, "enable anti-bot-detection stealth mode")
@@ -66,6 +69,8 @@ func init() {
 }
 
 func Execute() {
+	registerPluginCommands()
+
 	err := rootCmd.Execute()
 
 	log := logger.Get()
@@ -77,6 +82,40 @@ func Execute() {
 	if err != nil {
 		os.Exit(1)
 	}
+}
+
+// registerPluginCommands discovers plugins and registers any cli_command capabilities
+// as Cobra commands on rootCmd. This runs before Execute so plugin commands appear in --help.
+func registerPluginCommands() {
+	mgr := initPluginManager()
+	if mgr == nil {
+		return
+	}
+
+	// Set up browser provisioner so plugins with requires_browser can get a CDP endpoint.
+	plugin.SetBrowserProvisioner(provisionBrowserForPlugin)
+
+	replaced := mgr.RegisterCLICommands(rootCmd)
+	_ = replaced // logged by manager
+}
+
+// provisionBrowserForPlugin launches a browser using standard CLI flags and returns
+// the CDP endpoint for the plugin to connect to.
+func provisionBrowserForPlugin(cmd *cobra.Command) (*plugin.BrowserContext, error) {
+	opts := baseOpts(cmd)
+
+	b, err := scout.New(opts...)
+	if err != nil {
+		return nil, fmt.Errorf("scout: provision browser: %w", err)
+	}
+
+	sessionID := b.SessionID()
+
+	return &plugin.BrowserContext{
+		CDPEndpoint: b.CDPURL(),
+		SessionDir:  scout.SessionDataDir(sessionID),
+		SessionID:   sessionID,
+	}, nil
 }
 
 func main() {

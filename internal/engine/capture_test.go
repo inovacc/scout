@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -155,5 +156,54 @@ func TestLoadCredentials_InvalidJSON(t *testing.T) {
 	_, err := LoadCredentials(path)
 	if err == nil {
 		t.Fatal("expected error for invalid JSON, got nil")
+	}
+}
+
+func TestCaptureOptionDefaults(t *testing.T) {
+	cfg := &captureConfig{}
+
+	// No options applied — defaults should be zero values.
+	if cfg.savePath != "" {
+		t.Errorf("default savePath = %q, want empty", cfg.savePath)
+	}
+
+	if cfg.persist {
+		t.Error("default persist = true, want false")
+	}
+}
+
+func TestWithCaptureSavePath(t *testing.T) {
+	cfg := &captureConfig{}
+	WithCaptureSavePath("/tmp/creds.json")(cfg)
+
+	if cfg.savePath != "/tmp/creds.json" {
+		t.Errorf("savePath = %q, want %q", cfg.savePath, "/tmp/creds.json")
+	}
+}
+
+func TestWithCapturePersist(t *testing.T) {
+	cfg := &captureConfig{}
+	WithCapturePersist()(cfg)
+
+	if !cfg.persist {
+		t.Error("persist = false after WithCapturePersist, want true")
+	}
+}
+
+func TestCaptureOnClose_BadURL(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
+	// CaptureOnClose with no browser available should fail at launch.
+	// Use an impossible exec path to force failure.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := CaptureOnClose(ctx, "https://example.com", []Option{
+		WithExecPath("/nonexistent/browser"),
+	})
+	if err == nil {
+		t.Fatal("expected error for non-existent browser, got nil")
 	}
 }

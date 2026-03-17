@@ -1,17 +1,20 @@
 package browser
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"time"
 )
 
 // browserTypePriority defines preference order for sorting (lower = better).
 var browserTypePriority = map[BrowserType]int{
-	Chrome: 0,
-	Brave:  1,
-	Edge:   2,
+	Chrome:   0,
+	Chromium: 1,
+	Brave:    2,
+	Edge:     3,
 }
 
 var versionRe = regexp.MustCompile(`(\d+\.\d+\.\d+\.\d+)`)
@@ -103,7 +106,16 @@ func BestCached() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("scout: no cached browsers found in %s", cacheDir)
+	// No cached browsers found — auto-download Chrome for Testing as default.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	path, err := DownloadChrome(ctx)
+	if err != nil {
+		return "", fmt.Errorf("scout: no cached browsers and auto-download failed: %w", err)
+	}
+
+	return path, nil
 }
 
 // BrowserTypePriority returns the priority map for external use in tests.

@@ -646,6 +646,8 @@ func DownloadEdge(ctx context.Context) (string, error) {
 }
 
 // downloadEdgeWindows copies the system-installed Edge into the browser cache.
+// This uses lookupBrowser(Edge) intentionally — Windows has no standalone Edge
+// download URL, so the only option is to copy from the system install path.
 func downloadEdgeWindows(_ context.Context) (string, error) {
 	systemPath, err := lookupBrowser(Edge)
 	if err != nil {
@@ -994,7 +996,8 @@ func DownloadFile(ctx context.Context, url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// Resolve tries local lookup first, then falls back to auto-download.
+// Resolve tries local (system-installed) lookup first, then falls back to download.
+// This is the "system browser" resolution path — only called when systemBrowser=true.
 func Resolve(ctx context.Context, bt BrowserType) (string, error) {
 	path, err := lookupBrowser(bt)
 	if err == nil {
@@ -1010,6 +1013,8 @@ func Resolve(ctx context.Context, bt BrowserType) (string, error) {
 		return DownloadBrave(ctx)
 	case Edge:
 		return DownloadEdge(ctx)
+	case Chromium:
+		return DownloadChromium(ctx, ChromiumRevisionDefault)
 	default:
 		return "", err
 	}
@@ -1049,6 +1054,8 @@ func ResolveCached(ctx context.Context, bt BrowserType) (string, error) {
 			{"chrome", chromeCfTBinPath()},
 			{"chromium", chromiumBinPath()},
 		}
+	case Chromium:
+		candidates = []cacheEntry{{"chromium", chromiumBinPath()}}
 	default:
 		return "", fmt.Errorf("%w: %s", ErrNotFound, bt)
 	}
@@ -1066,6 +1073,8 @@ func ResolveCached(ctx context.Context, bt BrowserType) (string, error) {
 	case Edge:
 		return DownloadEdge(ctx)
 	case Chrome:
+		return DownloadChrome(ctx)
+	case Chromium:
 		return DownloadChromium(ctx, ChromiumRevisionDefault)
 	default:
 		return "", fmt.Errorf("%w: %s", ErrNotFound, bt)
@@ -1077,6 +1086,8 @@ func browserRegistryNames(bt BrowserType) []string {
 	switch bt { //nolint:exhaustive
 	case Chrome:
 		return []string{"chrome", "chromium"}
+	case Chromium:
+		return []string{"chromium"}
 	case Brave:
 		return []string{"brave"}
 	case Edge:

@@ -54,6 +54,9 @@ type Browser struct {
 
 	// sessionID tracks this browser's session directory under ~/.scout/sessions/.
 	sessionID string
+
+	// cdpURL is the CDP WebSocket URL used to connect to the browser.
+	cdpURL string
 }
 
 // New creates and connects a new headless browser with the given options.
@@ -175,7 +178,7 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 			return nil, fmt.Errorf("scout: incognito mode: %w", err)
 		}
 
-		br := &Browser{browser: ctx, opts: o, launcher: l, done: make(chan struct{}), version: cachedVersion}
+		br := &Browser{browser: ctx, opts: o, launcher: l, done: make(chan struct{}), version: cachedVersion, cdpURL: u}
 		if o.webmcpAutoDiscover {
 			br.webmcpRegistry = NewWebMCPRegistry()
 		}
@@ -213,7 +216,7 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 		return br, nil
 	}
 
-	br := &Browser{browser: b, opts: o, launcher: l, done: make(chan struct{}), version: cachedVersion}
+	br := &Browser{browser: b, opts: o, launcher: l, done: make(chan struct{}), version: cachedVersion, cdpURL: u}
 	if o.webmcpAutoDiscover {
 		br.webmcpRegistry = NewWebMCPRegistry()
 	}
@@ -802,6 +805,15 @@ func (b *Browser) SessionID() string {
 	}
 
 	return b.sessionID
+}
+
+// CDPURL returns the CDP WebSocket URL used to connect to this browser.
+func (b *Browser) CDPURL() string {
+	if b == nil {
+		return ""
+	}
+
+	return b.cdpURL
 }
 
 // startBridgeServer initializes and starts the bridge WebSocket server.

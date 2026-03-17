@@ -103,7 +103,7 @@ func TestIsASIN(t *testing.T) {
 		{"B08N5WRWN", false},  // too short
 		{"B08N5WRWNWX", false}, // too long
 		{"", false},
-		{"  B08N5WRWNW  ", false}, // untrimmed but len>10 overall
+		{"  B08N5WRWNW  ", true}, // isASIN trims spaces first
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {

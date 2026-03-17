@@ -1,0 +1,39 @@
+{
+  "name": "scout-diag",
+  "version": "1.0.0",
+  "description": "Network diagnostics: ping (DNS/TCP/TLS/HTTP timing) and curl (full HTTP client)",
+  "author": "inovacc",
+  "command": "scout-diag",
+  "capabilities": ["mcp_tool"],
+  "tools": [
+    {
+      "name": "ping",
+      "description": "Network diagnostic for a URL: DNS resolution, TCP connect, TLS handshake, and HTTP response timing",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "description": "URL to ping (e.g. https://example.com)"},
+          "count": {"type": "integer", "description": "number of pings (default 3)", "default": 3}
+        },
+        "required": ["url"]
+      }
+    },
+    {
+      "name": "curl",
+      "description": "Full HTTP client: send requests with custom method, headers, body; returns status, headers, body, timing, redirects, and TLS info",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {"type": "string", "description": "URL to request"},
+          "method": {"type": "string", "description": "HTTP method (default GET)", "default": "GET"},
+          "headers": {"type": "object", "description": "request headers", "additionalProperties": {"type": "string"}},
+          "body": {"type": "string", "description": "request body"},
+          "followRedirects": {"type": "boolean", "description": "follow redirects (default true)", "default": true},
+          "maxRedirects": {"type": "integer", "description": "max redirects (default 10)", "default": 10},
+          "timeout": {"type": "integer", "description": "timeout in seconds (default 30)", "default": 30}
+        },
+        "required": ["url"]
+      }
+    }
+  ]
+}

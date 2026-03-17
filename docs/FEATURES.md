@@ -74,8 +74,7 @@
 ### Multi-Browser Support & Auto-Download
 
 - **Status:** Completed
-- **Description:** Auto-detection for Brave and Microsoft Edge browsers on Windows, macOS, and Linux. `WithBrowser(BrowserBrave)` or `--browser=brave`. Platform-specific path resolution in
-  `browser_path_*.go`. Brave auto-downloads from GitHub releases if not installed locally (`browser_download.go`). Edge provides download URL in error message. Downloaded browsers cached in `~/.scout/browsers/`. CLI `scout browser list` shows detected and downloaded browsers.
+- **Description:** Support for Chrome, Chromium, Brave, and Edge browsers on Windows, macOS, and Linux. `WithBrowser(BrowserChrome)` or `--browser=chrome`. Four distinct browser types: `chrome` (Chrome for Testing), `chromium` (open-source Chromium via rod), `brave`, `edge`. All browsers cached in `~/.scout/browsers/`. Auto-download for all types when not cached. CLI `scout browser list` shows cached browsers; `scout browser download <name>` fetches to cache.
 
 ### Chrome Extension Loading
 
@@ -154,10 +153,10 @@
 - **Status:** Completed
 - **Description:** Automatically analyze a target website and generate a ready-to-run recipe JSON file. `AnalyzeSite()` navigates, inspects DOM, classifies page type (listing/form/article/table), detects containers, fields, forms, pagination, and interactable elements. `GenerateRecipe()` produces extract or automate recipes from analysis. CLI `scout recipe create <url>`. Implemented in `pkg/scout/recipe/analyze.go`, `pkg/scout/recipe/generate.go`.
 
-### MCP Server (34 Tools)
+### MCP Server (41 Tools)
 
 - **Status:** Completed
-- **Description:** Model Context Protocol server exposing Scout browser automation as 37 LLM-callable tools across 8 categories: Browser (navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open), Content (markdown, table, meta, pdf, search, fetch, search_and_extract), Network (cookie, header, block, ping, curl), Forms (form_detect, form_fill, form_submit), Analysis (crawl, detect), Inspection (storage, hijack, har, swagger), Session (session_list, session_reset). 3 resources: scout://page/markdown, scout://page/url, scout://page/title. Supports stdio and HTTP+SSE transport. CLI `scout mcp`, `scout mcp --install`, `scout mcp screenshot`, `scout mcp open`. Implemented in `pkg/scout/mcp/`.
+- **Description:** Model Context Protocol server exposing Scout browser automation as 41 LLM-callable tools across 10 categories: Browser (navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open), Content (markdown, table, meta, pdf, search, fetch, search_and_extract), Network (cookie, header, block, ping, curl), Forms (form_detect, form_fill, form_submit), Analysis (crawl, detect), Inspection (storage, hijack, har, swagger), Session (session_list, session_reset, open), Guides (guide_start, guide_step, guide_finish), Reports (report_list, report_show, report_delete), Swarm (swarm_crawl). 3 resources: scout://page/markdown, scout://page/url, scout://page/title. Supports stdio and HTTP+SSE transport. CLI `scout mcp`, `scout mcp --install`, `scout mcp screenshot`, `scout mcp open`. Implemented in `pkg/scout/mcp/`.
 
 ### Multi-Tab Orchestration
 
@@ -192,7 +191,7 @@
 ### OpenTelemetry Tracing
 
 - **Status:** Completed
-- **Description:** Full observability via OpenTelemetry. `internal/tracing/` package with `Init()`, `MCPToolSpan()`, `ScraperSpan()`, and `Start()` helpers. No-op by default; enabled via `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT`. All 34 MCP tools auto-instrumented via `addTracedTool()` wrapper. Scraper CLI instrumented with `ScraperSpan()`. Supports stdout and OTLP exporters.
+- **Description:** Full observability via OpenTelemetry. `internal/tracing/` package with `Init()`, `MCPToolSpan()`, `ScraperSpan()`, and `Start()` helpers. No-op by default; enabled via `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT`. All 41 MCP tools auto-instrumented via `addTracedTool()` wrapper. Scraper CLI instrumented with `ScraperSpan()`. Supports stdout and OTLP exporters.
 
 ### `search_and_extract` MCP Tool
 
@@ -243,6 +242,11 @@
 
 - **Status:** Completed
 - **Description:** AI-consumable reports saved to `~/.scout/reports/{uuidv7}.txt` as structured markdown with metadata, findings, analysis instructions, and embedded JSON. Three report types: health_check, gather, crawl — each with tailored AI analysis prompts. `--report` flag on test-site, gather, crawl, swarm start. `scout report list/show/delete` CLI. `scout report schedule <url> --every 1h` for recurring health checks. MCP tools: report_list, report_show, report_delete. Implemented in `internal/engine/report.go`, `cmd/scout/report.go`, `cmd/scout/report_schedule.go`, `pkg/scout/mcp/tools_report.go`.
+
+### Browser Isolation & Chromium Support
+
+- **Status:** Completed
+- **Description:** Scout defaults to isolated browser management via `~/.scout/browsers/` cache. `BestCached()` auto-downloads Chrome for Testing if no cached browsers exist. System-installed browsers are only used when `--system-browser` flag is set. `BrowserChromium` added as a separate `BrowserType` distinct from `BrowserChrome` (Chrome for Testing). `scout browser list` shows only cached browsers by default; `--detect` flag scans system paths. `Bridge.ResetReady()` fixes Chrome for Testing CDP connection drops during sitemap multi-page navigation.
 
 ## Proposed Features
 

@@ -16,7 +16,8 @@ Tests require Chromium; `newTestBrowser` calls `t.Skipf` if unavailable. No mock
 
 ### Browser Support
 
-- `BrowserChrome` (default), `BrowserBrave`, `BrowserEdge` via `WithBrowser()`. Firefox unsupported (CDP removed).
+- `BrowserChrome` (default), `BrowserChromium`, `BrowserBrave`, `BrowserEdge` via `WithBrowser()`. Firefox unsupported (CDP removed).
+- Browser isolation: by default Scout only uses `~/.scout/browsers/` cache. `BestCached()` auto-downloads Chrome for Testing if nothing cached. `--system-browser` flag allows system-installed browsers.
 - Extensions: `WithExtension(paths...)`, `WithExtensionByID(ids...)`, `DownloadExtension(id)`.
 - Docker: full image (debian+Chromium) and slim image (distroless CLI-only).
 
@@ -44,7 +45,7 @@ pkg/scout/discovery/          mDNS service discovery
 pkg/scout/browser/            Browser path resolution (public API)
 pkg/scout/guide/              Step-by-step guide recording (Recorder, Guide, RenderMarkdown)
 pkg/scout/runbook/            Runbook system (extract + automate + analyze + Plan/Apply)
-pkg/scout/mcp/                MCP server (40 tools, 3 resources, stdio + SSE transport)
+pkg/scout/mcp/                MCP server (41 tools, 3 resources, stdio + SSE transport)
 pkg/scout/plugin/             Plugin system (subprocess JSON-RPC, manager, proxies)
 pkg/scout/plugin/sdk/         Go SDK for plugin authors
 pkg/scout/scraper/            Scraper framework + AES-256-GCM auth + 19 modes
@@ -102,7 +103,9 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **OpenTelemetry tracing**: `internal/tracing/` package. No-op unless `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT` is set. `tracing.Init(ctx, Config{})` in CLI bootstrap. All 37 MCP tools auto-instrumented via `addTracedTool()` wrapper in `pkg/scout/mcp/server.go`. Scraper CLI uses `ScraperSpan()`. Custom spans: `tracing.Start(ctx, "name", attrs...)`.
 - **Reports**: `SaveReport()` persists AI-consumable markdown to `~/.scout/reports/{uuidv7}.txt`. Three types: `health_check`, `gather`, `crawl`. Each report includes metadata, structured findings, AI analysis instructions, and embedded raw JSON. CLI: `scout test-site --report`, `scout gather --report`, `scout report list/show/delete`.
 - **Swarm mode**: `internal/engine/swarm/` distributed crawling. `Coordinator` manages domain-partitioned BFS queue with URL dedup and worker health. `Worker` pulls batches, navigates with real browser, extracts title+links. CLI: `scout swarm start <url> [--workers N --depth N --max-pages N --report]`.
-- **Default browser fallback**: When no `--browser` flag is given, `launchLocal()` calls `browser.BestCached()` to find cached browsers before falling back to rod auto-download. Fixes "Failed to get debug url" on Windows.
+- **Default browser fallback**: When no `--browser` flag is given, `launchLocal()` calls `browser.BestCached()` to find cached browsers. If none exist, `BestCached()` auto-downloads Chrome for Testing. Rod fallback is a true last resort.
+- **Browser isolation**: Default mode uses only `~/.scout/browsers/` cache. `--system-browser` flag allows system-installed browsers. `scout browser list` shows only cached browsers by default; `--detect` scans system paths.
+- **Bridge reset**: `Bridge.ResetReady()` clears `ready`/`available` flags before navigation when reusing a page+bridge across URLs (used by `SitemapExtract`). Chrome for Testing requires this — it kills CDP connections on stale binding access.
 
 ## Dependencies
 

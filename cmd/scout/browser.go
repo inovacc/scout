@@ -31,7 +31,7 @@ var browserListCmd = &cobra.Command{
 		detect, _ := cmd.Flags().GetBool("detect")
 
 		if detect {
-			fmt.Println("Detected browsers (full scan):") //nolint:forbidigo
+			fmt.Println("Detected browsers (system install):") //nolint:forbidigo
 
 			detected := scout.DetectBrowsers()
 			if len(detected) == 0 {
@@ -48,24 +48,9 @@ var browserListCmd = &cobra.Command{
 			}
 
 			fmt.Println() //nolint:forbidigo
-		} else {
-			fmt.Println("Detected browsers (local install):") //nolint:forbidigo
-
-			for _, bt := range []scout.BrowserType{scout.BrowserChrome, scout.BrowserBrave, scout.BrowserEdge} {
-				path, err := scout.LookupBrowserPublic(bt)
-				if err != nil {
-					fmt.Printf("  %-8s  not found\n", bt) //nolint:forbidigo
-				} else if path == "" {
-					fmt.Printf("  %-8s  auto-detect (rod)\n", bt) //nolint:forbidigo
-				} else {
-					fmt.Printf("  %-8s  %s\n", bt, path) //nolint:forbidigo
-				}
-			}
-
-			fmt.Println() //nolint:forbidigo
 		}
 
-		fmt.Println("Downloaded browsers (~/.scout/browsers/):") //nolint:forbidigo
+		fmt.Println("Cached browsers (~/.scout/browsers/):") //nolint:forbidigo
 
 		browsers, err := scout.ListDownloadedBrowsers()
 		if err != nil {

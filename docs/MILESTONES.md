@@ -253,7 +253,8 @@
 - [x] Three report types: health_check, gather, crawl — each with tailored AI instructions
 - [x] Report CLI: `scout report list/show/delete`, `scout report schedule <url> --every 1h`
 - [x] `--report` flag on: test-site, gather, crawl, swarm start
-- [x] MCP report tools: report_list, report_show, report_delete (40 tools total)
+- [x] MCP report tools: report_list, report_show, report_delete
+- [x] MCP swarm tool: swarm_crawl (41 tools total)
 - [x] `ManagedPagePool` for concurrent page scraping with acquire/release lifecycle
 - [x] Default browser fallback via `BestCached()` — fixes "Failed to get debug url" on Windows
 - [x] Deprecated `pkg/scout/recipe/` removed, consumers migrated to `runbook` directly
@@ -264,4 +265,4 @@
 - [x] Fixed 8 browser-dependent tests to skip in -short mode
 - [x] Taskfile test targets fixed (`./scraper/...` → `./internal/...`)
 - [x] `task test:unit` passes with 0 failures
-- **Coverage:** All 19 scraper modes tested | internal/engine/report 100% | 40 MCP tools
+- **Coverage:** All 19 scraper modes tested | internal/engine/report 100% | 41 MCP tools

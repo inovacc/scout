@@ -112,6 +112,62 @@ func TestManifest_HasCapability(t *testing.T) {
 	}
 }
 
+func TestLoadManifest_CLICommand(t *testing.T) {
+	dir := t.TempDir()
+
+	manifest := `{
+		"name": "cmd-plugin",
+		"version": "1.0.0",
+		"command": "./cmd-plugin",
+		"capabilities": ["cli_command"],
+		"commands": [
+			{
+				"name": "my-extract",
+				"use": "my-extract <url>",
+				"short": "Custom extraction",
+				"args": {"min": 1, "max": 1},
+				"flags": [{"name": "format", "type": "string", "default": "json"}],
+				"category": "content",
+				"requires_browser": true
+			}
+		]
+	}`
+
+	if err := os.WriteFile(filepath.Join(dir, "plugin.json"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	m, err := LoadManifest(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !m.HasCapability("cli_command") {
+		t.Error("expected HasCapability(cli_command) = true")
+	}
+
+	if len(m.Commands) != 1 {
+		t.Fatalf("commands len = %d, want 1", len(m.Commands))
+	}
+
+	cmd := m.Commands[0]
+	if cmd.Name != "my-extract" {
+		t.Errorf("command name = %q, want %q", cmd.Name, "my-extract")
+	}
+
+	if !cmd.RequiresBrowser {
+		t.Error("expected RequiresBrowser = true")
+	}
+
+	if cmd.Args.Min != 1 || cmd.Args.Max != 1 {
+		t.Errorf("args = %+v, want min=1, max=1", cmd.Args)
+	}
+
+	if len(cmd.Flags) != 1 || cmd.Flags[0].Name != "format" {
+		t.Errorf("flags = %+v, want [{name: format}]", cmd.Flags)
+	}
+}
+
 func TestManifest_CommandPath(t *testing.T) {
 	m := &Manifest{Command: "./my-plugin", Dir: "/home/user/.scout/plugins/test"}
 	got := m.CommandPath()
