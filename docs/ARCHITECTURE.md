@@ -66,6 +66,27 @@ flowchart TB
         PluginMgr["Manager\n(discovery, routing)"]
         PluginClient["Client\n(subprocess JSON-RPC)"]
         PluginSDK["Go SDK\n(plugin/sdk/)"]
+        PluginProxies["8 Proxies\n(Auth, Resource, Prompt,\nSink, Middleware, Event,\nMode, Tool)"]
+    end
+
+    subgraph PluginBins["12 Plugin Binaries (plugins/)"]
+        DiagPlugin["scout-diag\n(ping, curl)"]
+        ReportsPlugin["scout-reports\n(report_list/show/delete)"]
+        ContentPlugin["scout-content\n(markdown, table, meta, pdf)"]
+        SearchPlugin["scout-search\n(search, fetch)"]
+        NetworkPlugin["scout-network\n(cookie, header, storage)"]
+        FormsPlugin["scout-forms\n(form_detect/fill/submit)"]
+        CrawlPlugin["scout-crawl\n(crawl, detect, swarm)"]
+        GuidePlugin["scout-guide\n(guide_start/step/finish)"]
+        CommPlugin["scout-comm\n(slack, discord, teams, reddit)"]
+        EmailPlugin["scout-email-docs\n(gmail, outlook, linkedin, jira)"]
+        SocialPlugin["scout-content-social\n(twitter, youtube, notion)"]
+        EnterprisePlugin["scout-enterprise\n(amazon, gmaps, salesforce)"]
+    end
+
+    subgraph Strategy["Strategy & Proxy"]
+        StrategyPkg["Strategy Files\n(pkg/scout/strategy/)"]
+        ProxyPkg["API Proxy\n(pkg/scout/proxy/)"]
     end
 
     subgraph Identity["Identity & Discovery"]

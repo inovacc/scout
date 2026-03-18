@@ -1,0 +1,15 @@
+{
+  "name": "scout-content-social",
+  "version": "1.0.0",
+  "description": "Content and social platform scrapers: Twitter/X, YouTube, Notion, Google Drive, SharePoint",
+  "author": "inovacc",
+  "command": "scout-content-social",
+  "capabilities": ["scraper_mode", "auth_provider"],
+  "modes": [
+    {"name": "twitter", "description": "Twitter/X: tweets, threads, profiles, lists"},
+    {"name": "youtube", "description": "YouTube: videos, channels, playlists, comments"},
+    {"name": "notion", "description": "Notion: pages, databases, blocks"},
+    {"name": "gdrive", "description": "Google Drive: files, folders, shared drives"},
+    {"name": "sharepoint", "description": "SharePoint: sites, pages, documents, lists"}
+  ]
+}

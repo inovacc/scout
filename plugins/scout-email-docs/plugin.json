@@ -1,0 +1,15 @@
+{
+  "name": "scout-email-docs",
+  "version": "1.0.0",
+  "description": "Email and document platform scrapers: Gmail, Outlook, LinkedIn, Jira, Confluence",
+  "author": "inovacc",
+  "command": "scout-email-docs",
+  "capabilities": ["scraper_mode", "auth_provider"],
+  "modes": [
+    {"name": "gmail", "description": "Gmail: emails, threads, labels, contacts"},
+    {"name": "outlook", "description": "Outlook: emails, calendar, contacts"},
+    {"name": "linkedin", "description": "LinkedIn: profiles, connections, messages, jobs"},
+    {"name": "jira", "description": "Jira: issues, boards, sprints, comments"},
+    {"name": "confluence", "description": "Confluence: pages, spaces, comments"}
+  ]
+}

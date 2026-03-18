@@ -1,0 +1,15 @@
+{
+  "name": "scout-enterprise",
+  "version": "1.0.0",
+  "description": "Enterprise platform scrapers: Amazon, Google Maps, Salesforce, Grafana/Datadog, Cloud Consoles",
+  "author": "inovacc",
+  "command": "scout-enterprise",
+  "capabilities": ["scraper_mode", "auth_provider"],
+  "modes": [
+    {"name": "amazon", "description": "Amazon: products, reviews, prices, sellers"},
+    {"name": "gmaps", "description": "Google Maps: places, reviews, directions"},
+    {"name": "salesforce", "description": "Salesforce: objects, records, reports, dashboards"},
+    {"name": "grafana", "description": "Grafana/Datadog: dashboards, panels, alerts"},
+    {"name": "cloud", "description": "Cloud consoles: AWS, GCP, Azure resources"}
+  ]
+}

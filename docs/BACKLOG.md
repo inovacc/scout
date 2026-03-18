@@ -12,10 +12,10 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P2 | 59f: Scraper modes → plugins (4 batches, 19 modes) | All prerequisites done (59b auth, 59d events) |
+| P2 | 59f Batch 2: Email/Docs modes → `scout-email-docs` plugin | gmail, outlook, linkedin, jira, confluence |
+| P2 | 59f Batch 3: Content/Social modes → `scout-content-social` plugin | twitter, youtube, notion, gdrive, sharepoint |
+| P2 | 59f Batch 4: Enterprise modes → `scout-enterprise` plugin | amazon, gmaps, salesforce, grafana, cloud |
 | P2 | Plugin distribution via GitHub Releases | Ship pre-built plugin binaries per OS/arch |
-| P2 | Phase 67: Wave 4 — Network/Forms plugin migration | DEPRECATION: remove tools_network.go, tools_form.go, tools_inspect.go after +30 days |
-| P2 | Phase 68: Wave 5 — Analysis/Guides plugin migration | DEPRECATION: remove tools_analysis.go, tools_swarm.go, tools_guide.go after +30 days |
 
 ## Completed Items (Archive)
 
@@ -92,6 +92,9 @@
 | API middleware proxy | Phase 62 — `pkg/scout/proxy/` YAML routes, browser extraction, caching, CLI `scout proxy start` |
 | Content plugin migration | Phase 65 Wave 2 — `scout-content` (markdown, table, meta, pdf) plugin |
 | Search plugin migration | Phase 66 Wave 3 — `scout-search` (search, search_and_extract, fetch) plugin |
+| Network/Forms plugin migration | Phase 67 Wave 4 — `scout-network` + `scout-forms` plugins |
+| Analysis/Guides plugin migration | Phase 68 Wave 5 — `scout-crawl` + `scout-guide` plugins |
+| Communication modes plugin | Phase 59f Batch 1 — `scout-comm` (slack, discord, teams, reddit) plugin |
 </details>
 
 <details>

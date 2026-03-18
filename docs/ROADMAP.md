@@ -62,9 +62,11 @@
 | 57 | Session Lifecycle — `CleanStaleSessions()` on startup removes non-reusable/orphaned sessions, session dir restructured to `<hash>/{scout.pid, job.json, data/}` separating metadata from browser profile, `DataDir()` API, Windows file lock retries (3×200ms), `job.json` tracking for session jobs | Done |
 | 58 | Swarm Mode & Reports — `internal/engine/swarm/` distributed crawling (coordinator, worker, domain-partitioned queue), `scout swarm start <url>`, report system (`~/.scout/reports/{uuidv7}.txt`) with AI-consumable markdown format, gather/crawl/health report types, `scout report list/show/delete`, default browser `BestCached()` fallback, deprecated recipe package removed, 700+ tests added across all scraper modes | Done |
 
-### Phase 59 — Plugin System v2: Full Extension Framework
+### Phase 59 — Plugin System v2: Full Extension Framework [DONE]
 
 **Goal:** Evolve the plugin system from 3 capabilities (`scraper_mode`, `extractor`, `mcp_tool`) into a comprehensive extension framework with 8 capability types. Plugins become first-class Scout citizens that can hook into browser lifecycle, provide auth strategies, expose MCP resources/prompts, react to events, and ship results to external sinks.
+
+**Status:** All 6 sub-phases complete. 8 capability types implemented. 12 plugin binaries ship under `plugins/`.
 
 #### 59a — Browser Middleware (`browser_middleware`)
 
@@ -304,7 +306,7 @@ Extract all 19 built-in scraper modes into standalone plugins using the expanded
 - 19 scraper modes migrated to plugins
 - Core binary size reduced significantly
 
-### Phase 60 — TikTok Scraper Mode
+### Phase 60 — TikTok Scraper Mode [DONE]
 
 Add a `tiktok` scraper mode for video metadata, comments, profiles, and trending content. Follows the same pattern as Phases 35–38 (built-in first, migrated to plugin in 59f).
 
@@ -316,7 +318,7 @@ Add a `tiktok` scraper mode for video metadata, comments, profiles, and trending
 - Rate limiting awareness (TikTok aggressive throttling)
 - CLI: `scout scrape --mode tiktok --target <profile_url|hashtag>`
 
-### Phase 61 — Strategy Files
+### Phase 61 — Strategy Files [DONE]
 
 Declarative YAML/JSON strategy files that define multi-step browser automation workflows. A strategy file describes what to scrape, how to authenticate, which sinks to use, and orchestration logic — loaded by `scout strategy run -f strategy.yaml`.
 
@@ -370,7 +372,7 @@ output:
 - Environment variable interpolation: `${ENV_VAR}` in strategy files
 - Conditional steps: `when: { has_auth: true }` to skip steps based on state
 
-### Phase 62 — API Middleware Proxy
+### Phase 62 — API Middleware Proxy [DONE]
 
 HTTP reverse proxy that sits between API consumers and legacy websites, exposing scraped data as REST/JSON endpoints. Turns any website into an API.
 
@@ -422,7 +424,7 @@ Client (curl, app) → Scout API Proxy → Browser Engine → Legacy Website
 - Structured error responses with retry-after headers on rate limits
 - Metrics endpoint for Prometheus/Grafana integration
 
-### Phase 63 — CLI Command Plugin Capability
+### Phase 63 — CLI Command Plugin Capability [DONE]
 
 **Goal:** Let any CLI command be expressible as a plugin. A new `cli_command` capability type allows plugins to provide or replace any Scout CLI command.
 
@@ -437,7 +439,7 @@ Client (curl, app) → Scout API Proxy → Browser Engine → Legacy Website
 
 **ADR:** [docs/adr/007-mcp-plugin-migration.md](adr/007-mcp-plugin-migration.md)
 
-### Phase 64–68 — MCP Tool Migration to Plugins
+### Phase 64–68 — MCP Tool Migration to Plugins [DONE]
 
 **Goal:** Migrate 28 of 41 MCP tools from `pkg/scout/mcp/` into standalone plugin binaries using the `cli_command` + `mcp_tool` dual-capability pattern. Reduces core binary, enables independent release cycles.
 
