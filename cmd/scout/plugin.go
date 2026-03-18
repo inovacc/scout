@@ -122,11 +122,22 @@ func printPluginCommands(cmd *cobra.Command, p *plugin.Manifest) {
 }
 
 var pluginInstallCmd = &cobra.Command{
-	Use:   "install <path|url>",
-	Short: "Install a plugin from a directory or URL",
-	Args:  cobra.ExactArgs(1),
+	Use:   "install <path|url|github:owner/plugin>",
+	Short: "Install a plugin from a directory, URL, or GitHub release",
+	Long: `Install a plugin from a local directory, archive URL, or GitHub release.
+
+Examples:
+  scout plugin install ./plugins/scout-diag
+  scout plugin install https://example.com/scout-diag-linux-amd64.tar.gz
+  scout plugin install github:inovacc/scout-diag`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		src := args[0]
+
+		// GitHub shorthand: github:owner/plugin → latest release URL.
+		if strings.HasPrefix(src, "github:") {
+			return installPluginFromGitHub(cmd, strings.TrimPrefix(src, "github:"))
+		}
 
 		// Detect URL vs local path.
 		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
@@ -249,6 +260,46 @@ func pluginDestDir(name string) (string, error) {
 	}
 
 	return destDir, nil
+}
+
+// installPluginFromGitHub resolves a GitHub release URL and installs the plugin.
+// Format: owner/plugin (e.g., inovacc/scout-diag)
+func installPluginFromGitHub(cmd *cobra.Command, repo string) error {
+	parts := strings.SplitN(repo, "/", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("scout: plugin install: invalid github reference %q (expected owner/plugin)", repo)
+	}
+
+	owner, name := parts[0], parts[1]
+
+	// Detect platform.
+	goos := "linux"
+	goarch := "amd64"
+
+	switch {
+	case strings.Contains(strings.ToLower(os.Getenv("OS")), "windows"):
+		goos = "windows"
+	case fileExists("/Applications"):
+		goos = "darwin"
+	}
+
+	// Construct release asset URL (latest release).
+	ext := "tar.gz"
+	if goos == "windows" {
+		ext = "zip"
+	}
+
+	url := fmt.Sprintf("https://github.com/%s/%s/releases/latest/download/%s-%s-%s.%s",
+		owner, name, name, goos, goarch, ext)
+
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "installing %s/%s (%s/%s)...\n", owner, name, goos, goarch)
+
+	return installPluginFromURL(cmd, url)
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 var pluginRemoveCmd = &cobra.Command{

@@ -12,10 +12,8 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P2 | 59f Batch 2: Email/Docs modes → `scout-email-docs` plugin | gmail, outlook, linkedin, jira, confluence |
-| P2 | 59f Batch 3: Content/Social modes → `scout-content-social` plugin | twitter, youtube, notion, gdrive, sharepoint |
-| P2 | 59f Batch 4: Enterprise modes → `scout-enterprise` plugin | amazon, gmaps, salesforce, grafana, cloud |
 | P2 | Plugin distribution via GitHub Releases | Ship pre-built plugin binaries per OS/arch |
+| P3 | Deprecation cleanup (2026-04-16) | Remove deprecated built-in MCP tools replaced by plugins |
 
 ## Completed Items (Archive)
 
@@ -95,6 +93,9 @@
 | Network/Forms plugin migration | Phase 67 Wave 4 — `scout-network` + `scout-forms` plugins |
 | Analysis/Guides plugin migration | Phase 68 Wave 5 — `scout-crawl` + `scout-guide` plugins |
 | Communication modes plugin | Phase 59f Batch 1 — `scout-comm` (slack, discord, teams, reddit) plugin |
+| Email/Docs modes plugin | Phase 59f Batch 2 — `scout-email-docs` (gmail, outlook, linkedin, jira, confluence) plugin |
+| Content/Social modes plugin | Phase 59f Batch 3 — `scout-content-social` (twitter, youtube, notion, gdrive, sharepoint) plugin |
+| Enterprise modes plugin | Phase 59f Batch 4 — `scout-enterprise` (amazon, gmaps, salesforce, grafana, cloud) plugin |
 </details>
 
 <details>

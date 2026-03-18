@@ -1,0 +1,91 @@
+name: Build Plugins
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-plugins:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build all plugins
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          EXT=""
+          if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
+
+          mkdir -p dist
+
+          for plugin in plugins/scout-*/; do
+            name=$(basename "$plugin")
+            echo "Building $name for $GOOS/$GOARCH..."
+            go build -ldflags="-s -w" -o "dist/${name}-${GOOS}-${GOARCH}${EXT}" "./$plugin"
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugins-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/
+
+  release-plugins:
+    needs: build-plugins
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create archives per plugin
+        run: |
+          mkdir -p release
+          cd dist
+
+          # Group by plugin name and create per-plugin archives
+          for file in *; do
+            # Extract plugin name (e.g., scout-diag from scout-diag-linux-amd64)
+            plugin=$(echo "$file" | sed 's/-\(linux\|darwin\|windows\)-\(amd64\|arm64\).*//')
+            os_arch=$(echo "$file" | sed "s/${plugin}-//")
+
+            # Create tar.gz for unix, zip for windows
+            if echo "$file" | grep -q windows; then
+              zip "release/${plugin}-${os_arch%.exe}.zip" "$file"
+            else
+              chmod +x "$file"
+              tar czf "release/${plugin}-${os_arch}.tar.gz" "$file"
+            fi
+          done
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          append_body: true
+          body: |
+
+            ## Plugin Binaries
+
+            Install any plugin with:
+            ```
+            scout plugin install <archive-url>
+            ```
