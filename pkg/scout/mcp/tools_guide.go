@@ -9,7 +9,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// registerGuideTools adds step-by-step guide recording tools.
+// Deprecated: registerGuideTools adds step-by-step guide recording tools.
+// These tools are now available as the scout-guide plugin. Built-in versions will be
+// removed after 2026-04-16. Install: scout plugin install ./plugins/scout-guide
 func registerGuideTools(server *mcp.Server, state *mcpState) {
 	addTracedTool(server, &mcp.Tool{
 		Name:        "guide_start",

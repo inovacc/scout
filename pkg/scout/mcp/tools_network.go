@@ -9,7 +9,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// registerNetworkTools adds cookie, header, and block tools.
+// Deprecated: registerNetworkTools adds cookie, header, and block tools.
+// These tools are now available as the scout-network plugin. Built-in versions will be
+// removed after 2026-04-16. Install: scout plugin install ./plugins/scout-network
 func registerNetworkTools(server *mcp.Server, state *mcpState) {
 	addTracedTool(server, &mcp.Tool{
 		Name:        "cookie",

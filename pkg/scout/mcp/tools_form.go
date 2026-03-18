@@ -8,7 +8,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// registerFormTools adds form detection, filling, and submission tools.
+// Deprecated: registerFormTools adds form detection, filling, and submission tools.
+// These tools are now available as the scout-forms plugin. Built-in versions will be
+// removed after 2026-04-16. Install: scout plugin install ./plugins/scout-forms
 func registerFormTools(server *mcp.Server, state *mcpState) {
 	addTracedTool(server, &mcp.Tool{
 		Name:        "form_detect",

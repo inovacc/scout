@@ -1,0 +1,13 @@
+{
+  "name": "scout-forms",
+  "version": "1.0.0",
+  "description": "Form automation tools: detect, fill, and submit web forms",
+  "author": "inovacc",
+  "command": "scout-forms",
+  "capabilities": ["mcp_tool"],
+  "tools": [
+    {"name": "form_detect", "description": "Detect all forms on the current page with fields, types, and validation rules", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}}}},
+    {"name": "form_fill", "description": "Fill form fields with provided values", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}, "selector": {"type": "string"}, "values": {"type": "object", "additionalProperties": {"type": "string"}}}, "required": ["values"]}},
+    {"name": "form_submit", "description": "Submit a form and return the result", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}, "selector": {"type": "string"}}}}
+  ]
+}

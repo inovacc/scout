@@ -12,15 +12,8 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P1 | 59e: Output sink plugin capability | Custom result destinations (S3, DB, webhook) via `sink/*` RPC |
-| P2 | 59a: Browser middleware plugin capability | Hook points in Navigate/WaitLoad/Extract with priority chain |
-| P2 | 59d: Event hook plugin capability | Bridge + hijack event forwarding to plugins with rate limiting |
-| P2 | 59f: Scraper modes → plugins (4 batches, 19 modes) | Depends on 59b+59d — modes use auth and events |
+| P2 | 59f: Scraper modes → plugins (4 batches, 19 modes) | All prerequisites done (59b auth, 59d events) |
 | P2 | Plugin distribution via GitHub Releases | Ship pre-built plugin binaries per OS/arch |
-| P1 | Phase 60: TikTok scraper mode | Video metadata, comments, profiles, trending; API interception |
-| P2 | Phase 62: API middleware proxy | HTTP reverse proxy turning legacy sites into REST/JSON endpoints |
-| P1 | Phase 65: Wave 2 — Content plugin migration | DEPRECATION: remove tools_content.go, pdf from tools_capture.go after +30 days |
-| P2 | Phase 66: Wave 3 — Search plugin migration | DEPRECATION: remove tools_search.go after +30 days |
 | P2 | Phase 67: Wave 4 — Network/Forms plugin migration | DEPRECATION: remove tools_network.go, tools_form.go, tools_inspect.go after +30 days |
 | P2 | Phase 68: Wave 5 — Analysis/Guides plugin migration | DEPRECATION: remove tools_analysis.go, tools_swarm.go, tools_guide.go after +30 days |
 
@@ -92,6 +85,13 @@
 | MCP resources & prompts plugin capability | Phase 59c — `ResourceProxy`, `PromptProxy`, SDK `RegisterResource/RegisterPrompt` |
 | Diagnostics plugin migration | Phase 64 Wave 1 — `scout-diag` (ping, curl) + `scout-reports` (report_list/show/delete) plugins |
 | Browser isolation | Default `browser list` shows only cached; system scan behind `--detect` flag |
+| Output sink plugin capability | Phase 59e — `SinkProxy` via JSON-RPC `sink/init/write/flush/close`, SDK `RegisterSink()` |
+| Browser middleware plugin capability | Phase 59a — `MiddlewareProxy`, `MiddlewareChain`, 4 hook points, SDK `RegisterMiddleware()` |
+| Event hook plugin capability | Phase 59d — `EventProxy`, `EventDispatcher`, token bucket rate limiter, SDK `OnEvent()` |
+| TikTok scraper mode | Phase 60 — auth provider, video extraction, @user/#hashtag target resolution, 9 tests |
+| API middleware proxy | Phase 62 — `pkg/scout/proxy/` YAML routes, browser extraction, caching, CLI `scout proxy start` |
+| Content plugin migration | Phase 65 Wave 2 — `scout-content` (markdown, table, meta, pdf) plugin |
+| Search plugin migration | Phase 66 Wave 3 — `scout-search` (search, search_and_extract, fetch) plugin |
 </details>
 
 <details>

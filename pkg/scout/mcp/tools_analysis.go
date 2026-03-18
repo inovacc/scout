@@ -8,7 +8,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// registerAnalysisTools adds crawl and detect tools.
+// Deprecated: registerAnalysisTools adds crawl and detect tools.
+// These tools are now available as the scout-crawl plugin. Built-in versions will be
+// removed after 2026-04-16. Install: scout plugin install ./plugins/scout-crawl
 func registerAnalysisTools(server *mcp.Server, state *mcpState) {
 	addTracedTool(server, &mcp.Tool{
 		Name:        "crawl",

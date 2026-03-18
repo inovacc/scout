@@ -1,0 +1,13 @@
+{
+  "name": "scout-guide",
+  "version": "1.0.0",
+  "description": "Step-by-step guide recording: start, capture steps with screenshots, finish and render",
+  "author": "inovacc",
+  "command": "scout-guide",
+  "capabilities": ["mcp_tool"],
+  "tools": [
+    {"name": "guide_start", "description": "Start recording a step-by-step guide", "inputSchema": {"type": "object", "properties": {"title": {"type": "string"}, "description": {"type": "string"}}, "required": ["title"]}},
+    {"name": "guide_step", "description": "Add a step to the current guide with optional screenshot", "inputSchema": {"type": "object", "properties": {"instruction": {"type": "string"}, "screenshot": {"type": "boolean", "default": true}}, "required": ["instruction"]}},
+    {"name": "guide_finish", "description": "Finish the guide and render as Markdown", "inputSchema": {"type": "object", "properties": {"format": {"type": "string", "default": "markdown"}}}}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "scout-crawl",
+  "version": "1.0.0",
+  "description": "Web crawling and analysis: BFS crawl, tech stack detection, distributed swarm crawl",
+  "author": "inovacc",
+  "command": "scout-crawl",
+  "capabilities": ["mcp_tool"],
+  "tools": [
+    {"name": "crawl", "description": "Crawl a website with BFS, depth/page limits, and domain filtering", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}, "depth": {"type": "integer", "default": 2}, "maxPages": {"type": "integer", "default": 50}, "sameDomain": {"type": "boolean", "default": true}}, "required": ["url"]}},
+    {"name": "detect", "description": "Detect page intelligence: frameworks, PWA, tech stack, render mode", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]}},
+    {"name": "swarm_crawl", "description": "Distributed crawl with multiple browser workers", "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}, "workers": {"type": "integer", "default": 3}, "depth": {"type": "integer", "default": 2}, "maxPages": {"type": "integer", "default": 100}}, "required": ["url"]}}
+  ]
+}

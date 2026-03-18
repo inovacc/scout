@@ -1,0 +1,20 @@
+{
+  "name": "scout-comm",
+  "version": "1.0.0",
+  "description": "Communication platform scrapers: Slack, Discord, Teams, Reddit",
+  "author": "inovacc",
+  "command": "scout-comm",
+  "capabilities": ["scraper_mode", "auth_provider"],
+  "modes": [
+    {"name": "slack", "description": "Slack workspace: channels, messages, threads, files, users"},
+    {"name": "discord", "description": "Discord server: channels, messages, threads, members"},
+    {"name": "teams", "description": "Microsoft Teams: channels, messages, meetings, files"},
+    {"name": "reddit", "description": "Reddit: posts, comments, subreddits, user profiles"}
+  ],
+  "auth": {
+    "name": "comm-auth",
+    "description": "Browser-based auth for Slack, Discord, Teams, Reddit",
+    "login_url": "",
+    "session_fields": ["cookies", "tokens", "localStorage"]
+  }
+}

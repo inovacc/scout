@@ -18,6 +18,9 @@ func storageKind(sessionStorage bool) string {
 	return "localStorage"
 }
 
+// Deprecated: registerInspectTools adds storage, hijack, har, and swagger tools.
+// These tools are now available as the scout-network plugin. Built-in versions will be
+// removed after 2026-04-16. Install: scout plugin install ./plugins/scout-network
 func registerInspectTools(server *mcp.Server, state *mcpState) { //nolint:maintidx
 	addTracedTool(server, &mcp.Tool{
 		Name:        "storage",
