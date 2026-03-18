@@ -63,6 +63,12 @@ func NewBaselineManager(dir string) *BaselineManager {
 	return &BaselineManager{dir: dir}
 }
 
+// baselineName returns a stable filename prefix for a URL.
+func baselineName(url string) string {
+	hash := sha256.Sum256([]byte(url))
+	return hex.EncodeToString(hash[:8])
+}
+
 // Capture saves a screenshot as the baseline for a URL.
 func (m *BaselineManager) Capture(url string, screenshot []byte) (*Baseline, error) {
 	m.mu.Lock()
@@ -72,8 +78,7 @@ func (m *BaselineManager) Capture(url string, screenshot []byte) (*Baseline, err
 		return nil, fmt.Errorf("monitor: create baseline dir: %w", err)
 	}
 
-	hash := sha256.Sum256([]byte(url))
-	name := hex.EncodeToString(hash[:8])
+	name := baselineName(url)
 	path := filepath.Join(m.dir, name+".png")
 
 	if err := os.WriteFile(path, screenshot, 0o600); err != nil {
@@ -84,10 +89,9 @@ func (m *BaselineManager) Capture(url string, screenshot []byte) (*Baseline, err
 
 	var width, height int
 
-	if img, err := png.Decode(bytes.NewReader(screenshot)); err == nil {
-		bounds := img.Bounds()
-		width = bounds.Dx()
-		height = bounds.Dy()
+	if cfg, err := png.DecodeConfig(bytes.NewReader(screenshot)); err == nil {
+		width = cfg.Width
+		height = cfg.Height
 	}
 
 	b := &Baseline{
@@ -100,7 +104,11 @@ func (m *BaselineManager) Capture(url string, screenshot []byte) (*Baseline, err
 	}
 
 	// Save metadata.
-	meta, _ := json.MarshalIndent(b, "", "  ")
+	meta, err := json.MarshalIndent(b, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("monitor: marshal baseline: %w", err)
+	}
+
 	_ = os.WriteFile(filepath.Join(m.dir, name+".json"), meta, 0o600)
 
 	return b, nil
@@ -111,8 +119,7 @@ func (m *BaselineManager) Load(url string) (*Baseline, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	hash := sha256.Sum256([]byte(url))
-	name := hex.EncodeToString(hash[:8])
+	name := baselineName(url)
 	metaPath := filepath.Join(m.dir, name+".json")
 
 	data, err := os.ReadFile(metaPath) //nolint:gosec
@@ -218,6 +225,7 @@ type Monitor struct {
 	logger    *slog.Logger
 	onChange  ChangeHandler
 	stopCh   chan struct{}
+	stopOnce sync.Once
 }
 
 // New creates a new monitor.
@@ -231,9 +239,9 @@ func New(cfg Config, baselines *BaselineManager, onChange ChangeHandler) *Monito
 	}
 }
 
-// Stop stops the monitor.
+// Stop stops the monitor. Safe to call multiple times.
 func (m *Monitor) Stop() {
-	close(m.stopCh)
+	m.stopOnce.Do(func() { close(m.stopCh) })
 }
 
 // Run starts the monitoring loop. Call Stop() to exit.
@@ -292,6 +300,11 @@ func (m *Monitor) check(captureFunc func(string) ([]byte, error)) Result {
 		_, _ = m.baselines.Capture(m.config.URL, screenshot)
 		m.logger.Info("baseline captured", "url", m.config.URL)
 
+		return result
+	}
+
+	// Short-circuit: identical checksums mean identical images.
+	if result.Checksum == baseline.Checksum {
 		return result
 	}
 

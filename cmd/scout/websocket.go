@@ -93,7 +93,7 @@ var wsListenCmd = &cobra.Command{
 				}
 
 				if jsonOutput {
-					_ = enc.Encode(msg)
+					_ = enc.Encode(msg) //nolint:errchkjson // best-effort streaming output
 				} else {
 					dir := "←"
 					if msg.Direction == "sent" {

@@ -45,11 +45,14 @@ pkg/scout/discovery/          mDNS service discovery
 pkg/scout/browser/            Browser path resolution (public API)
 pkg/scout/guide/              Step-by-step guide recording (Recorder, Guide, RenderMarkdown)
 pkg/scout/runbook/            Runbook system (extract + automate + analyze + Plan/Apply)
-pkg/scout/mcp/                MCP server (41 tools, 3 resources, stdio + SSE transport)
+pkg/scout/mcp/                MCP server (18 built-in tools + 3 WS tools, 3 resources, stdio + SSE transport)
 pkg/scout/plugin/             Plugin system (subprocess JSON-RPC, manager, 8 capability proxies)
+pkg/scout/plugin/registry/    Plugin marketplace (GitHub-backed index, lock file, checksum verification)
 pkg/scout/plugin/sdk/         Go SDK for plugin authors (10 handler types)
 pkg/scout/proxy/              API middleware proxy (YAML routes, browser extraction, caching)
 pkg/scout/strategy/           Strategy files (YAML/JSON workflows, executor, sinks)
+pkg/scout/agent/              AI agent framework integration (OpenAI/Anthropic tool schemas)
+pkg/scout/monitor/            Visual regression testing (baseline management, pixel diff, monitoring)
 pkg/scout/scraper/            Scraper framework + AES-256-GCM auth + 20 modes (including TikTok)
 pkg/scout/archive/            Archive/compression utilities
 runbooks/                     Embedded preset runbooks (26 JSON files)
@@ -110,6 +113,11 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **Default browser fallback**: When no `--browser` flag is given, `launchLocal()` calls `browser.BestCached()` to find cached browsers. If none exist, `BestCached()` auto-downloads Chrome for Testing. Rod fallback is a true last resort.
 - **Browser isolation**: Default mode uses only `~/.scout/browsers/` cache. `--system-browser` flag allows system-installed browsers. `scout browser list` shows only cached browsers by default; `--detect` scans system paths.
 - **Bridge reset**: `Bridge.ResetReady()` clears `ready`/`available` flags before navigation when reusing a page+bridge across URLs (used by `SitemapExtract`). Chrome for Testing requires this — it kills CDP connections on stale binding access.
+- **Plugin marketplace**: `pkg/scout/plugin/registry/` — `FetchIndex()` downloads GitHub-backed JSON index, `Index.Search()` filters by name/description/tags. `LockFile` tracks installed versions + SHA256 checksums in `~/.scout/plugins/lock.json`. CLI: `scout plugin search`, `scout plugin update`, `scout plugin install github:owner/plugin`.
+- **WebSocket MCP tools**: `ws_listen` monitors page WS traffic for a duration, `ws_send` executes JS to send WS messages, `ws_connections` lists active connections. Built on `Page.MonitorWebSockets()` JS interceptor.
+- **AI agent provider**: `pkg/scout/agent/` — `Provider` wraps Scout browser as 9 AI tools. `OpenAITools()` and `AnthropicTools()` return framework-specific schemas. `Call(ctx, name, args)` executes tools with error wrapping into `ToolResult`.
+- **Visual monitor**: `pkg/scout/monitor/` — `BaselineManager` captures/loads PNG baselines with SHA256 checksums. `Compare()` does pixel-level diff with threshold. `Monitor.Run()` checks at intervals, calls `ChangeHandler` on visual change.
+- **MCP tool count**: 18 built-in tools after deprecation cleanup (navigate, click, type, extract, eval, back, forward, wait, screenshot, snapshot, pdf, session_list, session_reset, open, swarm_crawl, ws_listen, ws_send, ws_connections). 28 tools migrated to plugins.
 
 ## Dependencies
 

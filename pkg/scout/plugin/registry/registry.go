@@ -111,26 +111,25 @@ func matches(p PluginInfo, q string) bool {
 	return false
 }
 
-// ReleaseURL constructs the download URL for a plugin release asset.
-func ReleaseURL(repo, version, pluginName string) string {
-	ext := "tar.gz"
+// archiveExt returns the platform-appropriate archive extension.
+func archiveExt() string {
 	if runtime.GOOS == "windows" {
-		ext = "zip"
+		return "zip"
 	}
 
+	return "tar.gz"
+}
+
+// ReleaseURL constructs the download URL for a plugin release asset.
+func ReleaseURL(repo, version, pluginName string) string {
 	return fmt.Sprintf("https://github.com/%s/releases/download/%s/%s-%s-%s.%s",
-		repo, version, pluginName, runtime.GOOS, runtime.GOARCH, ext)
+		repo, version, pluginName, runtime.GOOS, runtime.GOARCH, archiveExt())
 }
 
 // LatestReleaseURL constructs the latest release download URL.
 func LatestReleaseURL(repo, pluginName string) string {
-	ext := "tar.gz"
-	if runtime.GOOS == "windows" {
-		ext = "zip"
-	}
-
 	return fmt.Sprintf("https://github.com/%s/releases/latest/download/%s-%s-%s.%s",
-		repo, pluginName, runtime.GOOS, runtime.GOARCH, ext)
+		repo, pluginName, runtime.GOOS, runtime.GOARCH, archiveExt())
 }
 
 // LockFilePath returns the path to the plugin lock file.
@@ -167,7 +166,7 @@ func LoadLockFile() (*LockFile, error) {
 	return &lf, nil
 }
 
-// SaveLockFile writes the lock file to disk.
+// Save writes the lock file to disk.
 func (lf *LockFile) Save() error {
 	path, err := LockFilePath()
 	if err != nil {

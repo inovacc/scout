@@ -13,7 +13,6 @@ import (
 	"github.com/inovacc/scout/internal/idle"
 	"github.com/inovacc/scout/internal/tracing"
 	"github.com/inovacc/scout/pkg/scout"
-	"github.com/inovacc/scout/pkg/scout/guide"
 	"github.com/inovacc/scout/pkg/scout/plugin"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -35,7 +34,6 @@ type mcpState struct {
 	page           *scout.Page
 	config         ServerConfig
 	idle           *idle.Timer
-	guideRecorder  *guide.Recorder
 }
 
 // touch resets the idle timer on activity.
@@ -101,21 +99,25 @@ func (s *mcpState) ensurePage(ctx context.Context) (*scout.Page, error) {
 
 func (s *mcpState) reset() {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	// Close page first to terminate its CDP session before killing the browser process.
 	if s.page != nil {
 		_ = s.page.Close()
 	}
 
-	if s.browser != nil {
+	hadBrowser := s.browser != nil
+	if hadBrowser {
 		_ = s.browser.Close()
-		// Allow the OS to fully release CDP port and temp dirs before re-init.
-		time.Sleep(500 * time.Millisecond)
 	}
 
 	s.browser = nil
 	s.page = nil
+	s.mu.Unlock()
+
+	// Allow the OS to fully release CDP port and temp dirs before re-init.
+	if hadBrowser {
+		time.Sleep(500 * time.Millisecond)
+	}
 }
 
 // addTracedTool registers an MCP tool with OpenTelemetry tracing instrumentation.
@@ -165,7 +167,7 @@ func jsonResult(v any) (*mcp.CallToolResult, error) {
 // call cancelOnIdle when the timeout expires.
 // If cfg.PluginManager is set, plugin-provided MCP tools are registered.
 func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
-	state := &mcpState{config: cfg, guideRecorder: guide.NewRecorder()}
+	state := &mcpState{config: cfg}
 
 	if cfg.IdleTimeout > 0 && len(cancelOnIdle) > 0 && cancelOnIdle[0] != nil {
 		cb := cancelOnIdle[0]
@@ -191,17 +193,9 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 
 	registerBrowserTools(server, state)
 	registerCaptureTools(server, state)
-	registerSearchTools(server, state)
 	registerSessionTools(server, state)
-	registerDiagTools(server, state)
-	registerContentTools(server, state)
-	registerNetworkTools(server, state)
-	registerFormTools(server, state)
-	registerAnalysisTools(server, state)
-	registerInspectTools(server, state)
-	registerGuideTools(server, state)
-	registerReportTools(server, state)
 	registerSwarmTools(server, state)
+	registerWebSocketTools(server, state)
 	registerResources(server, state)
 
 	if cfg.PluginManager != nil {

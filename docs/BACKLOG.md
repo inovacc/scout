@@ -13,7 +13,10 @@
 | Priority | Item | Notes |
 |----------|------|-------|
 | P2 | Plugin distribution via GitHub Releases | Ship pre-built plugin binaries per OS/arch |
-| P3 | Deprecation cleanup (2026-04-16) | Remove deprecated built-in MCP tools replaced by plugins |
+| P2 | Mobile browser automation (Phase 73) | CDP over ADB, iOS Safari, touch events |
+| P3 | Cloud deployment (Phase 74) | K8s operator, Helm chart, autoscaling |
+| P3 | WebSocket HAR recording | Record WS traffic in HAR format for replay |
+| P3 | `scout agent serve` HTTP endpoint | Agent-optimized HTTP server for tool calls |
 
 ## Completed Items (Archive)
 
@@ -96,6 +99,11 @@
 | Email/Docs modes plugin | Phase 59f Batch 2 — `scout-email-docs` (gmail, outlook, linkedin, jira, confluence) plugin |
 | Content/Social modes plugin | Phase 59f Batch 3 — `scout-content-social` (twitter, youtube, notion, gdrive, sharepoint) plugin |
 | Enterprise modes plugin | Phase 59f Batch 4 — `scout-enterprise` (amazon, gmaps, salesforce, grafana, cloud) plugin |
+| Plugin marketplace & registry | Phase 69 — `pkg/scout/plugin/registry/`, `scout plugin search/update`, lock file |
+| WebSocket automation | Phase 70 — `Page.MonitorWebSockets()`, CLI `scout ws listen`, MCP ws_listen/ws_send/ws_connections |
+| AI agent integration | Phase 71 — `pkg/scout/agent/` Provider with OpenAI/Anthropic tool schemas |
+| Visual monitoring | Phase 72 — `pkg/scout/monitor/` baseline management, pixel diff, continuous monitoring |
+| MCP deprecation cleanup | Phase 72.5 — removed 28 deprecated built-in MCP tools, core reduced to 18 tools |
 </details>
 
 <details>

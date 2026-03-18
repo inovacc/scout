@@ -52,7 +52,10 @@ func TestLockFile(t *testing.T) {
 	lf.Lock("scout-search", "v0.68.0", "def456", "inovacc/scout")
 
 	// Save manually to test path.
-	data, _ := json.MarshalIndent(lf, "", "  ")
+	data, err := json.MarshalIndent(lf, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		t.Fatal(err)
 	}

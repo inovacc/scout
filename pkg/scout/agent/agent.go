@@ -52,7 +52,7 @@ func (p *Provider) Call(ctx context.Context, name string, args map[string]any) (
 		if t.Name == name {
 			result, err := t.Handler(ctx, args)
 			if err != nil {
-				return &ToolResult{Content: err.Error(), IsError: true}, nil
+				return &ToolResult{Content: err.Error(), IsError: true}, nil //nolint:nilerr // intentional: wrap handler error as tool error result
 			}
 
 			return &ToolResult{Content: result}, nil
@@ -64,7 +64,7 @@ func (p *Provider) Call(ctx context.Context, name string, args map[string]any) (
 
 // OpenAITools returns tool schemas in OpenAI function calling format.
 func (p *Provider) OpenAITools() []map[string]any {
-	var tools []map[string]any
+	tools := make([]map[string]any, 0, len(p.tools))
 
 	for _, t := range p.tools {
 		tools = append(tools, map[string]any{
@@ -82,7 +82,7 @@ func (p *Provider) OpenAITools() []map[string]any {
 
 // AnthropicTools returns tool schemas in Anthropic tool_use format.
 func (p *Provider) AnthropicTools() []map[string]any {
-	var tools []map[string]any
+	tools := make([]map[string]any, 0, len(p.tools))
 
 	for _, t := range p.tools {
 		tools = append(tools, map[string]any{
@@ -162,7 +162,7 @@ func (p *Provider) registerBuiltinTools() {
 	}
 }
 
-func (p *Provider) ensurePage(ctx context.Context, url string) (*scout.Page, error) {
+func (p *Provider) ensurePage(_ context.Context, url string) (*scout.Page, error) {
 	if url != "" {
 		page, err := p.browser.NewPage(url)
 		if err != nil {
@@ -333,8 +333,8 @@ func params(name, typ, desc string, required bool) map[string]any {
 	return schema
 }
 
-func param(name, typ, desc string, required bool) map[string]any {
-	return map[string]any{"name": name, "type": typ, "description": desc, "required": required}
+func param(name, paramType, desc string, required bool) map[string]any {
+	return map[string]any{"name": name, "type": paramType, "description": desc, "required": required}
 }
 
 func paramsMulti(fields ...map[string]any) map[string]any {

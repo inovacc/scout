@@ -136,8 +136,8 @@ Examples:
 		src := args[0]
 
 		// GitHub shorthand: github:owner/plugin → latest release URL.
-		if strings.HasPrefix(src, "github:") {
-			return installPluginFromGitHub(cmd, strings.TrimPrefix(src, "github:"))
+		if repo, ok := strings.CutPrefix(src, "github:"); ok {
+			return installPluginFromGitHub(cmd, repo)
 		}
 
 		// Detect URL vs local path.

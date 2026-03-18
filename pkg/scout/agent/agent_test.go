@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 )
@@ -118,7 +119,7 @@ func TestCallUnknownTool(t *testing.T) {
 	p := &Provider{}
 	p.registerBuiltinTools()
 
-	_, err := p.Call(nil, "nonexistent", nil) //nolint:staticcheck
+	_, err := p.Call(context.TODO(), "nonexistent", nil)
 	if err == nil {
 		t.Error("expected error for unknown tool")
 	}
