@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "updated": "2026-03-17T00:00:00Z",
+  "plugins": [
+    {"name": "scout-diag", "description": "Network diagnostics: ping and curl with timing", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["diagnostics", "ping", "curl", "network"]},
+    {"name": "scout-reports", "description": "Report management: list, show, delete saved reports", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["reports", "health", "gather"]},
+    {"name": "scout-content", "description": "Content extraction: markdown, table, meta, PDF", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["content", "markdown", "pdf", "extraction"]},
+    {"name": "scout-search", "description": "Web search and content fetching", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["search", "fetch", "google", "bing"]},
+    {"name": "scout-network", "description": "Network inspection: cookies, headers, storage, hijack, HAR, Swagger", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["network", "cookies", "har", "swagger"]},
+    {"name": "scout-forms", "description": "Form automation: detect, fill, submit", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["forms", "automation", "input"]},
+    {"name": "scout-crawl", "description": "Web crawling: BFS crawl, tech detection, swarm", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["crawl", "detect", "swarm", "spider"]},
+    {"name": "scout-guide", "description": "Step-by-step guide recording with screenshots", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["guide", "documentation", "recording"]},
+    {"name": "scout-comm", "description": "Communication scrapers: Slack, Discord, Teams, Reddit", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["slack", "discord", "teams", "reddit", "scraper"]},
+    {"name": "scout-email-docs", "description": "Email/docs scrapers: Gmail, Outlook, LinkedIn, Jira, Confluence", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["gmail", "outlook", "linkedin", "jira", "confluence"]},
+    {"name": "scout-content-social", "description": "Content/social scrapers: Twitter, YouTube, Notion, Drive, SharePoint", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["twitter", "youtube", "notion", "gdrive", "sharepoint"]},
+    {"name": "scout-enterprise", "description": "Enterprise scrapers: Amazon, Google Maps, Salesforce, Grafana, Cloud", "author": "inovacc", "repo": "inovacc/scout", "latest": "v0.68.0", "tags": ["amazon", "gmaps", "salesforce", "grafana", "cloud"]}
+  ]
+}

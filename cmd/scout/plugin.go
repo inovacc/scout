@@ -12,6 +12,7 @@ import (
 
 	"github.com/inovacc/scout/pkg/scout/archive"
 	"github.com/inovacc/scout/pkg/scout/plugin"
+	"github.com/inovacc/scout/pkg/scout/plugin/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +32,7 @@ func initPluginManager() *plugin.Manager {
 
 func init() {
 	rootCmd.AddCommand(pluginCmd)
-	pluginCmd.AddCommand(pluginListCmd, pluginInstallCmd, pluginRemoveCmd, pluginRunCmd)
+	pluginCmd.AddCommand(pluginListCmd, pluginInstallCmd, pluginRemoveCmd, pluginRunCmd, pluginSearchCmd, pluginUpdateCmd)
 }
 
 var pluginCmd = &cobra.Command{
@@ -367,6 +368,116 @@ var pluginRunCmd = &cobra.Command{
 		if err := client.Shutdown(ctx); err != nil {
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: shutdown: %v\n", err)
 		}
+
+		return nil
+	},
+}
+
+var pluginSearchCmd = &cobra.Command{
+	Use:   "search [query]",
+	Short: "Search the plugin registry",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		query := ""
+		if len(args) > 0 {
+			query = strings.Join(args, " ")
+		}
+
+		idx, err := registry.FetchIndex("")
+		if err != nil {
+			return fmt.Errorf("scout: plugin search: %w", err)
+		}
+
+		results := idx.Search(query)
+		if len(results) == 0 {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "no plugins found")
+			return nil
+		}
+
+		for _, p := range results {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %-25s %s\n", p.Name, p.Description)
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "    repo: %s  latest: %s\n", p.Repo, p.Latest)
+		}
+
+		return nil
+	},
+}
+
+var pluginUpdateCmd = &cobra.Command{
+	Use:   "update [name]",
+	Short: "Update installed plugins to latest version",
+	Long:  "Update a specific plugin or all installed plugins (--all) to their latest release.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		mgr := initPluginManager()
+		plugins := mgr.Plugins()
+
+		if len(plugins) == 0 {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "no plugins installed")
+			return nil
+		}
+
+		// Load lock file for version tracking.
+		lf, err := registry.LoadLockFile()
+		if err != nil {
+			return fmt.Errorf("scout: plugin update: %w", err)
+		}
+
+		// Fetch registry for latest versions.
+		idx, err := registry.FetchIndex("")
+		if err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: could not fetch registry: %v\n", err)
+			return nil
+		}
+
+		target := ""
+		if len(args) > 0 {
+			target = args[0]
+		}
+
+		updated := 0
+
+		for _, p := range plugins {
+			if target != "" && p.Name != target {
+				continue
+			}
+
+			// Find in registry.
+			var info *registry.PluginInfo
+
+			for _, ri := range idx.Plugins {
+				if ri.Name == p.Name {
+					info = &ri
+
+					break
+				}
+			}
+
+			if info == nil {
+				continue
+			}
+
+			locked := lf.Get(p.Name)
+			if locked != nil && locked.Version == info.Latest {
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s: up to date (%s)\n", p.Name, info.Latest)
+				continue
+			}
+
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s: updating to %s...\n", p.Name, info.Latest)
+
+			url := registry.LatestReleaseURL(info.Repo, p.Name)
+			if err := installPluginFromURL(cmd, url); err != nil {
+				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "  %s: update failed: %v\n", p.Name, err)
+				continue
+			}
+
+			lf.Lock(p.Name, info.Latest, "", info.Repo)
+			updated++
+		}
+
+		if err := lf.Save(); err != nil {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: save lock file: %v\n", err)
+		}
+
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\n%d plugin(s) updated\n", updated)
 
 		return nil
 	},

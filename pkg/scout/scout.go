@@ -232,7 +232,11 @@ type WebMCPToolResult = engine.WebMCPToolResult
 type WebSearchItem = engine.WebSearchItem
 type WebSearchOption = engine.WebSearchOption
 type WebSearchResult = engine.WebSearchResult
+type WebSocketConnection = engine.WebSocketConnection
 type WebSocketFrame = engine.WebSocketFrame
+type WebSocketHandler = engine.WebSocketHandler
+type WebSocketMessage = engine.WebSocketMessage
+type WebSocketOption = engine.WebSocketOption
 type WindowBounds = engine.WindowBounds
 type WindowState = engine.WindowState
 type WizardStep = engine.WizardStep
@@ -659,6 +663,8 @@ func WithWebSearchMainContent() WebSearchOption { return engine.WithWebSearchMai
 func WithWebSearchMaxFetch(n int) WebSearchOption { return engine.WithWebSearchMaxFetch(n) }
 func WithWebSearchMaxPages(n int) WebSearchOption { return engine.WithWebSearchMaxPages(n) }
 func WithWebSearchRegion(region string) WebSearchOption { return engine.WithWebSearchRegion(region) }
+func WithWSCaptureAll() WebSocketOption { return engine.WithWSCaptureAll() }
+func WithWSURLFilter(pattern string) WebSocketOption { return engine.WithWSURLFilter(pattern) }
 func WithWindowSize(w, h int) Option { return engine.WithWindowSize(w, h) }
 func WithWindowState(state WindowState) Option { return engine.WithWindowState(state) }
 func WithoutBridge() Option { return engine.WithoutBridge() }
