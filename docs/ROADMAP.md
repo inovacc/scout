@@ -455,6 +455,83 @@ Each wave follows 30-day deprecation: plugin released → warning on built-in �
 
 **What stays built-in (13 tools):** navigate, click, type, extract, eval, back, forward, wait, screenshot, snapshot, session_list, session_reset, open.
 
+---
+
+## Phase 69+ — Next Quarter
+
+### Phase 69 — Plugin Marketplace & Distribution
+
+**Goal:** First-class plugin discovery, installation, and updates.
+
+**Scope:**
+- `scout plugin search <query>` — search a plugin registry (GitHub-backed JSON index)
+- `scout plugin update [name|--all]` — update installed plugins to latest release
+- Plugin version pinning in `~/.scout/plugins/lock.json`
+- Signed plugin archives (SHA256 checksum verification)
+- Plugin auto-update on `scout` startup (opt-in via config)
+- Plugin telemetry: usage stats for installed plugins
+
+### Phase 70 — WebSocket Automation
+
+**Goal:** First-class WebSocket support beyond session hijacking.
+
+**Scope:**
+- `Page.ConnectWebSocket(url)` — establish WS connection via CDP
+- `Page.SendWSMessage(data)` / `Page.OnWSMessage(handler)` — send/receive
+- WS traffic recording in HAR format
+- CLI: `scout ws connect <url>`, `scout ws send <data>`, `scout ws listen`
+- MCP tools: `ws_connect`, `ws_send`, `ws_listen`
+- Strategy step type: `websocket` for WS-based workflows
+
+### Phase 71 — AI Agent Integration
+
+**Goal:** Scout as a tool provider for AI agent frameworks.
+
+**Scope:**
+- Native OpenAI Agents SDK tool provider (`@tool` decorator bridge)
+- Anthropic Claude tool_use integration (beyond MCP)
+- LangChain/LangGraph tool adapter
+- Auto-generate tool schemas from Scout's API surface
+- Agent-friendly error messages with recovery suggestions
+- `scout agent serve` — HTTP server with agent-optimized endpoints
+
+### Phase 72 — Visual Testing & Monitoring
+
+**Goal:** Continuous visual regression testing and site monitoring.
+
+**Scope:**
+- `scout monitor <url> --interval 1h` — periodic screenshot + diff
+- Baseline management: `scout baseline capture/update/list`
+- Visual diff reports with highlighted regions
+- Slack/webhook notifications on visual changes
+- CI integration: `scout visual-test --baseline ./baselines/`
+- Dashboard: local web UI for viewing monitoring history
+
+### Phase 73 — Mobile Browser Support
+
+**Goal:** Extend Scout to mobile browser automation.
+
+**Scope:**
+- Chrome DevTools Protocol over ADB (Android)
+- iOS Safari WebDriver via `ios-webkit-debug-proxy`
+- `WithMobileDevice(device)` option for responsive emulation
+- Touch events: tap, swipe, pinch, long-press
+- Mobile-specific screenshots (status bar, notch handling)
+- CLI: `scout mobile connect <device>`, `scout mobile screenshot`
+
+### Phase 74 — Cloud Deployment
+
+**Goal:** Run Scout as a managed service.
+
+**Scope:**
+- Kubernetes operator for Scout browser pools
+- Horizontal pod autoscaling based on queue depth
+- Persistent browser sessions across pod restarts
+- S3/GCS result storage
+- Prometheus metrics exporter
+- Helm chart: `helm install scout inovacc/scout`
+- `scout cloud deploy/status/scale` CLI commands
+
 ### Remaining Work
 
 See [BACKLOG.md](BACKLOG.md) for future work.
