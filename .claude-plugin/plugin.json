@@ -1,0 +1,12 @@
+{
+  "name": "scout",
+  "version": "1.0.0",
+  "description": "Browser automation, web scraping, and site testing via Scout's headless Chrome engine",
+  "author": {
+    "name": "inovacc",
+    "url": "https://github.com/inovacc"
+  },
+  "repository": "https://github.com/inovacc/scout",
+  "license": "BSD-3-Clause",
+  "keywords": ["browser", "automation", "scraping", "testing", "chrome", "mcp", "headless"]
+}

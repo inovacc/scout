@@ -80,6 +80,8 @@ type options struct {
 	sessionID          string // explicit session ID to reuse from scout.pid
 	targetURL          string // URL for domain-based session routing
 	systemBrowser      bool   // allow system-installed browsers (not just cache)
+	mobile             *MobileConfig // mobile device automation via ADB
+	touchEmulation     bool          // enable touch simulation on desktop
 }
 
 func defaults() *options {

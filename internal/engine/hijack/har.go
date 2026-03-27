@@ -20,8 +20,9 @@ type HAREntry struct {
 	Request         HARRequest  `json:"request"`
 	Response        HARResponse `json:"response"`
 	Timings         HARTimings  `json:"timings"`
-	ServerIPAddress string      `json:"serverIPAddress,omitempty"`
-	Connection      string      `json:"connection,omitempty"`
+	ServerIPAddress string        `json:"serverIPAddress,omitempty"`
+	Connection      string        `json:"connection,omitempty"`
+	WebSocket       *HARWebSocket `json:"_webSocketMessages,omitempty"`
 }
 
 // HARRequest describes the HTTP request.
@@ -72,6 +73,21 @@ type HARContent struct {
 	MimeType string `json:"mimeType"`
 	Text     string `json:"text,omitempty"`
 	Encoding string `json:"encoding,omitempty"`
+}
+
+// HARWebSocketMessage represents a single WebSocket message in HAR.
+type HARWebSocketMessage struct {
+	Time   float64 `json:"time"`   // ms since connection opened
+	Opcode int     `json:"opcode"` // 1=text, 2=binary
+	Data   string  `json:"data"`   // message payload
+	Type   string  `json:"type"`   // "send" or "receive"
+}
+
+// HARWebSocket holds WebSocket connection data as a HAR extension.
+type HARWebSocket struct {
+	URL      string                `json:"url"`
+	Status   int                   `json:"status"` // 101 for successful upgrade
+	Messages []HARWebSocketMessage `json:"messages"`
 }
 
 // HARTimings describes the request timing breakdown.

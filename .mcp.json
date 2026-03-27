@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "scout": {
+      "command": "scout",
+      "args": ["mcp", "--headless", "--stealth"]
+    }
+  }
+}

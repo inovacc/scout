@@ -97,6 +97,16 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 		}
 	}
 
+	// If mobile config is set, use ADB port forwarding for CDP.
+	if o.mobile != nil {
+		endpoint, mobileErr := SetupADBForward(context.Background(), *o.mobile)
+		if mobileErr != nil {
+			return nil, mobileErr
+		}
+
+		o.remoteCDP = endpoint
+	}
+
 	var (
 		u string
 		l *launcher2.Launcher
@@ -548,6 +558,15 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 		if err := p.setWindowState(b.opts.windowState); err != nil {
 			return nil, fmt.Errorf("scout: set initial window state: %w", err)
 		}
+	}
+
+	// Enable touch emulation on desktop when requested.
+	if b.opts.touchEmulation {
+		maxTP := 5
+		_ = (proto2.EmulationSetTouchEmulationEnabled{
+			Enabled:        true,
+			MaxTouchPoints: &maxTP,
+		}).Call(rodPage)
 	}
 
 	if b.opts.smartWait && url != "" {

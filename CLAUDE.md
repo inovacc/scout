@@ -118,6 +118,10 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **AI agent provider**: `pkg/scout/agent/` — `Provider` wraps Scout browser as 9 AI tools. `OpenAITools()` and `AnthropicTools()` return framework-specific schemas. `Call(ctx, name, args)` executes tools with error wrapping into `ToolResult`.
 - **Visual monitor**: `pkg/scout/monitor/` — `BaselineManager` captures/loads PNG baselines with SHA256 checksums. `Compare()` does pixel-level diff with threshold. `Monitor.Run()` checks at intervals, calls `ChangeHandler` on visual change.
 - **MCP tool count**: 18 built-in tools after deprecation cleanup (navigate, click, type, extract, eval, back, forward, wait, screenshot, snapshot, pdf, session_list, session_reset, open, swarm_crawl, ws_listen, ws_send, ws_connections). 28 tools migrated to plugins.
+- **Mobile automation**: `WithMobile(MobileConfig{})` for ADB-connected Android Chrome, `WithTouchEmulation()` for desktop touch simulation. `Page.Touch()`, `Page.Swipe()`, `Page.PinchZoom()` for touch gestures. CLI: `scout mobile devices`, `scout mobile connect`.
+- **Agent HTTP server**: `scout agent serve [--addr localhost:9000]` starts REST API for AI frameworks. Endpoints: `GET /tools` (OpenAI/Anthropic formats), `POST /call` (execute tool). `pkg/scout/agent/server.go`.
+- **WebSocket HAR**: `Recorder` captures WS events (opened/sent/received/closed) alongside HTTP. `ExportHAR()` includes `_webSocketMessages` extension. `ExportWebSocketHAR()` for WS-only export.
+- **Claude Code plugin**: `.claude-plugin/plugin.json` + `.mcp.json` + 6 skills + 3 agents. Test: `claude --plugin-dir .`. Skills: `/scout:scrape`, `/scout:screenshot`, `/scout:test-site`, `/scout:gather`, `/scout:crawl`, `/scout:monitor`.
 
 ## Dependencies
 

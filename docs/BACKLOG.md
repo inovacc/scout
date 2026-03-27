@@ -13,10 +13,8 @@
 | Priority | Item | Notes |
 |----------|------|-------|
 | P2 | Plugin distribution via GitHub Releases | Ship pre-built plugin binaries per OS/arch |
-| P2 | Mobile browser automation (Phase 73) | CDP over ADB, iOS Safari, touch events |
 | P3 | Cloud deployment (Phase 74) | K8s operator, Helm chart, autoscaling |
-| P3 | WebSocket HAR recording | Record WS traffic in HAR format for replay |
-| P3 | `scout agent serve` HTTP endpoint | Agent-optimized HTTP server for tool calls |
+| P3 | iOS Safari via ios-webkit-debug-proxy | Extend Phase 73 mobile to iOS |
 
 ## Completed Items (Archive)
 
@@ -104,6 +102,10 @@
 | AI agent integration | Phase 71 — `pkg/scout/agent/` Provider with OpenAI/Anthropic tool schemas |
 | Visual monitoring | Phase 72 — `pkg/scout/monitor/` baseline management, pixel diff, continuous monitoring |
 | MCP deprecation cleanup | Phase 72.5 — removed 28 deprecated built-in MCP tools, core reduced to 18 tools |
+| Mobile browser automation | Phase 73 — ADB, touch gestures (Touch/Swipe/PinchZoom), `scout mobile devices/connect` |
+| WebSocket HAR recording | Phase 73.5 — `_webSocketMessages` extension, `ExportWebSocketHAR()`, WS event recording |
+| Agent HTTP server | Phase 73.6 — `scout agent serve` REST API with 6 endpoints for LangChain/CrewAI |
+| Claude Code plugin | Phase 73.7 — plugin manifest, 6 skills, 3 agents, MCP config, SessionStart hook |
 </details>
 
 <details>
