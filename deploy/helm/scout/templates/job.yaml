@@ -38,11 +38,11 @@ spec:
             {{- toYaml .Values.job.args | nindent 12 }}
           env:
             - name: SCOUT_HEADLESS
-              value: {{ .Values.scout.headless | quote }}
+              value: {{ .Values.browser.headless | quote }}
             - name: SCOUT_NO_SANDBOX
-              value: {{ .Values.scout.noSandbox | quote }}
+              value: {{ not .Values.browser.sandbox | quote }}
             - name: SCOUT_STEALTH
-              value: {{ .Values.scout.stealth | quote }}
+              value: {{ .Values.browser.stealth | quote }}
             {{- with .Values.job.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -59,7 +59,7 @@ spec:
         - name: dshm
           emptyDir:
             medium: Memory
-            sizeLimit: {{ .Values.shmSize | default "2Gi" }}
+            sizeLimit: {{ .Values.browser.sharedMemory | default "2Gi" }}
         {{- if .Values.job.outputVolume }}
         - name: output
           {{- toYaml .Values.job.outputVolume | nindent 10 }}

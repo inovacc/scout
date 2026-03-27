@@ -7,22 +7,40 @@ image:
 
 service:
   type: ClusterIP
-  port: 9551
+  grpcPort: 9551
+  mcpPort: 8080
+  agentPort: 9000
 
 resources:
   requests:
-    memory: "256Mi"
+    memory: "512Mi"
     cpu: "250m"
   limits:
     memory: "2Gi"
-    cpu: "1000m"
+    cpu: "2"
 
-shmSize: "2Gi"
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilization: 70
+  targetMemoryUtilization: 80
 
-scout:
+browser:
   headless: true
-  noSandbox: true
-  stealth: false
+  stealth: true
+  sandbox: false
+  sharedMemory: "2Gi"
+
+persistence:
+  enabled: false
+  storageClass: ""
+  size: 10Gi
+  mountPath: /home/nonroot/.scout
+
+metrics:
+  enabled: false
+  port: 9090
 
 ## Batch job configuration (disabled by default)
 job:

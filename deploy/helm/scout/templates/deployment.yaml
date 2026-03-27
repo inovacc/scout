@@ -5,7 +5,9 @@ metadata:
   labels:
     {{- include "scout.labels" . | nindent 4 }}
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "scout.selectorLabels" . | nindent 6 }}
@@ -14,6 +16,69 @@ spec:
       labels:
         {{- include "scout.selectorLabels" . | nindent 8 }}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: scout
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "agent"
+            - "serve"
+            - "--addr"
+            - "0.0.0.0:{{ .Values.service.agentPort }}"
+            {{- if .Values.browser.headless }}
+            - "--headless"
+            {{- end }}
+            {{- if .Values.browser.stealth }}
+            - "--stealth"
+            {{- end }}
+          ports:
+            - name: agent
+              containerPort: {{ .Values.service.agentPort }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.service.grpcPort }}
+              protocol: TCP
+          env:
+            - name: SCOUT_HEADLESS
+              value: {{ .Values.browser.headless | quote }}
+            - name: SCOUT_NO_SANDBOX
+              value: {{ not .Values.browser.sandbox | quote }}
+            - name: SCOUT_STEALTH
+              value: {{ .Values.browser.stealth | quote }}
+          livenessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: grpc
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.browser.sharedMemory }}
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "scout.fullname" . }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -26,44 +91,3 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-      containers:
-        - name: scout
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args: ["server"]
-          ports:
-            - name: grpc
-              containerPort: 9551
-              protocol: TCP
-          env:
-            - name: SCOUT_HEADLESS
-              value: {{ .Values.scout.headless | quote }}
-            - name: SCOUT_NO_SANDBOX
-              value: {{ .Values.scout.noSandbox | quote }}
-            - name: SCOUT_STEALTH
-              value: {{ .Values.scout.stealth | quote }}
-          readinessProbe:
-            tcpSocket:
-              port: grpc
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
-            tcpSocket:
-              port: grpc
-            initialDelaySeconds: 10
-            periodSeconds: 30
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          volumeMounts:
-            - name: dshm
-              mountPath: /dev/shm
-      volumes:
-        - name: dshm
-          emptyDir:
-            medium: Memory
-            sizeLimit: {{ .Values.shmSize }}
