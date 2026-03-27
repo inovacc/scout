@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/internal/idle"
+	"github.com/inovacc/scout/internal/metrics"
 	"github.com/inovacc/scout/pkg/scout"
 )
 
@@ -99,6 +100,8 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /tools/anthropic", s.handleToolsAnthropic)
 	s.mux.HandleFunc("GET /tools/schema", s.handleToolsSchema)
 	s.mux.HandleFunc("POST /call", s.handleCall)
+	s.mux.HandleFunc("GET /metrics", metrics.PrometheusHandler())
+	s.mux.HandleFunc("GET /metrics/json", metrics.Handler())
 }
 
 func (s *Server) touch() {
@@ -156,8 +159,14 @@ func (s *Server) handleCall(w http.ResponseWriter, r *http.Request) {
 
 	result, err := s.provider.Call(r.Context(), req.Name, req.Arguments)
 	if err != nil {
+		metrics.Get().ErrorsTotal.Add(1)
 		writeJSON(w, http.StatusNotFound, CallResponse{Content: err.Error(), IsError: true})
 		return
+	}
+
+	metrics.Get().ToolCallsTotal.Add(1)
+	if result.IsError {
+		metrics.Get().ErrorsTotal.Add(1)
 	}
 
 	writeJSON(w, http.StatusOK, result)

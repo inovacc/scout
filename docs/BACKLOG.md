@@ -12,9 +12,8 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
-| P2 | Plugin distribution via GitHub Releases | Ship pre-built plugin binaries per OS/arch |
-| P3 | Cloud deployment (Phase 74) | K8s operator, Helm chart, autoscaling |
 | P3 | iOS Safari via ios-webkit-debug-proxy | Extend Phase 73 mobile to iOS |
+| P3 | Claude Code marketplace submission | Submit plugin to official Anthropic marketplace |
 
 ## Completed Items (Archive)
 
@@ -106,6 +105,8 @@
 | WebSocket HAR recording | Phase 73.5 — `_webSocketMessages` extension, `ExportWebSocketHAR()`, WS event recording |
 | Agent HTTP server | Phase 73.6 — `scout agent serve` REST API with 6 endpoints for LangChain/CrewAI |
 | Claude Code plugin | Phase 73.7 — plugin manifest, 6 skills, 3 agents, MCP config, SessionStart hook |
+| Plugin distribution | GoReleaser + GitHub Actions release workflow, auto-download in SessionStart hook |
+| Cloud deployment | Phase 74 — Helm chart (HPA, PVC), `scout cloud` CLI, Prometheus metrics |
 </details>
 
 <details>

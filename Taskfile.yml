@@ -145,6 +145,12 @@ tasks:
       - docker push ghcr.io/inovacc/scout:latest
       - docker push ghcr.io/inovacc/scout:slim
 
+  # === PLUGIN ===
+  plugin:validate:
+    desc: Validate Claude Code plugin structure
+    cmds:
+      - bash scripts/validate-plugin.sh
+
   # === CLEANUP ===
   clean:
     desc: Clean build artifacts and generated files

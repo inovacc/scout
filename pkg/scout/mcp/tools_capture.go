@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/inovacc/scout/internal/metrics"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -37,6 +38,8 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 		if err != nil {
 			return errResult(err.Error())
 		}
+
+		metrics.Get().ScreenshotsTotal.Add(1)
 
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.ImageContent{

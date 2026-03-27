@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/internal/idle"
+	"github.com/inovacc/scout/internal/metrics"
 	"github.com/inovacc/scout/internal/tracing"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/plugin"
@@ -93,6 +94,8 @@ func (s *mcpState) ensurePage(ctx context.Context) (*scout.Page, error) {
 	}
 
 	s.page = p
+	metrics.Get().PagesCreated.Add(1)
+	metrics.Get().PagesActive.Add(1)
 
 	return p, nil
 }
@@ -103,6 +106,7 @@ func (s *mcpState) reset() {
 	// Close page first to terminate its CDP session before killing the browser process.
 	if s.page != nil {
 		_ = s.page.Close()
+		metrics.Get().PagesActive.Add(-1)
 	}
 
 	hadBrowser := s.browser != nil
@@ -127,10 +131,15 @@ func addTracedTool(server *mcp.Server, tool *mcp.Tool, handler func(ctx context.
 		ctx, finish := tracing.MCPToolSpan(ctx, name)
 
 		result, err := handler(ctx, req)
+
+		metrics.Get().ToolCallsTotal.Add(1)
+
 		switch {
 		case err != nil:
+			metrics.Get().ErrorsTotal.Add(1)
 			finish(err)
 		case result != nil && result.IsError:
+			metrics.Get().ErrorsTotal.Add(1)
 			finish(fmt.Errorf("tool error"))
 		default:
 			finish(nil)

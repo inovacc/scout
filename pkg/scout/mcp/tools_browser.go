@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/inovacc/scout/internal/metrics"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -45,6 +46,8 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 		case <-done:
 		case <-time.After(15 * time.Second):
 		}
+
+		metrics.Get().NavigationsTotal.Add(1)
 
 		title, _ := page.Title()
 		url, _ := page.URL()
@@ -137,6 +140,8 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 		if err != nil {
 			return errResult(err.Error())
 		}
+
+		metrics.Get().ExtractionsTotal.Add(1)
 
 		return textResult(text)
 	})

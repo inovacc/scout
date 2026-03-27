@@ -1,0 +1,31 @@
+name: Plugin Validate
+on:
+  push:
+    paths:
+      - ".claude-plugin/**"
+      - ".mcp.json"
+      - "skills/**"
+      - "agents/**"
+      - "hooks/**"
+      - "scripts/check-scout.sh"
+  pull_request:
+    paths:
+      - ".claude-plugin/**"
+      - ".mcp.json"
+      - "skills/**"
+      - "agents/**"
+      - "hooks/**"
+      - "scripts/check-scout.sh"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Validate plugin
+        run: bash scripts/validate-plugin.sh

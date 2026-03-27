@@ -567,20 +567,20 @@ Each wave follows 30-day deprecation: plugin released → warning on built-in �
 
 ---
 
-## Phase 74+ — Next Quarter
-
-### Phase 74 — Cloud Deployment
+### Phase 74 — Cloud Deployment [DONE]
 
 **Goal:** Run Scout as a managed service.
 
-**Scope:**
-- Kubernetes operator for Scout browser pools
-- Horizontal pod autoscaling based on queue depth
-- Persistent browser sessions across pod restarts
-- S3/GCS result storage
-- Prometheus metrics exporter
-- Helm chart: `helm install scout inovacc/scout`
-- `scout cloud deploy/status/scale` CLI commands
+**Delivered:**
+- Helm chart at `deploy/helm/scout/` with HPA, PVC, multi-port service (agent/gRPC)
+- CLI: `scout cloud deploy`, `scout cloud status`, `scout cloud scale <N>`, `scout cloud uninstall`
+- `internal/metrics/` — zero-dependency Prometheus + JSON metrics (pages, navigations, screenshots, extractions, errors, tool calls)
+- GoReleaser config (`.goreleaser.yaml`) + GitHub Actions release workflow
+- Auto-download binary in plugin SessionStart hook
+
+---
+
+## Phase 75+ — Future
 
 ### Remaining Work
 
