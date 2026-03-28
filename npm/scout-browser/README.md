@@ -1,11 +1,11 @@
-# scout-browser
+# @inovacc/scout-browser
 
 Browser automation, web scraping, and site testing via Scout's headless Chrome engine.
 
 ## Install
 
 ```bash
-npm install -g scout-browser
+npm install -g @inovacc/scout-browser
 ```
 
 This downloads the correct `scout` binary for your platform from GitHub Releases.
