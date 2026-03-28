@@ -266,3 +266,52 @@
 - [x] Taskfile test targets fixed (`./scraper/...` → `./internal/...`)
 - [x] `task test:unit` passes with 0 failures
 - **Coverage:** All 19 scraper modes tested | internal/engine/report 100% | 41 MCP tools
+
+## v1.0.0 - Claude Code Plugin, Mobile, Cloud & AI Agent Integration [COMPLETE]
+
+**Goal:** Major release bringing Claude Code plugin packaging, mobile browser automation, cloud deployment, and AI agent HTTP API.
+
+**Claude Code Plugin (Phase 73.7):**
+- [x] `.claude-plugin/plugin.json` manifest with metadata and keywords
+- [x] `.mcp.json` config — `scout mcp --headless --stealth` via stdio
+- [x] 6 skills: `/scout:scrape`, `/scout:screenshot`, `/scout:test-site`, `/scout:gather`, `/scout:crawl`, `/scout:monitor`
+- [x] 3 agents: `web-scraper`, `site-tester`, `browser-automation`
+- [x] SessionStart hook with auto-download binary from GitHub Releases
+- [x] `scripts/validate-plugin.sh` — comprehensive plugin validation (7 check categories)
+- [x] CI workflow: `.github/workflows/plugin-validate.yml`
+
+**Mobile Browser Automation (Phase 73):**
+- [x] `WithMobile(MobileConfig{})` for ADB-connected Android Chrome
+- [x] `WithTouchEmulation()` for touch simulation on desktop
+- [x] Touch gestures: `Page.Touch()`, `Page.Swipe()`, `Page.PinchZoom()` via CDP
+- [x] `ListADBDevices()`, `SetupADBForward()`, `RemoveADBForward()`
+- [x] CLI: `scout mobile devices [--json]`, `scout mobile connect [--device --port --url]`
+
+**WebSocket HAR Recording (Phase 73.5):**
+- [x] `HARWebSocketMessage`, `HARWebSocket` types with `_webSocketMessages` extension
+- [x] `Recorder.Record()` handles WSOpened/WSSent/WSReceived/WSClosed events
+- [x] `ExportWebSocketHAR()` — WS-only export, `WebSocketCount()`, `WebSocketMessageCount()`
+
+**Agent HTTP Server (Phase 73.6):**
+- [x] `pkg/scout/agent/server.go` — REST API with 6 endpoints
+- [x] `GET /health`, `GET /tools`, `GET /tools/openai`, `GET /tools/anthropic`, `GET /tools/schema`, `POST /call`
+- [x] `GET /metrics` (Prometheus), `GET /metrics/json`
+- [x] CLI: `scout agent serve [--addr --headless --stealth --idle-timeout]`
+
+**Cloud Deployment (Phase 74):**
+- [x] Helm chart: `deploy/helm/scout/` with HPA, PVC, multi-port service
+- [x] CLI: `scout cloud deploy/status/scale/uninstall`
+- [x] `internal/metrics/` — zero-dependency Prometheus + JSON metrics (7 counters)
+- [x] Metrics wired into MCP server (navigate, screenshot, extract, tool calls, errors)
+
+**Distribution:**
+- [x] `.goreleaser.yaml` — cross-platform builds (linux/darwin/windows × amd64/arm64)
+- [x] `.github/workflows/release.yml` — GoReleaser on `v*` tags
+- [x] `npm/scout-browser/` (`@inovacc/scout-browser`) — npm package with auto-download binary
+- [x] Fix `process_linux.go` → `process_unix.go` (`//go:build !windows`) for macOS cross-compilation
+
+**Testing & Quality:**
+- [x] 32+ new tests: metrics (6), agent server (14), mobile ADB (6), WS HAR (6)
+- [x] Public facade regenerated with mobile types
+- [x] Lint fixes: errcheck, forbidigo, modernize (SplitSeq, CutPrefix)
+- **Coverage:** internal/metrics 100% | internal/engine/hijack 97.4%
