@@ -1,0 +1,4 @@
+# Only ship what's needed
+node_modules/
+.DS_Store
+*.tgz

@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+"use strict";
+
+const { execFileSync } = require("child_process");
+const os = require("os");
+const path = require("path");
+
+const ext = os.platform() === "win32" ? ".exe" : "";
+const binary = path.join(__dirname, `scout${ext}`);
+
+try {
+  execFileSync(binary, process.argv.slice(2), { stdio: "inherit" });
+} catch (e) {
+  if (e.status !== undefined) {
+    process.exit(e.status);
+  }
+  console.error(`scout: failed to run binary: ${e.message}`);
+  console.error("  Try reinstalling: npm install scout-browser");
+  process.exit(1);
+}

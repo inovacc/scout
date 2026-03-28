@@ -1,0 +1,37 @@
+{
+  "name": "scout-browser",
+  "version": "1.0.0",
+  "description": "Browser automation, web scraping, and site testing via Scout's headless Chrome engine",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/inovacc/scout"
+  },
+  "homepage": "https://github.com/inovacc/scout",
+  "keywords": [
+    "browser",
+    "automation",
+    "scraping",
+    "headless",
+    "chrome",
+    "mcp",
+    "testing"
+  ],
+  "bin": {
+    "scout": "bin/scout"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "files": [
+    "bin/",
+    "install.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "os": ["darwin", "linux", "win32"],
+  "cpu": ["x64", "arm64"]
+}

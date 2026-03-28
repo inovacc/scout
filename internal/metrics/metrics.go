@@ -58,6 +58,7 @@ func Handler() http.HandlerFunc {
 func PrometheusHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		m := Get()
+
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
 
 		_, _ = fmt.Fprintf(w, "# HELP scout_pages_created_total Total pages created.\n")

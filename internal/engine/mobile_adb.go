@@ -27,7 +27,7 @@ func ListADBDevices(ctx context.Context, adbPath string) ([]ADBDevice, error) {
 	}
 
 	var devices []ADBDevice
-	for _, line := range strings.Split(string(out), "\n") {
+	for line := range strings.SplitSeq(string(out), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "List of") || strings.HasPrefix(line, "*") {
 			continue
@@ -45,8 +45,8 @@ func ListADBDevices(ctx context.Context, adbPath string) ([]ADBDevice, error) {
 
 		// Parse model from "model:Pixel_6" suffix
 		for _, p := range parts[2:] {
-			if strings.HasPrefix(p, "model:") {
-				dev.Model = strings.TrimPrefix(p, "model:")
+			if after, ok := strings.CutPrefix(p, "model:"); ok {
+				dev.Model = after
 			}
 		}
 

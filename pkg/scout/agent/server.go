@@ -207,7 +207,7 @@ func (s *Server) ListenAndServe(ctx context.Context, onIdle ...func()) error {
 // Close shuts down the server and browser.
 func (s *Server) Close() {
 	if s.browser != nil {
-		s.browser.Close()
+		_ = s.browser.Close()
 	}
 }
 

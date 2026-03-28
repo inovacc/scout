@@ -76,7 +76,8 @@ var mobileConnectCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer b.Close()
+
+		defer func() { _ = b.Close() }()
 
 		if url != "" {
 			page, pageErr := b.NewPage(url)

@@ -88,16 +88,16 @@ var agentToolsCmd = &cobra.Command{
 
 		switch format {
 		case "anthropic":
-			fmt.Println("Available tools (Anthropic format):")
+			_, _ = fmt.Fprintln(os.Stdout, "Available tools (Anthropic format):")
 		default:
-			fmt.Println("Available tools (OpenAI format):")
+			_, _ = fmt.Fprintln(os.Stdout, "Available tools (OpenAI format):")
 		}
 
 		for _, t := range tools {
-			fmt.Printf("  %s\n", t)
+			_, _ = fmt.Fprintf(os.Stdout, "  %s\n", t)
 		}
 
-		fmt.Println("\nStart the server with: scout agent serve")
+		_, _ = fmt.Fprintln(os.Stdout, "\nStart the server with: scout agent serve")
 
 		return nil
 	},
