@@ -121,7 +121,14 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **Mobile automation**: `WithMobile(MobileConfig{})` for ADB-connected Android Chrome, `WithTouchEmulation()` for desktop touch simulation. `Page.Touch()`, `Page.Swipe()`, `Page.PinchZoom()` for touch gestures. CLI: `scout mobile devices`, `scout mobile connect`.
 - **Agent HTTP server**: `scout agent serve [--addr localhost:9000]` starts REST API for AI frameworks. Endpoints: `GET /tools` (OpenAI/Anthropic formats), `POST /call` (execute tool). `pkg/scout/agent/server.go`.
 - **WebSocket HAR**: `Recorder` captures WS events (opened/sent/received/closed) alongside HTTP. `ExportHAR()` includes `_webSocketMessages` extension. `ExportWebSocketHAR()` for WS-only export.
-- **Claude Code plugin**: `.claude-plugin/plugin.json` + `.mcp.json` + 6 skills + 3 agents. Test: `claude --plugin-dir .`. Skills: `/scout:scrape`, `/scout:screenshot`, `/scout:test-site`, `/scout:gather`, `/scout:crawl`, `/scout:monitor`.
+- **Claude Code plugin**: `.claude-plugin/plugin.json` + `.mcp.json` + 6 skills + 3 agents. Test: `claude --plugin-dir .`. Skills: `/scout:scrape`, `/scout:screenshot`, `/scout:test-site`, `/scout:gather`, `/scout:crawl`, `/scout:monitor`. Validate: `task plugin:validate`.
+- **Agent server auth**: `--api-key` flag or `SCOUT_AGENT_API_KEY` env var enables Bearer token auth. `/health` and `/metrics` bypass auth. CORS enabled by default. Rate limit: `--rate-limit 100` (requests/sec).
+- **OpenAPI spec**: `docs/openapi.yaml` — OpenAPI 3.1.0 for all agent HTTP endpoints. Update when adding endpoints.
+- **Plugin auto-update**: `scout plugin check-updates` compares lock file against registry. `ShouldCheck(24h)` throttles to daily. `MarkChecked()` persists timestamp.
+- **Benchmarks**: `go test -bench=. ./internal/engine/hijack/ ./pkg/scout/agent/ ./internal/metrics/` — 11 benchmarks for hot paths.
+- **Helm values schema**: `deploy/helm/scout/values.schema.json` validates chart values. Update when adding Helm options.
+- **Grafana dashboard**: `deploy/grafana/scout-dashboard.json` — 15 panels, import into Grafana with Prometheus datasource.
+- **npm package**: `npm/scout-browser/` published as `@inovacc/scout-browser` to GitHub Packages. Bump version in `package.json` before `npm publish`.
 
 ## Dependencies
 

@@ -1,0 +1,49 @@
+suite: service tests
+templates:
+  - templates/service.yaml
+tests:
+  - it: should render ClusterIP service by default
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: spec.type
+          value: ClusterIP
+
+  - it: should expose agent and grpc ports
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            port: 9000
+            targetPort: agent
+            protocol: TCP
+            name: agent
+      - contains:
+          path: spec.ports
+          content:
+            port: 9551
+            targetPort: grpc
+            protocol: TCP
+            name: grpc
+
+  - it: should support NodePort type
+    set:
+      service.type: NodePort
+    asserts:
+      - equal:
+          path: spec.type
+          value: NodePort
+
+  - it: should support LoadBalancer type
+    set:
+      service.type: LoadBalancer
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+
+  - it: should have correct selector labels
+    asserts:
+      - exists:
+          path: spec.selector

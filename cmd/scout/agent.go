@@ -30,10 +30,25 @@ Endpoints:
   GET  /tools/openai     List tools (OpenAI format)
   GET  /tools/anthropic  List tools (Anthropic tool_use format)
   GET  /tools/schema     Full JSON schema for all tools
-  POST /call             Execute a tool: {"name": "navigate", "arguments": {"url": "..."}}
+  POST /call             Execute a tool (request-response)
+  POST /stream           Execute a tool with SSE streaming (progress events)
+  GET  /docs             Swagger UI (interactive API documentation)
+  GET  /openapi.yaml     OpenAPI 3.1 specification
 
-Example:
+The /stream endpoint returns Server-Sent Events with event types:
+  start   Tool execution started (includes tool name and timestamp)
+  result  Successful result content
+  error   Error occurred during execution
+  done    Stream ended (status: "complete" or "error")
+
+Examples:
+  # Request-response:
   curl -X POST http://localhost:9000/call \
+    -H 'Content-Type: application/json' \
+    -d '{"name": "navigate", "arguments": {"url": "https://example.com"}}'
+
+  # SSE streaming:
+  curl -N -X POST http://localhost:9000/stream \
     -H 'Content-Type: application/json' \
     -d '{"name": "navigate", "arguments": {"url": "https://example.com"}}'`,
 	RunE: func(cmd *cobra.Command, _ []string) error {

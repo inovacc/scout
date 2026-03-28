@@ -1,0 +1,54 @@
+suite: PVC tests
+templates:
+  - templates/pvc.yaml
+tests:
+  - it: should not render when persistence disabled
+    set:
+      persistence.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render when persistence enabled
+    set:
+      persistence.enabled: true
+    asserts:
+      - isKind:
+          of: PersistentVolumeClaim
+      - equal:
+          path: spec.resources.requests.storage
+          value: 10Gi
+
+  - it: should set custom storage class
+    set:
+      persistence.enabled: true
+      persistence.storageClass: fast-ssd
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: fast-ssd
+
+  - it: should not set storage class when empty
+    set:
+      persistence.enabled: true
+      persistence.storageClass: ""
+    asserts:
+      - notExists:
+          path: spec.storageClassName
+
+  - it: should set custom size
+    set:
+      persistence.enabled: true
+      persistence.size: 50Gi
+    asserts:
+      - equal:
+          path: spec.resources.requests.storage
+          value: 50Gi
+
+  - it: should use ReadWriteOnce access mode
+    set:
+      persistence.enabled: true
+    asserts:
+      - equal:
+          path: spec.accessModes[0]
+          value: ReadWriteOnce

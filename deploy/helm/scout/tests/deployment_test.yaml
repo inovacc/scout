@@ -1,0 +1,125 @@
+suite: deployment tests
+templates:
+  - templates/deployment.yaml
+tests:
+  - it: should render with defaults
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/inovacc/scout:latest"
+
+  - it: should set custom replica count
+    set:
+      replicaCount: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should omit replicas when autoscaling enabled
+    set:
+      autoscaling.enabled: true
+    asserts:
+      - notExists:
+          path: spec.replicas
+
+  - it: should set custom image
+    set:
+      image.repository: custom/scout
+      image.tag: v2.0.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "custom/scout:v2.0.0"
+
+  - it: should mount shared memory volume
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: dshm
+            emptyDir:
+              medium: Memory
+              sizeLimit: "2Gi"
+
+  - it: should set resource limits
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: "2Gi"
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: "512Mi"
+
+  - it: should mount persistence volume when enabled
+    set:
+      persistence.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: data
+            mountPath: /home/nonroot/.scout
+
+  - it: should not mount persistence volume when disabled
+    set:
+      persistence.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: data
+            mountPath: /home/nonroot/.scout
+
+  - it: should include liveness and readiness probes
+    asserts:
+      - exists:
+          path: spec.template.spec.containers[0].livenessProbe
+      - exists:
+          path: spec.template.spec.containers[0].readinessProbe
+
+  - it: should set security context
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 1000
+
+  - it: should include agent and grpc container ports
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: agent
+            containerPort: 9000
+            protocol: TCP
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: grpc
+            containerPort: 9551
+            protocol: TCP
+
+  - it: should set image pull policy
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: IfNotPresent
+
+  - it: should include persistence PVC volume when enabled
+    set:
+      persistence.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: data
+            persistentVolumeClaim:
+              claimName: RELEASE-NAME-scout

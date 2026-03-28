@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -15,6 +16,9 @@ import (
 	"github.com/inovacc/scout/pkg/scout"
 	"golang.org/x/time/rate"
 )
+
+//go:embed openapi.yaml
+var openapiSpec []byte
 
 // ServerConfig holds configuration for the agent HTTP server.
 type ServerConfig struct {
@@ -111,8 +115,11 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /tools/anthropic", s.handleToolsAnthropic)
 	s.mux.HandleFunc("GET /tools/schema", s.handleToolsSchema)
 	s.mux.HandleFunc("POST /call", s.handleCall)
+	s.mux.HandleFunc("POST /stream", s.handleStream)
 	s.mux.HandleFunc("GET /metrics", metrics.PrometheusHandler())
 	s.mux.HandleFunc("GET /metrics/json", metrics.Handler())
+	s.mux.HandleFunc("GET /openapi.yaml", s.handleOpenAPISpec)
+	s.mux.HandleFunc("GET /docs", s.handleSwaggerUI)
 }
 
 func (s *Server) touch() {
@@ -184,6 +191,107 @@ func (s *Server) handleCall(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, result)
 }
 
+func (s *Server) handleOpenAPISpec(w http.ResponseWriter, _ *http.Request) {
+	s.touch()
+	w.Header().Set("Content-Type", "application/yaml")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(openapiSpec)
+}
+
+func (s *Server) handleSwaggerUI(w http.ResponseWriter, _ *http.Request) {
+	s.touch()
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = fmt.Fprint(w, swaggerHTML)
+}
+
+const swaggerHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scout Agent API</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script>
+        SwaggerUIBundle({
+            url: '/openapi.yaml',
+            dom_id: '#swagger-ui',
+            presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+            layout: 'BaseLayout',
+            deepLinking: true,
+        });
+    </script>
+</body>
+</html>`
+
+func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
+	s.touch()
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "streaming not supported"})
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	var req CallRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	if req.Name == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing 'name' field"})
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+
+	// Send start event.
+	writeSSE(w, flusher, "start", fmt.Sprintf(`{"tool":"%s","timestamp":"%s"}`, req.Name, time.Now().Format(time.RFC3339)))
+
+	s.logger.Info("stream tool call", "name", req.Name)
+	metrics.Get().ToolCallsTotal.Add(1)
+
+	// Execute tool.
+	result, err := s.provider.Call(r.Context(), req.Name, req.Arguments)
+	if err != nil {
+		metrics.Get().ErrorsTotal.Add(1)
+		writeSSE(w, flusher, "error", fmt.Sprintf(`{"error":"%s"}`, escapeJSON(err.Error())))
+		writeSSE(w, flusher, "done", `{"status":"error"}`)
+		return
+	}
+
+	if result.IsError {
+		metrics.Get().ErrorsTotal.Add(1)
+		writeSSE(w, flusher, "error", fmt.Sprintf(`{"content":"%s"}`, escapeJSON(result.Content)))
+	} else {
+		writeSSE(w, flusher, "result", fmt.Sprintf(`{"content":"%s"}`, escapeJSON(result.Content)))
+	}
+
+	writeSSE(w, flusher, "done", `{"status":"complete"}`)
+}
+
+func writeSSE(w http.ResponseWriter, flusher http.Flusher, event, data string) {
+	_, _ = fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, data)
+	flusher.Flush()
+}
+
+func escapeJSON(s string) string {
+	b, _ := json.Marshal(s)
+	// Remove surrounding quotes added by json.Marshal.
+	if len(b) >= 2 {
+		return string(b[1 : len(b)-1])
+	}
+	return s
+}
+
 // corsMiddleware adds CORS headers and handles preflight OPTIONS requests.
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -226,8 +334,9 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Allow health and metrics without auth.
-		if r.URL.Path == "/health" || strings.HasPrefix(r.URL.Path, "/metrics") {
+		// Allow health, metrics, and docs without auth.
+		if r.URL.Path == "/health" || strings.HasPrefix(r.URL.Path, "/metrics") ||
+			r.URL.Path == "/docs" || r.URL.Path == "/openapi.yaml" {
 			next.ServeHTTP(w, r)
 			return
 		}

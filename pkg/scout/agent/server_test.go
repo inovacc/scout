@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"golang.org/x/time/rate"
@@ -425,6 +426,71 @@ func TestAuthMiddlewareHealthBypass(t *testing.T) {
 	}
 }
 
+func TestSwaggerUIEndpoint(t *testing.T) {
+	s := newTestServer(Tool{Name: "t", Description: "test"})
+
+	req := httptest.NewRequest("GET", "/docs", nil)
+	w := httptest.NewRecorder()
+	s.mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("GET /docs status = %d, want 200", w.Code)
+	}
+
+	ct := w.Header().Get("Content-Type")
+	if ct != "text/html; charset=utf-8" {
+		t.Errorf("Content-Type = %q, want text/html; charset=utf-8", ct)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "swagger-ui") {
+		t.Error("GET /docs body should contain 'swagger-ui'")
+	}
+	if !strings.Contains(body, "Scout Agent API") {
+		t.Error("GET /docs body should contain 'Scout Agent API'")
+	}
+}
+
+func TestOpenAPISpecEndpoint(t *testing.T) {
+	s := newTestServer(Tool{Name: "t", Description: "test"})
+
+	req := httptest.NewRequest("GET", "/openapi.yaml", nil)
+	w := httptest.NewRecorder()
+	s.mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("GET /openapi.yaml status = %d, want 200", w.Code)
+	}
+
+	ct := w.Header().Get("Content-Type")
+	if ct != "application/yaml" {
+		t.Errorf("Content-Type = %q, want application/yaml", ct)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "openapi:") {
+		t.Error("GET /openapi.yaml body should contain 'openapi:'")
+	}
+	if !strings.Contains(body, "Scout Agent API") {
+		t.Error("GET /openapi.yaml body should contain 'Scout Agent API'")
+	}
+}
+
+func TestAuthMiddlewareDocsBypass(t *testing.T) {
+	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
+	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+
+	for _, path := range []string{"/docs", "/openapi.yaml"} {
+		req := httptest.NewRequest("GET", path, nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("%s bypass: status = %d, want 200", path, w.Code)
+		}
+	}
+}
+
 func TestAuthMiddlewareMetricsBypass(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
 	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
@@ -437,5 +503,178 @@ func TestAuthMiddlewareMetricsBypass(t *testing.T) {
 		if w.Code != http.StatusOK {
 			t.Errorf("%s bypass: status = %d, want 200", path, w.Code)
 		}
+	}
+}
+
+// parseSSEEvents parses a raw SSE response body into event/data pairs.
+func parseSSEEvents(body string) []struct{ Event, Data string } {
+	var events []struct{ Event, Data string }
+	var current struct{ Event, Data string }
+	for _, line := range strings.Split(body, "\n") {
+		if strings.HasPrefix(line, "event: ") {
+			current.Event = strings.TrimPrefix(line, "event: ")
+		} else if strings.HasPrefix(line, "data: ") {
+			current.Data = strings.TrimPrefix(line, "data: ")
+		} else if line == "" && current.Event != "" {
+			events = append(events, current)
+			current = struct{ Event, Data string }{}
+		}
+	}
+	return events
+}
+
+func TestStreamSuccess(t *testing.T) {
+	s := newTestServer(Tool{
+		Name:        "echo",
+		Description: "Echo back",
+		Parameters:  emptyParams(),
+		Handler: func(_ context.Context, _ map[string]any) (string, error) {
+			return "hello from stream", nil
+		},
+	})
+
+	body := bytes.NewBufferString(`{"name":"echo","arguments":{}}`)
+	req := httptest.NewRequest("POST", "/stream", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	s.mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("POST /stream status = %d, want 200", w.Code)
+	}
+
+	ct := w.Header().Get("Content-Type")
+	if ct != "text/event-stream" {
+		t.Errorf("Content-Type = %q, want text/event-stream", ct)
+	}
+
+	events := parseSSEEvents(w.Body.String())
+	if len(events) < 3 {
+		t.Fatalf("got %d events, want at least 3 (start, result, done)", len(events))
+	}
+
+	if events[0].Event != "start" {
+		t.Errorf("events[0].Event = %q, want start", events[0].Event)
+	}
+	if !strings.Contains(events[0].Data, `"tool":"echo"`) {
+		t.Errorf("start event should contain tool name, got %s", events[0].Data)
+	}
+
+	if events[1].Event != "result" {
+		t.Errorf("events[1].Event = %q, want result", events[1].Event)
+	}
+	if !strings.Contains(events[1].Data, "hello from stream") {
+		t.Errorf("result event should contain content, got %s", events[1].Data)
+	}
+
+	if events[2].Event != "done" {
+		t.Errorf("events[2].Event = %q, want done", events[2].Event)
+	}
+	if !strings.Contains(events[2].Data, `"status":"complete"`) {
+		t.Errorf("done event should have complete status, got %s", events[2].Data)
+	}
+}
+
+func TestStreamError(t *testing.T) {
+	s := newTestServer(Tool{
+		Name:        "fail",
+		Description: "Always fails",
+		Parameters:  emptyParams(),
+		Handler: func(_ context.Context, _ map[string]any) (string, error) {
+			return "", context.DeadlineExceeded
+		},
+	})
+
+	body := bytes.NewBufferString(`{"name":"fail","arguments":{}}`)
+	req := httptest.NewRequest("POST", "/stream", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	s.mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("POST /stream status = %d, want 200", w.Code)
+	}
+
+	events := parseSSEEvents(w.Body.String())
+	if len(events) < 3 {
+		t.Fatalf("got %d events, want at least 3 (start, error, done)", len(events))
+	}
+
+	if events[0].Event != "start" {
+		t.Errorf("events[0].Event = %q, want start", events[0].Event)
+	}
+
+	// Provider.Call wraps handler errors as ToolResult with IsError=true,
+	// so we expect an error event with content.
+	if events[1].Event != "error" {
+		t.Errorf("events[1].Event = %q, want error", events[1].Event)
+	}
+
+	if events[2].Event != "done" {
+		t.Errorf("events[2].Event = %q, want done", events[2].Event)
+	}
+}
+
+func TestStreamMissingName(t *testing.T) {
+	s := newTestServer()
+
+	body := bytes.NewBufferString(`{"arguments":{}}`)
+	req := httptest.NewRequest("POST", "/stream", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	s.mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("POST /stream without name: status = %d, want 400", w.Code)
+	}
+
+	// Should be JSON, not SSE.
+	ct := w.Header().Get("Content-Type")
+	if !strings.Contains(ct, "application/json") {
+		t.Errorf("Content-Type = %q, want application/json", ct)
+	}
+
+	var resp map[string]string
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp["error"] != "missing 'name' field" {
+		t.Errorf("error = %q, want \"missing 'name' field\"", resp["error"])
+	}
+}
+
+func TestStreamUnknownTool(t *testing.T) {
+	s := newTestServer()
+
+	body := bytes.NewBufferString(`{"name":"nonexistent","arguments":{}}`)
+	req := httptest.NewRequest("POST", "/stream", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	s.mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("POST /stream unknown tool: status = %d, want 200 (SSE)", w.Code)
+	}
+
+	events := parseSSEEvents(w.Body.String())
+
+	// Should have start, error, done events.
+	var hasError, hasDone bool
+	for _, e := range events {
+		if e.Event == "error" {
+			hasError = true
+		}
+		if e.Event == "done" {
+			hasDone = true
+			if !strings.Contains(e.Data, `"status":"error"`) {
+				t.Errorf("done event should have error status, got %s", e.Data)
+			}
+		}
+	}
+	if !hasError {
+		t.Error("expected an error event for unknown tool")
+	}
+	if !hasDone {
+		t.Error("expected a done event")
 	}
 }
