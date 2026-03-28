@@ -2,6 +2,7 @@
 "use strict";
 
 const { execSync } = require("child_process");
+const crypto = require("crypto");
 const fs = require("fs");
 const https = require("https");
 const os = require("os");
@@ -62,12 +63,17 @@ function getLatestVersion() {
 }
 
 function download(url, dest) {
+  const MAX_REDIRECTS = 5;
   return new Promise((resolve, reject) => {
-    const follow = (url) => {
+    const follow = (url, depth) => {
+      if (depth > MAX_REDIRECTS) {
+        reject(new Error(`Too many redirects (>${MAX_REDIRECTS})`));
+        return;
+      }
       https
         .get(url, { headers: { "User-Agent": "scout-browser-npm" } }, (res) => {
           if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-            follow(res.headers.location);
+            follow(res.headers.location, depth + 1);
             return;
           }
           if (res.statusCode !== 200) {
@@ -83,7 +89,7 @@ function download(url, dest) {
         })
         .on("error", reject);
     };
-    follow(url);
+    follow(url, 0);
   });
 }
 
@@ -132,6 +138,29 @@ async function main() {
 
   try {
     await download(url, archivePath);
+
+    // Verify SHA256 checksum from checksums.txt
+    const checksumsUrl = `https://github.com/${REPO}/releases/download/${tag}/checksums.txt`;
+    const checksumsPath = path.join(tmpDir, "checksums.txt");
+    try {
+      await download(checksumsUrl, checksumsPath);
+      const checksums = fs.readFileSync(checksumsPath, "utf8");
+      const line = checksums.split("\n").find((l) => l.includes(archive));
+      if (line) {
+        const expectedHash = line.trim().split(/\s+/)[0];
+        const fileHash = crypto
+          .createHash("sha256")
+          .update(fs.readFileSync(archivePath))
+          .digest("hex");
+        if (fileHash !== expectedHash) {
+          throw new Error(`checksum mismatch: expected ${expectedHash}, got ${fileHash}`);
+        }
+        console.log("scout: checksum verified");
+      }
+    } catch (checksumErr) {
+      if (checksumErr.message.includes("checksum mismatch")) throw checksumErr;
+      console.warn("scout: checksum verification skipped (checksums.txt unavailable)");
+    }
 
     fs.mkdirSync(extractDir, { recursive: true });
     extract(archivePath, extractDir, ext);

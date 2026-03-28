@@ -69,10 +69,10 @@ jobs:
 
             # Create tar.gz for unix, zip for windows
             if echo "$file" | grep -q windows; then
-              zip "release/${plugin}-${os_arch%.exe}.zip" "$file"
+              zip "../release/${plugin}-${os_arch%.exe}.zip" "$file"
             else
               chmod +x "$file"
-              tar czf "release/${plugin}-${os_arch}.tar.gz" "$file"
+              tar czf "../release/${plugin}-${os_arch}.tar.gz" "$file"
             fi
           done
 

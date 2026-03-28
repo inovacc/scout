@@ -145,6 +145,7 @@ func (s *Server) handleCall(w http.ResponseWriter, r *http.Request) {
 	s.touch()
 
 	var req CallRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MB limit
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON: " + err.Error()})
 		return
@@ -188,7 +189,13 @@ func (s *Server) ListenAndServe(ctx context.Context, onIdle ...func()) error {
 
 	s.logger.Info("agent HTTP server started", "addr", ln.Addr().String())
 
-	srv := &http.Server{Handler: s.mux}
+	srv := &http.Server{
+		Handler:           s.mux,
+		ReadTimeout:       30 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
 
 	go func() {
 		<-ctx.Done()

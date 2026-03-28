@@ -47,6 +47,9 @@ func newTestServer(buf *bytes.Buffer) *Server {
 		tools:       make(map[string]ToolHandler),
 		commands:    make(map[string]CommandHandler),
 		completions: make(map[string]CompletionHandler),
+		resources:   make(map[string]ResourceHandler),
+		prompts:     make(map[string]PromptHandler),
+		sinks:       make(map[string]SinkHandler),
 		encoder:     json.NewEncoder(buf),
 	}
 

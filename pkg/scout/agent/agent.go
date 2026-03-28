@@ -27,15 +27,30 @@ type ToolResult struct {
 	IsError bool   `json:"is_error,omitempty"`
 }
 
+// page abstracts browser page operations used by handlers.
+type page interface {
+	Title() (string, error)
+	URL() (string, error)
+	Screenshot() ([]byte, error)
+	Eval(js string, args ...any) (*scout.EvalResult, error)
+	Markdown(opts ...scout.MarkdownOption) (string, error)
+}
+
+// pageFunc resolves a page for handler use. If url is non-empty, a new page
+// is opened; otherwise the first existing page is returned.
+type pageFunc func(ctx context.Context, url string) (page, error)
+
 // Provider exposes Scout tools to AI agent frameworks.
 type Provider struct {
 	tools   []Tool
 	browser *scout.Browser
+	getPage pageFunc // defaults to ensurePage; overridable for testing
 }
 
 // NewProvider creates a tool provider with a shared browser instance.
 func NewProvider(browser *scout.Browser) *Provider {
 	p := &Provider{browser: browser}
+	p.getPage = p.ensurePage
 	p.registerBuiltinTools()
 
 	return p
@@ -101,6 +116,10 @@ func (p *Provider) ToolSchemaJSON() ([]byte, error) {
 }
 
 func (p *Provider) registerBuiltinTools() {
+	if p.getPage == nil {
+		p.getPage = p.ensurePage
+	}
+
 	p.tools = []Tool{
 		{
 			Name:        "navigate",
@@ -162,16 +181,20 @@ func (p *Provider) registerBuiltinTools() {
 	}
 }
 
-func (p *Provider) ensurePage(_ context.Context, url string) (*scout.Page, error) {
+func (p *Provider) ensurePage(_ context.Context, url string) (page, error) {
+	if p.browser == nil {
+		return nil, fmt.Errorf("no browser available")
+	}
+
 	if url != "" {
-		page, err := p.browser.NewPage(url)
+		pg, err := p.browser.NewPage(url)
 		if err != nil {
 			return nil, err
 		}
 
-		_ = page.WaitLoad()
+		_ = pg.WaitLoad()
 
-		return page, nil
+		return pg, nil
 	}
 
 	pages, _ := p.browser.Pages()
@@ -185,23 +208,23 @@ func (p *Provider) ensurePage(_ context.Context, url string) (*scout.Page, error
 func (p *Provider) handleNavigate(ctx context.Context, args map[string]any) (string, error) {
 	url, _ := args["url"].(string)
 
-	page, err := p.ensurePage(ctx, url)
+	pg, err := p.getPage(ctx, url)
 	if err != nil {
 		return "", err
 	}
 
-	title, _ := page.Title()
+	title, _ := pg.Title()
 
 	return fmt.Sprintf("Navigated to %s (title: %s)", url, title), nil
 }
 
 func (p *Provider) handleScreenshot(ctx context.Context, args map[string]any) (string, error) {
-	page, err := p.ensurePage(ctx, "")
+	pg, err := p.getPage(ctx, "")
 	if err != nil {
 		return "", err
 	}
 
-	data, err := page.Screenshot()
+	data, err := pg.Screenshot()
 	if err != nil {
 		return "", err
 	}
@@ -212,12 +235,12 @@ func (p *Provider) handleScreenshot(ctx context.Context, args map[string]any) (s
 func (p *Provider) handleExtractText(ctx context.Context, args map[string]any) (string, error) {
 	selector, _ := args["selector"].(string)
 
-	page, err := p.ensurePage(ctx, "")
+	pg, err := p.getPage(ctx, "")
 	if err != nil {
 		return "", err
 	}
 
-	result, err := page.Eval(fmt.Sprintf(`document.querySelector(%q)?.textContent?.trim() || ''`, selector))
+	result, err := pg.Eval(fmt.Sprintf(`document.querySelector(%q)?.textContent?.trim() || ''`, selector))
 	if err != nil {
 		return "", err
 	}
@@ -228,12 +251,12 @@ func (p *Provider) handleExtractText(ctx context.Context, args map[string]any) (
 func (p *Provider) handleClick(ctx context.Context, args map[string]any) (string, error) {
 	selector, _ := args["selector"].(string)
 
-	page, err := p.ensurePage(ctx, "")
+	pg, err := p.getPage(ctx, "")
 	if err != nil {
 		return "", err
 	}
 
-	_, err = page.Eval(fmt.Sprintf(`document.querySelector(%q)?.click()`, selector))
+	_, err = pg.Eval(fmt.Sprintf(`document.querySelector(%q)?.click()`, selector))
 	if err != nil {
 		return "", err
 	}
@@ -245,7 +268,7 @@ func (p *Provider) handleType(ctx context.Context, args map[string]any) (string,
 	selector, _ := args["selector"].(string)
 	text, _ := args["text"].(string)
 
-	page, err := p.ensurePage(ctx, "")
+	pg, err := p.getPage(ctx, "")
 	if err != nil {
 		return "", err
 	}
@@ -258,7 +281,7 @@ func (p *Provider) handleType(ctx context.Context, args map[string]any) (string,
 		return 'typed';
 	})()`, selector, text)
 
-	result, err := page.Eval(js)
+	result, err := pg.Eval(js)
 	if err != nil {
 		return "", err
 	}
@@ -267,7 +290,7 @@ func (p *Provider) handleType(ctx context.Context, args map[string]any) (string,
 }
 
 func (p *Provider) handleMarkdown(ctx context.Context, args map[string]any) (string, error) {
-	page, err := p.ensurePage(ctx, "")
+	pg, err := p.getPage(ctx, "")
 	if err != nil {
 		return "", err
 	}
@@ -278,18 +301,18 @@ func (p *Provider) handleMarkdown(ctx context.Context, args map[string]any) (str
 		opts = append(opts, scout.WithMainContentOnly())
 	}
 
-	return page.Markdown(opts...)
+	return pg.Markdown(opts...)
 }
 
 func (p *Provider) handleEval(ctx context.Context, args map[string]any) (string, error) {
 	script, _ := args["script"].(string)
 
-	page, err := p.ensurePage(ctx, "")
+	pg, err := p.getPage(ctx, "")
 	if err != nil {
 		return "", err
 	}
 
-	result, err := page.Eval(script)
+	result, err := pg.Eval(script)
 	if err != nil {
 		return "", err
 	}
@@ -298,21 +321,21 @@ func (p *Provider) handleEval(ctx context.Context, args map[string]any) (string,
 }
 
 func (p *Provider) handleURL(ctx context.Context, _ map[string]any) (string, error) {
-	page, err := p.ensurePage(ctx, "")
+	pg, err := p.getPage(ctx, "")
 	if err != nil {
 		return "", err
 	}
 
-	return page.URL()
+	return pg.URL()
 }
 
 func (p *Provider) handleTitle(ctx context.Context, _ map[string]any) (string, error) {
-	page, err := p.ensurePage(ctx, "")
+	pg, err := p.getPage(ctx, "")
 	if err != nil {
 		return "", err
 	}
 
-	return page.Title()
+	return pg.Title()
 }
 
 // Schema helpers.
