@@ -328,3 +328,114 @@ func TestRateLimiting(t *testing.T) {
 		t.Errorf("error = %q, want 'rate limit exceeded'", resp["error"])
 	}
 }
+
+// newTestServerWithAPIKey creates a test server with an API key configured.
+func newTestServerWithAPIKey(apiKey string, tools ...Tool) *Server {
+	s := &Server{
+		provider: &Provider{tools: tools},
+		config:   ServerConfig{APIKey: apiKey},
+		logger:   slog.Default(),
+		mux:      http.NewServeMux(),
+		limiter:  rate.NewLimiter(rate.Limit(100), 100),
+	}
+	s.registerRoutes()
+	return s
+}
+
+func TestAuthMiddlewareNoKey(t *testing.T) {
+	s := newTestServer(Tool{Name: "t", Description: "test"})
+	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+
+	req := httptest.NewRequest("GET", "/tools", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("no API key configured: status = %d, want 200", w.Code)
+	}
+}
+
+func TestAuthMiddlewareValidKey(t *testing.T) {
+	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test", Parameters: emptyParams()})
+	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+
+	req := httptest.NewRequest("GET", "/tools", nil)
+	req.Header.Set("Authorization", "Bearer secret-key-123")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("valid API key: status = %d, want 200", w.Code)
+	}
+}
+
+func TestAuthMiddlewareInvalidKey(t *testing.T) {
+	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
+	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+
+	req := httptest.NewRequest("GET", "/tools", nil)
+	req.Header.Set("Authorization", "Bearer wrong-key")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("invalid API key: status = %d, want 401", w.Code)
+	}
+
+	var resp map[string]string
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp["error"] != "invalid API key" {
+		t.Errorf("error = %q, want 'invalid API key'", resp["error"])
+	}
+}
+
+func TestAuthMiddlewareMissingHeader(t *testing.T) {
+	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
+	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+
+	req := httptest.NewRequest("GET", "/tools", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("missing header: status = %d, want 401", w.Code)
+	}
+
+	var resp map[string]string
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatal(err)
+	}
+	if resp["error"] != "missing Authorization header" {
+		t.Errorf("error = %q, want 'missing Authorization header'", resp["error"])
+	}
+}
+
+func TestAuthMiddlewareHealthBypass(t *testing.T) {
+	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
+	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+
+	req := httptest.NewRequest("GET", "/health", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("/health bypass: status = %d, want 200", w.Code)
+	}
+}
+
+func TestAuthMiddlewareMetricsBypass(t *testing.T) {
+	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
+	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+
+	for _, path := range []string{"/metrics", "/metrics/json"} {
+		req := httptest.NewRequest("GET", path, nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("%s bypass: status = %d, want 200", path, w.Code)
+		}
+	}
+}

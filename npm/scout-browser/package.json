@@ -1,6 +1,6 @@
 {
   "name": "@inovacc/scout-browser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Browser automation, web scraping, and site testing via Scout's headless Chrome engine",
   "license": "BSD-3-Clause",
   "repository": {

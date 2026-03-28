@@ -1,0 +1,382 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Scout Helm Chart Values",
+  "description": "JSON Schema for the Scout Helm chart values.yaml configuration.",
+  "type": "object",
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "description": "Number of pod replicas to deploy.",
+      "default": 1,
+      "minimum": 0
+    },
+    "image": {
+      "type": "object",
+      "description": "Container image configuration.",
+      "properties": {
+        "repository": {
+          "type": "string",
+          "description": "Container image repository.",
+          "default": "ghcr.io/inovacc/scout"
+        },
+        "tag": {
+          "type": "string",
+          "description": "Container image tag.",
+          "default": "latest"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "description": "Image pull policy.",
+          "default": "IfNotPresent",
+          "enum": ["Always", "IfNotPresent", "Never"]
+        }
+      },
+      "required": ["repository", "tag", "pullPolicy"],
+      "additionalProperties": false
+    },
+    "service": {
+      "type": "object",
+      "description": "Kubernetes Service configuration.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Kubernetes Service type.",
+          "default": "ClusterIP",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer", "ExternalName"]
+        },
+        "grpcPort": {
+          "type": "integer",
+          "description": "Port for the gRPC service.",
+          "default": 9551,
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "mcpPort": {
+          "type": "integer",
+          "description": "Port for the MCP (Model Context Protocol) service.",
+          "default": 8080,
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "agentPort": {
+          "type": "integer",
+          "description": "Port for the AI agent service.",
+          "default": 9000,
+          "minimum": 1,
+          "maximum": 65535
+        }
+      },
+      "required": ["type", "grpcPort", "mcpPort", "agentPort"],
+      "additionalProperties": false
+    },
+    "resources": {
+      "type": "object",
+      "description": "Pod resource requests and limits.",
+      "properties": {
+        "requests": {
+          "type": "object",
+          "description": "Minimum resources guaranteed to the pod.",
+          "properties": {
+            "memory": {
+              "type": "string",
+              "description": "Memory request (e.g. 512Mi, 1Gi).",
+              "default": "512Mi",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+            },
+            "cpu": {
+              "type": "string",
+              "description": "CPU request (e.g. 250m, 1).",
+              "default": "250m",
+              "pattern": "^[0-9]+(\\.[0-9]+)?m?$"
+            }
+          },
+          "additionalProperties": false
+        },
+        "limits": {
+          "type": "object",
+          "description": "Maximum resources the pod may consume.",
+          "properties": {
+            "memory": {
+              "type": "string",
+              "description": "Memory limit (e.g. 2Gi).",
+              "default": "2Gi",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+            },
+            "cpu": {
+              "type": "string",
+              "description": "CPU limit (e.g. 2, 500m).",
+              "default": "2",
+              "pattern": "^[0-9]+(\\.[0-9]+)?m?$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "autoscaling": {
+      "type": "object",
+      "description": "Horizontal Pod Autoscaler configuration.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable HPA autoscaling.",
+          "default": false
+        },
+        "minReplicas": {
+          "type": "integer",
+          "description": "Minimum number of replicas when autoscaling is enabled.",
+          "default": 1,
+          "minimum": 1
+        },
+        "maxReplicas": {
+          "type": "integer",
+          "description": "Maximum number of replicas when autoscaling is enabled.",
+          "default": 10,
+          "minimum": 1
+        },
+        "targetCPUUtilization": {
+          "type": "integer",
+          "description": "Target average CPU utilization percentage for scaling.",
+          "default": 70,
+          "minimum": 1,
+          "maximum": 100
+        },
+        "targetMemoryUtilization": {
+          "type": "integer",
+          "description": "Target average memory utilization percentage for scaling.",
+          "default": 80,
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "required": ["enabled"],
+      "additionalProperties": false
+    },
+    "browser": {
+      "type": "object",
+      "description": "Browser configuration for Scout's headless Chrome instance.",
+      "properties": {
+        "headless": {
+          "type": "boolean",
+          "description": "Run browser in headless mode.",
+          "default": true
+        },
+        "stealth": {
+          "type": "boolean",
+          "description": "Enable stealth anti-detection evasions.",
+          "default": true
+        },
+        "sandbox": {
+          "type": "boolean",
+          "description": "Enable Chrome sandbox. Typically disabled in containers.",
+          "default": false
+        },
+        "sharedMemory": {
+          "type": "string",
+          "description": "Size of /dev/shm shared memory volume for Chrome (e.g. 2Gi). Chrome uses shared memory for rendering; insufficient size causes crashes.",
+          "default": "2Gi",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "persistence": {
+      "type": "object",
+      "description": "Persistent volume configuration for Scout data directory.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable persistent volume for Scout data.",
+          "default": false
+        },
+        "storageClass": {
+          "type": "string",
+          "description": "Storage class for the PVC. Empty string uses the cluster default.",
+          "default": ""
+        },
+        "size": {
+          "type": "string",
+          "description": "Size of the persistent volume (e.g. 10Gi).",
+          "default": "10Gi",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+        },
+        "mountPath": {
+          "type": "string",
+          "description": "Path to mount the persistent volume inside the container.",
+          "default": "/home/nonroot/.scout"
+        }
+      },
+      "required": ["enabled"],
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Prometheus metrics endpoint configuration.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable the Prometheus metrics endpoint.",
+          "default": false
+        },
+        "port": {
+          "type": "integer",
+          "description": "Port for the metrics endpoint.",
+          "default": 9090,
+          "minimum": 1,
+          "maximum": 65535
+        }
+      },
+      "required": ["enabled"],
+      "additionalProperties": false
+    },
+    "job": {
+      "type": "object",
+      "description": "Batch job configuration for one-off scraping tasks.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable the batch job resource.",
+          "default": false
+        },
+        "name": {
+          "type": "string",
+          "description": "Name suffix for the batch job.",
+          "default": "scrape"
+        },
+        "backoffLimit": {
+          "type": "integer",
+          "description": "Number of retries before marking the job as failed.",
+          "default": 3,
+          "minimum": 0
+        },
+        "ttlSecondsAfterFinished": {
+          "type": "integer",
+          "description": "Time in seconds to keep the job after it finishes (for cleanup).",
+          "default": 3600,
+          "minimum": 0
+        },
+        "restartPolicy": {
+          "type": "string",
+          "description": "Pod restart policy for the job.",
+          "default": "OnFailure",
+          "enum": ["OnFailure", "Never"]
+        },
+        "parallelism": {
+          "type": "integer",
+          "description": "Number of pods to run in parallel.",
+          "minimum": 1
+        },
+        "completions": {
+          "type": "integer",
+          "description": "Number of successful completions required.",
+          "minimum": 1
+        },
+        "args": {
+          "type": "array",
+          "description": "Command arguments passed to the scout container.",
+          "items": {
+            "type": "string"
+          },
+          "default": ["scrape", "--url=https://example.com", "--output=/output/result.json"]
+        },
+        "env": {
+          "type": "array",
+          "description": "Additional environment variables for the job pod.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Environment variable name."
+              },
+              "value": {
+                "type": "string",
+                "description": "Environment variable value."
+              },
+              "valueFrom": {
+                "type": "object",
+                "description": "Source for the environment variable value.",
+                "properties": {
+                  "secretKeyRef": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "key": { "type": "string" }
+                    }
+                  },
+                  "configMapKeyRef": {
+                    "type": "object",
+                    "properties": {
+                      "name": { "type": "string" },
+                      "key": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            "required": ["name"]
+          },
+          "default": []
+        },
+        "outputVolume": {
+          "type": "object",
+          "description": "Optional volume spec for job output (e.g. a PVC for results).",
+          "properties": {
+            "persistentVolumeClaim": {
+              "type": "object",
+              "properties": {
+                "claimName": {
+                  "type": "string",
+                  "description": "Name of the PersistentVolumeClaim."
+                }
+              },
+              "required": ["claimName"]
+            }
+          }
+        }
+      },
+      "required": ["enabled"],
+      "additionalProperties": false
+    },
+    "nodeSelector": {
+      "type": "object",
+      "description": "Node selector labels for pod scheduling.",
+      "default": {},
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "tolerations": {
+      "type": "array",
+      "description": "Tolerations for pod scheduling.",
+      "default": [],
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "operator": {
+            "type": "string",
+            "enum": ["Exists", "Equal"]
+          },
+          "value": { "type": "string" },
+          "effect": {
+            "type": "string",
+            "enum": ["NoSchedule", "PreferNoSchedule", "NoExecute"]
+          },
+          "tolerationSeconds": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "affinity": {
+      "type": "object",
+      "description": "Affinity rules for pod scheduling.",
+      "default": {}
+    }
+  },
+  "required": ["replicaCount", "image", "service"],
+  "additionalProperties": false
+}

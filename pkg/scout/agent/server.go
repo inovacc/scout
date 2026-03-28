@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/inovacc/scout/internal/idle"
@@ -24,6 +25,7 @@ type ServerConfig struct {
 	Logger      *slog.Logger
 	IdleTimeout time.Duration // auto-shutdown after inactivity (0 disables)
 	RateLimit   float64       // requests per second (0 = unlimited, default: 100)
+	APIKey      string        // optional API key for authentication (empty = no auth)
 }
 
 // Server wraps a Provider with an HTTP interface for AI agent frameworks.
@@ -215,6 +217,38 @@ func (s *Server) rateLimitMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// authMiddleware rejects requests without a valid Bearer token when APIKey is set.
+func (s *Server) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip auth if no API key configured.
+		if s.config.APIKey == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Allow health and metrics without auth.
+		if r.URL.Path == "/health" || strings.HasPrefix(r.URL.Path, "/metrics") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Check Bearer token.
+		auth := r.Header.Get("Authorization")
+		if auth == "" {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing Authorization header"})
+			return
+		}
+
+		token := strings.TrimPrefix(auth, "Bearer ")
+		if token == auth || token != s.config.APIKey {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid API key"})
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 // ListenAndServe starts the HTTP server. If IdleTimeout is configured and
 // onIdle is provided, the server will call onIdle (typically context cancel)
 // after IdleTimeout of inactivity.
@@ -232,7 +266,7 @@ func (s *Server) ListenAndServe(ctx context.Context, onIdle ...func()) error {
 	s.logger.Info("agent HTTP server started", "addr", ln.Addr().String())
 
 	srv := &http.Server{
-		Handler:           corsMiddleware(s.rateLimitMiddleware(s.mux)),
+		Handler:           corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux))),
 		ReadTimeout:       30 * time.Second,
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      60 * time.Second,

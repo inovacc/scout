@@ -315,3 +315,32 @@
 - [x] Public facade regenerated with mobile types
 - [x] Lint fixes: errcheck, forbidigo, modernize (SplitSeq, CutPrefix)
 - **Coverage:** internal/metrics 100% | internal/engine/hijack 97.4%
+
+## v1.0.1 - Security Hardening & Observability [COMPLETE]
+
+**Goal:** Patch release fixing CVEs, adding production hardening, and improving observability.
+
+**Security:**
+- [x] Upgrade go-sdk v1.3.1 → v1.4.1 (2 CVEs: cross-site tool exec, JSON null)
+- [x] Upgrade ollama v0.16.2 → v0.18.3 (15 CVEs: resource exhaustion, GZIP DoS)
+- [x] Agent server: request body limit (1 MB), read/write/idle timeouts
+- [x] npm install.js: SHA256 checksum verification, redirect depth limit (5)
+- [x] CORS middleware with origin echo and OPTIONS preflight
+- [x] Token bucket rate limiter (100 rps default, `--rate-limit` flag)
+
+**Observability:**
+- [x] `WebSocketOpsTotal` metric counter for ws_listen/ws_send/ws_connections
+- [x] Semantic metrics: snapshot→ExtractionsTotal, pdf→ScreenshotsTotal, swarm→NavigationsTotal
+- [x] Grafana dashboard template: `deploy/grafana/scout-dashboard.json` (15 panels, 4 rows)
+
+**Documentation:**
+- [x] README.md refresh: npm install, Claude Code plugin, agent API, mobile, cloud, monitoring
+- [x] `docs/API.md`: full reference for 18 MCP tools, 7 HTTP endpoints, 9 agent tools
+- [x] Fix Build Plugins CI workflow (release/ path after cd dist)
+
+**Testing:**
+- [x] Agent server coverage: 41.7% → 91.4% (mock page interface, 18+ handler tests)
+- [x] Plugin system coverage: 36.2% → 84.4% (proxy, registry, SDK tests)
+- [x] E2E test suite: 10 browser scenarios (navigate, click, screenshot, snapshot, markdown, touch, hijack, WS HAR, multi-page, eval)
+- [x] CORS + rate limit tests
+- **Coverage:** agent 91.4% | plugin 84.4% | metrics 100% | hijack 97.4%

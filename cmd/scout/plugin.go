@@ -32,7 +32,7 @@ func initPluginManager() *plugin.Manager {
 
 func init() {
 	rootCmd.AddCommand(pluginCmd)
-	pluginCmd.AddCommand(pluginListCmd, pluginInstallCmd, pluginRemoveCmd, pluginRunCmd, pluginSearchCmd, pluginUpdateCmd)
+	pluginCmd.AddCommand(pluginListCmd, pluginInstallCmd, pluginRemoveCmd, pluginRunCmd, pluginSearchCmd, pluginUpdateCmd, pluginCheckUpdatesCmd)
 }
 
 var pluginCmd = &cobra.Command{
@@ -478,6 +478,33 @@ var pluginUpdateCmd = &cobra.Command{
 		}
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\n%d plugin(s) updated\n", updated)
+
+		return nil
+	},
+}
+
+var pluginCheckUpdatesCmd = &cobra.Command{
+	Use:   "check-updates",
+	Short: "Check for plugin updates",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		updates, err := registry.CheckUpdates("")
+		if err != nil {
+			return err
+		}
+
+		if len(updates) == 0 {
+			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "All plugins are up to date.")
+			return nil
+		}
+
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "%d update(s) available:\n", len(updates))
+		for _, u := range updates {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s: %s → %s\n", u.Name, u.CurrentVersion, u.LatestVersion)
+		}
+
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "\nRun 'scout plugin update' to install updates.")
+
+		_ = registry.MarkChecked()
 
 		return nil
 	},

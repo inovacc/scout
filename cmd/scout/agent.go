@@ -44,6 +44,10 @@ Example:
 		browserType, _ := cmd.Flags().GetString("browser")
 		idleTimeout, _ := cmd.Flags().GetDuration("idle-timeout")
 		rateLimit, _ := cmd.Flags().GetFloat64("rate-limit")
+		apiKey, _ := cmd.Flags().GetString("api-key")
+		if apiKey == "" {
+			apiKey = os.Getenv("SCOUT_AGENT_API_KEY")
+		}
 
 		// Resolve --browser type name to a binary path if --bin is not set.
 		if bin == "" && browserType != "" {
@@ -62,6 +66,7 @@ Example:
 			Logger:      logger,
 			IdleTimeout: idleTimeout,
 			RateLimit:   rateLimit,
+			APIKey:      apiKey,
 		}
 
 		srv, err := agent.NewServer(cfg)
@@ -113,6 +118,7 @@ func init() {
 	agentServeCmd.Flags().String("bin", "", "Path to browser executable")
 	agentServeCmd.Flags().String("browser", "", "Browser type: chrome, brave, edge (resolves to cached binary)")
 	agentServeCmd.Flags().Float64("rate-limit", 100, "Max requests per second (0 = unlimited)")
+	agentServeCmd.Flags().String("api-key", "", "API key for authentication (empty = no auth, env: SCOUT_AGENT_API_KEY)")
 
 	agentToolsCmd.Flags().String("format", "openai", "Output format: openai, anthropic")
 }

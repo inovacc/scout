@@ -1,0 +1,314 @@
+openapi: 3.1.0
+info:
+  title: Scout Agent API
+  description: REST API for AI agent frameworks to control Scout browser automation
+  version: 1.0.0
+  license:
+    name: BSD-3-Clause
+    url: https://github.com/inovacc/scout/blob/main/LICENSE
+  contact:
+    name: inovacc
+    url: https://github.com/inovacc/scout
+
+servers:
+  - url: http://localhost:9000
+    description: Default local server
+
+security:
+  - BearerAuth: []
+  - {}
+
+paths:
+  /health:
+    get:
+      summary: Server health check
+      tags: [Health]
+      security: []
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /tools:
+    get:
+      summary: List tools (OpenAI format)
+      tags: [Tools]
+      responses:
+        "200":
+          description: Array of tool schemas in OpenAI function calling format
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenAITool"
+        "401":
+          description: Unauthorized (missing or invalid Bearer token)
+        "429":
+          description: Rate limit exceeded
+
+  /tools/openai:
+    get:
+      summary: List tools (OpenAI format, alias)
+      description: Alias for GET /tools. Returns tools in OpenAI function calling format.
+      tags: [Tools]
+      responses:
+        "200":
+          description: Array of tool schemas in OpenAI function calling format
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenAITool"
+        "401":
+          description: Unauthorized
+        "429":
+          description: Rate limit exceeded
+
+  /tools/anthropic:
+    get:
+      summary: List tools (Anthropic format)
+      tags: [Tools]
+      responses:
+        "200":
+          description: Array of tool schemas in Anthropic tool_use format
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnthropicTool"
+        "401":
+          description: Unauthorized
+        "429":
+          description: Rate limit exceeded
+
+  /tools/schema:
+    get:
+      summary: Full JSON schema for all tools
+      tags: [Tools]
+      responses:
+        "200":
+          description: JSON schema describing all available tools
+          content:
+            application/json:
+              schema:
+                type: array
+        "401":
+          description: Unauthorized
+        "429":
+          description: Rate limit exceeded
+        "500":
+          description: Internal error generating schema
+
+  /call:
+    post:
+      summary: Execute a tool
+      tags: [Execution]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CallRequest"
+            examples:
+              navigate:
+                summary: Navigate to URL
+                value:
+                  name: navigate
+                  arguments:
+                    url: "https://example.com"
+              screenshot:
+                summary: Take screenshot
+                value:
+                  name: screenshot
+                  arguments:
+                    fullPage: true
+              extract:
+                summary: Extract text from selector
+                value:
+                  name: extract
+                  arguments:
+                    selector: "h1"
+      responses:
+        "200":
+          description: Tool executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallResponse"
+        "400":
+          description: Invalid request (malformed JSON or missing name field)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized (missing or invalid Bearer token)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Unknown tool name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallResponse"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      description: Returns server metrics in Prometheus text exposition format.
+      tags: [Monitoring]
+      security: []
+      responses:
+        "200":
+          description: Prometheus text format metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /metrics/json:
+    get:
+      summary: JSON metrics
+      description: Returns server metrics as a JSON object.
+      tags: [Monitoring]
+      security: []
+      responses:
+        "200":
+          description: JSON metrics object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Metrics"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: >-
+        Optional API key passed as Bearer token. Set via --api-key flag when
+        starting the server. When configured, /health and /metrics endpoints
+        remain public; all other endpoints require the token.
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, tools, version]
+      properties:
+        status:
+          type: string
+          example: "ok"
+        tools:
+          type: integer
+          description: Number of available tools
+          example: 9
+        version:
+          type: string
+          example: "1.0.0"
+
+    CallRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Tool name to execute
+        arguments:
+          type: object
+          description: Tool-specific arguments (varies per tool)
+          additionalProperties: true
+
+    CallResponse:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          description: Tool execution result as text
+        is_error:
+          type: boolean
+          description: True when the tool call resulted in an error
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+
+    OpenAITool:
+      type: object
+      required: [type, function]
+      properties:
+        type:
+          type: string
+          const: "function"
+        function:
+          type: object
+          required: [name, description, parameters]
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            parameters:
+              type: object
+              description: JSON Schema for the tool's input
+
+    AnthropicTool:
+      type: object
+      required: [name, description, input_schema]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        input_schema:
+          type: object
+          description: JSON Schema for the tool's input
+
+    Metrics:
+      type: object
+      properties:
+        pages_created:
+          type: integer
+          description: Total pages created since server start
+        pages_active:
+          type: integer
+          description: Currently active pages
+        navigations_total:
+          type: integer
+          description: Total navigation operations
+        screenshots_total:
+          type: integer
+          description: Total screenshots taken
+        extractions_total:
+          type: integer
+          description: Total extraction operations
+        errors_total:
+          type: integer
+          description: Total errors encountered
+        tool_calls_total:
+          type: integer
+          description: Total tool calls executed
+        websocket_ops_total:
+          type: integer
+          description: Total WebSocket operations
+        uptime_seconds:
+          type: number
+          format: double
+          description: Server uptime in seconds
