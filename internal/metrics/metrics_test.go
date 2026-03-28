@@ -35,6 +35,7 @@ func TestCounterIncrements(t *testing.T) {
 	m.ExtractionsTotal.Add(5)
 	m.ErrorsTotal.Add(1)
 	m.ToolCallsTotal.Add(18)
+	m.WebSocketOpsTotal.Add(4)
 
 	if m.PagesCreated.Load() != 1 {
 		t.Errorf("PagesCreated = %d", m.PagesCreated.Load())
@@ -56,6 +57,9 @@ func TestCounterIncrements(t *testing.T) {
 	}
 	if m.ToolCallsTotal.Load() != 18 {
 		t.Errorf("ToolCallsTotal = %d", m.ToolCallsTotal.Load())
+	}
+	if m.WebSocketOpsTotal.Load() != 4 {
+		t.Errorf("WebSocketOpsTotal = %d", m.WebSocketOpsTotal.Load())
 	}
 }
 

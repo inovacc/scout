@@ -43,6 +43,7 @@ Example:
 		bin, _ := cmd.Flags().GetString("bin")
 		browserType, _ := cmd.Flags().GetString("browser")
 		idleTimeout, _ := cmd.Flags().GetDuration("idle-timeout")
+		rateLimit, _ := cmd.Flags().GetFloat64("rate-limit")
 
 		// Resolve --browser type name to a binary path if --bin is not set.
 		if bin == "" && browserType != "" {
@@ -60,6 +61,7 @@ Example:
 			BrowserBin:  bin,
 			Logger:      logger,
 			IdleTimeout: idleTimeout,
+			RateLimit:   rateLimit,
 		}
 
 		srv, err := agent.NewServer(cfg)
@@ -110,6 +112,7 @@ func init() {
 	agentServeCmd.Flags().StringP("addr", "a", "localhost:9000", "HTTP listen address")
 	agentServeCmd.Flags().String("bin", "", "Path to browser executable")
 	agentServeCmd.Flags().String("browser", "", "Browser type: chrome, brave, edge (resolves to cached binary)")
+	agentServeCmd.Flags().Float64("rate-limit", 100, "Max requests per second (0 = unlimited)")
 
 	agentToolsCmd.Flags().String("format", "openai", "Output format: openai, anthropic")
 }

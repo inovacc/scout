@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/inovacc/scout/internal/metrics"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -48,6 +49,8 @@ func registerWebSocketTools(server *mcp.Server, state *mcpState) {
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: ws_listen: %s", err))
 		}
+
+		metrics.Get().WebSocketOpsTotal.Add(1)
 
 		defer stop()
 
@@ -104,6 +107,8 @@ func registerWebSocketTools(server *mcp.Server, state *mcpState) {
 			return errResult(fmt.Sprintf("scout-mcp: ws_send: %s", err))
 		}
 
+		metrics.Get().WebSocketOpsTotal.Add(1)
+
 		return textResult(fmt.Sprintf("Executed: %s", result.String()))
 	})
 
@@ -131,6 +136,8 @@ func registerWebSocketTools(server *mcp.Server, state *mcpState) {
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: ws_connections: %s", err))
 		}
+
+		metrics.Get().WebSocketOpsTotal.Add(1)
 
 		return textResult(result.String())
 	})

@@ -90,6 +90,8 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
+		metrics.Get().ExtractionsTotal.Add(1)
+
 		return textResult(snap)
 	})
 
@@ -125,6 +127,8 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: pdf: %s", err))
 		}
+
+		metrics.Get().ScreenshotsTotal.Add(1)
 
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.ImageContent{

@@ -10,6 +10,7 @@ import (
 
 	"github.com/inovacc/scout/internal/engine"
 	"github.com/inovacc/scout/internal/engine/swarm"
+	"github.com/inovacc/scout/internal/metrics"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -158,6 +159,8 @@ func registerSwarmTools(server *mcp.Server, state *mcpState) {
 		// Collect results.
 		allResults := coord.Results()
 		duration := time.Since(start)
+
+		metrics.Get().NavigationsTotal.Add(int64(len(allResults)))
 
 		// Trim to maxPages.
 		if len(allResults) > args.MaxPages {

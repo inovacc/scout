@@ -17,6 +17,7 @@ type Metrics struct {
 	ExtractionsTotal atomic.Int64 `json:"extractions_total"`
 	ErrorsTotal      atomic.Int64 `json:"errors_total"`
 	ToolCallsTotal   atomic.Int64 `json:"tool_calls_total"`
+	WebSocketOpsTotal atomic.Int64 `json:"websocket_ops_total"`
 	StartTime        time.Time    `json:"start_time"`
 }
 
@@ -43,8 +44,9 @@ func Handler() http.HandlerFunc {
 			"screenshots_total": m.ScreenshotsTotal.Load(),
 			"extractions_total": m.ExtractionsTotal.Load(),
 			"errors_total":     m.ErrorsTotal.Load(),
-			"tool_calls_total": m.ToolCallsTotal.Load(),
-			"uptime_seconds":   time.Since(m.StartTime).Seconds(),
+			"tool_calls_total":    m.ToolCallsTotal.Load(),
+			"websocket_ops_total": m.WebSocketOpsTotal.Load(),
+			"uptime_seconds":      time.Since(m.StartTime).Seconds(),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -88,6 +90,10 @@ func PrometheusHandler() http.HandlerFunc {
 		_, _ = fmt.Fprintf(w, "# HELP scout_tool_calls_total Total tool calls.\n")
 		_, _ = fmt.Fprintf(w, "# TYPE scout_tool_calls_total counter\n")
 		_, _ = fmt.Fprintf(w, "scout_tool_calls_total %d\n\n", m.ToolCallsTotal.Load())
+
+		_, _ = fmt.Fprintf(w, "# HELP scout_websocket_ops_total Total WebSocket operations.\n")
+		_, _ = fmt.Fprintf(w, "# TYPE scout_websocket_ops_total counter\n")
+		_, _ = fmt.Fprintf(w, "scout_websocket_ops_total %d\n\n", m.WebSocketOpsTotal.Load())
 
 		_, _ = fmt.Fprintf(w, "# HELP scout_uptime_seconds Seconds since process start.\n")
 		_, _ = fmt.Fprintf(w, "# TYPE scout_uptime_seconds gauge\n")

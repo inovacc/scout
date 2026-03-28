@@ -1,48 +1,55 @@
 # Scout
 
-A Go-idiomatic API for headless browser automation, web scraping, and search with an internalized rod fork.
+A Go browser automation library and CLI for headless browser control, web scraping, and AI-powered extraction. Built on an internalized rod fork with a public facade, gRPC service layer, MCP server, plugin system, and unified Cobra CLI.
 
 ## Features
 
 - **Browser Management** - Launch, configure, and control headless Chromium with functional options (`WithHeadless`, `WithProxy`, `WithStealth`, `WithIncognito`, etc.)
+- **Multi-Browser Support** - Chrome (default), Brave, and Microsoft Edge with auto-download and `~/.scout/browsers/` cache isolation
 - **Page Navigation** - Navigate, reload, go back/forward, wait for load/idle/DOM stability
 - **Element Interaction** - Click, double-click, right-click, hover, tap, input text, select options, file uploads
 - **Element Finding** - CSS selectors, XPath, text regex matching, JS evaluation, coordinate-based lookup, DevTools search
 - **Screenshots & PDF** - Viewport, full-page, and scroll screenshots in PNG/JPEG; PDF generation with configurable options
 - **JavaScript Evaluation** - Execute JS at page and element level with typed result access (`String()`, `Int()`, `Float()`, `Bool()`, `Decode()`)
 - **Network Control** - Set headers, manage cookies, intercept/modify requests via hijacking, block URLs by pattern, HTTP basic auth
-- **Stealth Mode** - Anti-bot-detection via `go-rod/stealth` to avoid fingerprinting
+- **Stealth Mode** - 17 anti-bot evasions including canvas/audio noise, WebGL, WebRTC, timezone, fonts, battery, and toString integrity
+- **Session Hijacking** - Real-time HTTP + WebSocket traffic capture via CDP events with channel-based event streaming and HAR export
+- **Fingerprint Rotation** - Per-session, per-page, per-domain, or interval-based fingerprint strategies with persistent store
 - **Device Emulation** - Viewport sizing, window bounds, device profile emulation
-- **Window Control** - Minimize, maximize, fullscreen, restore; get/set window bounds and state
-- **Session & Storage** - localStorage/sessionStorage access, save/load full session state (URL, cookies, storage)
-- **DOM Traversal** - Navigate parent/children/siblings, shadow roots, iframes
 - **Struct-Tag Extraction** - Extract data into Go structs using `scout:"selector"` tags
-- **Table & Meta Extraction** - Parse HTML tables and page metadata (OG, Twitter, JSON-LD)
 - **Form Interaction** - Detect, fill, and submit forms; CSRF token extraction; multi-step wizards
-- **Rate Limiting** - Token bucket rate limiter with retry and exponential backoff
 - **Pagination** - Click-next, URL-pattern, infinite-scroll, and load-more with Go generics
-- **Search Engine Integration** - Query Google, Bing, DuckDuckGo and parse SERP results
+- **Search Engine Integration** - Google, Bing, DuckDuckGo, Wikipedia, Google Scholar, Google News
 - **Web Crawling** - BFS crawling with depth/page limits, domain filtering, sitemap parsing
+- **Swarm Mode** - Distributed crawling with coordinator/worker architecture and domain-partitioned queues
 - **HAR Network Recording** - Capture HTTP traffic via CDP events and export as HAR 1.2 format
-- **Keyboard Input** - Page-level key press and type sequences via `input.Key` constants
-- **gRPC Remote Control** - Multi-session browser control via gRPC with 25+ RPCs and event streaming
-- **Scraper Framework** - Pluggable scraper framework with generic auth (browser capture, OAuth2, Electron CDP), encrypted session persistence (AES-256-GCM + Argon2id)
-- **HTML-to-Markdown** - Convert page HTML to clean markdown with readability scoring for main content extraction (`page.Markdown()`, `page.MarkdownContent()`)
-- **URL Map / Link Discovery** - Lightweight URL-only discovery combining sitemap.xml + on-page link harvesting with path/subdomain/search filters
-- **Multi-Browser Support** - Chrome (default), Brave, and Microsoft Edge. Brave auto-downloads from GitHub releases if not installed; Edge provides download URL. Cached in `~/.scout/browsers/`
-- **Chrome Extension Loading** - Load unpacked extensions via `WithExtension(paths...)`, download from Chrome Web Store via `DownloadExtension(id)`, load by ID via `WithExtensionByID(ids...)`
-- **Device Identity & Pairing** - Syncthing-style device IDs with Ed25519 keys, mTLS authentication, mDNS peer discovery
-- **Platform-Aware Defaults** - Auto-applies `--no-sandbox` on Linux containers; platform-specific session defaults via build constraints
-- **Batch Scraper** - Concurrent batch scraping of multiple URLs with page pool, error isolation, and progress reporting (`BatchScrape()`)
-- **Multi-Engine Search** - Engine-specific search subcommands for Google, Bing, DuckDuckGo, Wikipedia, Google Scholar, Google News
-- **Swagger/OpenAPI Extraction** - Auto-detect Swagger UI / ReDoc pages, fetch and parse OpenAPI 3.x / Swagger 2.0 specs, extract endpoints, schemas, and security definitions
-- **Recipe System** - Declarative JSON recipes for extraction and automation playbooks (`scout recipe run/validate`)
-- **LLM-Powered Extraction** - AI-powered data extraction via pluggable `LLMProvider` interface with 6 built-in providers: Ollama (local), OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini. `ExtractWithLLM()` sends page markdown + prompt to LLM; `ExtractWithLLMJSON()` for typed extraction with schema validation
-- **LLM Review Pipeline** - Two-pass extraction: extract with LLM1, review with LLM2. `ExtractWithLLMReview()` with workspace persistence tracking sessions and jobs in filesystem directories
-- **Sitemap Extract** - Crawl an entire site and extract DOM JSON + Markdown for every page via the bridge extension. `SitemapExtract()` with output directory support for per-page files and index
-- **MCP Server** - Model Context Protocol server exposing 33 tools for LLM browser control via stdio or HTTP+SSE transport. Install with `scout mcp --install`
+- **LLM-Powered Extraction** - 6 built-in providers (Ollama, OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini) with review pipeline
+- **Research Presets** - Shallow, Medium, and Deep research modes with caching and incremental research
+- **Scraper Framework** - 20 pluggable modes with AES-256-GCM encrypted session persistence
+- **MCP Server** - 18 built-in tools + plugin-contributed tools for LLM browser control via stdio or SSE
+- **Plugin System** - Subprocess JSON-RPC plugins with Go SDK, marketplace, and 12 built-in plugins
+- **gRPC Remote Control** - Multi-session browser control with 25+ RPCs and event streaming
+- **Electron Support** - `WithElectronApp(path)` with auto-download runtime
+- **REPL Mode** - Interactive browser shell with 20 commands, no daemon required
+- **Health Check** - Site-wide broken link, console error, and network failure detection
+- **Visual Monitoring** - Pixel-level visual regression testing with baseline management
+- **Reports** - AI-consumable markdown reports for health checks, gather, and crawl results
+- **Chrome Extensions** - Load unpacked, download from Chrome Web Store, embedded bridge extension
+- **Cloud Upload** - OAuth2 upload to Google Drive and OneDrive
 
 ## Installation
+
+**CLI (Go):**
+
+```bash
+go install github.com/inovacc/scout/cmd/scout@latest
+```
+
+**CLI (npm):**
+
+```bash
+npm install -g @inovacc/scout-browser
+```
 
 **Library:**
 
@@ -50,13 +57,7 @@ A Go-idiomatic API for headless browser automation, web scraping, and search wit
 go get github.com/inovacc/scout/pkg/scout
 ```
 
-**CLI:**
-
-```bash
-go install github.com/inovacc/scout/cmd/scout@latest
-```
-
-Requires Go 1.25+ and a Chromium-based browser available on the system (auto-downloaded if not present).
+Requires Go 1.25+ for building from source. A Chromium-based browser is auto-downloaded if not present.
 
 ## Quick Start
 
@@ -128,6 +129,9 @@ scout search "golang web scraping" --engine=google
 # Crawl a site (standalone)
 scout crawl https://example.com --max-depth=2
 
+# REPL mode (no daemon)
+scout repl https://example.com
+
 # Clean up
 scout session destroy --all
 ```
@@ -136,9 +140,9 @@ scout session destroy --all
 
 The [`examples/`](examples/) directory contains 18 runnable programs organized by complexity:
 
-**Simple** — basic-navigation, screenshot, extract-struct, extract-table, extract-meta, javascript-eval, form-fill, cookies-headers
+**Simple** -- basic-navigation, screenshot, extract-struct, extract-table, extract-meta, javascript-eval, form-fill, cookies-headers
 
-**Advanced** — search-engines, pagination, crawl-site, sitemap-parser, rate-limited-scraper, form-wizard, request-intercept, stealth-scraper, pdf-generator, har-recorder
+**Advanced** -- search-engines, pagination, crawl-site, sitemap-parser, rate-limited-scraper, form-wizard, request-intercept, stealth-scraper, pdf-generator, har-recorder
 
 ```bash
 cd examples/simple/basic-navigation && go run .
@@ -254,7 +258,7 @@ recorder := scout.NewNetworkRecorder(page,
 )
 defer recorder.Stop()
 
-// Navigate and interact — all HTTP traffic is captured
+// Navigate and interact -- all HTTP traffic is captured
 page.Navigate("https://example.com")
 
 // Export as HAR 1.2
@@ -284,7 +288,7 @@ err := page.NavigateWithRetry("https://example.com", rl)
 | Option                            | Description                                                  | Default         |
 |-----------------------------------|--------------------------------------------------------------|-----------------|
 | `WithHeadless(bool)`              | Run in headless mode                                         | `true`          |
-| `WithStealth()`                   | Enable anti-bot-detection                                    | disabled        |
+| `WithStealth()`                   | Enable anti-bot-detection (17 evasions)                      | disabled        |
 | `WithProxy(url)`                  | Set proxy server                                             | none            |
 | `WithUserAgent(ua)`               | Custom User-Agent                                            | browser default |
 | `WithWindowSize(w, h)`            | Browser window size                                          | 1920x1080       |
@@ -301,72 +305,17 @@ err := page.NavigateWithRetry("https://example.com", rl)
 | `WithXvfb(args...)`               | Enable Xvfb for headful mode without display (Unix only)     | disabled        |
 | `WithExtension(paths...)`         | Load unpacked Chrome extensions by directory path            | none            |
 | `WithExtensionByID(ids...)`       | Load downloaded Chrome extensions by Web Store ID            | none            |
-| `WithBridge()`                    | Enable Scout Bridge extension for Go↔browser communication   | enabled         |
+| `WithBridge()`                    | Enable Scout Bridge extension for Go<>browser communication  | enabled         |
 | `WithBrowser(BrowserType)`        | Select browser: chrome, brave, edge                          | chrome          |
 | `WithDevTools()`                  | Open Chrome DevTools for each tab                            | disabled        |
-
-## CLI Reference
-
-The `scout` CLI provides a unified interface to all library features. It communicates with a background gRPC daemon for session persistence across invocations.
-
-| Command                                     | Description                                                                          |
-|---------------------------------------------|--------------------------------------------------------------------------------------|
-| `scout session create`                      | Create a browser session (`--headless`, `--stealth`, `--proxy`, `--url`, `--record`) |
-| `scout session destroy [id]`                | Destroy a session (`--all` for all)                                                  |
-| `scout session list`                        | List tracked sessions                                                                |
-| `scout session use <id>`                    | Set active session                                                                   |
-| `scout navigate <url>`                      | Navigate to URL                                                                      |
-| `scout back` / `forward` / `reload`         | Browser history navigation                                                           |
-| `scout click <sel>`                         | Click an element                                                                     |
-| `scout type <sel> <text>`                   | Type into an element                                                                 |
-| `scout key <key>`                           | Press a keyboard key                                                                 |
-| `scout select <sel> <val>`                  | Select a dropdown option                                                             |
-| `scout hover <sel>` / `focus` / `clear`     | Element interaction                                                                  |
-| `scout title` / `url`                       | Get page title or URL                                                                |
-| `scout text <sel>`                          | Get element text                                                                     |
-| `scout attr <sel> <attr>`                   | Get element attribute                                                                |
-| `scout eval <js>`                           | Execute JavaScript                                                                   |
-| `scout html [--selector=sel]`               | Get page/element HTML                                                                |
-| `scout screenshot`                          | Capture screenshot (`--full`, `--format`, `--quality`)                               |
-| `scout pdf`                                 | Generate PDF                                                                         |
-| `scout har start` / `stop` / `export`       | HAR network recording                                                                |
-| `scout window get\|min\|max\|full\|restore` | Window control                                                                       |
-| `scout storage get\|set\|list\|clear`       | Web storage (`--session-storage`)                                                    |
-| `scout cookie get\|set\|clear`              | Cookie management                                                                    |
-| `scout header set <key> <val>`              | Set extra headers                                                                    |
-| `scout block <pattern>`                     | Block URL pattern                                                                    |
-| `scout search <query>`                      | Search engines (`--engine`, `--max-pages`)                                           |
-| `scout crawl <url>`                         | BFS crawl (`--max-depth`, `--max-pages`, `--delay`)                                  |
-| `scout map <url>`                           | URL discovery (`--search`, `--include-subdomains`, `--limit`)                        |
-| `scout markdown --url=<url>`                | Convert page to markdown (`--main-only`, `--no-images`)                              |
-| `scout table` / `meta`                      | Extract tables/metadata (`--url`, `--selector`)                                      |
-| `scout form detect\|fill\|submit`           | Form interaction                                                                     |
-| `scout auth login\|capture\|status\|logout` | Generic auth framework                                                               |
-| `scout device pair\|list\|trust`            | Device pairing and identity                                                          |
-| `scout batch --urls=u1,u2`                  | Batch scrape URLs (`--concurrency`, `--urls-file`)                                   |
-| `scout recipe run --file=f.json`            | Run extraction/automation recipe                                                     |
-| `scout recipe validate --file=f.json`       | Validate recipe JSON schema                                                          |
-| `scout swagger <url>`                       | Extract Swagger/OpenAPI spec (`--endpoints-only`, `--raw`, `--format`, `--output`)   |
-| `scout extension download <id>`             | Download extension from Chrome Web Store                                             |
-| `scout extension remove <id>`               | Remove a downloaded extension                                                        |
-| `scout extension load --path=<dir>`         | Load unpacked extension (non-headless, blocks until Ctrl+C)                          |
-| `scout extension test --path=<dir>`         | Test extension in headless mode                                                      |
-| `scout extension list`                      | List downloaded and browser-loaded extensions                                        |
-| `scout extract-ai --url=<url> --prompt=...` | AI extraction (`--provider`, `--model`, `--review`, `--workspace`)                   |
-| `scout ollama list\|pull\|status`           | Ollama model management                                                              |
-| `scout ai-job list\|show`                   | LLM workspace job management                                                         |
-| `scout ai-job session list\|create\|use`    | LLM workspace session management                                                     |
-| `scout sitemap extract <url>`               | Crawl + extract DOM JSON & Markdown per page (`--depth`, `--max-pages`, `--output`)  |
-| `scout browser list`                        | List detected (local) and downloaded (`~/.scout/browsers/`) browsers                 |
-| `scout server`                              | Run gRPC server directly                                                             |
-| `scout client`                              | Interactive REPL client                                                              |
-| `scout aicontext [--json]`                  | Generate AI context document for the CLI                                             |
-| `scout cmdtree [--json]`                    | Visualize full command tree with flags                                               |
-| `scout version`                             | Show version info                                                                    |
+| `WithFingerprintRotation(cfg)`    | Enable fingerprint rotation strategy                         | disabled        |
+| `WithResearchPreset(preset)`      | Set research depth: Shallow, Medium, Deep                    | none            |
+| `WithRemoteCDP(endpoint)`         | Connect to existing Chrome DevTools endpoint                 | none            |
+| `WithElectronApp(path)`           | Launch an Electron application                               | none            |
 
 ## MCP Server (LLM Integration)
 
-Scout includes a [Model Context Protocol](https://modelcontextprotocol.io/) server that exposes browser automation as 33 tools for LLMs like Claude.
+Scout includes a [Model Context Protocol](https://modelcontextprotocol.io/) server exposing 18 built-in browser automation tools for LLMs like Claude, plus additional tools contributed by plugins.
 
 ```bash
 # Install for Claude Code (local project)
@@ -382,17 +331,18 @@ scout mcp
 scout mcp --sse --addr=localhost:8080
 ```
 
-### Tools (33)
+### Built-in Tools (18)
 
 | Category | Tools | Description |
 |----------|-------|-------------|
-| **Browser** | `navigate`, `click`, `type`, `back`, `forward`, `wait`, `screenshot`, `snapshot`, `extract`, `eval`, `open` | Page navigation, interaction, and content extraction |
-| **Content** | `markdown`, `table`, `meta`, `pdf`, `search`, `fetch` | Convert pages to markdown, extract tables/metadata, PDF export, web search, URL fetching |
-| **Network** | `cookie`, `header`, `block`, `ping`, `curl` | Cookie/header management, URL blocking, site diagnostics with timing breakdown |
-| **Forms** | `form_detect`, `form_fill`, `form_submit` | Detect form fields, fill values, submit forms |
-| **Analysis** | `crawl`, `detect` | BFS crawling with depth/page limits, framework/tech stack detection |
-| **Inspection** | `storage`, `hijack`, `har`, `swagger` | Web storage CRUD, network traffic capture, performance entries, OpenAPI extraction |
-| **Session** | `session_list`, `session_reset` | List active sessions, reset browser state |
+| **Navigation** | `navigate`, `back`, `forward`, `wait`, `open` | Page navigation and browser control |
+| **Interaction** | `click`, `type`, `eval` | Element interaction and JS execution |
+| **Content** | `extract`, `screenshot`, `snapshot`, `pdf` | Content extraction, screenshots, PDF export |
+| **Session** | `session_list`, `session_reset` | Session management |
+| **Crawling** | `swarm_crawl` | Distributed BFS crawling |
+| **WebSocket** | `ws_listen`, `ws_send`, `ws_connections` | Monitor, send, and list WebSocket traffic |
+
+Additional tools (markdown, table, meta, forms, network, etc.) are available via the 12 built-in plugins.
 
 ### Resources
 
@@ -402,11 +352,194 @@ scout mcp --sse --addr=localhost:8080
 | `scout://page/url` | Current page URL |
 | `scout://page/title` | Current page title |
 
-### CLI Subcommands
+## Claude Code Plugin
+
+Scout works as a Claude Code plugin for AI-assisted browser automation during development.
 
 ```bash
-scout mcp screenshot <url>   # Take a screenshot and save to file
-scout mcp open <url>         # Open URL in headed browser for inspection
+# Run Claude Code with Scout plugin (from project root)
+claude --plugin-dir .
+```
+
+### Skills
+
+| Skill | Description |
+|-------|-------------|
+| `/scout:scrape` | Scrape a URL and extract structured data |
+| `/scout:screenshot` | Capture a screenshot of a URL |
+| `/scout:test-site` | Run health check on a site (broken links, errors) |
+| `/scout:gather` | One-shot page intelligence (DOM, HAR, links, meta) |
+| `/scout:crawl` | Crawl a site with depth/page limits |
+| `/scout:monitor` | Visual regression monitoring |
+
+### Agents
+
+| Agent | Description |
+|-------|-------------|
+| `web-scraper` | Autonomous web scraping with extraction strategies |
+| `site-tester` | Automated site health and quality testing |
+| `browser-automation` | General-purpose browser automation workflows |
+
+## Agent HTTP API
+
+Scout provides an HTTP API for AI agent integration via `pkg/scout/agent/`.
+
+```bash
+# Start the agent HTTP server
+scout agent serve
+```
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/tools` | List available tools (OpenAI/Anthropic schema) |
+| `POST` | `/tools/{name}` | Execute a tool by name |
+| `GET` | `/health` | Health check |
+
+```bash
+# Example: navigate to a URL
+curl -X POST http://localhost:8080/tools/navigate \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
+```
+
+The agent framework also provides `OpenAITools()` and `AnthropicTools()` for embedding Scout tools directly into AI agent pipelines.
+
+## Mobile Automation
+
+Scout supports mobile browser automation via ADB (Android Debug Bridge).
+
+```bash
+# List connected devices
+scout mobile devices
+
+# Connect to a device
+scout mobile connect <device-id>
+
+# Touch gestures
+scout mobile tap 500 300
+scout mobile swipe 500 800 500 200
+scout mobile scroll down
+```
+
+Mobile sessions use Chrome on Android via `adb forward` for CDP connections.
+
+## Plugin System
+
+Scout uses subprocess-based plugins communicating via JSON-RPC 2.0. Twelve built-in plugins provide extended functionality.
+
+```bash
+# List installed plugins
+scout plugin list
+
+# Search the marketplace
+scout plugin search "content"
+
+# Install from GitHub
+scout plugin install github:owner/plugin-name
+
+# Install from local path or URL
+scout plugin install ./my-plugin
+scout plugin install https://example.com/plugin.tar.gz
+```
+
+### Built-in Plugins
+
+`diag`, `reports`, `content`, `search`, `network`, `forms`, `crawl`, `guide`, `comm`, `email-docs`, `content-social`, `enterprise`
+
+### Building Plugins
+
+Use the Go SDK in `pkg/scout/plugin/sdk/`:
+
+```go
+srv := sdk.NewServer("my-plugin", "1.0.0")
+sdk.RegisterMode(srv, "my_mode", myModeHandler)
+sdk.RegisterTool(srv, "my_tool", myToolHandler)
+srv.Run()
+```
+
+Plugins declare capabilities (`scraper_mode`, `extractor`, `mcp_tool`) in their `plugin.json` manifest.
+
+## Cloud Deployment
+
+Scout can be deployed to Kubernetes using the included Helm chart.
+
+```bash
+# Deploy with Helm
+helm install scout deploy/helm/scout/
+
+# Or use the CLI
+scout cloud deploy
+scout cloud status
+scout cloud scale --replicas=3
+```
+
+## Monitoring
+
+Scout exposes runtime metrics for observability.
+
+```bash
+# Prometheus metrics endpoint
+curl http://localhost:9551/metrics
+
+# JSON metrics
+curl http://localhost:9551/metrics/json
+```
+
+OpenTelemetry tracing is available when `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT` is set. All MCP tools are auto-instrumented.
+
+## CLI Reference
+
+The `scout` CLI provides 50+ subcommands. Run `scout cmdtree` for the full command tree or `scout aicontext` for AI-consumable documentation.
+
+| Command | Description |
+|---------|-------------|
+| `scout session create/destroy/list/use/reset` | Session lifecycle management |
+| `scout navigate/back/forward/reload` | Page navigation |
+| `scout click/type/key/select/hover` | Element interaction |
+| `scout title/url/text/attr/eval/html` | Page inspection |
+| `scout screenshot/pdf` | Visual capture |
+| `scout markdown --url=<url>` | HTML-to-Markdown conversion |
+| `scout table/meta` | Structured data extraction |
+| `scout form detect/fill/submit` | Form interaction |
+| `scout search <query>` | Multi-engine search |
+| `scout crawl <url>` | BFS crawling |
+| `scout swarm start <url>` | Distributed crawling |
+| `scout map <url>` | URL discovery |
+| `scout gather <url>` | One-shot page intelligence |
+| `scout test-site <url>` | Site health check |
+| `scout repl [url]` | Interactive browser shell |
+| `scout batch --urls=u1,u2` | Batch scraping |
+| `scout har start/stop/export` | Network recording |
+| `scout hijack watch <url>` | Session hijack monitoring |
+| `scout extract-ai --url=<url>` | AI-powered extraction |
+| `scout recipe run/validate` | Declarative recipes |
+| `scout swagger <url>` | OpenAPI extraction |
+| `scout sitemap extract <url>` | Full-site DOM + Markdown extraction |
+| `scout auth login/capture/status` | Auth framework |
+| `scout mcp` | MCP server |
+| `scout agent serve` | Agent HTTP API server |
+| `scout mobile devices/connect` | Mobile automation |
+| `scout plugin list/install/search` | Plugin management |
+| `scout browser list` | Browser management |
+| `scout cloud deploy/status/scale` | Cloud deployment |
+| `scout report list/show/delete` | Report management |
+| `scout upload auth/file/status` | Cloud upload (Drive, OneDrive) |
+| `scout connect --cdp ws://...` | Remote CDP connection |
+| `scout server` | Run gRPC server directly |
+| `scout version` | Version info |
+
+## gRPC Service
+
+Multi-session browser control via gRPC on port 9551 with mTLS authentication and device pairing.
+
+```bash
+# Start gRPC server
+scout server
+
+# Or via Task
+task grpc:server
 ```
 
 ## Development
@@ -421,38 +554,36 @@ task check         # Full quality check: fmt, vet, lint, test
 task lint          # Run golangci-lint
 task lint:fix      # Run golangci-lint with --fix
 task fmt           # Format code (go fmt + goimports)
-
-# gRPC
 task proto         # Generate protobuf code
-task grpc:server   # Run gRPC server (default :9551)
-task grpc:client   # Run interactive CLI client
 ```
 
 ## Dependencies
 
-**Core library** (no gRPC — library-only consumers do not pull gRPC deps):
+**Core library** (no gRPC -- library-only consumers do not pull gRPC deps):
 
-| Package                                                       | Purpose                                                       |
-|---------------------------------------------------------------|---------------------------------------------------------------|
-| internal/engine/lib (internalized rod)                        | Headless browser automation via Chrome DevTools Protocol      |
-| internal/engine/stealth (internalized)                        | Anti-bot-detection page creation (forked from go-rod/stealth) |
-| [ysmood/gson](https://github.com/ysmood/gson)                 | JSON number handling for JS evaluation results                |
-| [golang.org/x/time](https://pkg.go.dev/golang.org/x/time)     | Token bucket rate limiter                                     |
-| [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | Argon2id key derivation for session encryption                |
-| [golang.org/x/term](https://pkg.go.dev/golang.org/x/term)     | Secure passphrase input (no-echo terminal)                    |
-| [ollama/ollama](https://github.com/ollama/ollama)              | Ollama Go client for local LLM provider                       |
-| [go-sdk/mcp](https://github.com/modelcontextprotocol/go-sdk)  | Model Context Protocol server for LLM integration             |
+| Package | Purpose |
+|---------|---------|
+| internal/engine/lib (internalized rod) | Headless browser automation via Chrome DevTools Protocol |
+| internal/engine/stealth (internalized) | Anti-bot-detection (17 evasions, forked from go-rod/stealth) |
+| [ysmood/gson](https://github.com/ysmood/gson) | JSON number handling for JS evaluation results |
+| [golang.org/x/time](https://pkg.go.dev/golang.org/x/time) | Token bucket rate limiter |
+| [golang.org/x/crypto](https://pkg.go.dev/golang.org/x/crypto) | Argon2id key derivation for session encryption |
+| [ollama/ollama](https://github.com/ollama/ollama) | Ollama Go client for local LLM provider |
+| [go-sdk/mcp](https://github.com/modelcontextprotocol/go-sdk) | Model Context Protocol server for LLM integration |
 
 **gRPC layer and CLI** (`grpc/` and `cmd/` only):
 
-| Package                                                                     | Purpose                                   |
-|-----------------------------------------------------------------------------|-------------------------------------------|
-| [google.golang.org/grpc](https://pkg.go.dev/google.golang.org/grpc)         | gRPC framework                            |
-| [google.golang.org/protobuf](https://pkg.go.dev/google.golang.org/protobuf) | Protocol Buffers runtime                  |
-| [google/uuid](https://github.com/google/uuid)                               | Session ID generation                     |
-| [spf13/cobra](https://github.com/spf13/cobra)                               | CLI framework                             |
-| [grandcat/zeroconf](https://github.com/grandcat/zeroconf)                   | mDNS service discovery for device pairing |
-| [google/gops](https://github.com/google/gops)                               | Process discovery and orphan detection    |
+| Package | Purpose |
+|---------|---------|
+| [google.golang.org/grpc](https://pkg.go.dev/google.golang.org/grpc) | gRPC framework |
+| [google.golang.org/protobuf](https://pkg.go.dev/google.golang.org/protobuf) | Protocol Buffers runtime |
+| [google/uuid](https://github.com/google/uuid) | Session ID generation |
+| [spf13/cobra](https://github.com/spf13/cobra) | CLI framework |
+| [grandcat/zeroconf](https://github.com/grandcat/zeroconf) | mDNS service discovery for device pairing |
+| [google/gops](https://github.com/google/gops) | Process discovery and orphan detection |
+| [go.opentelemetry.io/otel](https://opentelemetry.io) | Distributed tracing |
+
+For full API reference, see [docs/API.md](docs/API.md).
 
 ## License
 

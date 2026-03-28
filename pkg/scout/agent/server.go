@@ -12,6 +12,7 @@ import (
 	"github.com/inovacc/scout/internal/idle"
 	"github.com/inovacc/scout/internal/metrics"
 	"github.com/inovacc/scout/pkg/scout"
+	"golang.org/x/time/rate"
 )
 
 // ServerConfig holds configuration for the agent HTTP server.
@@ -22,6 +23,7 @@ type ServerConfig struct {
 	BrowserBin  string
 	Logger      *slog.Logger
 	IdleTimeout time.Duration // auto-shutdown after inactivity (0 disables)
+	RateLimit   float64       // requests per second (0 = unlimited, default: 100)
 }
 
 // Server wraps a Provider with an HTTP interface for AI agent frameworks.
@@ -32,6 +34,7 @@ type Server struct {
 	logger   *slog.Logger
 	idle     *idle.Timer
 	mux      *http.ServeMux
+	limiter  *rate.Limiter
 }
 
 // CallRequest is the JSON body for POST /call.
@@ -80,12 +83,18 @@ func NewServer(cfg ServerConfig) (*Server, error) {
 
 	provider := NewProvider(browser)
 
+	rps := cfg.RateLimit
+	if rps == 0 {
+		rps = 100
+	}
+
 	s := &Server{
 		provider: provider,
 		browser:  browser,
 		config:   cfg,
 		logger:   cfg.Logger,
 		mux:      http.NewServeMux(),
+		limiter:  rate.NewLimiter(rate.Limit(rps), int(rps)),
 	}
 
 	s.registerRoutes()
@@ -173,6 +182,39 @@ func (s *Server) handleCall(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, result)
 }
 
+// corsMiddleware adds CORS headers and handles preflight OPTIONS requests.
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Max-Age", "86400")
+		}
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// rateLimitMiddleware rejects requests with 429 when the rate limit is exceeded.
+func (s *Server) rateLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.limiter.Allow() {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error": "rate limit exceeded",
+			})
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // ListenAndServe starts the HTTP server. If IdleTimeout is configured and
 // onIdle is provided, the server will call onIdle (typically context cancel)
 // after IdleTimeout of inactivity.
@@ -190,7 +232,7 @@ func (s *Server) ListenAndServe(ctx context.Context, onIdle ...func()) error {
 	s.logger.Info("agent HTTP server started", "addr", ln.Addr().String())
 
 	srv := &http.Server{
-		Handler:           s.mux,
+		Handler:           corsMiddleware(s.rateLimitMiddleware(s.mux)),
 		ReadTimeout:       30 * time.Second,
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      60 * time.Second,
