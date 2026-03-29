@@ -26,9 +26,9 @@
 - [ ] **CLI-01**: Remove deprecated `scout recipe` command (past 2026-04-15 removal date)
 - [x] **CLI-02**: Merge `credentials capture` into `auth capture` as a single auth-capture flow
 - [x] **CLI-03**: Merge `websearch` into `search` with --engine flag (remove redundant search_engines subcommands)
-- [ ] **CLI-04**: Remove standalone `markdown` command (subset of `fetch --mode=markdown`)
+- [x] **CLI-04**: Remove standalone `markdown` command (subset of `fetch --mode=markdown`)
 - [ ] **CLI-05**: Move 17 bare gRPC commands (click, type, title, url, etc.) under a `remote` or `grpc` subcommand group
-- [ ] **CLI-06**: Consolidate duplicate extract-* subcommands alongside base commands
+- [x] **CLI-06**: Consolidate duplicate extract-* subcommands alongside base commands
 - [ ] **CLI-07**: Deduplicate screenshot command (gRPC-based root vs standalone)
 
 ### Code Cleanup
@@ -39,7 +39,7 @@
 - [ ] **CLEAN-04**: Remove duplicate code between recipe.go and runbook.go (applyVars/findUnresolvedVars)
 - [ ] **CLEAN-05**: Consolidate browser detection into internal/engine/browser/ with pkg/scout/browser/ delegating
 - [ ] **CLEAN-06**: Remove dead exports (FingerprintToProfile, createProvider)
-- [ ] **CLEAN-07**: Triage and resolve stale TODOs inherited from rod fork (especially Go 1.15 tls.Dialer reference)
+- [x] **CLEAN-07**: Triage and resolve stale TODOs inherited from rod fork (especially Go 1.15 tls.Dialer reference)
 
 ### Code Structure
 
@@ -56,7 +56,7 @@
 
 ### MCP UX
 
-- [ ] **MCP-01**: Fix stale help text claiming 33 tools (actual: 18 after plugin migration)
+- [x] **MCP-01**: Fix stale help text claiming 33 tools (actual: 18 after plugin migration)
 - [ ] **MCP-02**: Add missing capabilities from REPL: html, cookies, reload, tabs, markdown-as-tool
 - [ ] **MCP-03**: Improve tool descriptions and input schemas for better AI agent ergonomics
 - [ ] **MCP-04**: Fix duplicate truncate function (tools_websocket.go version can exceed maxLen)
@@ -117,12 +117,12 @@
 | CLI-01 | Phase 3 | Pending |
 | CLI-02 | Phase 3 | Complete |
 | CLI-03 | Phase 3 | Complete |
-| CLI-04 | Phase 3 | Pending |
+| CLI-04 | Phase 3 | Complete |
 | CLI-05 | Phase 3 | Pending |
-| CLI-06 | Phase 3 | Pending |
+| CLI-06 | Phase 3 | Complete |
 | CLI-07 | Phase 3 | Pending |
-| CLEAN-07 | Phase 3 | Pending |
-| MCP-01 | Phase 3 | Pending |
+| CLEAN-07 | Phase 3 | Complete |
+| MCP-01 | Phase 3 | Complete |
 | REPL-01 | Phase 4 | Pending |
 | REPL-02 | Phase 4 | Pending |
 | REPL-03 | Phase 4 | Pending |
