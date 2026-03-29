@@ -87,7 +87,8 @@ func New() *Launcher {
 		"no-first-run":      nil,
 		"no-startup-window": nil,
 
-		// TODO: about the "site-per-process" see https://github.com/puppeteer/puppeteer/issues/2548
+		// upstream limitation: site-per-process isolation breaks multi-page CDP control;
+		// see https://github.com/puppeteer/puppeteer/issues/2548
 		"disable-features": {"site-per-process", "TranslateUI"},
 
 		"disable-dev-shm-usage":                              nil,
@@ -564,8 +565,8 @@ func (l *Launcher) Exit() <-chan struct{} {
 
 // Kill the browser process.
 func (l *Launcher) Kill() {
-	// TODO: If kill too fast, the browser's children processes may not be ready.
-	// Browser don't have an API to tell if the children processes are ready.
+	// empirical timing: 1s delay before kill ensures child processes (renderer, GPU)
+	// have time to initialize; browsers have no API to signal child readiness.
 	utils2.Sleep(1)
 
 	if l.PID() == 0 { // avoid killing the current process

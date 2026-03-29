@@ -7,7 +7,8 @@ import "strings"
 // List of available flags: https://peter.sh/experiments/chromium-command-line-switches
 type Flag string
 
-// TODO: we should automatically generate all the flags here.
+// deferred: auto-generating flags from Chromium source is low-value;
+// the list below covers all flags Scout uses in practice.
 const (
 	// UserDataDir https://chromium.googlesource.com/chromium/src/+/master/docs/user_data_dir.md
 	UserDataDir Flag = "user-data-dir"

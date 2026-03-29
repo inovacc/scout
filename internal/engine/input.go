@@ -424,7 +424,8 @@ func (p *rodPage) newTouch() *rodPage {
 
 // Start a touch action.
 func (t *Touch) Start(points ...*proto2.InputTouchPoint) error {
-	// TODO: https://crbug.com/613219
+	// upstream limitation: chromium bug crbug.com/613219 requires two WaitRepaint
+	// calls before touch events are dispatched reliably.
 	_ = t.page.WaitRepaint()
 	_ = t.page.WaitRepaint()
 

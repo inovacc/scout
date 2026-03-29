@@ -14,11 +14,11 @@ type Dialer interface {
 	DialContext(ctx context.Context, network, address string) (net.Conn, error)
 }
 
-// TODO: replace it with tls.Dialer once golang v1.15 is widely used.
+// tlsDialer wraps tls.Dialer to satisfy the Dialer interface.
 type tlsDialer struct{}
 
-func (d *tlsDialer) DialContext(_ context.Context, network, address string) (net.Conn, error) {
-	return tls.Dial(network, address, nil)
+func (d *tlsDialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	return (&tls.Dialer{}).DialContext(ctx, network, address)
 }
 
 // MustConnectWS helper to make a websocket connection.
