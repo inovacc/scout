@@ -16,10 +16,10 @@
 
 ### Browser Isolation
 
-- [ ] **ISOL-01**: Default browser resolution uses only ~/.scout/browsers/ cache, never system-installed browsers
-- [ ] **ISOL-02**: Rod fallback path is eliminated or gated behind explicit opt-in (no silent ~/.cache/rod/ escape)
-- [ ] **ISOL-03**: --system-browser flag is the only way to use system-installed browsers
-- [ ] **ISOL-04**: Browser.BestCached() auto-downloads Chrome for Testing when cache is empty without touching system browsers
+- [x] **ISOL-01**: Default browser resolution uses only ~/.scout/browsers/ cache, never system-installed browsers
+- [x] **ISOL-02**: Rod fallback path is eliminated or gated behind explicit opt-in (no silent ~/.cache/rod/ escape)
+- [x] **ISOL-03**: --system-browser flag is the only way to use system-installed browsers
+- [x] **ISOL-04**: Browser.BestCached() auto-downloads Chrome for Testing when cache is empty without touching system browsers
 
 ### CLI Consolidation
 
@@ -110,10 +110,10 @@
 | SESS-04 | Phase 2 | Complete |
 | SESS-05 | Phase 2 | Pending |
 | SESS-06 | Phase 2 | Complete |
-| ISOL-01 | Phase 2 | Pending |
-| ISOL-02 | Phase 2 | Pending |
-| ISOL-03 | Phase 2 | Pending |
-| ISOL-04 | Phase 2 | Pending |
+| ISOL-01 | Phase 2 | Complete |
+| ISOL-02 | Phase 2 | Complete |
+| ISOL-03 | Phase 2 | Complete |
+| ISOL-04 | Phase 2 | Complete |
 | CLI-01 | Phase 3 | Pending |
 | CLI-02 | Phase 3 | Pending |
 | CLI-03 | Phase 3 | Pending |

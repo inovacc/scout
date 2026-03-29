@@ -55,7 +55,7 @@ Plans:
 - [x] 02-02-PLAN.md — Fix Windows ProcessAlive with WaitForSingleObject; add retry constants 5x500ms (SESS-04, SESS-06)
 - [x] 02-03-PLAN.md — Replace SessionHash with UUID v7; add WithReuseSession() opt-in (SESS-03)
 - [ ] 02-04-PLAN.md — Consolidate Browser.Close() to single cleanup path; fix CleanOrphans to remove full dirs (SESS-01, SESS-02, SESS-05)
-- [ ] 02-05-PLAN.md — Eliminate rod fallback; explicit error when no cached browser (ISOL-01, ISOL-02, ISOL-03, ISOL-04)
+- [x] 02-05-PLAN.md — Eliminate rod fallback; explicit error when no cached browser (ISOL-01, ISOL-02, ISOL-03, ISOL-04)
 
 ### Phase 3: CLI Consolidation
 **Goal**: The CLI surface is coherent — no duplicate commands, no deprecated commands, and overlapping commands are merged
@@ -119,7 +119,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Safety Net & Dead Code | 0/3 | Not started | - |
-| 2. Sessions & Isolation | 2/5 | In Progress|  |
+| 2. Sessions & Isolation | 3/5 | In Progress|  |
 | 3. CLI Consolidation | 0/TBD | Not started | - |
 | 4. REPL & MCP UX | 0/TBD | Not started | - |
 | 5. Code Structure | 0/TBD | Not started | - |
