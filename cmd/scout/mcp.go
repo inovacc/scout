@@ -33,14 +33,10 @@ Use --install --claude to register globally via "claude mcp add".
 Use --sse to start with HTTP+SSE transport instead of stdio (default addr: localhost:8080).
 Use --addr to customize the SSE listen address.
 
-Tools (33):
+Tools (18 built-in browser automation tools):
   Browser:     navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open
-  Content:     markdown, table, meta, pdf, search, fetch
-  Network:     cookie, header, block, ping, curl
-  Forms:       form_detect, form_fill, form_submit
-  Analysis:    crawl, detect
-  Inspection:  storage, hijack, har, swagger
-  Session:     session_list, session_reset
+  Capture:     pdf, session_list, session_reset, open, swarm_crawl
+  WebSocket:   ws_listen, ws_send, ws_connections
 Resources: scout://page/markdown, scout://page/url, scout://page/title
 
 Subcommands:
