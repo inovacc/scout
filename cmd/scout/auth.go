@@ -23,6 +23,9 @@ func init() {
 
 	authCaptureCmd.Flags().String("url", "", "URL to open in browser")
 	authCaptureCmd.Flags().Duration("timeout", 5*time.Minute, "max time before auto-capture")
+	authCaptureCmd.Flags().Bool("plaintext", false, "write unencrypted JSON output instead of AES-encrypted session file")
+	authCaptureCmd.Flags().Bool("on-close", false, "capture when browser window is closed (instead of Ctrl+C)")
+	authCaptureCmd.Flags().Bool("persist", false, "keep session directory after capture (use with --on-close)")
 
 	authStatusCmd.Flags().String("input", "", "encrypted session file path")
 
