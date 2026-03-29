@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-sessions-isolation/02-02-PLAN.md
-last_updated: "2026-03-29T18:33:34.842Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-03-29T18:34:10.804Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 6
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 ## Current Position
 
 Phase: 02 (sessions-isolation) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-03-29
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 | Phase 02-sessions-isolation P02 | 10 | 2 tasks | 2 files |
+| Phase 02-sessions-isolation P03 | 10 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,8 @@ Recent decisions affecting current work:
 - Init: Phase 1 is safety net before touching session lifecycle code (research recommendation)
 - [Phase 02-sessions-isolation]: WaitForSingleObject replaces GetExitCodeProcess for zombie-safe Windows process detection
 - [Phase 02-sessions-isolation]: removeRetries=5 / removeRetryWait=500ms constants govern all session-dir removal retry loops
+- [Phase 02-sessions-isolation]: UUID v7 chosen for session IDs: time-ordered, no implicit sharing from URL hash
+- [Phase 02-sessions-isolation]: WithReusableSession() kept as deprecated alias until 2026-05-01 to avoid breaking callers
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T18:33:34.829Z
-Stopped at: Completed 02-sessions-isolation/02-02-PLAN.md
+Last session: 2026-03-29T18:34:10.792Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
