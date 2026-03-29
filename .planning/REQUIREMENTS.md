@@ -25,7 +25,7 @@
 
 - [ ] **CLI-01**: Remove deprecated `scout recipe` command (past 2026-04-15 removal date)
 - [ ] **CLI-02**: Merge `credentials capture` into `auth capture` as a single auth-capture flow
-- [ ] **CLI-03**: Merge `websearch` into `search` with --engine flag (remove redundant search_engines subcommands)
+- [x] **CLI-03**: Merge `websearch` into `search` with --engine flag (remove redundant search_engines subcommands)
 - [ ] **CLI-04**: Remove standalone `markdown` command (subset of `fetch --mode=markdown`)
 - [ ] **CLI-05**: Move 17 bare gRPC commands (click, type, title, url, etc.) under a `remote` or `grpc` subcommand group
 - [ ] **CLI-06**: Consolidate duplicate extract-* subcommands alongside base commands
@@ -116,7 +116,7 @@
 | ISOL-04 | Phase 2 | Complete |
 | CLI-01 | Phase 3 | Pending |
 | CLI-02 | Phase 3 | Pending |
-| CLI-03 | Phase 3 | Pending |
+| CLI-03 | Phase 3 | Complete |
 | CLI-04 | Phase 3 | Pending |
 | CLI-05 | Phase 3 | Pending |
 | CLI-06 | Phase 3 | Pending |
