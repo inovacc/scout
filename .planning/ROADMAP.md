@@ -28,7 +28,12 @@ Six phases transform Scout from a feature-rich but fragile codebase into a rock-
   4. `recipe.go` is deleted from the codebase (past its 2026-04-15 removal date)
   5. The duplicate `truncate()` in `tools_websocket.go` is removed; one canonical version exists
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Delete 124 unused Must* methods from must.go (CLEAN-01)
+- [ ] 01-02-PLAN.md — Convert 4 Scout-original panics to errors + add recover() middleware at gRPC/MCP boundaries (CLEAN-02, CLEAN-03)
+- [ ] 01-03-PLAN.md — Delete recipe.go, remove dead exports, fix truncate() duplicate (CLEAN-04, CLEAN-06, MCP-04)
 
 ### Phase 2: Sessions & Isolation
 **Goal**: Sessions open cleanly, close cleanly, never leak processes, and never touch the user's browser without explicit permission
@@ -106,7 +111,7 @@ Six phases transform Scout from a feature-rich but fragile codebase into a rock-
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Safety Net & Dead Code | 0/TBD | Not started | - |
+| 1. Safety Net & Dead Code | 0/3 | Not started | - |
 | 2. Sessions & Isolation | 0/TBD | Not started | - |
 | 3. CLI Consolidation | 0/TBD | Not started | - |
 | 4. REPL & MCP UX | 0/TBD | Not started | - |
