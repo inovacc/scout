@@ -9,12 +9,18 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(tableCmd, metaCmd)
+	rootCmd.AddCommand(extractCmd)
+	extractCmd.AddCommand(tableCmd, metaCmd, extractAICmd)
 
 	tableCmd.Flags().String("url", "", "URL to navigate to before extracting")
 	tableCmd.Flags().String("selector", "table", "CSS selector for the table")
 
 	metaCmd.Flags().String("url", "", "URL to navigate to before extracting")
+}
+
+var extractCmd = &cobra.Command{
+	Use:   "extract",
+	Short: "Extract structured data from web pages",
 }
 
 var tableCmd = &cobra.Command{

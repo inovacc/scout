@@ -12,7 +12,6 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(extractAICmd)
 	rootCmd.AddCommand(ollamaCmd)
 	rootCmd.AddCommand(aiJobCmd)
 	ollamaCmd.AddCommand(ollamaListCmd, ollamaPullCmd, ollamaStatusCmd)
@@ -56,7 +55,7 @@ func init() {
 }
 
 var extractAICmd = &cobra.Command{
-	Use:   "extract-ai",
+	Use:   "ai",
 	Short: "Extract structured data from a web page using an LLM",
 	Long: `Navigate to a URL, convert the page to Markdown, and send it to an LLM
 for intelligent extraction. Optionally review the output with a second LLM.
