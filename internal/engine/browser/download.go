@@ -141,7 +141,7 @@ func LookupRegistryBrowser(name string) string {
 }
 
 // ChromiumRevisionDefault is the pinned Chromium snapshot revision from browser.json.
-var ChromiumRevisionDefault = LoadManifest().DefaultRevision()
+var ChromiumRevisionDefault = mustLoadManifest().DefaultRevision()
 
 // chromiumBins maps GOOS to the executable name within the extracted archive.
 var chromiumBins = map[string]string{
@@ -152,7 +152,7 @@ var chromiumBins = map[string]string{
 
 // ChromiumDownloadURLs returns candidate download URLs for the given revision.
 func ChromiumDownloadURLs(revision int) []string {
-	m := LoadManifest()
+	m := mustLoadManifest()
 
 	p := m.Platform()
 	if p == nil {
@@ -238,7 +238,7 @@ func DownloadChromium(ctx context.Context, revision int) (string, error) {
 		return "", fmt.Errorf("scout: create chromium dir: %w", err)
 	}
 
-	p := LoadManifest().Platform()
+	p := mustLoadManifest().Platform()
 
 	zipName := ""
 	if p != nil {
@@ -269,7 +269,7 @@ func DownloadChromium(ctx context.Context, revision int) (string, error) {
 
 // latestChromiumRevision queries Google's LAST_CHANGE endpoint.
 func latestChromiumRevision(ctx context.Context) (int, bool) {
-	url := LoadManifest().LatestAPI()
+	url := mustLoadManifest().LatestAPI()
 	if url == "" {
 		return 0, false
 	}
@@ -368,7 +368,7 @@ func DownloadBrave(ctx context.Context) (string, error) {
 		return binPath, nil
 	}
 
-	dlURL := LoadManifest().Brave.DownloadURL(version)
+	dlURL := mustLoadManifest().Brave.DownloadURL(version)
 	if dlURL == "" {
 		return "", fmt.Errorf("scout: no Brave release available for %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
@@ -411,12 +411,12 @@ func DownloadBrave(ctx context.Context) (string, error) {
 
 // chromeCfTBinPath returns the relative binary path for Chrome for Testing from browser.json.
 func chromeCfTBinPath() string {
-	return LoadManifest().Chrome.BinaryPath("chrome")
+	return mustLoadManifest().Chrome.BinaryPath("chrome")
 }
 
 // chromeCfTPlatformID returns the CfT platform identifier for the current OS/arch from browser.json.
 func chromeCfTPlatformID() string {
-	p := LoadManifest().Chrome.BrowserPlatform()
+	p := mustLoadManifest().Chrome.BrowserPlatform()
 	if p == nil {
 		return ""
 	}
@@ -477,7 +477,7 @@ func DownloadChrome(ctx context.Context) (string, error) {
 
 // latestChromeForTesting queries the CfT API for the latest Stable version and download URL.
 func latestChromeForTesting(ctx context.Context) (version, downloadURL string, err error) {
-	apiURL := LoadManifest().Chrome.BrowserAPI("latest_stable")
+	apiURL := mustLoadManifest().Chrome.BrowserAPI("latest_stable")
 	if apiURL == "" {
 		return "", "", fmt.Errorf("scout: no Chrome for Testing API URL in browser.json")
 	}
@@ -579,7 +579,7 @@ func ListDownloaded() ([]DownloadedBrowser, error) {
 
 // latestBraveVersion fetches the latest Brave release tag from GitHub API.
 func latestBraveVersion(ctx context.Context) (string, error) {
-	apiURL := LoadManifest().Brave.BrowserAPI("latest_release")
+	apiURL := mustLoadManifest().Brave.BrowserAPI("latest_release")
 	if apiURL == "" {
 		return "", fmt.Errorf("scout: no Brave API URL in browser.json")
 	}
@@ -622,17 +622,17 @@ func latestBraveVersion(ctx context.Context) (string, error) {
 
 // braveAssetName returns the zip filename for the current platform and version from browser.json.
 func braveAssetName(version string) string {
-	return LoadManifest().Brave.ZipName(version)
+	return mustLoadManifest().Brave.ZipName(version)
 }
 
 // braveBinPath returns the relative path to the Brave executable from browser.json.
 func braveBinPath() string {
-	return LoadManifest().Brave.BinaryPath("brave")
+	return mustLoadManifest().Brave.BinaryPath("brave")
 }
 
 // edgeBinPath returns the relative path to the Edge executable from browser.json.
 func edgeBinPath() string {
-	return LoadManifest().Edge.BinaryPath("msedge")
+	return mustLoadManifest().Edge.BinaryPath("msedge")
 }
 
 // DownloadEdge downloads Microsoft Edge Stable from the official updates API
@@ -794,7 +794,7 @@ func copyDir(src, dst string) error {
 
 // latestEdgeRelease queries the Edge updates API for the latest Stable version and download URL.
 func latestEdgeRelease(ctx context.Context) (version, downloadURL string, err error) {
-	apiURL := LoadManifest().Edge.BrowserAPI("updates")
+	apiURL := mustLoadManifest().Edge.BrowserAPI("updates")
 	if apiURL == "" {
 		return "", "", fmt.Errorf("scout: no Edge updates API URL in browser.json")
 	}

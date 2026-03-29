@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
+	"runtime/debug"
 	"time"
 
 	"github.com/google/gops/agent"
@@ -71,16 +73,31 @@ func init() {
 func Execute() {
 	registerPluginCommands()
 
-	err := rootCmd.Execute()
+	exitCode := func() (code int) {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("scout: cli: recovered panic", "panic", r, "stack", string(debug.Stack()))
+				_, _ = fmt.Fprintf(os.Stderr, "scout: internal error: %v\n", r)
+				code = 1
+			}
+		}()
 
-	log := logger.Get()
-	if log != nil && log.IsActive() {
-		log.EndExecution(err)
-		_ = log.Close()
-	}
+		err := rootCmd.Execute()
 
-	if err != nil {
-		os.Exit(1)
+		log := logger.Get()
+		if log != nil && log.IsActive() {
+			log.EndExecution(err)
+			_ = log.Close()
+		}
+
+		if err != nil {
+			return 1
+		}
+		return 0
+	}()
+
+	if exitCode != 0 {
+		os.Exit(exitCode)
 	}
 }
 

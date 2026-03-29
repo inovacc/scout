@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -127,10 +128,18 @@ func (s *mcpState) reset() {
 // addTracedTool registers an MCP tool with OpenTelemetry tracing instrumentation.
 func addTracedTool(server *mcp.Server, tool *mcp.Tool, handler func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error)) {
 	name := tool.Name
-	server.AddTool(tool, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	server.AddTool(tool, func(ctx context.Context, req *mcp.CallToolRequest) (result *mcp.CallToolResult, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("scout: mcp: recovered panic", "tool", name, "panic", r, "stack", string(debug.Stack()))
+				err = fmt.Errorf("scout: mcp: internal error in tool %s: %v", name, r)
+				result = nil
+			}
+		}()
+
 		ctx, finish := tracing.MCPToolSpan(ctx, name)
 
-		result, err := handler(ctx, req)
+		result, err = handler(ctx, req)
 
 		metrics.Get().ToolCallsTotal.Add(1)
 

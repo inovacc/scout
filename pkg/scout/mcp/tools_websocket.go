@@ -152,10 +152,15 @@ type wsMessageResult struct {
 }
 
 // truncate shortens s to maxLen, appending "..." if truncated.
+// The returned string never exceeds maxLen characters.
 func truncate(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
 	}
 
-	return s[:maxLen] + "..."
+	if maxLen <= 3 {
+		return s[:maxLen]
+	}
+
+	return s[:maxLen-3] + "..."
 }

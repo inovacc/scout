@@ -2,6 +2,8 @@ package engine
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"reflect"
 	"strings"
 	"sync"
@@ -157,7 +159,7 @@ func (b *rodBrowser) Connect() error {
 
 		b.client = c
 	} else if b.controlURL != "" {
-		panic("Browser.Client and Browser.ControlURL can't be set at the same time")
+		return fmt.Errorf("scout: browser: Client and ControlURL cannot both be set")
 	}
 
 	b.initEvents()
@@ -377,7 +379,8 @@ func (b *rodBrowser) eachEvent(sessionID proto2.TargetSessionID, callbacks ...an
 
 	return func() {
 		if messages == nil {
-			panic("can't use wait function twice")
+			slog.Warn("scout: browser: wait function called twice on the same browser instance")
+			return
 		}
 
 		defer func() {

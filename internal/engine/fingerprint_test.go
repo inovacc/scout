@@ -136,31 +136,6 @@ func TestFingerprintToJS(t *testing.T) {
 	}
 }
 
-func TestFingerprintToProfile(t *testing.T) {
-	fp := GenerateFingerprint(WithFingerprintOS("mac"))
-
-	prof := FingerprintToProfile(fp)
-	if prof.Identity.UserAgent != fp.UserAgent {
-		t.Errorf("profile UA = %q, want %q", prof.Identity.UserAgent, fp.UserAgent)
-	}
-
-	if prof.Identity.Timezone != fp.Timezone {
-		t.Errorf("profile timezone = %q, want %q", prof.Identity.Timezone, fp.Timezone)
-	}
-
-	if prof.Browser.WindowW != fp.ScreenWidth {
-		t.Errorf("profile window width = %d, want %d", prof.Browser.WindowW, fp.ScreenWidth)
-	}
-
-	if prof.Version != 1 {
-		t.Errorf("profile version = %d, want 1", prof.Version)
-	}
-
-	if !strings.HasPrefix(prof.Name, "fingerprint-") {
-		t.Errorf("profile name = %q, want fingerprint- prefix", prof.Name)
-	}
-}
-
 func TestFingerprintJSON(t *testing.T) {
 	fp := GenerateFingerprint()
 

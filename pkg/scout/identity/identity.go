@@ -79,25 +79,30 @@ func GenerateIdentity() (*Identity, error) {
 		return nil, fmt.Errorf("identity: parse cert: %w", err)
 	}
 
+	deviceID, err := DeviceIDFromCert(cert)
+	if err != nil {
+		return nil, fmt.Errorf("identity: compute device ID: %w", err)
+	}
+
 	return &Identity{
 		Certificate: tlsCert,
-		DeviceID:    DeviceIDFromCert(cert),
+		DeviceID:    deviceID,
 	}, nil
 }
 
 // DeviceIDFromCert computes the device ID from a certificate's DER encoding.
 // Format: SHA-256 → base32 (52 chars) → add Luhn check digits (56 chars) → chunk as 8×7 with dashes.
-func DeviceIDFromCert(cert *x509.Certificate) string {
+func DeviceIDFromCert(cert *x509.Certificate) (string, error) {
 	hash := sha256.Sum256(cert.Raw)
 	encoded := base32.StdEncoding.EncodeToString(hash[:])
 	encoded = strings.TrimRight(encoded, "=")
 
 	withLuhn, err := luhnify(encoded)
 	if err != nil {
-		panic(fmt.Sprintf("identity: luhnify: %v", err))
+		return "", fmt.Errorf("scout: identity: luhnify: %w", err)
 	}
 
-	return chunkify(withLuhn)
+	return chunkify(withLuhn), nil
 }
 
 // ValidateDeviceID checks whether a device ID string has valid format and Luhn check digits.
@@ -166,9 +171,14 @@ func LoadIdentity(dir string) (*Identity, error) {
 		return nil, fmt.Errorf("identity: parse cert: %w", err)
 	}
 
+	deviceID, err := DeviceIDFromCert(cert)
+	if err != nil {
+		return nil, fmt.Errorf("identity: compute device ID: %w", err)
+	}
+
 	return &Identity{
 		Certificate: tlsCert,
-		DeviceID:    DeviceIDFromCert(cert),
+		DeviceID:    deviceID,
 	}, nil
 }
 

@@ -603,11 +603,6 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 	}
 }
 
-// createProvider kept for backward compatibility.
-func createProvider(name, model, host string) (scout.LLMProvider, error) { //nolint:unused
-	return createProviderFull(name, model, "", "", host)
-}
-
 func resolveAPIKey(provider string) string {
 	envVars := map[string][]string{
 		"openai":     {"OPENAI_API_KEY"},

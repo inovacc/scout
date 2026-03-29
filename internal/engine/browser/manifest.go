@@ -69,17 +69,34 @@ var (
 )
 
 // LoadManifest parses browser.json once and returns the cached result.
-func LoadManifest() *Manifest {
+func LoadManifest() (*Manifest, error) {
+	var parseErr error
+
 	manifestOnce.Do(func() {
 		var m Manifest
 		if err := json.Unmarshal(manifestJSON, &m); err != nil {
-			panic(fmt.Sprintf("browser: parse browser.json: %v", err))
+			parseErr = fmt.Errorf("scout: browser: parse browser.json: %w", err)
+			return
 		}
 
 		manifestInst = &m
 	})
 
-	return manifestInst
+	if parseErr != nil {
+		return nil, parseErr
+	}
+
+	return manifestInst, nil
+}
+
+// mustLoadManifest returns the cached manifest or panics. Safe for internal use
+// since the manifest is an embedded JSON file validated at build time.
+func mustLoadManifest() *Manifest {
+	m, err := LoadManifest()
+	if err != nil {
+		panic(err)
+	}
+	return m
 }
 
 // DefaultRevision returns the default Chromium snapshot revision.
@@ -184,5 +201,5 @@ type HostFunc func(revision int) string
 
 // HostConf returns the platform config from the manifest for the current OS/arch.
 func HostConf() *PlatformConfig {
-	return LoadManifest().Platform()
+	return mustLoadManifest().Platform()
 }

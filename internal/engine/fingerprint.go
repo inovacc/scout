@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"time"
-
 	"github.com/inovacc/scout/internal/engine/fingerprint"
 )
 
@@ -39,28 +37,3 @@ const (
 	FingerprintRotateInterval   = fingerprint.FingerprintRotateInterval
 )
 
-// FingerprintToProfile converts a fingerprint to a UserProfile for persistence.
-func FingerprintToProfile(fp *Fingerprint) *UserProfile {
-	now := time.Now()
-
-	lang := ""
-	if len(fp.Languages) > 0 {
-		lang = fp.Languages[0]
-	}
-
-	return &UserProfile{
-		Version:   1,
-		Name:      "fingerprint-" + now.Format("20060102-150405"),
-		CreatedAt: now,
-		UpdatedAt: now,
-		Browser: ProfileBrowser{
-			WindowW: fp.ScreenWidth,
-			WindowH: fp.ScreenHeight,
-		},
-		Identity: ProfileIdentity{
-			UserAgent: fp.UserAgent,
-			Language:  lang,
-			Timezone:  fp.Timezone,
-		},
-	}
-}
