@@ -52,8 +52,8 @@ Plans:
 
 Plans:
 - [ ] 02-01-PLAN.md — Write Wave 0 test scaffolds (all 10 requirements, RED state) (SESS-01..06, ISOL-01..03)
-- [ ] 02-02-PLAN.md — Fix Windows ProcessAlive with WaitForSingleObject; add retry constants 5x500ms (SESS-04, SESS-06)
-- [ ] 02-03-PLAN.md — Replace SessionHash with UUID v7; add WithReuseSession() opt-in (SESS-03)
+- [x] 02-02-PLAN.md — Fix Windows ProcessAlive with WaitForSingleObject; add retry constants 5x500ms (SESS-04, SESS-06)
+- [x] 02-03-PLAN.md — Replace SessionHash with UUID v7; add WithReuseSession() opt-in (SESS-03)
 - [ ] 02-04-PLAN.md — Consolidate Browser.Close() to single cleanup path; fix CleanOrphans to remove full dirs (SESS-01, SESS-02, SESS-05)
 - [ ] 02-05-PLAN.md — Eliminate rod fallback; explicit error when no cached browser (ISOL-01, ISOL-02, ISOL-03, ISOL-04)
 
@@ -119,7 +119,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Safety Net & Dead Code | 0/3 | Not started | - |
-| 2. Sessions & Isolation | 0/5 | Not started | - |
+| 2. Sessions & Isolation | 2/5 | In Progress|  |
 | 3. CLI Consolidation | 0/TBD | Not started | - |
 | 4. REPL & MCP UX | 0/TBD | Not started | - |
 | 5. Code Structure | 0/TBD | Not started | - |

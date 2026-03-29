@@ -10,9 +10,9 @@
 - [ ] **SESS-01**: Sessions clean up all resources (process, PID file, data dir) on Browser.Close()
 - [ ] **SESS-02**: CleanStaleSessions removes orphaned Chrome data directories, not just PID files
 - [ ] **SESS-03**: New sessions never implicitly reuse stale session state (fix deterministic hash reuse bug)
-- [ ] **SESS-04**: Windows ProcessAlive correctly detects terminated processes (fix OpenProcess false positives)
+- [x] **SESS-04**: Windows ProcessAlive correctly detects terminated processes (fix OpenProcess false positives)
 - [ ] **SESS-05**: Session close avoids redundant double cleanup (remove launcher.Cleanup + ResetSession overlap)
-- [ ] **SESS-06**: Windows file lock retries are sufficient to outlast Chrome handle release
+- [x] **SESS-06**: Windows file lock retries are sufficient to outlast Chrome handle release
 
 ### Browser Isolation
 
@@ -107,9 +107,9 @@
 | SESS-01 | Phase 2 | Pending |
 | SESS-02 | Phase 2 | Pending |
 | SESS-03 | Phase 2 | Pending |
-| SESS-04 | Phase 2 | Pending |
+| SESS-04 | Phase 2 | Complete |
 | SESS-05 | Phase 2 | Pending |
-| SESS-06 | Phase 2 | Pending |
+| SESS-06 | Phase 2 | Complete |
 | ISOL-01 | Phase 2 | Pending |
 | ISOL-02 | Phase 2 | Pending |
 | ISOL-03 | Phase 2 | Pending |

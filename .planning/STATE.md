@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-29T17:56:31.363Z"
+status: executing
+stopped_at: Completed 02-sessions-isolation/02-02-PLAN.md
+last_updated: "2026-03-29T18:33:34.842Z"
 last_activity: 2026-03-29
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 3
-  completed_plans: 1
+  total_plans: 8
+  completed_plans: 3
   percent: 0
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Sessions must be rock-solid: open cleanly, close cleanly, never leak processes, and never touch the user's browser without explicit permission.
-**Current focus:** Phase 1 — Safety Net & Dead Code
+**Current focus:** Phase 02 — sessions-isolation
 
 ## Current Position
 
-Phase: 2 of 6 (sessions & isolation)
-Plan: Not started
-Status: Ready to plan
+Phase: 02 (sessions-isolation) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
 Last activity: 2026-03-29
 
 Progress: [░░░░░░░░░░] 0%
@@ -51,6 +51,8 @@ Progress: [░░░░░░░░░░] 0%
 - Last 5 plans: none yet
 - Trend: -
 
+| Phase 02-sessions-isolation P02 | 10 | 2 tasks | 2 files |
+
 ## Accumulated Context
 
 ### Decisions
@@ -62,6 +64,8 @@ Recent decisions affecting current work:
 - Init: Breaking changes allowed — clean API is priority over backwards compat
 - Init: Sessions & isolation first — foundational stability before UX or cleanup
 - Init: Phase 1 is safety net before touching session lifecycle code (research recommendation)
+- [Phase 02-sessions-isolation]: WaitForSingleObject replaces GetExitCodeProcess for zombie-safe Windows process detection
+- [Phase 02-sessions-isolation]: removeRetries=5 / removeRetryWait=500ms constants govern all session-dir removal retry loops
 
 ### Pending Todos
 
@@ -75,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T17:56:31.351Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-sessions-isolation/02-CONTEXT.md
+Last session: 2026-03-29T18:33:34.829Z
+Stopped at: Completed 02-sessions-isolation/02-02-PLAN.md
+Resume file: None
