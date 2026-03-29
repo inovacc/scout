@@ -32,7 +32,12 @@ func HostGoogle(revision int) string {
 		return ""
 	}
 
-	h, ok := browser.LoadManifest().Chromium.Hosts["google"]
+	m, err := browser.LoadManifest()
+	if err != nil {
+		return ""
+	}
+
+	h, ok := m.Chromium.Hosts["google"]
 	if !ok || h.Base == "" {
 		return ""
 	}
@@ -47,7 +52,12 @@ func HostNPM(revision int) string {
 		return ""
 	}
 
-	h, ok := browser.LoadManifest().Chromium.Hosts["npmmirror"]
+	m, err := browser.LoadManifest()
+	if err != nil {
+		return ""
+	}
+
+	h, ok := m.Chromium.Hosts["npmmirror"]
 	if !ok || h.Base == "" {
 		return ""
 	}
@@ -93,9 +103,14 @@ type Browser struct {
 
 // NewBrowser with default values.
 func NewBrowser() *Browser {
+	revision := 0
+	if m, err := browser.LoadManifest(); err == nil {
+		revision = m.DefaultRevision()
+	}
+
 	return &Browser{
 		Context:  context.Background(),
-		Revision: browser.LoadManifest().DefaultRevision(),
+		Revision: revision,
 		Hosts:    []Host{HostGoogle, HostNPM},
 		RootDir:  DefaultBrowserDir,
 		Logger:   log.New(os.Stdout, "[launcher.Browser]", log.LstdFlags),
@@ -272,7 +287,12 @@ func latestRevision(ctx context.Context, client *http.Client) (int, bool) {
 		client = http.DefaultClient
 	}
 
-	url := browser.LoadManifest().LatestAPI()
+	m, mErr := browser.LoadManifest()
+	if mErr != nil {
+		return 0, false
+	}
+
+	url := m.LatestAPI()
 	if url == "" {
 		return 0, false
 	}

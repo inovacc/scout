@@ -48,7 +48,10 @@ func (s *PairingServer) Pair(_ context.Context, req *pb.PairRequest) (*pb.PairRe
 		return nil, fmt.Errorf("scout: pair: parse client cert: %w", err)
 	}
 
-	derivedID := identity2.DeviceIDFromCert(cert)
+	derivedID, err := identity2.DeviceIDFromCert(cert)
+	if err != nil {
+		return nil, fmt.Errorf("scout: pair: derive device ID: %w", err)
+	}
 	if derivedID != req.GetDeviceId() {
 		return nil, fmt.Errorf("scout: pair: device ID mismatch (claimed %s, derived %s)",
 			identity2.ShortID(req.GetDeviceId()), identity2.ShortID(derivedID))

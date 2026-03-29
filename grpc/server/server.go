@@ -262,7 +262,7 @@ func (s *ScoutServer) trackPeer(ctx context.Context, sessionID string) {
 		addr = p.Addr.String()
 		if tlsInfo, ok := p.AuthInfo.(credentials.TLSInfo); ok {
 			if len(tlsInfo.State.PeerCertificates) > 0 {
-				deviceID = identity.DeviceIDFromCert(tlsInfo.State.PeerCertificates[0])
+				deviceID, _ = identity.DeviceIDFromCert(tlsInfo.State.PeerCertificates[0])
 			}
 		}
 	}

@@ -219,7 +219,15 @@ func CleanOrphans() (int, error) {
 			killed++
 		}
 
-		RemoveInfo(s.ID)
+		// Remove the full session directory (scout.pid + job.json + data/).
+		// Use retry loop for Windows file lock compatibility.
+		sessionDir := Dir(s.ID)
+		for range removeRetries {
+			if err := os.RemoveAll(sessionDir); err == nil {
+				break
+			}
+			time.Sleep(removeRetryWait)
+		}
 	}
 
 	return killed, nil
