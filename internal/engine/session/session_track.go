@@ -12,6 +12,14 @@ import (
 	"time"
 )
 
+const (
+	// removeRetries is the number of attempts to remove a session directory.
+	// Chrome holds file handles briefly after process termination on Windows;
+	// this budget outlasts that lock release. May need tuning — see STATE.md.
+	removeRetries   = 5
+	removeRetryWait = 500 * time.Millisecond
+)
+
 // SessionsDir is the function that returns the base directory for session data.
 // It is a variable so tests can override it.
 var SessionsDir = defaultSessionsDir
@@ -239,11 +247,11 @@ func Reset(id string) error {
 
 	// Retry removal — Chrome may hold file locks briefly after exit.
 	var err error
-	for range 3 {
+	for range removeRetries {
 		if err = os.RemoveAll(dir); err == nil {
 			return nil
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(removeRetryWait)
 	}
 
 	return fmt.Errorf("scout: reset session %s: %w", id, err)
@@ -339,14 +347,14 @@ func CleanStaleSessions() (int, error) {
 		}
 
 		// Retry removal for Windows file locks.
-		for range 3 {
+		for range removeRetries {
 			if err := os.RemoveAll(filepath.Join(sessDir, id)); err == nil {
 				cleaned++
 
 				break
 			}
 
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(removeRetryWait)
 		}
 	}
 
