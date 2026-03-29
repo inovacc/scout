@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(navigateCmd, backCmd, forwardCmd, reloadCmd)
+	grpcCmd.AddCommand(navigateCmd, backCmd, forwardCmd, reloadCmd)
 }
 
 var navigateCmd = &cobra.Command{

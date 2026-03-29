@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(titleCmd, urlCmd, textCmd, attrCmd, evalCmd, htmlCmd)
+	grpcCmd.AddCommand(titleCmd, urlCmd, textCmd, attrCmd, evalCmd, htmlCmd)
 
 	htmlCmd.Flags().String("selector", "", "CSS selector (defaults to entire page)")
 }

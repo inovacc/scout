@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(windowCmd)
+	grpcCmd.AddCommand(windowCmd)
 	windowCmd.AddCommand(windowGetCmd, windowMinCmd, windowMaxCmd, windowFullCmd, windowRestoreCmd)
 }
 

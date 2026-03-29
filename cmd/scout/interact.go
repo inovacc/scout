@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(clickCmd, typeCmd, selectCmd, hoverCmd, focusCmd, clearCmd, keyCmd)
+	grpcCmd.AddCommand(clickCmd, typeCmd, selectCmd, hoverCmd, focusCmd, clearCmd, keyCmd)
 
 	typeCmd.Flags().Bool("clear", false, "clear field before typing")
 }

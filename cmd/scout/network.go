@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(cookieCmd, headerCmd, blockCmd)
+	grpcCmd.AddCommand(cookieCmd, headerCmd, blockCmd)
 	cookieCmd.AddCommand(cookieGetCmd, cookieSetCmd, cookieClearCmd)
 }
 

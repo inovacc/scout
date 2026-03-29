@@ -50,6 +50,8 @@ or run standalone for one-shot operations.`,
 }
 
 func init() {
+	rootCmd.AddCommand(grpcCmd)
+
 	rootCmd.PersistentFlags().String("addr", "localhost:9551", "gRPC daemon address (deprecated, use --target)")
 	rootCmd.PersistentFlags().StringSlice("target", nil, "target server address(es), repeatable")
 	rootCmd.PersistentFlags().Bool("standalone", false, "run without daemon (one-shot browser)")

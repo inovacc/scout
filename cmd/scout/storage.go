@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(storageCmd)
+	grpcCmd.AddCommand(storageCmd)
 	storageCmd.AddCommand(storageGetCmd, storageSetCmd, storageListCmd, storageClearCmd)
 
 	storageCmd.PersistentFlags().Bool("session-storage", false, "use sessionStorage instead of localStorage")
