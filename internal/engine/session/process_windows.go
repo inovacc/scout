@@ -1,29 +1,39 @@
+//go:build windows
+
 package session
 
 import (
 	"strings"
-	"syscall"
 
 	"github.com/google/gops/goprocess"
+	"golang.org/x/sys/windows"
 )
 
-const processQueryLimitedInformation = 0x1000
-
-// ProcessAlive checks if a process with the given PID is still running.
-// On Windows, os.FindProcess always succeeds, so we open the process handle.
+// ProcessAlive reports whether the process with the given PID is currently running.
+// It uses WaitForSingleObject with a zero timeout, which returns immediately:
+//   - windows.WAIT_TIMEOUT (258): process is still running
+//   - windows.WAIT_OBJECT_0 (0):  process has exited
+//   - windows.WAIT_FAILED:        handle is invalid or access denied
+//
+// This correctly handles zombie processes (unlike GetExitCodeProcess which returns
+// STILL_ACTIVE=259 for zombies that have exited but whose handle is still open).
 func ProcessAlive(pid int) bool {
 	if pid <= 0 {
 		return false
 	}
 
-	h, err := syscall.OpenProcess(processQueryLimitedInformation, false, uint32(pid))
+	h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
 	if err != nil {
 		return false
 	}
 
-	_ = syscall.CloseHandle(h)
+	defer func() { _ = windows.CloseHandle(h) }()
 
-	return true
+	result, _ := windows.WaitForSingleObject(h, 0)
+
+	// WAIT_TIMEOUT (258 / 0x102) means the process has not exited yet.
+	// Any other value (WAIT_OBJECT_0=0 or WAIT_FAILED) means exited or invalid.
+	return result == uint32(windows.WAIT_TIMEOUT)
 }
 
 // IsScoutProcess checks if a PID belongs to a running scout (Go) process using gops.
