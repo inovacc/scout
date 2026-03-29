@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/inovacc/scout/internal/engine/browser"
 	launcher2 "github.com/inovacc/scout/internal/engine/lib/launcher"
 	"github.com/inovacc/scout/internal/engine/lib/launcher/flags"
@@ -288,20 +289,12 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 		}
 	}
 
-	// Always use a deterministic hash dir — never let launcher generate UUID.
+	// Generate a fresh random session ID for every new browser instance.
+	// Reuse is only possible via explicit WithReuseSession() opt-in (D-01, D-02, D-03).
 	if o.userDataDir == "" {
-		browserName := string(o.browserType)
-		if browserName == "" {
-			browserName = "chrome"
-		}
-
-		hash := SessionHash(o.targetURL, browserName)
-		o.userDataDir = SessionDataDir(hash)
-		o.sessionID = hash
-		// If scout.pid already exists, this is a reuse.
-		if _, err := ReadSessionInfo(hash); err == nil {
-			o.reusableSession = true
-		}
+		id := uuid.Must(uuid.NewV7()).String()
+		o.userDataDir = SessionDataDir(id)
+		o.sessionID = id
 	}
 
 	l := launcher2.New().HeadlessNew(o.headless)
