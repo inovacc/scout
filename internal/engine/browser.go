@@ -701,17 +701,15 @@ func (b *Browser) Close() error {
 		if b.launcher != nil {
 			b.launcher.Kill()
 
-			if b.opts.reusableSession && b.sessionID != "" {
-				// Do NOT clean up — session is persistent.
-			} else {
-				// Non-reusable: remove the entire session dir (data + metadata)
-				// synchronously so it is cleaned before the process exits.
+			if !b.opts.reusableSession && b.sessionID != "" {
+				// Non-reusable: remove Chrome data dir via launcher, then remove
+				// the session parent dir (~/.scout/sessions/<id>/) in one pass.
+				// Do NOT call ResetSession — it sleeps 500ms unconditionally and
+				// is for external/CLI force-reset only (process already dead here).
 				b.launcher.Cleanup()
-
-				if b.sessionID != "" {
-					_ = ResetSession(b.sessionID)
-				}
+				_ = os.RemoveAll(SessionDir(b.sessionID))
 			}
+			// Reusable sessions: do NOT clean up — session must persist for reuse.
 
 			b.launcher = nil
 		}
