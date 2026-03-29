@@ -73,7 +73,7 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 03-01-PLAN.md � Delete recipe.go + merge credentials into auth (CLI-01, CLI-02)
+- [x] 03-01-PLAN.md � Delete recipe.go + merge credentials into auth (CLI-01, CLI-02)
 - [x] 03-02-PLAN.md � Merge websearch into search, remove search_engines subcommands (CLI-03)
 - [ ] 03-03-PLAN.md � Remove markdown command, group table/meta/extract-ai under extract (CLI-04, CLI-06)
 - [ ] 03-04-PLAN.md � Group 17 gRPC commands under scout grpc, consolidate screenshot (CLI-05, CLI-07)
@@ -127,7 +127,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Safety Net & Dead Code | 0/3 | Not started | - |
 | 2. Sessions & Isolation | 3/5 | In Progress|  |
-| 3. CLI Consolidation | 1/5 | In Progress|  |
+| 3. CLI Consolidation | 2/5 | In Progress|  |
 | 4. REPL & MCP UX | 0/TBD | Not started | - |
 | 5. Code Structure | 0/TBD | Not started | - |
 | 6. Shared Command Executor | 0/TBD | Not started | - |
