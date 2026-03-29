@@ -320,18 +320,24 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 
 		l = l.Bin(binPath)
 	default:
-		// No explicit browser type or exec path: prefer cached browsers
-		// over rod's legacy auto-download which may use stale validation.
+		// No explicit browser type or exec path.
 		if o.systemBrowser {
+			// Explicit opt-in: probe system-installed browsers (D-11, ISOL-03).
 			if path, _, err := browser.BestDetected(); err == nil && path != "" {
 				l = l.Bin(path)
 			}
 		} else {
-			if path, err := browser.BestCached(); err == nil && path != "" {
-				l = l.Bin(path)
+			// Default isolation: use only ~/.scout/browsers/ cache.
+			// BestCached() auto-downloads Chrome for Testing if cache is empty (ISOL-04).
+			path, err := browser.BestCached()
+			if err != nil || path == "" {
+				// Explicit error — no silent rod fallback (D-10, ISOL-02).
+				return "", nil, fmt.Errorf("scout: no browser available in cache; " +
+					"run 'scout browser download' to populate the cache, " +
+					"or use --system-browser to allow system-installed browsers")
 			}
+			l = l.Bin(path)
 		}
-		// If detection fails, fall through to rod auto-detect/download.
 	}
 
 	if o.proxy != "" {
