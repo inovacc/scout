@@ -400,11 +400,17 @@ func WithElectronCDP(endpoint string) Option {
 	return func(o *options) { o.electronCDP = endpoint }
 }
 
-// WithReusableSession enables session reuse via scout.pid. When enabled,
-// the browser data directory is preserved after close and can be reused
-// by subsequent browser instances with matching browser type and headless mode.
-func WithReusableSession() Option {
+// WithReuseSession opts into explicit session persistence. The browser will
+// search for a reusable session matching the current browser type and headless
+// mode. Without this option, every New() call creates a fresh isolated session.
+// This is the only supported path to session reuse per D-02.
+func WithReuseSession() Option {
 	return func(o *options) { o.reusableSession = true }
+}
+
+// Deprecated: Use WithReuseSession() instead. Will be removed after 2026-05-01.
+func WithReusableSession() Option {
+	return WithReuseSession()
 }
 
 // WithTargetURL sets the target URL for domain-based session routing.
