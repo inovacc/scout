@@ -143,3 +143,333 @@ Tracing: `go.opentelemetry.io/otel`, `otel/sdk`, `otel/exporters/stdout/stdouttr
 ## CI
 
 GitHub Actions (`.github/workflows/test.yml`) via reusable `inovacc/workflows` — tests, lint, vuln checks on push/PR to non-main branches.
+
+<!-- GSD:project-start source:PROJECT.md -->
+## Project
+
+**Scout — Stabilization Milestone**
+
+Scout is a Go browser automation library with an internalized rod fork, public facade API, gRPC service, MCP server, plugin system, REPL, and 50+ CLI commands. It provides headless and headed browser control for scraping, testing, monitoring, and AI agent integration.
+
+**Core Value:** Sessions must be rock-solid: open cleanly, close cleanly, never leak processes, and never touch the user's browser without explicit permission.
+
+### Constraints
+
+- **Language**: Go 1.25 — no language changes
+- **Architecture**: Keep layered pattern (internal engine -> pkg facade -> entry points)
+- **Testing**: Real browser + httptest, no mocks. Tests require Chromium available
+- **Breaking changes**: Acceptable — clean API over backwards compat
+- **Build**: Taskfile-based. `task build`, `task test`, `task check`
+<!-- GSD:project-end -->
+
+<!-- GSD:stack-start source:codebase/STACK.md -->
+## Technology Stack
+
+## Languages
+- Go 1.25.0 - All application code (`go.mod` line 3)
+- JavaScript - Stealth evasion scripts (`internal/engine/stealth/stealth_extra.go`), bridge extension (`extensions/`), snapshot scripts (`snapshot_script.go`)
+- Protocol Buffers - gRPC service definition (`grpc/proto/scout.proto`)
+- Node.js - npm package installer (`npm/scout-browser/install.js`), stealth asset generation (`pkg/stealth/generate/`)
+## Runtime
+- Go 1.25.0 (requires Go toolchain)
+- Chromium/Chrome browser (headless or headed) for core functionality
+- Optional: Electron runtime for `WithElectronApp()` support
+- Go modules (`go.mod` / `go.sum`)
+- Lockfile: `go.sum` present
+## Frameworks
+- Internalized rod fork (`internal/engine/lib/`) - CDP browser automation engine
+- Cobra v1.10.2 (`github.com/spf13/cobra`) - CLI framework, 80+ subcommands in `cmd/scout/`
+- Go standard `testing` package
+- `github.com/stretchr/testify` v1.11.1 - Assertions
+- `github.com/ysmood/got` v0.42.3 - Rod-style test helpers
+- Real browser + `httptest` server (no mocking)
+- Taskfile v3 (`Taskfile.yml`) - Task runner (preferred over Make)
+- `golangci-lint` - Linting (`task lint`)
+- `goimports` - Import formatting (`task fmt`)
+- `protoc` + `protoc-gen-go` + `protoc-gen-go-grpc` - Protobuf code generation (`task proto`)
+## Key Dependencies
+- `github.com/ysmood/gson` v0.7.3 - JSON handling for CDP protocol
+- `github.com/ysmood/goob` v0.4.0 - Observable pattern (event system)
+- `github.com/ollama/ollama` v0.18.3 - Ollama LLM client SDK
+- `github.com/modelcontextprotocol/go-sdk` v1.4.1 - MCP server implementation
+- `google.golang.org/grpc` v1.78.0 - gRPC framework
+- `google.golang.org/protobuf` v1.36.11 - Protobuf runtime
+- `github.com/spf13/cobra` v1.10.2 - CLI framework
+- `golang.org/x/oauth2` v0.34.0 - OAuth2 for cloud uploads (Google Drive, OneDrive)
+- `golang.org/x/crypto` v0.48.0 - AES-256-GCM encryption for scraper auth
+- `golang.org/x/net` v0.49.0 - HTML parsing (`x/net/html`)
+- `golang.org/x/time` v0.14.0 - Rate limiting (`x/time/rate`)
+- `github.com/google/gops` v0.3.29 - Process discovery and orphan detection
+- `github.com/google/uuid` v1.6.0 - UUID generation (UUIDv7 for reports)
+- `github.com/segmentio/ksuid` v1.0.4 - K-Sortable unique IDs for command logging
+- `github.com/grandcat/zeroconf` v1.0.0 - mDNS service discovery (`pkg/scout/discovery/`)
+- `go.opentelemetry.io/otel` v1.41.0 - OpenTelemetry tracing
+- `go.opentelemetry.io/otel/sdk` v1.41.0 - OTel SDK
+- `go.opentelemetry.io/otel/exporters/stdout/stdouttrace` v1.41.0 - Trace export
+- `github.com/gin-gonic/gin` v1.10.0 - HTTP framework (indirect, used by ollama dep)
+- `github.com/mattn/go-sqlite3` v1.14.24 - SQLite (indirect, via ollama)
+- `github.com/charmbracelet/bubbletea` v1.3.10 - TUI (indirect)
+## Configuration
+- `SCOUT_HEADLESS` - Enable headless mode (default: true)
+- `SCOUT_NO_SANDBOX` - Disable Chrome sandbox
+- `SCOUT_STEALTH` - Enable stealth mode (`true`/`1`)
+- `SCOUT_BRIDGE` - Enable/disable bridge extension (`false` to disable)
+- `SCOUT_TRACE` - Enable OpenTelemetry tracing (`1`)
+- `OTEL_EXPORTER_OTLP_ENDPOINT` - OTLP exporter endpoint
+- `SCOUT_AGENT_API_KEY` - Agent HTTP server API key
+- `SCOUT_PLUGIN_PATH` - Additional plugin search paths
+- `CHROME_BIN` - Chrome/Chromium binary path
+- `~/.scout/` - Session data, fingerprints, plugins, reports, upload config
+- `~/.scout/browsers/` - Cached browser binaries
+- `~/.scout/plugins/` - Installed plugins + `lock.json`
+- `~/.scout/sessions/` - Session directories with `scout.pid` and `job.json`
+- `~/.scout/reports/` - Persisted markdown reports
+- `~/.scout/fingerprints/` - Fingerprint store
+- `~/.scout/upload.json` - Cloud upload OAuth config
+- `~/.cache/scout/` - Feature flags, Electron cache
+- `~/.cache/scout/electron/` - Electron runtime cache
+- `Taskfile.yml` - All build/test/lint/deploy tasks
+- `grpc/proto/scout.proto` - gRPC service definition
+- `deploy/helm/scout/values.schema.json` - Helm values validation
+- `deploy/helm/scout/Chart.yaml` - Helm chart (v0.1.0, appVersion 1.0.0)
+- `docs/openapi.yaml` - OpenAPI 3.1.0 spec for agent HTTP API
+## Platform Requirements
+- Go 1.25.0+
+- Chromium or Chrome browser (auto-downloaded via `BestCached()` if missing)
+- `protoc` + Go plugins (for proto regeneration only)
+- `golangci-lint` (for linting)
+- `goimports` (for formatting)
+- Node.js/npx (only for stealth asset regeneration)
+- Full image: `debian:bookworm-slim` + Chromium + fonts (`docker/Dockerfile`)
+- Slim image: `gcr.io/distroless/static-debian12:nonroot` (`docker/Dockerfile.slim`)
+- Swarm image: `Dockerfile.swarm` (distributed crawling)
+- Helm chart: `deploy/helm/scout/` (deployment, service, HPA, PVC, job templates)
+- Grafana dashboard: `deploy/grafana/scout-dashboard.json` (15 panels, Prometheus datasource)
+- `@inovacc/scout-browser` v1.0.1 (`npm/scout-browser/package.json`)
+- Published to GitHub Packages (`npm.pkg.github.com`)
+- Platforms: darwin, linux, win32 (x64, arm64)
+- Node.js >= 16
+- GitHub Actions (`.github/workflows/test.yml`)
+- Reusable workflow: `inovacc/workflows/.github/workflows/reusable-go-check.yml@main`
+- Runs: tests, lint, vulncheck on push/PR to non-main branches
+<!-- GSD:stack-end -->
+
+<!-- GSD:conventions-start source:CONVENTIONS.md -->
+## Conventions
+
+## Naming Patterns
+- Snake_case for Go files: `browser_rod.go`, `dev_helpers.go`, `hijack_session_test.go`
+- Platform-specific suffix: `option_unix.go`, `option_unix_test.go`, `process_windows.go`, `process_unix.go`
+- Test files co-located: `extract.go` / `extract_test.go`
+- Avoid `_js.go` suffix (triggers `GOOS=js` build constraint) -- use `snapshot_script.go` instead
+- Generated files: `scout.pb.go`, `scout_grpc.pb.go` (protobuf), `scout.go` facade (via `gen-facade-full.go`)
+- Lowercase, single-word where possible: `engine`, `browser`, `stealth`, `hijack`, `swarm`
+- Multi-word uses no separator: `fingerprint`, `runbook`
+- Internal packages under `internal/engine/` for core, `internal/flags/`, `internal/logger/`, `internal/tracing/`, `internal/idle/`
+- Public packages under `pkg/scout/` with sub-packages for domains: `pkg/scout/mcp/`, `pkg/scout/plugin/`, `pkg/scout/scraper/`
+- PascalCase exported, camelCase unexported (standard Go)
+- Constructor: `New(opts ...Option) (*Browser, error)` -- always returns `(*T, error)`
+- Helper constructors: `newTestBrowser(t *testing.T)`, `newBenchServer()`
+- Boolean checks: `IsFeatureEnabled()`, `IsScoutProcess()`, `ShouldIgnoreCommand()`
+- Prefixed with domain: `CleanOrphans()`, `CleanStaleSessions()`, `ResetSession()`
+- PascalCase exported structs: `Browser`, `Page`, `Element`, `Option`
+- Type aliases for facade re-export: `type Browser = engine.Browser`
+- Constants use PascalCase with category prefix: `BrowserChrome`, `BrowserBrave`, `TraceTypeQuery`
+- Enum-like constants grouped with iota or explicit values
+- Package-level singletons with `sync.Once`: `sharedBrowser`/`sharedBrowserOnce`, `instance`/`once`
+- Unexported package vars: `testRouteRegistrars`, `flagCache`, `appDir`
+## Code Style
+- `go fmt` + `goimports` (run via `task fmt`)
+- No explicit `.editorconfig` or `.prettierrc` -- Go standard formatting
+- `golangci-lint` v2 with `default: all` linters enabled
+- Config: `.golangci.yml`
+- Key disabled linters: `tagliatelle`, `gochecknoglobals`, `mnd`, `testpackage`, `varnamelen`, `paralleltest`, `funlen`, `cyclop`, `err113`, `wsl`, `errorlint`, `exhaustruct`, `forcetypeassert`, `godox`, `gosec`, `lll`, `nestif`, `wrapcheck`, `dupl`
+- Package-specific exclusions: `forbidigo`/`gocritic` excluded for `examples/`, `contextcheck` excluded for `pkg/scout/scraper/` and `grpc/`
+- Nolint directives used sparingly with explanation: `//nolint:maintidx`, `//nolint:staticcheck // internalized rod API`, `//nolint: forcetypeassert`
+## Import Organization
+- Used to avoid collisions with internalized rod packages: `launcher2`, `proto2`, `js2`
+- Pattern: append `2` to the package name when aliasing internalized lib packages
+## Functional Options Pattern
+- Defaults defined in `defaults()` function: headless=true, 1920x1080, 30s timeout, bridge=true
+- Location: `internal/engine/option.go`
+- CLI integration: `baseOpts(cmd)` in `cmd/scout/helpers.go` combines headless/sandbox/browser/stealth options from Cobra flags
+## Error Handling
+- Always prefix with `"scout:"` followed by the subsystem
+- Examples: `"scout: challenge: detect: %w"`, `"scout: fingerprint store: mkdir: %w"`, `"scout: workspace: resolve path: %w"`, `"scout: write file: %w"`, `"scout: read password: %w"`
+- Use `%w` verb for wrapping (enables `errors.Is`/`errors.As`)
+## Cleanup Functions
+- `SetHeaders()`, `EvalOnNewDocument()` return cleanup functions
+- `HijackRouter` uses `Run()` (starts goroutine) and `Stop()` (halts it)
+- Common pattern: return `func() {}` (no-op) when no cleanup needed
+## Struct Tags
+## Logging
+- Singleton pattern with `sync.Once`
+- KSUID-based log file names for unique identification
+- Environment-controlled: `SCOUT_LOGGER_ENABLED` env var
+- Feature flag persistence in `~/.cache/scout/` via `internal/flags/`
+- `LoggingWriter` wraps `io.Writer` to capture output while passing through, with 1MB max buffer
+- Command executions (stdout/stderr capture)
+- Session lifecycle events
+- Error conditions with structured context
+## Code Generation
+- Re-exports all `internal/engine` types as type aliases: `type Browser = engine.Browser`
+- Re-exports constants and constructor functions
+## Environment Variables
+- Feature flags: `SCOUT_STEALTH=true/1`, `SCOUT_BRIDGE=false`, `SCOUT_TRACE=1`
+- Auth: `SCOUT_PASSPHRASE`, `SCOUT_AGENT_API_KEY`
+- Logging: `SCOUT_LOGGER_ENABLED`
+- Tracing: `OTEL_EXPORTER_OTLP_ENDPOINT`
+- Pattern: always `SCOUT_` prefix for project-specific env vars
+## Module Design
+- Public API surface through `pkg/scout/` facade only
+- `internal/engine/` is the core -- not directly importable by external consumers
+- Constructor + functional options is the standard public API pattern
+- `pkg/scout/scout.go` serves as the barrel file, re-exporting everything from `internal/engine`
+- Sub-packages (`pkg/scout/mcp/`, `pkg/scout/plugin/`) have their own public APIs
+- Build tags: `//go:build !windows` in `process_unix.go`, implicit windows in `process_windows.go`
+- Taskfile platform conditionals: `platforms: [ windows ]` vs `platforms: [ linux, darwin ]`
+<!-- GSD:conventions-end -->
+
+<!-- GSD:architecture-start source:ARCHITECTURE.md -->
+## Architecture
+
+## Pattern Overview
+- Internal engine core is never imported directly by consumers; only `pkg/scout` is public
+- Functional options pattern (`New(opts ...Option)`) for all configuration
+- Plugin system uses subprocess JSON-RPC 2.0 for extensibility without coupling
+- Session management with process-level tracking via gops
+- Lazy browser initialization in MCP and agent servers
+## Layers
+- Purpose: Cobra-based CLI with 50+ subcommands exposing all Scout features
+- Location: `cmd/scout/`
+- Contains: One file per command group (e.g., `scrape.go`, `crawl.go`, `gather.go`, `hijack.go`, `repl.go`)
+- Depends on: `pkg/scout`, `grpc/server`, `pkg/scout/mcp`, `pkg/scout/scraper`, `internal/engine/session`, `internal/flags`, `internal/logger`, `internal/tracing`
+- Used by: End users, shell scripts
+- Key files: `cmd/scout/scout.go` (root command + `main()`), `cmd/scout/helpers.go` (shared `baseOpts()` helper)
+- Purpose: Stable public API re-exporting internal engine types via type aliases
+- Location: `pkg/scout/scout.go`
+- Contains: Generated type aliases (`type Browser = engine.Browser`), function re-exports (`New`, `With*` options)
+- Depends on: `internal/engine`, `internal/engine/browser`
+- Used by: All entry points (CLI, gRPC, MCP, agent, plugins)
+- Key detail: `pkg/scout/scout.go` is code-generated by `gen-facade-full.go` -- DO NOT EDIT manually
+- Purpose: All browser automation logic -- navigation, extraction, forms, crawling, stealth, fingerprinting, challenges, screenshots, PDFs, research, etc.
+- Location: `internal/engine/`
+- Contains: ~100 non-test Go files. Key types: `Browser`, `Page`, `Element`, `Option`
+- Depends on: `internal/engine/lib/` (internalized rod), `internal/engine/browser/`, `internal/engine/stealth/`, `internal/engine/fingerprint/`, `internal/engine/hijack/`, `internal/engine/llm/`, `internal/engine/session/`, `internal/engine/swarm/`
+- Used by: `pkg/scout` facade only (no direct external imports)
+- Purpose: Forked rod browser automation library (launcher, CDP protocol, input simulation, device emulation)
+- Location: `internal/engine/lib/`
+- Contains: `launcher/` (browser process management), `cdp/` (Chrome DevTools Protocol client), `proto/` (CDP protocol types), `input/` (keyboard/mouse), `devices/` (device emulation profiles), `utils/`, `js/` (injected scripts)
+- Depends on: Nothing internal (leaf dependency)
+- Used by: `internal/engine/` only
+- Purpose: Remote browser control via gRPC with mTLS and device pairing
+- Location: `grpc/`
+- Contains: `proto/scout.proto` (service definition), `scoutpb/` (generated protobuf), `server/` (implementation)
+- Depends on: `pkg/scout`, `internal/engine/swarm`, `internal/idle`, `pkg/scout/identity`
+- Used by: CLI daemon commands (`cmd/scout/daemon.go`, `cmd/scout/server.go`)
+- Key files: `grpc/server/server.go` (session management, all RPC handlers), `grpc/server/tls.go` (mTLS), `grpc/server/pairing.go` (device pairing)
+- Purpose: Model Context Protocol server exposing 18 browser tools for AI assistants
+- Location: `pkg/scout/mcp/`
+- Contains: Tool definitions split by category: `tools_browser.go` (navigate, click, type, extract, eval, etc.), `tools_capture.go` (screenshot, snapshot, pdf), `tools_session.go` (session management), `tools_swarm.go` (distributed crawl), `tools_websocket.go` (WS monitoring), `resources.go` (3 MCP resources)
+- Depends on: `pkg/scout`, `pkg/scout/plugin`, `internal/idle`, `internal/metrics`, `internal/tracing`, `github.com/modelcontextprotocol/go-sdk/mcp`
+- Used by: CLI `cmd/scout/server.go` (stdio + SSE transport)
+- Key pattern: Lazy browser init via `mcpState.ensureBrowser()`. All tools auto-instrumented with OpenTelemetry via `addTracedTool()`.
+- Purpose: REST API for AI agent frameworks (OpenAI/Anthropic tool schemas)
+- Location: `pkg/scout/agent/`
+- Contains: `server.go` (HTTP server with rate limiting, CORS, optional API key auth), `provider.go` (9 tools as AI-callable functions), `openapi.yaml` (embedded OpenAPI 3.1.0 spec)
+- Depends on: `pkg/scout`, `internal/idle`, `internal/metrics`, `x/time/rate`
+- Used by: CLI `cmd/scout/agent.go`
+- Endpoints: `GET /tools`, `POST /call`, `GET /health`, `GET /metrics`, `GET /openapi.yaml`
+- Purpose: Subprocess-based extensibility via JSON-RPC 2.0 on stdin/stdout
+- Location: `pkg/scout/plugin/`
+- Contains: `manager.go` (discovery + lifecycle), `manifest.go` (plugin.json schema), `client.go` (JSON-RPC client), `protocol.go` (wire protocol), 8 capability proxies (`mode_proxy.go`, `tool_proxy.go`, `command_proxy.go`, `sink_proxy.go`, `auth_proxy.go`, `resource_proxy.go`, `middleware_proxy.go`, `event_proxy.go`), `extractor.go`
+- Depends on: `pkg/scout/scraper` (Mode interface)
+- Used by: `pkg/scout/mcp`, CLI root command registration
+- Key pattern: Plugins discovered from `~/.scout/plugins/*/plugin.json` and `$SCOUT_PLUGIN_PATH`. Lazy process launch on first call.
+- Purpose: Authenticated scraping for 20+ platforms (Slack, Discord, LinkedIn, etc.)
+- Location: `pkg/scout/scraper/`
+- Contains: `mode.go` (Mode interface), `scraper.go` (orchestrator), `auth/` (session management with AES-256-GCM encryption), `crypt/` (crypto utils), `modes/` (20 platform implementations)
+- Depends on: Nothing in `pkg/scout` (standalone, uses its own auth)
+- Used by: CLI `cmd/scout/scrape.go`, plugins
+- Purpose: Declarative YAML/JSON workflow files for multi-step browser automation
+- Location: `pkg/scout/strategy/`
+- Contains: `strategy.go` (types + parser), executor, sinks
+- Depends on: `pkg/scout`
+- Used by: CLI `cmd/scout/strategy.go`
+## Data Flow
+- Browser sessions tracked in `~/.scout/sessions/<hash>/` with `scout.pid` and `job.json`
+- Fingerprints persisted in `~/.scout/fingerprints/`
+- Plugin state in `~/.scout/plugins/` with `lock.json` for checksums
+- Feature flags in `~/.cache/scout/`
+- Reports in `~/.scout/reports/`
+- Upload OAuth tokens in `~/.scout/upload.json`
+- Command logs as KSUID-named files via `internal/logger/`
+## Key Abstractions
+- Purpose: Wraps Chrome process lifecycle + CDP connection
+- Location: `internal/engine/browser.go`
+- Pattern: Functional options via `New(opts ...Option)`. Nil-safe `Close()`. Owns launcher, session tracking, VPN/fingerprint rotation, bridge server.
+- Purpose: Single browser tab with navigation, extraction, evaluation, forms, screenshots
+- Location: `internal/engine/page.go`, `internal/engine/page_eval.go`
+- Pattern: Created via `Browser.NewPage(url)`. Wraps rod page. `WaitLoad()` must be called before extraction on external sites.
+- Purpose: DOM element with click, type, extract, attribute access
+- Location: `internal/engine/element.go`
+- Pattern: Found via `Page.Element(selector)` or `Page.ElementByXPath(xpath)`. Struct tag extraction with `scout:"selector"` / `scout:"selector@attr"`.
+- Purpose: Platform-specific scraping implementation
+- Location: `pkg/scout/scraper/mode.go`
+- Pattern: Interface with `Name()`, `Description()`, `AuthProvider()`, `Scrape(ctx, session, opts)`. Channel-based results. 20 implementations in `pkg/scout/scraper/modes/`.
+- Purpose: Abstraction for AI model backends used by ExtractWithLLM
+- Location: `internal/engine/llm/provider.go`
+- Pattern: Interface with `Name()` + `Complete(ctx, systemPrompt, userPrompt)`. Implementations: Ollama, OpenAI-compatible, Anthropic.
+- Purpose: Declares plugin capabilities and launch command
+- Location: `pkg/scout/plugin/manifest.go`
+- Pattern: JSON schema with `capabilities` array. 10 capability types: `scraper_mode`, `extractor`, `mcp_tool`, `cli_command`, `auth_provider`, `mcp_resource`, `mcp_resource_template`, `mcp_prompt`, `sink`, `middleware`, `events`.
+- Purpose: Declarative multi-step workflow definition
+- Location: `pkg/scout/strategy/strategy.go`
+- Pattern: YAML/JSON with `browser`, `auth`, `steps[]`, `output` sections. `LoadFile()` + `Validate()` + `Execute()`.
+## Entry Points
+- Location: `cmd/scout/scout.go`
+- Triggers: User runs `scout <command>` from terminal
+- Responsibilities: Parse flags, route to command handler, manage gops agent, session cleanup, tracing init, logger capture
+- Location: `grpc/server/server.go`
+- Triggers: `scout daemon start` or `scout server`
+- Responsibilities: Persistent browser sessions, mTLS auth, device pairing, event streaming, swarm coordination
+- Location: `pkg/scout/mcp/server.go`
+- Triggers: AI assistant connects via stdio or SSE
+- Responsibilities: 18 browser tools, 3 resources, lazy browser lifecycle, idle timeout, OpenTelemetry tracing
+- Location: `pkg/scout/agent/server.go`
+- Triggers: `scout agent serve [--addr localhost:9000]`
+- Responsibilities: REST API for AI frameworks, rate limiting, CORS, API key auth, OpenAPI spec serving
+- Location: `pkg/scout/plugin/sdk/`
+- Triggers: Plugin manager launches subprocess on first capability call
+- Responsibilities: JSON-RPC 2.0 server on stdin/stdout, register handlers for modes/extractors/tools
+## Error Handling
+- All public methods return `error` as last value
+- `Browser.Close()` and key methods are nil-safe and idempotent via `sync.Once`
+- Session cleanup runs on every `main()` invocation to handle crashes
+- gRPC server returns gRPC status codes (`codes.NotFound`, `codes.Internal`)
+- MCP tools return error text in `mcp.TextContent` with `result.IsError = true`
+- Plugin subprocess errors marshaled as JSON-RPC error responses
+## Cross-Cutting Concerns
+```mermaid
+```
+<!-- GSD:architecture-end -->
+
+<!-- GSD:workflow-start source:GSD defaults -->
+## GSD Workflow Enforcement
+
+Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+
+Use these entry points:
+- `/gsd:quick` for small fixes, doc updates, and ad-hoc tasks
+- `/gsd:debug` for investigation and bug fixing
+- `/gsd:execute-phase` for planned phase work
+
+Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
+<!-- GSD:workflow-end -->
+
+<!-- GSD:profile-start -->
+## Developer Profile
+
+> Profile not yet configured. Run `/gsd:profile-user` to generate your developer profile.
+> This section is managed by `generate-claude-profile` -- do not edit manually.
+<!-- GSD:profile-end -->

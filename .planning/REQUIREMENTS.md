@@ -98,13 +98,49 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated during roadmap creation) | | |
+| CLEAN-01 | Phase 1 | Pending |
+| CLEAN-02 | Phase 1 | Pending |
+| CLEAN-03 | Phase 1 | Pending |
+| CLEAN-04 | Phase 1 | Pending |
+| CLEAN-06 | Phase 1 | Pending |
+| MCP-04 | Phase 1 | Pending |
+| SESS-01 | Phase 2 | Pending |
+| SESS-02 | Phase 2 | Pending |
+| SESS-03 | Phase 2 | Pending |
+| SESS-04 | Phase 2 | Pending |
+| SESS-05 | Phase 2 | Pending |
+| SESS-06 | Phase 2 | Pending |
+| ISOL-01 | Phase 2 | Pending |
+| ISOL-02 | Phase 2 | Pending |
+| ISOL-03 | Phase 2 | Pending |
+| ISOL-04 | Phase 2 | Pending |
+| CLI-01 | Phase 3 | Pending |
+| CLI-02 | Phase 3 | Pending |
+| CLI-03 | Phase 3 | Pending |
+| CLI-04 | Phase 3 | Pending |
+| CLI-05 | Phase 3 | Pending |
+| CLI-06 | Phase 3 | Pending |
+| CLI-07 | Phase 3 | Pending |
+| CLEAN-07 | Phase 3 | Pending |
+| MCP-01 | Phase 3 | Pending |
+| REPL-01 | Phase 4 | Pending |
+| REPL-02 | Phase 4 | Pending |
+| REPL-03 | Phase 4 | Pending |
+| REPL-04 | Phase 4 | Pending |
+| MCP-02 | Phase 4 | Pending |
+| MCP-03 | Phase 4 | Pending |
+| STRUCT-01 | Phase 5 | Pending |
+| STRUCT-02 | Phase 5 | Pending |
+| STRUCT-03 | Phase 5 | Pending |
+| CLEAN-05 | Phase 5 | Pending |
+| SHARE-01 | Phase 6 | Pending |
+| SHARE-02 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 30 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 30
+- Mapped to phases: 30
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-29*
-*Last updated: 2026-03-29 after initial definition*
+*Last updated: 2026-03-29 after roadmap creation*
