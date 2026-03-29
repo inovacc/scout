@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(screenshotCmd, pdfCmd)
+	grpcCmd.AddCommand(screenshotCmd, pdfCmd)
 
 	screenshotCmd.Flags().Bool("full", false, "capture full page")
 	screenshotCmd.Flags().String("format", "png", "image format (png, jpeg)")

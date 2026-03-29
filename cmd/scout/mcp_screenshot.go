@@ -63,8 +63,29 @@ Examples:
 	},
 }
 
+// rootScreenshotCmd is the canonical standalone screenshot command at `scout screenshot <url>`.
+// It launches its own browser (no daemon required).
+var rootScreenshotCmd = &cobra.Command{
+	Use:   "screenshot <url>",
+	Short: "Take a screenshot of a URL",
+	Long: `Navigate to a URL and take a screenshot using the Scout browser.
+Supports both headless (default) and headed mode (--headless=false).
+
+Examples:
+  scout screenshot https://example.com
+  scout screenshot https://example.com --output page.png
+  scout screenshot https://example.com --full-page
+  scout screenshot https://example.com --headless=false`,
+	Args: cobra.ExactArgs(1),
+	RunE: mcpScreenshotCmd.RunE,
+}
+
 func init() {
 	mcpCmd.AddCommand(mcpScreenshotCmd)
 	mcpScreenshotCmd.Flags().Bool("full-page", false, "capture full page screenshot")
 	mcpScreenshotCmd.Flags().StringP("output", "o", "screenshot.png", "output file path (use - for stdout)")
+
+	rootCmd.AddCommand(rootScreenshotCmd)
+	rootScreenshotCmd.Flags().Bool("full-page", false, "capture full page screenshot")
+	rootScreenshotCmd.Flags().StringP("output", "o", "screenshot.png", "output file path (use - for stdout)")
 }
