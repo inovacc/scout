@@ -27,9 +27,9 @@
 - [x] **CLI-02**: Merge `credentials capture` into `auth capture` as a single auth-capture flow
 - [x] **CLI-03**: Merge `websearch` into `search` with --engine flag (remove redundant search_engines subcommands)
 - [x] **CLI-04**: Remove standalone `markdown` command (subset of `fetch --mode=markdown`)
-- [ ] **CLI-05**: Move 17 bare gRPC commands (click, type, title, url, etc.) under a `remote` or `grpc` subcommand group
+- [x] **CLI-05**: Move 17 bare gRPC commands (click, type, title, url, etc.) under a `remote` or `grpc` subcommand group
 - [x] **CLI-06**: Consolidate duplicate extract-* subcommands alongside base commands
-- [ ] **CLI-07**: Deduplicate screenshot command (gRPC-based root vs standalone)
+- [x] **CLI-07**: Deduplicate screenshot command (gRPC-based root vs standalone)
 
 ### Code Cleanup
 
@@ -118,9 +118,9 @@
 | CLI-02 | Phase 3 | Complete |
 | CLI-03 | Phase 3 | Complete |
 | CLI-04 | Phase 3 | Complete |
-| CLI-05 | Phase 3 | Pending |
+| CLI-05 | Phase 3 | Complete |
 | CLI-06 | Phase 3 | Complete |
-| CLI-07 | Phase 3 | Pending |
+| CLI-07 | Phase 3 | Complete |
 | CLEAN-07 | Phase 3 | Complete |
 | MCP-01 | Phase 3 | Complete |
 | REPL-01 | Phase 4 | Pending |

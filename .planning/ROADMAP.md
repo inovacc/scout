@@ -8,7 +8,7 @@ Six phases transform Scout from a feature-rich but fragile codebase into a rock-
 
 - [ ] **Phase 1: Safety Net & Dead Code** - Remove 1,100+ lines of dead code and add panic recovery at entry points
 - [ ] **Phase 2: Sessions & Isolation** - Fix all session lifecycle bugs and harden browser isolation
-- [ ] **Phase 3: CLI Consolidation** - Remove deprecated commands and merge overlapping ones
+- [x] **Phase 3: CLI Consolidation** - Remove deprecated commands and merge overlapping ones (completed 2026-03-29)
 - [ ] **Phase 4: REPL & MCP UX** - Close capability gaps and fix ergonomics in both interfaces
 - [ ] **Phase 5: Code Structure** - Split large files, consolidate logging, deduplicate browser detection
 - [ ] **Phase 6: Shared Command Executor** - Unified command layer consumed by both REPL and MCP
@@ -76,7 +76,7 @@ Plans:
 - [x] 03-01-PLAN.md � Delete recipe.go + merge credentials into auth (CLI-01, CLI-02)
 - [x] 03-02-PLAN.md � Merge websearch into search, remove search_engines subcommands (CLI-03)
 - [x] 03-03-PLAN.md � Remove markdown command, group table/meta/extract-ai under extract (CLI-04, CLI-06)
-- [ ] 03-04-PLAN.md � Group 17 gRPC commands under scout grpc, consolidate screenshot (CLI-05, CLI-07)
+- [x] 03-04-PLAN.md � Group 17 gRPC commands under scout grpc, consolidate screenshot (CLI-05, CLI-07)
 - [x] 03-05-PLAN.md � Fix tls.Dialer TODO, fix MCP tool count description (CLEAN-07, MCP-01)
 
 ### Phase 4: REPL & MCP UX
@@ -127,7 +127,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Safety Net & Dead Code | 0/3 | Not started | - |
 | 2. Sessions & Isolation | 3/5 | In Progress|  |
-| 3. CLI Consolidation | 4/5 | In Progress|  |
+| 3. CLI Consolidation | 5/5 | Complete   | 2026-03-29 |
 | 4. REPL & MCP UX | 0/TBD | Not started | - |
 | 5. Code Structure | 0/TBD | Not started | - |
 | 6. Shared Command Executor | 0/TBD | Not started | - |
