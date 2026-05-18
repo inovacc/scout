@@ -6,7 +6,8 @@
     "mode": "yolo",
     "granularity": "standard",
     "execution": "parallel",
-    "git_tracking": true
+    "git_tracking": true,
+    "_auto_chain_active": false
   },
   "preferences": {
     "breaking_changes": true,
