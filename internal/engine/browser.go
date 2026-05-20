@@ -775,6 +775,9 @@ func (b *Browser) registerSession() {
 		existing.ScoutPID = os.Getpid()
 
 		existing.BrowserPID = b.launcher.PID()
+		if tok, ok := ProcessStartToken(existing.BrowserPID); ok {
+			existing.BrowserStartToken = tok
+		}
 		if existing.DomainHash == "" && b.opts.targetURL != "" {
 			existing.DomainHash = DomainHash(b.opts.targetURL)
 			existing.Domain = RootDomain(b.opts.targetURL)
@@ -796,6 +799,10 @@ func (b *Browser) registerSession() {
 		Browser:    browserName,
 		DomainHash: DomainHash(b.opts.targetURL),
 		Domain:     RootDomain(b.opts.targetURL),
+	}
+
+	if tok, ok := ProcessStartToken(info.BrowserPID); ok {
+		info.BrowserStartToken = tok
 	}
 
 	EnrichSessionInfo(info)

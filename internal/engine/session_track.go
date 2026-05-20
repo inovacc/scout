@@ -29,6 +29,11 @@ func SessionDataDir(id string) string { return session.DataDir(id) }
 // WriteSessionInfo writes the session info as JSON to <SessionsDir>/<id>/scout.pid.
 func WriteSessionInfo(id string, info *SessionInfo) error { return session.WriteInfo(id, info) }
 
+// ProcessStartToken returns an opaque token uniquely identifying the process
+// instance at the given PID. Used to detect PID reuse between recording a
+// browser PID and killing it. Returns ("", false) when unsupported.
+func ProcessStartToken(pid int) (string, bool) { return session.ProcessStartToken(pid) }
+
 // ReadSessionInfo reads the session info from <SessionsDir>/<id>/scout.pid.
 func ReadSessionInfo(id string) (*SessionInfo, error) { return session.ReadInfo(id) }
 

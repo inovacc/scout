@@ -43,17 +43,18 @@ func GetSessionsDir() string {
 // SessionInfo holds all metadata for a browser session, stored as scout.pid
 // inside the session's data directory.
 type SessionInfo struct {
-	ScoutPID     int       `json:"scout_pid"`
-	BrowserPID   int       `json:"browser_pid"`
-	Reusable     bool      `json:"reusable"`
-	CreatedAt    time.Time `json:"created_at"`
-	LastUsed     time.Time `json:"last_used"`
-	Headless     bool      `json:"headless"`
-	Browser      string    `json:"browser"`
-	DomainHash   string    `json:"domain_hash,omitempty"`
-	Domain       string    `json:"domain,omitempty"`
-	Exec         string    `json:"exec,omitempty"`
-	BuildVersion string    `json:"build_version,omitempty"`
+	ScoutPID          int       `json:"scout_pid"`
+	BrowserPID        int       `json:"browser_pid"`
+	BrowserStartToken string    `json:"browser_start_token,omitempty"`
+	Reusable          bool      `json:"reusable"`
+	CreatedAt         time.Time `json:"created_at"`
+	LastUsed          time.Time `json:"last_used"`
+	Headless          bool      `json:"headless"`
+	Browser           string    `json:"browser"`
+	DomainHash        string    `json:"domain_hash,omitempty"`
+	Domain            string    `json:"domain,omitempty"`
+	Exec              string    `json:"exec,omitempty"`
+	BuildVersion      string    `json:"build_version,omitempty"`
 }
 
 // SessionListing pairs a session ID with its directory and info.
@@ -211,7 +212,7 @@ func CleanOrphans() (int, error) {
 			continue
 		}
 
-		if ProcessAlive(s.Info.BrowserPID) {
+		if verifyProcess(s.Info.BrowserPID, s.Info.BrowserStartToken) {
 			if p, err := os.FindProcess(s.Info.BrowserPID); err == nil {
 				_ = p.Kill()
 			}
@@ -242,9 +243,9 @@ func Reset(id string) error {
 		return fmt.Errorf("scout: session %s not found", id)
 	}
 
-	// Kill browser process if still alive.
+	// Kill browser process if still alive AND identity matches.
 	if info, err := ReadInfo(id); err == nil && info.BrowserPID != 0 {
-		if ProcessAlive(info.BrowserPID) {
+		if verifyProcess(info.BrowserPID, info.BrowserStartToken) {
 			if p, err := os.FindProcess(info.BrowserPID); err == nil {
 				_ = p.Kill()
 				// Give the process time to exit and release file locks.
@@ -336,19 +337,21 @@ func CleanStaleSessions() (int, error) {
 			continue
 		}
 
-		// Reusable sessions are preserved if any owning process is still alive.
+		// Reusable sessions are preserved if any owning process is still alive
+		// AND its identity matches the recorded start token (PID-reuse safe).
 		if info.Reusable {
 			if info.ScoutPID != 0 && ProcessAlive(info.ScoutPID) {
 				continue
 			}
 
-			if info.BrowserPID != 0 && ProcessAlive(info.BrowserPID) {
+			if info.BrowserPID != 0 && verifyProcess(info.BrowserPID, info.BrowserStartToken) {
 				continue
 			}
 		}
 
-		// Non-reusable session or dead reusable — kill orphaned browser.
-		if info.BrowserPID != 0 && ProcessAlive(info.BrowserPID) {
+		// Non-reusable session or dead reusable — kill orphaned browser
+		// only if we can confirm identity.
+		if info.BrowserPID != 0 && verifyProcess(info.BrowserPID, info.BrowserStartToken) {
 			if p, err := os.FindProcess(info.BrowserPID); err == nil {
 				_ = p.Kill()
 			}

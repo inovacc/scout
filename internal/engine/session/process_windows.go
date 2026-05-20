@@ -3,6 +3,8 @@
 package session
 
 import (
+	"fmt"
+
 	"github.com/google/gops/goprocess"
 	"golang.org/x/sys/windows"
 )
@@ -20,7 +22,13 @@ func ProcessAlive(pid int) bool {
 		return false
 	}
 
-	h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
+	// WaitForSingleObject requires SYNCHRONIZE access right. Opening with
+	// PROCESS_QUERY_LIMITED_INFORMATION alone causes WaitForSingleObject to
+	// return WAIT_FAILED with "Access is denied" — making ProcessAlive return
+	// false for every PID (including the current process). Add SYNCHRONIZE.
+	const access = windows.PROCESS_QUERY_LIMITED_INFORMATION | windows.SYNCHRONIZE
+
+	h, err := windows.OpenProcess(access, false, uint32(pid))
 	if err != nil {
 		return false
 	}
@@ -49,6 +57,34 @@ func IsScoutProcess(pid int) bool {
 	}
 
 	return isScoutExec(p.Exec)
+}
+
+// ProcessStartToken returns an opaque platform-specific token uniquely
+// identifying the process instance running at the given PID. Two processes
+// at the same PID at different times yield different tokens, so callers can
+// detect PID reuse — important on Windows where PID reassignment happens
+// quickly after a process exits.
+//
+// Format: "win:<creation-filetime-nanoseconds>" using GetProcessTimes
+// CreationTime.
+func ProcessStartToken(pid int) (string, bool) {
+	if pid <= 0 {
+		return "", false
+	}
+
+	h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
+	if err != nil {
+		return "", false
+	}
+
+	defer func() { _ = windows.CloseHandle(h) }()
+
+	var creation, exit, kernel, user windows.Filetime
+	if err := windows.GetProcessTimes(h, &creation, &exit, &kernel, &user); err != nil {
+		return "", false
+	}
+
+	return fmt.Sprintf("win:%d", creation.Nanoseconds()), true
 }
 
 // ScoutProcessInfo returns gops info for a scout PID, or nil if not found.

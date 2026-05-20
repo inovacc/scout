@@ -6,8 +6,8 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 
 | ID | Severity | Status | Commit |
 |----|----------|--------|--------|
-| H1 | HIGH | DONE | (this PR) |
-| H2 | HIGH | OPEN | — |
+| H1 | HIGH | DONE | `1405f75` |
+| H2 | HIGH | DONE | (this PR) |
 | H3 | HIGH | DONE | `01c2c51` |
 | H4 | HIGH | OPEN | — |
 | M1–M6 | MED | OPEN | — |
@@ -26,7 +26,9 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 
 **Fix:** Compare the *basename* of `p.Exec` exactly to `"scout"` / `"scout.exe"`, AND when a `SessionInfo.Exec` is stored, compare full paths. `EnrichSessionInfo` already records `Exec` and `BuildVersion` — wire them into the check.
 
-### H2. TOCTOU between `ProcessAlive` and `Kill` (browser PID unverified)
+### H2. TOCTOU between `ProcessAlive` and `Kill` (browser PID unverified) [DONE]
+
+**Bonus finding during fix:** `ProcessAlive` on Windows was completely broken. `OpenProcess` was called with `PROCESS_QUERY_LIMITED_INFORMATION` only, but `WaitForSingleObject` requires the `SYNCHRONIZE` access right — every call returned `WAIT_FAILED` with "Access is denied", so `ProcessAlive` returned `false` for every PID including the current process. Result: `CleanOrphans`, `Reset`, and `CleanStaleSessions` all skipped their kill paths on Windows. Browsers leaked. Fixed by adding `SYNCHRONIZE` to the access mask. This also explains why `TestProcessAlive` and `TestCleanStaleSessions` had been failing on main.
 
 **Where:** `session_track.go:214-220` (CleanOrphans), `:247-252` (Reset), `:351-355` (CleanStaleSessions).
 
