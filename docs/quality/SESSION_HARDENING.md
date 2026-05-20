@@ -9,7 +9,7 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 | H1 | HIGH | DONE | `1405f75` |
 | H2 | HIGH | DONE | (this PR) |
 | H3 | HIGH | DONE | `01c2c51` |
-| H4 | HIGH | OPEN | — |
+| H4 | HIGH | DONE | (this PR) |
 | M1–M6 | MED | OPEN | — |
 | L1–L6 | LOW | OPEN | — |
 
@@ -46,7 +46,7 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 
 **Fix:** Write `scout.pid.tmp` in same directory → `f.Sync()` → `os.Rename` to `scout.pid` (atomic on same filesystem; Windows-safe). Same treatment for `job.json`.
 
-### H4. Reusable-session takeover via predictable dir hash
+### H4. Reusable-session takeover via predictable dir hash [DONE]
 
 **Where:** `session_track.go:474-490` — `Hash(rawURL, label) = sha256(domain + "\x00" + label)[:12]`.
 

@@ -24,6 +24,11 @@ const (
 // It is a variable so tests can override it.
 var SessionsDir = defaultSessionsDir
 
+// dirOwnerCheck is the function used to validate session-dir ownership.
+// Exposed as a package var so tests can inject a stub. Defaults to the
+// platform implementation in owner_{unix,windows}.go.
+var dirOwnerCheck = validateDirOwner
+
 func defaultSessionsDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -93,8 +98,26 @@ func WriteInfo(id string, info *SessionInfo) error {
 }
 
 // ReadInfo reads the session info from <SessionsDir>/<id>/scout.pid.
+//
+// Refuses to return data from a session directory that is not owned by the
+// current user — H4 hardening against pre-planted directories with predictable
+// hash names. When the directory does not exist, returns the underlying
+// os.IsNotExist error so callers (CleanOrphans, FindByDomain) can distinguish
+// "absent" from "foreign".
 func ReadInfo(id string) (*SessionInfo, error) {
-	data, err := os.ReadFile(filepath.Join(Dir(id), "scout.pid"))
+	dir := Dir(id)
+
+	// Stat first so a missing dir yields os.IsNotExist semantics rather than
+	// the ownership-check error.
+	if _, err := os.Stat(dir); err != nil {
+		return nil, err
+	}
+
+	if !dirOwnerCheck(dir) {
+		return nil, fmt.Errorf("scout: session %s: directory not owned by current user", id)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "scout.pid"))
 	if err != nil {
 		return nil, err
 	}
