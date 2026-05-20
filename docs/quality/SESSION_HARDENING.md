@@ -2,9 +2,20 @@
 
 Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession/Close paths. Findings ranked by severity. Each item lists location, root cause, exploit/failure mode, and proposed fix.
 
+## Status
+
+| ID | Severity | Status | Commit |
+|----|----------|--------|--------|
+| H1 | HIGH | DONE | (this PR) |
+| H2 | HIGH | OPEN | — |
+| H3 | HIGH | DONE | `01c2c51` |
+| H4 | HIGH | OPEN | — |
+| M1–M6 | MED | OPEN | — |
+| L1–L6 | LOW | OPEN | — |
+
 ## SEV-HIGH
 
-### H1. `IsScoutProcess` substring match is over-permissive
+### H1. `IsScoutProcess` substring match is over-permissive [DONE]
 
 **Where:** `session/process_unix.go:42`, `process_windows.go:53` — `strings.Contains(strings.ToLower(p.Exec), "scout")`.
 
@@ -25,7 +36,7 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 
 **Fix:** Record `BrowserStartTime` in `SessionInfo` at register time (`launcher.PID()` then read process start). Before kill, re-open process handle and verify start time matches. On Windows: `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` + `GetProcessTimes`. On Unix: `/proc/<pid>/stat` btime field (Linux) or `sysctl KERN_PROC_PID` (Darwin/BSD). Discard PID if start time differs.
 
-### H3. `scout.pid` writes are non-atomic; corrupted file → session loss
+### H3. `scout.pid` writes are non-atomic; corrupted file → session loss [DONE]
 
 **Where:** `session_track.go:91` — `os.WriteFile(...path.../scout.pid, data, 0o644)`.
 

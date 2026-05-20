@@ -3,8 +3,6 @@
 package session
 
 import (
-	"strings"
-
 	"github.com/google/gops/goprocess"
 	"golang.org/x/sys/windows"
 )
@@ -50,7 +48,7 @@ func IsScoutProcess(pid int) bool {
 		return false
 	}
 
-	return strings.Contains(strings.ToLower(p.Exec), "scout")
+	return isScoutExec(p.Exec)
 }
 
 // ScoutProcessInfo returns gops info for a scout PID, or nil if not found.
