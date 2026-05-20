@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"os"
 	"time"
 
 	"github.com/inovacc/scout/internal/engine/session"
@@ -132,4 +133,38 @@ func EnrichSessionInfo(info *SessionInfo) {
 		info.Exec = p.Exec
 		info.BuildVersion = p.BuildVersion
 	}
+}
+
+// preWriteStubInfo writes a minimal scout.pid immediately after the session ID
+// is assigned in New(). If New() then fails before registerSession runs (e.g.
+// launcher errors, bridge init fails), the dir is left with a valid scout.pid
+// whose ScoutPID points to THIS process — which will exit shortly after the
+// failure, marking the session as a normal orphan that CleanStaleSessions
+// removes on the next startup. Without this, partial session dirs have no
+// scout.pid and the cleanup logic cannot reason about them on retries.
+//
+// Best-effort: write errors are ignored. The real registerSession call (after
+// launcher PID is known) overwrites this stub via the atomic-write path.
+func preWriteStubInfo(id, browserName string, reusable, headless bool) {
+	if id == "" {
+		return
+	}
+
+	if browserName == "" {
+		browserName = "chrome"
+	}
+
+	now := time.Now()
+	info := &SessionInfo{
+		ScoutPID:   os.Getpid(),
+		BrowserPID: 0,
+		Reusable:   reusable,
+		CreatedAt:  now,
+		LastUsed:   now,
+		Headless:   headless,
+		Browser:    browserName,
+	}
+
+	EnrichSessionInfo(info)
+	_ = WriteSessionInfo(id, info)
 }

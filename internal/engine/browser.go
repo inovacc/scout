@@ -298,6 +298,15 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 		o.sessionID = id
 	}
 
+	// Pre-write a stub scout.pid so that if New() fails between this point
+	// and registerSession (e.g. launcher fails, bridge startup errors,
+	// fingerprint init fails), the dir leaves CleanStaleSessions an obvious
+	// signal: the recorded ScoutPID will be our current PID, which on the
+	// NEXT scout startup will appear "dead" (this process exits after the
+	// failure) and the dir gets removed normally. Without this, a partial
+	// session dir has no scout.pid and accumulates indefinitely.
+	preWriteStubInfo(o.sessionID, string(o.browserType), o.reusableSession, o.headless)
+
 	l := launcher2.New().HeadlessNew(o.headless)
 
 	switch {

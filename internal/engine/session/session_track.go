@@ -20,18 +20,20 @@ import (
 
 const (
 	// removeRetries is the number of attempts to remove a session directory.
-	// Chrome holds file handles briefly after process termination on Windows;
-	// this budget outlasts that lock release.
-	removeRetries = 5
-	// removeRetryWait is the initial backoff between retries. L1 hardening
-	// uses exponential backoff (×2 each attempt) so transient locks clear
-	// quickly without blocking shutdown the full 2.5s flat budget.
-	removeRetryWait = 50 * time.Millisecond
+	// Chrome holds file handles briefly after exit on Windows, and Windows
+	// Defender / Search Indexer can hold LevelDB files for 5–15 seconds while
+	// scanning. This budget outlasts both.
+	removeRetries = 8
+	// removeRetryWait is the initial backoff between retries. Exponential
+	// (×2) with a per-step cap of removeRetryWaitMax.
+	removeRetryWait    = 50 * time.Millisecond
+	removeRetryWaitMax = 5 * time.Second
 )
 
-// retryRemoveAll retries os.RemoveAll with exponential backoff. Returns the
-// final error after exhausting removeRetries attempts (nil on success).
-// Hardening L1.
+// retryRemoveAll retries os.RemoveAll with exponential backoff (capped).
+// Returns the final error after exhausting removeRetries attempts (nil on
+// success). Total budget ≈ 50+100+200+400+800+1600+3200+5000 ms ≈ 11 s.
+// Hardening L1 (extended for Windows AV interaction).
 func retryRemoveAll(path string) error {
 	var lastErr error
 
@@ -43,7 +45,11 @@ func retryRemoveAll(path string) error {
 		}
 
 		time.Sleep(wait)
+
 		wait *= 2
+		if wait > removeRetryWaitMax {
+			wait = removeRetryWaitMax
+		}
 	}
 
 	return lastErr
