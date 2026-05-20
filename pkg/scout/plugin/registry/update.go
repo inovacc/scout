@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/inovacc/scout/internal/engine/scouthome"
 )
 
 // UpdateInfo describes an available update for an installed plugin.
@@ -71,14 +73,15 @@ func CheckUpdatesWithLock(lock *LockFile, index *Index) []UpdateInfo {
 	return updates
 }
 
-// LastCheckFile returns the path to the file tracking when updates were last checked.
+// LastCheckFile returns the path to the file tracking when updates were last
+// checked. Resolves via scouthome (H5).
 func LastCheckFile() string {
-	home, err := os.UserHomeDir()
+	sub, err := scouthome.Sub(filepath.Join("plugins", ".last-update-check"))
 	if err != nil {
 		return ""
 	}
 
-	return filepath.Join(home, ".scout", "plugins", ".last-update-check")
+	return sub
 }
 
 // ShouldCheck returns true if enough time has passed since the last update check.

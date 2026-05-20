@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/inovacc/scout/internal/engine/scouthome"
 )
 
 // Supported browser type constants.
@@ -75,12 +77,11 @@ func (m *Manager) ensureCacheDir() (string, error) {
 		return m.cacheDir, nil
 	}
 
-	home, err := os.UserHomeDir()
+	dir, err := scouthome.Sub("browsers")
 	if err != nil {
-		return "", fmt.Errorf("browser: user home dir: %w", err)
+		return "", fmt.Errorf("browser: %w", err)
 	}
 
-	dir := filepath.Join(home, ".scout", "browsers")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", fmt.Errorf("browser: create cache dir: %w", err)
 	}

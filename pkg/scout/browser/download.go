@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine/scouthome"
 	"github.com/inovacc/scout/pkg/scout/archive"
 )
 
@@ -45,12 +46,12 @@ func DownloadChrome(cacheDir string) (string, error) {
 // downloadChromium implements Chromium download with CDN fallback.
 func downloadChromium(ctx context.Context, cacheDir string) (string, error) {
 	if cacheDir == "" {
-		home, err := os.UserHomeDir()
+		sub, err := scouthome.Sub("browsers")
 		if err != nil {
-			return "", fmt.Errorf("browser: user home dir: %w", err)
+			return "", fmt.Errorf("browser: %w", err)
 		}
 
-		cacheDir = filepath.Join(home, ".scout", "browsers")
+		cacheDir = sub
 	}
 
 	revision := 1592198 // pinned Chromium revision

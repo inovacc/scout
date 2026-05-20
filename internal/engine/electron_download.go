@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/internal/engine/browser"
+	"github.com/inovacc/scout/internal/engine/scouthome"
 	"github.com/inovacc/scout/pkg/scout/archive"
 )
 
@@ -33,14 +34,14 @@ var electronBins = map[string]string{
 	"linux":   "electron",
 }
 
-// ElectronCacheDir returns the path to ~/.scout/electron/, creating it if needed.
+// ElectronCacheDir returns the per-user Electron cache, creating it if
+// needed. Resolved via scouthome (H5).
 func ElectronCacheDir() (string, error) {
-	home, err := os.UserHomeDir()
+	dir, err := scouthome.Sub(filepath.Join("browsers", "electron"))
 	if err != nil {
-		return "", fmt.Errorf("scout: user home dir: %w", err)
+		return "", err
 	}
 
-	dir := filepath.Join(home, ".scout", "browsers", "electron")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", fmt.Errorf("scout: create electron dir: %w", err)
 	}

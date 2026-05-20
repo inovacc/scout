@@ -131,6 +131,7 @@ func TestLoadLockFile_NonExistent(t *testing.T) {
 
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
+	t.Setenv("SCOUT_HOME", filepath.Join(dir, ".scout"))
 
 	defer func() {
 		_ = os.Setenv("HOME", origHome)
@@ -171,6 +172,7 @@ func TestLoadLockFile_ValidFile(t *testing.T) {
 
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
+	t.Setenv("SCOUT_HOME", filepath.Join(dir, ".scout"))
 
 	defer func() {
 		_ = os.Setenv("HOME", origHome)
@@ -208,6 +210,7 @@ func TestLoadLockFile_InvalidJSON(t *testing.T) {
 
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
+	t.Setenv("SCOUT_HOME", filepath.Join(dir, ".scout"))
 
 	defer func() {
 		_ = os.Setenv("HOME", origHome)
@@ -228,6 +231,7 @@ func TestLockFile_Save(t *testing.T) {
 
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
+	t.Setenv("SCOUT_HOME", filepath.Join(dir, ".scout"))
 
 	defer func() {
 		_ = os.Setenv("HOME", origHome)

@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/inovacc/scout/internal/engine/scouthome"
 )
 
 // ExtensionInfo holds metadata about a locally stored Chrome extension.
@@ -139,14 +141,14 @@ func RemoveExtension(id string) error {
 	return nil
 }
 
-// ExtensionDir returns the path to ~/.scout/extensions/, creating it if needed.
+// ExtensionDir returns the per-user extensions directory, creating it if
+// needed. Resolved via scouthome (H5).
 func ExtensionDir() (string, error) {
-	home, err := os.UserHomeDir()
+	dir, err := scouthome.Sub("extensions")
 	if err != nil {
-		return "", fmt.Errorf("scout: user home dir: %w", err)
+		return "", err
 	}
 
-	dir := filepath.Join(home, ".scout", "extensions")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", fmt.Errorf("scout: create extensions dir: %w", err)
 	}

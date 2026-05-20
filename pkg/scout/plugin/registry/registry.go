@@ -14,6 +14,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/inovacc/scout/internal/engine/scouthome"
 )
 
 // Index is the plugin registry index (JSON file hosted on GitHub).
@@ -132,14 +134,15 @@ func LatestReleaseURL(repo, pluginName string) string {
 		repo, pluginName, runtime.GOOS, runtime.GOARCH, archiveExt())
 }
 
-// LockFilePath returns the path to the plugin lock file.
+// LockFilePath returns the path to the plugin lock file. Resolves via
+// scouthome (H5).
 func LockFilePath() (string, error) {
-	home, err := os.UserHomeDir()
+	sub, err := scouthome.Sub(filepath.Join("plugins", "lock.json"))
 	if err != nil {
 		return "", err
 	}
 
-	return filepath.Join(home, ".scout", "plugins", "lock.json"), nil
+	return sub, nil
 }
 
 // LoadLockFile reads the lock file from disk.

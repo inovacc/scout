@@ -13,20 +13,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine/scouthome"
 	"github.com/inovacc/scout/pkg/scout/archive"
 )
 
 // browserDownloadTimeout is the HTTP timeout for downloading browser archives.
 const browserDownloadTimeout = 5 * time.Minute
 
-// CacheDir returns the path to ~/.scout/browsers/, creating it if needed.
+// CacheDir returns the per-user browsers directory, creating it if needed.
+// Resolved via scouthome (H5) so SCOUT_HOME and platform conventions apply.
 func CacheDir() (string, error) {
-	home, err := os.UserHomeDir()
+	dir, err := scouthome.Sub("browsers")
 	if err != nil {
-		return "", fmt.Errorf("scout: user home dir: %w", err)
+		return "", err
 	}
 
-	dir := filepath.Join(home, ".scout", "browsers")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", fmt.Errorf("scout: create browsers dir: %w", err)
 	}

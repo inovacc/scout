@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/inovacc/scout/internal/engine/scouthome"
 )
 
 // ReportType identifies the kind of report.
@@ -47,12 +49,15 @@ type Report struct {
 var ReportsDir = defaultReportsDir
 
 func defaultReportsDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return filepath.Join(os.TempDir(), "scout", "reports")
+	// H5: resolve via scouthome. Reports may contain extracted page data
+	// that the user considers sensitive; fail-closed if no home — caller
+	// surfaces "no such file or directory" rather than silently writing
+	// to a world-readable /tmp.
+	if sub, err := scouthome.Sub("reports"); err == nil {
+		return sub
 	}
 
-	return filepath.Join(home, ".scout", "reports")
+	return ""
 }
 
 // SaveReport persists a report to ~/.scout/reports/{uuidv7}.txt as a

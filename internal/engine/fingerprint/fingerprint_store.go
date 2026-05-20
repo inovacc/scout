@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/inovacc/scout/internal/engine/scouthome"
 )
 
 // StoredFingerprint wraps a Fingerprint with persistence metadata.
@@ -34,12 +36,13 @@ type FingerprintStore struct {
 // If dir is empty, defaults to ~/.scout/fingerprints/.
 func NewFingerprintStore(dir string) (*FingerprintStore, error) {
 	if dir == "" {
-		home, err := os.UserHomeDir()
+		// H5: resolve via scouthome so SCOUT_HOME applies.
+		sub, err := scouthome.Sub("fingerprints")
 		if err != nil {
-			return nil, fmt.Errorf("scout: fingerprint store: home dir: %w", err)
+			return nil, fmt.Errorf("scout: fingerprint store: %w", err)
 		}
 
-		dir = filepath.Join(home, ".scout", "fingerprints")
+		dir = sub
 	}
 
 	if err := os.MkdirAll(dir, 0700); err != nil {

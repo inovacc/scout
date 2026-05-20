@@ -20,6 +20,7 @@ import (
 	"github.com/inovacc/scout/internal/engine/lib/defaults"
 	"github.com/inovacc/scout/internal/engine/lib/launcher/flags"
 	utils2 "github.com/inovacc/scout/internal/engine/lib/utils"
+	"github.com/inovacc/scout/internal/engine/scouthome"
 )
 
 // DefaultUserDataDirPrefix is the base directory for browser user data.
@@ -32,8 +33,11 @@ var DefaultUserDataDirPrefix = defaultUserDataDirPrefix()
 var launcherSeq atomic.Int64
 
 func defaultUserDataDirPrefix() string {
-	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, ".scout", "sessions")
+	// H5: resolve via scouthome. TempDir fallback retained as last resort
+	// for environments with no resolvable home; M2-equivalent fail-closed
+	// is enforced at the higher-level WriteInfo path.
+	if sub, err := scouthome.Sub("sessions"); err == nil {
+		return sub
 	}
 
 	return filepath.Join(os.TempDir(), "scout", "sessions")

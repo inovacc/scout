@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/inovacc/scout/internal/engine/scouthome"
 	"github.com/inovacc/scout/pkg/scout/scraper"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -37,13 +38,13 @@ func NewManager(dirs []string, logger *slog.Logger) *Manager {
 	}
 }
 
-// DefaultDirs returns the default plugin search directories.
+// DefaultDirs returns the default plugin search directories. Resolves via
+// scouthome (H5) so SCOUT_HOME applies.
 func DefaultDirs() []string {
 	var dirs []string
 
-	home, err := os.UserHomeDir()
-	if err == nil {
-		dirs = append(dirs, filepath.Join(home, ".scout", "plugins"))
+	if sub, err := scouthome.Sub("plugins"); err == nil {
+		dirs = append(dirs, sub)
 	}
 
 	if envPath := os.Getenv("SCOUT_PLUGIN_PATH"); envPath != "" {

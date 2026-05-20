@@ -9,7 +9,9 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 | H1 | HIGH | DONE | `1405f75` |
 | H2 | HIGH | DONE | (this PR) |
 | H3 | HIGH | DONE | `01c2c51` |
-| H4 | HIGH | DONE | (this PR) |
+| H4 | HIGH | DONE | `45ff1ee` |
+| H5 | HIGH | DONE | (this PR) |
+| H6 | HIGH | OPEN | daemon writes 0-byte session file, not directory — found during validation, separate gRPC server bug |
 | M1 | MED | DONE | (this PR) |
 | M2 | MED | DONE | (this PR) |
 | M3 | MED | DONE | (this PR) |
@@ -63,6 +65,40 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 **Problem:** Directory name is fully predictable from public inputs (URL + browser name). Local-coresident attacker pre-creates `~/.scout/sessions/<predicted>/data/` with a malicious Chrome profile (poisoned cookies, evil extensions). When the user next runs scout, `FindByDomain` reads the attacker-supplied `scout.pid`, the launcher reuses the poisoned profile, and any auth performed in that session leaks to the planted extension.
 
 **Fix:** On session creation, write a random 32-byte `nonce` to `scout.pid`. On reuse, verify the binary's recorded `Exec` matches current `os.Executable()` (catches "different binary planted the dir"). Reject sessions whose dir mode is not 0o700 owned by current uid.
+
+## SEV-HIGH (added during validation)
+
+### H5. Pervasive `~/.scout` path resolution bypasses SCOUT_HOME [DONE]
+
+Discovered while testing the v1.0.3 hardening: M2's SCOUT_HOME guard only
+covered `internal/engine/session/`. The other 12 places that resolve
+`~/.scout/<sub>` (browser cache, plugins, fingerprints, extensions, reports,
+upload OAuth tokens, electron runtime, rod-fork launcher) each called
+`os.UserHomeDir()` directly. Setting SCOUT_HOME pointed sessions to a test
+dir while OAuth tokens still leaked to the real home.
+
+**Fix:** centralized resolver `internal/engine/scouthome/`. Honors SCOUT_HOME,
+otherwise uses platform-conventional default (`%LOCALAPPDATA%\Scout` on
+Windows, `~/Library/Application Support/Scout` on Darwin,
+`$XDG_DATA_HOME/scout` else `~/.local/share/scout` on Linux). Back-compat:
+existing `~/.scout` with content is preferred over the new path so existing
+installs keep working; new installs use the conventional path. 12 call sites
+refactored. Tests updated to use SCOUT_HOME override.
+
+### H6. Daemon-side session storage is incomplete [OPEN]
+
+Found during validation: `scout session create` (daemon-managed reusable
+session) writes a 0-byte FILE named with the UUID into `sessions/` instead
+of creating a directory with `scout.pid` and `data/` subdir. Symptoms:
+- `session list-local` does not see daemon-managed sessions
+- `CleanStaleSessions` / `CleanOrphans` cannot inspect them
+- Hardening guarantees from H1–H4 + M1–M6 + L1–L6 do not apply to
+  daemon-created sessions
+
+Out of scope for the engine-package hardening (lives in `grpc/server/`).
+Add a follow-up task to align the gRPC server's session lifecycle with the
+session-package contract: write a real directory with valid `scout.pid` and
+`data/` subdir, set `Reusable: true`.
 
 ## SEV-MEDIUM [ALL DONE]
 

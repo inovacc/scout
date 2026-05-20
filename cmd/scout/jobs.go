@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"text/tabwriter"
 
+	"github.com/inovacc/scout/internal/engine/scouthome"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/spf13/cobra"
 )
@@ -21,12 +21,11 @@ func init() {
 }
 
 func defaultJobsDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return filepath.Join(".", ".scout", "jobs")
+	if sub, err := scouthome.Sub("jobs"); err == nil {
+		return sub
 	}
 
-	return filepath.Join(home, ".scout", "jobs")
+	return filepath.Join(".", ".scout", "jobs")
 }
 
 var jobsCmd = &cobra.Command{

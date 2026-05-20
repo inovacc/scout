@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+
+	"github.com/inovacc/scout/internal/engine/scouthome"
 )
 
 // UploadSink identifies a cloud storage destination.
@@ -246,17 +248,20 @@ func UploadOAuthConfig(sink UploadSink, clientID, clientSecret, redirectURL stri
 	}
 }
 
-// SaveUploadConfig persists upload config to ~/.scout/upload.json.
+// SaveUploadConfig persists upload config to <scouthome>/upload.json. The
+// config contains OAuth tokens, so use restrictive 0o700 directory mode and
+// 0o600 file mode. H5 + M1 hardening.
 func SaveUploadConfig(cfg *UploadConfig) error {
-	home, err := os.UserHomeDir()
+	dir, err := scouthome.Root()
 	if err != nil {
 		return fmt.Errorf("scout: upload config: %w", err)
 	}
 
-	dir := filepath.Join(home, ".scout")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("scout: upload config: mkdir: %w", err)
 	}
+
+	_ = os.Chmod(dir, 0o700)
 
 	data, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
@@ -266,14 +271,14 @@ func SaveUploadConfig(cfg *UploadConfig) error {
 	return os.WriteFile(filepath.Join(dir, "upload.json"), data, 0o600)
 }
 
-// LoadUploadConfig reads upload config from ~/.scout/upload.json.
+// LoadUploadConfig reads upload config from <scouthome>/upload.json.
 func LoadUploadConfig() (*UploadConfig, error) {
-	home, err := os.UserHomeDir()
+	dir, err := scouthome.Root()
 	if err != nil {
 		return nil, fmt.Errorf("scout: upload config: %w", err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(home, ".scout", "upload.json"))
+	data, err := os.ReadFile(filepath.Join(dir, "upload.json"))
 	if err != nil {
 		return nil, err
 	}

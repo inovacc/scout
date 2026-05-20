@@ -128,14 +128,10 @@ func TestCheckUpdatesHTTP(t *testing.T) {
 
 func TestShouldCheckNeverChecked(t *testing.T) {
 	// Point to a temp dir so we don't find any existing file.
-	origHome := os.Getenv("HOME")
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
-
-	// On Windows, also set USERPROFILE.
-	if origHome == "" {
-		t.Setenv("USERPROFILE", dir)
-	}
+	t.Setenv("USERPROFILE", dir)
+	t.Setenv("SCOUT_HOME", filepath.Join(dir, ".scout"))
 
 	if !ShouldCheck(24 * time.Hour) {
 		t.Error("ShouldCheck should return true when never checked")
@@ -146,6 +142,7 @@ func TestShouldCheckRecent(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
+	t.Setenv("SCOUT_HOME", filepath.Join(dir, ".scout"))
 
 	pluginDir := filepath.Join(dir, ".scout", "plugins")
 	if err := os.MkdirAll(pluginDir, 0o755); err != nil {
@@ -169,6 +166,7 @@ func TestShouldCheckOld(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
+	t.Setenv("SCOUT_HOME", filepath.Join(dir, ".scout"))
 
 	pluginDir := filepath.Join(dir, ".scout", "plugins")
 	if err := os.MkdirAll(pluginDir, 0o755); err != nil {
@@ -192,6 +190,7 @@ func TestMarkChecked(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
+	t.Setenv("SCOUT_HOME", filepath.Join(dir, ".scout"))
 
 	if err := MarkChecked(); err != nil {
 		t.Fatalf("MarkChecked: %v", err)
@@ -217,6 +216,7 @@ func TestShouldCheckInvalidContent(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
+	t.Setenv("SCOUT_HOME", filepath.Join(dir, ".scout"))
 
 	pluginDir := filepath.Join(dir, ".scout", "plugins")
 	if err := os.MkdirAll(pluginDir, 0o755); err != nil {

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine/scouthome"
 	"github.com/inovacc/scout/pkg/scout/archive"
 	"github.com/inovacc/scout/pkg/scout/plugin"
 	"github.com/inovacc/scout/pkg/scout/plugin/registry"
@@ -250,12 +251,11 @@ func findManifestDir(root string) (string, error) {
 }
 
 func pluginDestDir(name string) (string, error) {
-	home, err := os.UserHomeDir()
+	destDir, err := scouthome.Sub(filepath.Join("plugins", name))
 	if err != nil {
 		return "", fmt.Errorf("scout: plugin install: %w", err)
 	}
 
-	destDir := filepath.Join(home, ".scout", "plugins", name)
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		return "", fmt.Errorf("scout: plugin install: %w", err)
 	}
@@ -310,12 +310,11 @@ var pluginRemoveCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
-		home, err := os.UserHomeDir()
+		dir, err := scouthome.Sub(filepath.Join("plugins", name))
 		if err != nil {
 			return fmt.Errorf("scout: plugin remove: %w", err)
 		}
 
-		dir := filepath.Join(home, ".scout", "plugins", name)
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			return fmt.Errorf("scout: plugin remove: plugin %q not found", name)
 		}

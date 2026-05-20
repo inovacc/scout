@@ -19,6 +19,7 @@ import (
 	"github.com/inovacc/scout/internal/engine/browser"
 	"github.com/inovacc/scout/internal/engine/lib/defaults"
 	"github.com/inovacc/scout/internal/engine/lib/utils"
+	"github.com/inovacc/scout/internal/engine/scouthome"
 	"github.com/inovacc/scout/pkg/scout/archive"
 )
 
@@ -69,12 +70,14 @@ func HostNPM(revision int) string {
 var DefaultBrowserDir = defaultBrowserDir()
 
 func defaultBrowserDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		home = os.TempDir()
+	// H5: resolve via scouthome (honors SCOUT_HOME). Fall back to TempDir
+	// only when no home is resolvable — even then, log warn so the
+	// operator notices the insecure fallback.
+	if sub, err := scouthome.Sub("browsers"); err == nil {
+		return sub
 	}
 
-	return filepath.Join(home, ".scout", "browsers")
+	return filepath.Join(os.TempDir(), "scout", "browsers")
 }
 
 // Browser is a helper to download browser smartly.

@@ -14,6 +14,7 @@ import (
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
 	"github.com/inovacc/scout/grpc/server"
+	"github.com/inovacc/scout/internal/engine/scouthome"
 	"github.com/inovacc/scout/pkg/scout/identity"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -21,14 +22,14 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// scoutDir returns the path to ~/.scout, creating it if needed.
+// scoutDir returns the per-user state root, creating it if needed. Resolved
+// via scouthome (H5).
 func scoutDir() (string, error) {
-	home, err := os.UserHomeDir()
+	dir, err := scouthome.Root()
 	if err != nil {
 		return "", fmt.Errorf("scout: home dir: %w", err)
 	}
 
-	dir := filepath.Join(home, ".scout")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", fmt.Errorf("scout: create config dir: %w", err)
 	}

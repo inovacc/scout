@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"golang.org/x/net/publicsuffix"
+
+	"github.com/inovacc/scout/internal/engine/scouthome"
 )
 
 const (
@@ -56,29 +58,17 @@ var SessionsDir = defaultSessionsDir
 // platform implementation in owner_{unix,windows}.go.
 var dirOwnerCheck = validateDirOwner
 
-// defaultSessionsDir resolves the per-user sessions directory.
-//
-// Precedence (M2 hardening):
-//  1. SCOUT_HOME env var → <SCOUT_HOME>/sessions
-//  2. os.UserHomeDir()   → <home>/.scout/sessions
-//  3. fail closed by returning "" — refuses the previous os.TempDir()
-//     fallback, which is world-readable and shared across local users.
-//     Callers (WriteInfo/MkdirAll) will surface a clear error.
-//
-// Returning "" intentionally produces a downstream "mkdir : no such file or
-// directory" so misconfigured environments fail loudly rather than silently
-// leaking Chrome cookies and OAuth tokens into /tmp.
+// defaultSessionsDir resolves the per-user sessions directory via the
+// centralized scouthome resolver (M2 + H5). Returns "" on resolve failure so
+// downstream MkdirAll surfaces a clear error rather than silently writing to
+// a world-readable shared location.
 func defaultSessionsDir() string {
-	if env := os.Getenv("SCOUT_HOME"); env != "" {
-		return filepath.Join(env, "sessions")
-	}
-
-	home, err := os.UserHomeDir()
+	sub, err := scouthome.Sub("sessions")
 	if err != nil {
 		return ""
 	}
 
-	return filepath.Join(home, ".scout", "sessions")
+	return sub
 }
 
 // GetSessionsDir returns the base directory for session data: ~/.scout/sessions.
