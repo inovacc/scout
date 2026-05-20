@@ -30,6 +30,7 @@ func init() {
 	sessionCreateCmd.Flags().Bool("maximized", false, "start browser window maximized")
 	sessionCreateCmd.Flags().Bool("devtools", false, "open Chrome DevTools automatically")
 	sessionCreateCmd.Flags().Bool("no-sandbox", false, "disable browser sandbox (containers/WSL)")
+	sessionCreateCmd.Flags().Bool("ephemeral", false, "create a non-reusable session (cleaned on Close instead of persisted)")
 	sessionCreateCmd.Flags().String("profile", "", "path to .scoutprofile file to apply at session creation")
 	sessionCreateCmd.Flags().Bool("decrypt", false, "decrypt the profile file (requires --passphrase)")
 	sessionCreateCmd.Flags().String("passphrase", "", "passphrase for encrypted profile decryption")
@@ -80,6 +81,7 @@ var sessionCreateCmd = &cobra.Command{
 		maximized, _ := cmd.Flags().GetBool("maximized")
 		devtools, _ := cmd.Flags().GetBool("devtools")
 		noSandbox, _ := cmd.Flags().GetBool("no-sandbox")
+		ephemeral, _ := cmd.Flags().GetBool("ephemeral")
 
 		// Load profile if specified, applying overrides to session creation fields.
 		profilePath, _ := cmd.Flags().GetString("profile")
@@ -133,6 +135,7 @@ var sessionCreateCmd = &cobra.Command{
 			Maximized:   maximized,
 			Devtools:    devtools,
 			NoSandbox:   noSandbox,
+			Ephemeral:   ephemeral,
 		})
 		if err != nil {
 			return fmt.Errorf("scout: create session: %w", err)

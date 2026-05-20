@@ -85,6 +85,7 @@ message CreateSessionRequest {
   bool   maximized = 10; // start window maximized
   bool   devtools = 11; // open Chrome DevTools automatically
   bool   no_sandbox = 12; // disable browser sandbox (containers/WSL)
+  bool   ephemeral = 13; // when true the session is non-reusable and cleaned on Close. Default false: reusable, survives daemon restart.
 }
 
 message CreateSessionResponse {
