@@ -344,3 +344,86 @@
 - [x] E2E test suite: 10 browser scenarios (navigate, click, screenshot, snapshot, markdown, touch, hijack, WS HAR, multi-page, eval)
 - [x] CORS + rate limit tests
 - **Coverage:** agent 91.4% | plugin 84.4% | metrics 100% | hijack 97.4%
+
+## v1.0.2 - Swagger UI, SSE, SDK Ports & Marketplace Prep [COMPLETE]
+
+**Goal:** Patch release adding agent server auth, OpenAPI tooling, plugin auto-update, and benchmarks. Tagged 2026-03-28.
+
+**Added:**
+- [x] Agent server Bearer token auth via `--api-key` flag and `SCOUT_AGENT_API_KEY` env var
+- [x] `docs/openapi.yaml` — OpenAPI 3.1.0 spec for all agent HTTP endpoints
+- [x] `deploy/helm/scout/values.schema.json` — Helm values JSON Schema validation
+- [x] `scout plugin check-updates` with `ShouldCheck(24h)` / `MarkChecked()` daily throttling
+- [x] Benchmark suite: 11 benchmarks for HAR recorder, agent provider, metrics
+- [x] `examples/README.md` — gallery of 18 examples + 8 cookbook recipes
+
+## v1.0.3 - Stabilization Milestone [COMPLETE]
+
+**Goal:** Lock down sessions and CLI surface. Sessions must open cleanly, close cleanly, never leak processes, and never touch the user's browser without permission. Three phases (01–03) shipped under the Superpowers workflow.
+
+**Phase 01 — Safety Net & Dead Code:**
+- [x] Session lifecycle and isolation test scaffolds
+- [x] Browser.Close() consolidated to single cleanup path
+- [x] CleanOrphans full session-dir removal + DeviceIDFromCert callers fix
+- [x] Dead code removal pass
+
+**Phase 02 — Sessions & Isolation:**
+- [x] UUID v7 session IDs replacing SessionHash in `New()`
+- [x] Windows process detection + retry budget (`removeRetries`, `removeRetryWait` constants)
+- [x] Rod fallback removed — explicit error when no cached browser instead of silent system-browser launch
+- [x] Browser isolation guarantee: `~/.scout/browsers/` only; `--system-browser` opt-in
+
+**Phase 03 — CLI Consolidation:**
+- [x] Merge `credentials` into `auth`, delete `cmd/scout/credentials.go`
+- [x] Merge `websearch` into `search`, remove `search_engines` subcommands
+- [x] Group `table`, `meta`, `extract-ai` under `scout extract` parent
+- [x] Group 17 gRPC daemon commands under `scout grpc`
+- [x] Screenshot consolidation: `scout grpc screenshot` + standalone `scout screenshot`
+- [x] Remove markdown standalone command (grouped under extract)
+- [x] Replace `tls.Dialer` TODO with real implementation; annotate stale TODOs
+- [x] MCP help text tool count corrected: 33 → 18
+
+**Workflow:**
+- [x] Migrated from GSD workflow to Superpowers (brainstorm → spec → execute → verify)
+- [x] `.planning/` archived to `.planning-archive/` after phase completion
+
+## v1.0.4 - Session Hardening & Platform Path Migration [COMPLETE]
+
+**Goal:** Close all session-mechanism security and reliability findings (4 HIGH, 6 MED, 4 LOW) discovered in the post-stabilization audit (`docs/quality/SESSION_HARDENING.md`). Move per-user state root to OS-conventional path (`%LOCALAPPDATA%\Scout` on Windows, `~/Library/Application Support/Scout` on macOS, `$XDG_DATA_HOME/scout` on Linux).
+
+**Hardening (HIGH):**
+- [x] H1 — `IsScoutProcess` exact-basename match (no more substring spoof)
+- [x] H2 — PID-reuse-safe browser kills via `BrowserStartToken` (per-OS `ProcessStartToken`); bonus: fixed Windows `ProcessAlive` missing `SYNCHRONIZE` access — previously returned false for every PID
+- [x] H3 — atomic writes for `scout.pid` and `job.json` (tmp + fsync + rename)
+- [x] H4 — reject session directories not owned by current user (Unix `st_uid` / Windows owner SID)
+- [x] H5 — centralized `internal/engine/scouthome` resolver; `SCOUT_HOME` env override; platform-conventional default
+- [x] H6 — daemon sessions are reusable by default and never auto-cleaned; explicit opt-in persistence
+
+**Hardening (MED):**
+- [x] M1 — restrictive file modes (`0o700`/`0o600`) for session dir and metadata
+- [x] M2 — fail-closed on `os.UserHomeDir` error (no `os.TempDir` fallback)
+- [x] M3 — cross-process lock on session claim (mkdir-based mutex with stale-holder detection)
+- [x] M4 — `golang.org/x/net/publicsuffix` for `RootDomain` (replaces hand-curated 2-part TLD map)
+- [x] M5 — distinguish corrupt vs missing `scout.pid` in `List`; log via slog
+- [x] M6 — escalate `RemoveAll` retry failures via `slog.Warn`
+
+**Hardening (LOW):**
+- [x] L1 — exponential backoff on `RemoveAll` retries (50 ms × 2^N, was flat 500 ms × 5)
+- [x] L2 — `Reset()` conditional 500 ms post-kill sleep
+- [x] L3 — `ResetAll` logs per-session reset failures
+- [x] L6 — orphan watchdog panic recovery
+- [x] Deferred: L4 (hash-length bump — breaks existing dirs), L5 (`registerSession` plumbing refactor — larger scope)
+
+**Path migration (H5 follow-on):**
+- [x] New package `internal/engine/scouthome` with `Root()` / `Sub()` resolver
+- [x] 12 call sites refactored: browser cache, plugins, fingerprints, extensions, electron, reports, upload (OAuth tokens), rod-fork launcher (browsers + sessions), CLI daemon/jobs/plugin
+- [x] Default path: Windows `%LOCALAPPDATA%\Scout`, Darwin `~/Library/Application Support/Scout`, Linux `$XDG_DATA_HOME/scout` (or `~/.local/share/scout`)
+- [x] Back-compat: legacy `~/.scout` with content takes precedence when new path absent
+- [x] `scout browser list` header shows resolved cache path (was hardcoded `~/.scout/browsers/`)
+
+**Tests:**
+- [x] 24 new tests across 5 new files (`atomic_test.go`, `process_test.go` H1+H2, `owner_test.go`, `lock_test.go`, `scouthome_test.go`)
+- [x] Plugin registry tests updated to use `SCOUT_HOME`
+- [x] Session contract change: `TestCleanStaleSessions` — reusable sessions are kept under H6 regardless of process liveness
+- [x] End-to-end validation: daemon-created reusable session survives daemon kill AND restart; 3 concurrent ephemeral gathers pass M3 lock without contention; planted zombie removed on next startup
+- **Coverage:** session pkg 78 tests passing, 0 failing (was 2 pre-existing failures on `main` — both fixed by Windows `ProcessAlive` access mask fix)

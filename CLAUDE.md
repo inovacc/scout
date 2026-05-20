@@ -35,6 +35,7 @@ internal/engine/stealth/      Anti-bot-detection (internalized go-rod/stealth + 
 internal/engine/vpn/          VPN integration (Surfshark)
 internal/engine/swarm/        Distributed crawling (coordinator, worker, domain queue)
 internal/engine/lib/          Internalized rod: launcher, CDP, proto, input, utils
+internal/engine/scouthome/    Per-user state root resolver (SCOUT_HOME, %LOCALAPPDATA%\Scout)
 internal/flags/               Feature flag persistence (~/.cache/scout/)
 internal/logger/              Command logging (KSUID log files, stdout/stderr capture)
 internal/tracing/             OpenTelemetry instrumentation (Init, MCPToolSpan, ScraperSpan)
@@ -94,8 +95,9 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **Session hijacking**: `Page.NewSessionHijacker(opts...)` captures real-time HTTP + WebSocket traffic via CDP events. `HijackEvent` discriminated union with `CapturedRequest`/`CapturedResponse`/`WebSocketFrame`. Auto-attach via `WithSessionHijack()`. Channel-based: `hijacker.Events()` returns `<-chan HijackEvent`. Filter with `WithHijackURLFilter()`, capture bodies with `WithHijackBodyCapture()`. gRPC: `StartHijack`/`StopHijack`/`StreamHijack` RPCs. CLI: `scout hijack watch <url>`.
 - **Electron support**: `WithElectronApp(path)`, `WithElectronVersion(ver)`, `WithElectronCDP(endpoint)`. Auto-downloads Electron runtime to `~/.cache/scout/electron/`. CLI: `--electron-app`, `--electron-version`, `--electron-cdp` flags.
 - **Command logging**: `scout logger --path <dir>` enables KSUID-based log files with stdout/stderr capture. `internal/flags/` persists feature flags in `~/.cache/scout/`. `internal/logger/` writes structured JSON logs via `slog`. Root `PersistentPreRunE` auto-captures all command output.
-- **Session directory**: `~/.scout/sessions/<hash>/{scout.pid, job.json, data/}`. Metadata (`scout.pid`, `job.json`) at hash level; `data/` is the Chrome user-data-dir. `SessionDir(id)` returns hash dir, `SessionDataDir(id)` returns `data/` subdir.
-- **Session startup cleanup**: `CleanStaleSessions()` runs in `main()` on every invocation. Removes non-reusable sessions unconditionally, dead reusable sessions, and orphaned dirs without `scout.pid`. Windows file lock retries (3×200ms).
+- **State root**: resolved via `internal/engine/scouthome`. Precedence: `SCOUT_HOME` env → platform default (Windows `%LOCALAPPDATA%\Scout`, Darwin `~/Library/Application Support/Scout`, Linux `$XDG_DATA_HOME/scout` or `~/.local/share/scout`) → legacy `~/.scout` if it has content. New installs land in the platform default.
+- **Session directory**: `<scouthome>/sessions/<uuidv7>/{scout.pid, job.json, data/}`. Metadata (`scout.pid` 0o600, dir 0o700) at session-id level; `data/` is the Chrome user-data-dir. `SessionDir(id)` returns the session dir, `SessionDataDir(id)` returns `data/` subdir. Session IDs are UUID v7 from `uuid.NewV7()` (sortable by creation time).
+- **Session startup cleanup**: `CleanStaleSessions()` runs in `main()` on every invocation. Removes non-reusable sessions unconditionally and orphaned dirs without `scout.pid`. **Reusable sessions are NEVER auto-cleaned** (H6 contract) regardless of process liveness — only manual `scout session reset/destroy` removes them. Windows file lock retries use exponential backoff (50 ms × 2^N, 5 attempts).
 - **Session reset**: `ResetSession(id)` and `ResetAllSessions()` in `session_track.go`. CLI: `scout session reset [id]`, `scout session reset --all`. Kills browser process and removes session dir.
 - **Job tracking**: `job.json` in session dir tracks job type, status (pending/running/completed/failed), progress, steps, timestamps. API: `NewJob()`, `WriteJob()`, `StartJob()`, `CompleteJob()`, `FailJob()`, `AddJobStep()`.
 - **Health check**: `Browser.HealthCheck(url, opts...)` crawls site detecting broken links, console errors, JS exceptions, network failures. CLI: `scout test-site <url> [--depth N] [--concurrency N] [--click] [--json] [--timeout 30s]`.
@@ -212,6 +214,7 @@ Scout is a Go browser automation library with an internalized rod fork, public f
 ## Configuration
 - `SCOUT_HEADLESS` - Enable headless mode (default: true)
 - `SCOUT_NO_SANDBOX` - Disable Chrome sandbox
+- `SCOUT_HOME` - Override per-user state root (default: `%LOCALAPPDATA%\Scout` on Windows, `~/Library/Application Support/Scout` on macOS, `$XDG_DATA_HOME/scout` or `~/.local/share/scout` on Linux). Honored by every persisted directory (sessions, browsers, plugins, fingerprints, extensions, reports, OAuth tokens, electron cache).
 - `SCOUT_STEALTH` - Enable stealth mode (`true`/`1`)
 - `SCOUT_BRIDGE` - Enable/disable bridge extension (`false` to disable)
 - `SCOUT_TRACE` - Enable OpenTelemetry tracing (`1`)
@@ -454,22 +457,78 @@ Scout is a Go browser automation library with an internalized rod fork, public f
 ```
 <!-- GSD:architecture-end -->
 
-<!-- GSD:workflow-start source:GSD defaults -->
-## GSD Workflow Enforcement
+## Workflow
 
-Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+Use the Superpowers workflow for all development work:
 
-Use these entry points:
-- `/gsd:quick` for small fixes, doc updates, and ad-hoc tasks
-- `/gsd:debug` for investigation and bug fixing
-- `/gsd:execute-phase` for planned phase work
+1. **Brainstorm** (`/superpowers:brainstorm`) — explore intent, requirements, and design before any implementation. Required before creating features, components, or modifying behaviour.
+2. **Spec** (`/superpowers:writing-plans`) — produce a written plan from the brainstorm output before touching code.
+3. **Execute** (`/superpowers:executing-plans`) — implement against the spec with TDD; write tests first, then code.
+4. **Verify** (`/superpowers:verification-before-completion`) — validate built features against acceptance criteria before marking work done.
 
-Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
-<!-- GSD:workflow-end -->
+For debugging, use `/superpowers:systematic-debugging`. For code review, use `/superpowers:requesting-code-review`.
 
-<!-- GSD:profile-start -->
-## Developer Profile
+Phase specs live in `docs/superpowers/specs/`. Consult them before starting any phase work.
 
-> Profile not yet configured. Run `/gsd:profile-user` to generate your developer profile.
-> This section is managed by `generate-claude-profile` -- do not edit manually.
-<!-- GSD:profile-end -->
+# context-mode — MANDATORY routing rules
+
+You have context-mode MCP tools available. These rules are NOT optional — they protect your context window from flooding. A single unrouted command can dump 56 KB into context and waste the entire session.
+
+## BLOCKED commands — do NOT attempt these
+
+### curl / wget — BLOCKED
+Any Bash command containing `curl` or `wget` is intercepted and replaced with an error message. Do NOT retry.
+Instead use:
+- `ctx_fetch_and_index(url, source)` to fetch and index web pages
+- `ctx_execute(language: "javascript", code: "const r = await fetch(...)")` to run HTTP calls in sandbox
+
+### Inline HTTP — BLOCKED
+Any Bash command containing `fetch('http`, `requests.get(`, `requests.post(`, `http.get(`, or `http.request(` is intercepted and replaced with an error message. Do NOT retry with Bash.
+Instead use:
+- `ctx_execute(language, code)` to run HTTP calls in sandbox — only stdout enters context
+
+### WebFetch — BLOCKED
+WebFetch calls are denied entirely. The URL is extracted and you are told to use `ctx_fetch_and_index` instead.
+Instead use:
+- `ctx_fetch_and_index(url, source)` then `ctx_search(queries)` to query the indexed content
+
+## REDIRECTED tools — use sandbox equivalents
+
+### Bash (>20 lines output)
+Bash is ONLY for: `git`, `mkdir`, `rm`, `mv`, `cd`, `ls`, `npm install`, `pip install`, and other short-output commands.
+For everything else, use:
+- `ctx_batch_execute(commands, queries)` — run multiple commands + search in ONE call
+- `ctx_execute(language: "shell", code: "...")` — run in sandbox, only stdout enters context
+
+### Read (for analysis)
+If you are reading a file to **Edit** it → Read is correct (Edit needs content in context).
+If you are reading to **analyze, explore, or summarize** → use `ctx_execute_file(path, language, code)` instead. Only your printed summary enters context. The raw file content stays in the sandbox.
+
+### Grep (large results)
+Grep results can flood context. Use `ctx_execute(language: "shell", code: "grep ...")` to run searches in sandbox. Only your printed summary enters context.
+
+## Tool selection hierarchy
+
+1. **GATHER**: `ctx_batch_execute(commands, queries)` — Primary tool. Runs all commands, auto-indexes output, returns search results. ONE call replaces 30+ individual calls.
+2. **FOLLOW-UP**: `ctx_search(queries: ["q1", "q2", ...])` — Query indexed content. Pass ALL questions as array in ONE call.
+3. **PROCESSING**: `ctx_execute(language, code)` | `ctx_execute_file(path, language, code)` — Sandbox execution. Only stdout enters context.
+4. **WEB**: `ctx_fetch_and_index(url, source)` then `ctx_search(queries)` — Fetch, chunk, index, query. Raw HTML never enters context.
+5. **INDEX**: `ctx_index(content, source)` — Store content in FTS5 knowledge base for later search.
+
+## Subagent routing
+
+When spawning subagents (Agent/Task tool), the routing block is automatically injected into their prompt. Bash-type subagents are upgraded to general-purpose so they have access to MCP tools. You do NOT need to manually instruct subagents about context-mode.
+
+## Output constraints
+
+- Keep responses under 500 words.
+- Write artifacts (code, configs, PRDs) to FILES — never return them as inline text. Return only: file path + 1-line description.
+- When indexing content, use descriptive source labels so others can `ctx_search(source: "label")` later.
+
+## ctx commands
+
+| Command | Action |
+|---------|--------|
+| `ctx stats` | Call the `ctx_stats` MCP tool and display the full output verbatim |
+| `ctx doctor` | Call the `ctx_doctor` MCP tool, run the returned shell command, display as checklist |
+| `ctx upgrade` | Call the `ctx_upgrade` MCP tool, run the returned shell command, display as checklist |

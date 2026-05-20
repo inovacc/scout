@@ -580,8 +580,69 @@ Each wave follows 30-day deprecation: plugin released → warning on built-in �
 
 ---
 
-## Phase 75+ — Future
+## Phase 75 — Stabilization Milestone [DONE]
+
+**Goal:** Sessions rock-solid: open cleanly, close cleanly, never leak processes, never touch user's browser without permission. CLI surface coherent.
+
+Shipped as v1.0.3 under the Superpowers workflow (brainstorm → spec → execute → verify). Phase artifacts archived to `.planning-archive/phases/`.
+
+### 75.1 — Safety Net & Dead Code [DONE]
+
+- Session lifecycle and isolation test scaffolds
+- `Browser.Close()` consolidated to single cleanup path
+- `CleanOrphans` full session-dir removal; `DeviceIDFromCert` callers fixed
+- Dead code removal pass
+
+### 75.2 — Sessions & Isolation [DONE]
+
+- UUID v7 session IDs replacing `SessionHash` in `engine.New()`
+- Windows process detection + retry budget (`removeRetries`, `removeRetryWait` constants)
+- Rod fallback removed — explicit error when no cached browser, no silent system-browser launch
+- Browser isolation: `~/.scout/browsers/` only; `--system-browser` opt-in
+
+### 75.3 — CLI Consolidation [DONE]
+
+- Merge `credentials` into `auth`, delete `cmd/scout/credentials.go`
+- Merge `websearch` into `search`, drop `search_engines` subcommands
+- Group `table`, `meta`, `extract-ai` under `scout extract`
+- Group 17 gRPC daemon commands under `scout grpc`
+- Screenshot consolidation: `scout grpc screenshot` + root `scout screenshot`
+- Drop standalone `markdown` (grouped under extract)
+- Replace `tls.Dialer` TODO with real implementation; annotate stale TODOs
+- MCP help text tool count corrected 33 → 18
+
+---
+
+## Phase 76 — Session Hardening & Platform Path Migration [DONE]
+
+**Goal:** Close 14 findings from the session-mechanism audit at `docs/quality/SESSION_HARDENING.md` (4 HIGH, 6 MED, 4 LOW landed; 2 LOW deferred with rationale). Move per-user state root to OS-conventional `%LOCALAPPDATA%\Scout` (Windows) / `~/Library/Application Support/Scout` (macOS) / `$XDG_DATA_HOME/scout` (Linux). Shipped as v1.0.4.
+
+### 76.1 — HIGH-severity findings [DONE]
+
+- H1 exact-basename `IsScoutProcess` (substring spoof closed)
+- H2 PID-reuse-safe browser kills via per-OS start tokens; **bonus:** fixed Windows `ProcessAlive` missing `SYNCHRONIZE` access right
+- H3 atomic `scout.pid` / `job.json` writes (tmp + fsync + rename)
+- H4 ownership-check rejects pre-planted session directories
+- H5 centralized `scouthome` resolver + platform-default path
+- H6 daemon sessions reusable by default; never auto-cleaned
+
+### 76.2 — MED + LOW [DONE]
+
+- M1–M6: restrictive file modes (0o700/0o600), `os.TempDir` fallback removed, cross-process lock on claim, publicsuffix for `RootDomain`, corrupt-vs-missing distinction, retry-failure escalation
+- L1–L3, L6: exponential RemoveAll backoff, conditional Reset sleep, per-session ResetAll error log, watchdog panic recovery
+- Deferred: L4 (hash-length bump — breaks existing dirs); L5 (`registerSession` plumbing — larger scope)
+
+### 76.3 — Path migration [DONE]
+
+- New `internal/engine/scouthome` resolves the per-user state root once
+- 12 call sites refactored (browser cache, plugins, fingerprints, extensions, electron, reports, upload, rod-fork launcher, CLI helpers)
+- `SCOUT_HOME` env override honored consistently
+- Back-compat: legacy `~/.scout` with content preferred over new path when new path is absent
+
+---
+
+## Phase 77+ — Future
 
 ### Remaining Work
 
-See [BACKLOG.md](BACKLOG.md) for future work.
+See [BACKLOG.md](BACKLOG.md) for future work — current open items: iOS Safari (P3), Claude Code marketplace submission (P3). Breakdown in [IMPLEMENTATION_TASKS.md](IMPLEMENTATION_TASKS.md).

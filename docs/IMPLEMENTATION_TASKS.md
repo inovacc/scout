@@ -6,12 +6,16 @@ Granular tasks broken down by domain from `docs/ROADMAP.md` (Phase 75+ Future), 
 
 ## Domain 1 — Stabilization (post-archive .planning)
 
-| ID | What | Files | Environment | Depends | Effort |
-|----|------|-------|-------------|---------|--------|
-| 1.1 | Regenerate `coverage.out` (current file references deleted `pkg/scout/recipe`) | `coverage.out` | Go (`task test`) | — | Small |
-| 1.2 | Add `task test:full` target running long suite without `-short`; document in CLAUDE.md | `Taskfile.yml`, `CLAUDE.md` | Go / Taskfile | — | Small |
-| 1.3 | Verify all `Skipf("…")` calls under `testing.Short()` are accurate; flag any heavy tests still running | `**/*_test.go` | Go | 1.1 | Medium |
-| 1.4 | Document `.planning-archive/` policy in `CLAUDE.md` (where finished phase artifacts go) | `CLAUDE.md` | docs | — | Small |
+| ID | What | Status |
+|----|------|--------|
+| 1.1 | Regenerate `coverage.out` | OPEN — full suite multi-minute; defer to dedicated coverage run |
+| 1.2 | Add `task test:full` target | OPEN |
+| 1.3 | Audit `testing.Short()` skip coverage | OPEN |
+| 1.4 | Document `.planning-archive/` policy | DONE (CLAUDE.md updated 2026-05-20) |
+
+## Domain 1B — Session Hardening (v1.0.4) [DONE]
+
+All 14 findings from `docs/quality/SESSION_HARDENING.md` closed (12 fixed, 2 LOW deferred with rationale). See ROADMAP Phase 76 + MILESTONES v1.0.4.
 
 ## Domain 2 — Mobile Expansion (BACKLOG P3)
 
