@@ -288,6 +288,14 @@ func CleanOrphans() (int, error) {
 			continue
 		}
 
+		// Reusable sessions persist by user opt-in. Don't kill their
+		// browser or remove their dir even if the owning scout is dead.
+		// The user resumes via `scout client --session <id>` or via the
+		// daemon restart picking up the still-running browser. H6.
+		if s.Info.Reusable {
+			continue
+		}
+
 		if verifyProcess(s.Info.BrowserPID, s.Info.BrowserStartToken) {
 			if p, err := os.FindProcess(s.Info.BrowserPID); err == nil {
 				_ = p.Kill()
@@ -423,16 +431,14 @@ func CleanStaleSessions() (int, error) {
 			continue
 		}
 
-		// Reusable sessions are preserved if any owning process is still alive
-		// AND its identity matches the recorded start token (PID-reuse safe).
+		// Reusable sessions are NEVER auto-cleaned regardless of process
+		// state — the user explicitly opted in to persistence. Only manual
+		// `scout session destroy <id>` (or `session reset`) removes them.
+		// H6 hardening: previously a reusable session whose owning scout
+		// process had died was treated as cleanable, which contradicted
+		// the "reusable" contract.
 		if info.Reusable {
-			if info.ScoutPID != 0 && ProcessAlive(info.ScoutPID) {
-				continue
-			}
-
-			if info.BrowserPID != 0 && verifyProcess(info.BrowserPID, info.BrowserStartToken) {
-				continue
-			}
+			continue
 		}
 
 		// Non-reusable session or dead reusable — kill orphaned browser

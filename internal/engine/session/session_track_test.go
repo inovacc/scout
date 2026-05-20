@@ -470,32 +470,30 @@ func TestCleanStaleSessions(t *testing.T) {
 		t.Fatalf("CleanStaleSessions: %v", err)
 	}
 
-	// Should clean: orphan-no-pid, dead-nonreusable, live-nonreusable, dead-reusable = 4.
-	if cleaned != 4 {
-		t.Errorf("CleanStaleSessions cleaned %d, want 4", cleaned)
+	// Should clean: orphan-no-pid, dead-nonreusable, live-nonreusable = 3.
+	// Reusable sessions are NEVER auto-cleaned under H6 — opt-in
+	// persistence overrides liveness checks.
+	if cleaned != 3 {
+		t.Errorf("CleanStaleSessions cleaned %d, want 3", cleaned)
 	}
 
-	// Verify orphan dir is gone.
 	if _, err := os.Stat(orphanDir); !os.IsNotExist(err) {
 		t.Error("orphan-no-pid dir should be removed")
 	}
 
-	// Verify dead non-reusable is gone.
 	if _, err := os.Stat(Dir("dead-nonreusable")); !os.IsNotExist(err) {
 		t.Error("dead-nonreusable should be removed")
 	}
 
-	// Verify live non-reusable is also gone (not explicitly persistent).
 	if _, err := os.Stat(Dir("live-nonreusable")); !os.IsNotExist(err) {
 		t.Error("live-nonreusable should be removed (not reusable)")
 	}
 
-	// Verify dead reusable is gone.
-	if _, err := os.Stat(Dir("dead-reusable")); !os.IsNotExist(err) {
-		t.Error("dead-reusable should be removed")
+	// Reusable sessions persist regardless of process liveness (H6).
+	if _, err := os.Stat(Dir("dead-reusable")); err != nil {
+		t.Error("dead-reusable should be kept under H6 contract")
 	}
 
-	// Verify live reusable is kept.
 	if _, err := os.Stat(Dir("live-reusable")); err != nil {
 		t.Error("live-reusable should be kept")
 	}

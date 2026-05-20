@@ -353,6 +353,13 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 	// a one-shot context that expires permanently after the duration, making the
 	// page unusable for long-lived sessions. The gRPC layer manages its own deadlines.
 	opts = append(opts, scout.WithTimeout(0))
+	// H6: mark daemon-managed sessions as reusable so the engine's
+	// Browser.Close path preserves the session dir for resume. Without
+	// this, every daemon session was treated as ephemeral — its scout.pid
+	// and data/ subdir were deleted on close, leaving only the CLI's
+	// sentinel file behind. The user's expectation for daemon sessions is
+	// persistence ("reusable") across daemon shutdowns, not deletion.
+	opts = append(opts, scout.WithReusableSession())
 	opts = append(opts, scout.WithHeadless(req.GetHeadless()))
 
 	if req.GetStealth() {

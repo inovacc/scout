@@ -11,7 +11,7 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 | H3 | HIGH | DONE | `01c2c51` |
 | H4 | HIGH | DONE | `45ff1ee` |
 | H5 | HIGH | DONE | (this PR) |
-| H6 | HIGH | OPEN | daemon writes 0-byte session file, not directory — found during validation, separate gRPC server bug |
+| H6 | HIGH | DONE | (this PR) |
 | M1 | MED | DONE | (this PR) |
 | M2 | MED | DONE | (this PR) |
 | M3 | MED | DONE | (this PR) |
@@ -85,20 +85,36 @@ existing `~/.scout` with content is preferred over the new path so existing
 installs keep working; new installs use the conventional path. 12 call sites
 refactored. Tests updated to use SCOUT_HOME override.
 
-### H6. Daemon-side session storage is incomplete [OPEN]
+### H6. Daemon-side sessions were ephemeral despite being daemon-managed [DONE]
 
-Found during validation: `scout session create` (daemon-managed reusable
-session) writes a 0-byte FILE named with the UUID into `sessions/` instead
-of creating a directory with `scout.pid` and `data/` subdir. Symptoms:
-- `session list-local` does not see daemon-managed sessions
-- `CleanStaleSessions` / `CleanOrphans` cannot inspect them
-- Hardening guarantees from H1–H4 + M1–M6 + L1–L6 do not apply to
-  daemon-created sessions
+Found during validation: `scout session create` (daemon-managed) sessions
+appeared to write only a 0-byte sentinel file with no engine session dir.
+Root cause: `grpc/server/server.go` `CreateSession` did NOT pass
+`scout.WithReusableSession()` to the engine. The engine treated the
+daemon's browser as ephemeral and removed its session dir on Close.
 
-Out of scope for the engine-package hardening (lives in `grpc/server/`).
-Add a follow-up task to align the gRPC server's session lifecycle with the
-session-package contract: write a real directory with valid `scout.pid` and
-`data/` subdir, set `Reusable: true`.
+Two parts to the fix:
+
+1. Daemon `CreateSession` now sets `WithReusableSession()` so the engine
+   writes a real `sessions/<uuid>/scout.pid` + `data/` and preserves it
+   on Close.
+2. Contract change in `CleanStaleSessions` and `CleanOrphans`: reusable
+   sessions are NEVER auto-cleaned regardless of process liveness. The
+   `Reusable: true` flag is an explicit user opt-in to persistence;
+   liveness checks should not override it. Previously a reusable session
+   whose owning scout daemon had died was treated as cleanable — which
+   directly contradicted the "reusable" contract.
+
+End-to-end validation:
+- Create reusable session via daemon
+- Kill daemon → session dir survives with full `scout.pid` metadata
+- Restart daemon on different port → session dir STILL present
+- Run 2 ephemeral standalone gathers → no new persistent dirs
+
+The 0-byte file `sessions/<daemon-uuid>` is a separate CLI bookkeeping
+artifact written by `cmd/scout/session.go:trackSession` and is unrelated
+to engine session dirs (it sits alongside, distinguished by being a file
+not a directory — `e.IsDir()` filters it out of List / cleanup loops).
 
 ## SEV-MEDIUM [ALL DONE]
 
