@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inovacc/scout/internal/engine/scouthome"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/browser"
 	"github.com/spf13/cobra"
@@ -50,7 +51,8 @@ var browserListCmd = &cobra.Command{
 			fmt.Println() //nolint:forbidigo
 		}
 
-		fmt.Println("Cached browsers (~/.scout/browsers/):") //nolint:forbidigo
+		browsersPath, _ := scouthome.Sub("browsers")
+		fmt.Printf("Cached browsers (%s):\n", browsersPath) //nolint:forbidigo
 
 		browsers, err := scout.ListDownloadedBrowsers()
 		if err != nil {
