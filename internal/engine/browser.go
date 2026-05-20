@@ -812,6 +812,9 @@ func (b *Browser) registerSession() {
 		if tok, ok := ProcessStartToken(existing.BrowserPID); ok {
 			existing.BrowserStartToken = tok
 		}
+		if ppid, ok := ProcessParentPID(existing.BrowserPID); ok {
+			existing.BrowserParentPID = ppid
+		}
 		if existing.DomainHash == "" && b.opts.targetURL != "" {
 			existing.DomainHash = DomainHash(b.opts.targetURL)
 			existing.Domain = RootDomain(b.opts.targetURL)
@@ -837,6 +840,10 @@ func (b *Browser) registerSession() {
 
 	if tok, ok := ProcessStartToken(info.BrowserPID); ok {
 		info.BrowserStartToken = tok
+	}
+
+	if ppid, ok := ProcessParentPID(info.BrowserPID); ok {
+		info.BrowserParentPID = ppid
 	}
 
 	EnrichSessionInfo(info)

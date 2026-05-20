@@ -35,6 +35,17 @@ func WriteSessionInfo(id string, info *SessionInfo) error { return session.Write
 // browser PID and killing it. Returns ("", false) when unsupported.
 func ProcessStartToken(pid int) (string, bool) { return session.ProcessStartToken(pid) }
 
+// ProcessParentPID returns the parent PID of the given process, or (0,false)
+// when unsupported / not found.
+func ProcessParentPID(pid int) (int, bool) { return session.ProcessParentPID(pid) }
+
+// ProcessAlive reports whether the given PID is currently a running process.
+func ProcessAlive(pid int) bool { return session.ProcessAlive(pid) }
+
+// IsScoutProcess reports whether the given PID belongs to a live scout binary
+// (basename-exact match via gops).
+func IsScoutProcess(pid int) bool { return session.IsScoutProcess(pid) }
+
 // SessionLockGuard is re-exported so engine consumers can hold a session lock
 // without importing the internal/engine/session subpackage directly.
 type SessionLockGuard = session.LockGuard

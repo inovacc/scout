@@ -4,6 +4,7 @@ package session
 
 import (
 	"fmt"
+	"unsafe"
 
 	"github.com/google/gops/goprocess"
 	"golang.org/x/sys/windows"
@@ -85,6 +86,38 @@ func ProcessStartToken(pid int) (string, bool) {
 	}
 
 	return fmt.Sprintf("win:%d", creation.Nanoseconds()), true
+}
+
+// ProcessParentPID returns the parent process PID for the given PID via
+// ToolHelp32 snapshot iteration.
+func ProcessParentPID(pid int) (int, bool) {
+	if pid <= 0 {
+		return 0, false
+	}
+
+	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
+	if err != nil {
+		return 0, false
+	}
+
+	defer func() { _ = windows.CloseHandle(snap) }()
+
+	var entry windows.ProcessEntry32
+	entry.Size = uint32(unsafe.Sizeof(entry))
+
+	if err := windows.Process32First(snap, &entry); err != nil {
+		return 0, false
+	}
+
+	for {
+		if entry.ProcessID == uint32(pid) {
+			return int(entry.ParentProcessID), true
+		}
+
+		if err := windows.Process32Next(snap, &entry); err != nil {
+			return 0, false
+		}
+	}
 }
 
 // ScoutProcessInfo returns gops info for a scout PID, or nil if not found.

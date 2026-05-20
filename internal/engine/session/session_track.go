@@ -89,6 +89,7 @@ func GetSessionsDir() string {
 type SessionInfo struct {
 	ScoutPID          int       `json:"scout_pid"`
 	BrowserPID        int       `json:"browser_pid"`
+	BrowserParentPID  int       `json:"browser_parent_pid,omitempty"`
 	BrowserStartToken string    `json:"browser_start_token,omitempty"`
 	Reusable          bool      `json:"reusable"`
 	CreatedAt         time.Time `json:"created_at"`

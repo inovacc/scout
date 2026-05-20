@@ -88,6 +88,44 @@ func ProcessStartToken(pid int) (string, bool) {
 	return "linux:" + fields[19], true
 }
 
+// ProcessParentPID returns the parent process PID for the given PID.
+// Linux: parses /proc/<pid>/stat field 4 (ppid).
+// Darwin/BSD: returns (0, false) — sysctl-based ppid not implemented.
+func ProcessParentPID(pid int) (int, bool) {
+	if pid <= 0 {
+		return 0, false
+	}
+
+	if runtime.GOOS != "linux" {
+		return 0, false
+	}
+
+	data, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
+	if err != nil {
+		return 0, false
+	}
+
+	s := string(data)
+
+	end := strings.LastIndex(s, ")")
+	if end < 0 {
+		return 0, false
+	}
+
+	fields := strings.Fields(s[end+1:])
+	// After ")" the sequence is: state ppid pgrp ... — ppid is index 1.
+	if len(fields) < 2 {
+		return 0, false
+	}
+
+	var p int
+	if _, err := fmt.Sscanf(fields[1], "%d", &p); err != nil {
+		return 0, false
+	}
+
+	return p, true
+}
+
 // ScoutProcessInfo returns gops info for a scout PID, or nil if not found.
 func ScoutProcessInfo(pid int) *goprocess.P {
 	if pid <= 0 {
