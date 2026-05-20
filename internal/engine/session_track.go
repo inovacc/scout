@@ -34,6 +34,16 @@ func WriteSessionInfo(id string, info *SessionInfo) error { return session.Write
 // browser PID and killing it. Returns ("", false) when unsupported.
 func ProcessStartToken(pid int) (string, bool) { return session.ProcessStartToken(pid) }
 
+// SessionLockGuard is re-exported so engine consumers can hold a session lock
+// without importing the internal/engine/session subpackage directly.
+type SessionLockGuard = session.LockGuard
+
+// AcquireSessionLock takes a cross-process exclusive lock on a session via
+// the M3 mkdir-based mutex. Caller must Release() to drop the lock.
+func AcquireSessionLock(id string) (*SessionLockGuard, error) {
+	return session.AcquireLock(id)
+}
+
 // ReadSessionInfo reads the session info from <SessionsDir>/<id>/scout.pid.
 func ReadSessionInfo(id string) (*SessionInfo, error) { return session.ReadInfo(id) }
 

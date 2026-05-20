@@ -10,7 +10,12 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 | H2 | HIGH | DONE | (this PR) |
 | H3 | HIGH | DONE | `01c2c51` |
 | H4 | HIGH | DONE | (this PR) |
-| M1–M6 | MED | OPEN | — |
+| M1 | MED | DONE | (this PR) |
+| M2 | MED | DONE | (this PR) |
+| M3 | MED | DONE | (this PR) |
+| M4 | MED | DONE | (this PR) |
+| M5 | MED | DONE | (this PR) |
+| M6 | MED | DONE | (this PR) |
 | L1–L6 | LOW | OPEN | — |
 
 ## SEV-HIGH
@@ -54,7 +59,7 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 
 **Fix:** On session creation, write a random 32-byte `nonce` to `scout.pid`. On reuse, verify the binary's recorded `Exec` matches current `os.Executable()` (catches "different binary planted the dir"). Reject sessions whose dir mode is not 0o700 owned by current uid.
 
-## SEV-MEDIUM
+## SEV-MEDIUM [ALL DONE]
 
 ### M1. World-readable session dir + permissive mode
 

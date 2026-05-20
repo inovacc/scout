@@ -73,18 +73,21 @@ func NewJob(jobType string, targetURLs []string, command string) *Job {
 }
 
 // WriteJob writes the job as JSON to <SessionsDir>/<sessionID>/job.json.
+// Uses restrictive modes (0o700/0o600) — see WriteInfo. M1 hardening.
 func WriteJob(sessionID string, job *Job) error {
 	dir := Dir(sessionID)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("scout: session: %w", err)
 	}
+
+	_ = os.Chmod(dir, 0o700)
 
 	data, err := json.MarshalIndent(job, "", "  ")
 	if err != nil {
 		return fmt.Errorf("scout: session: %w", err)
 	}
 
-	return writeFileAtomic(filepath.Join(dir, jobFile), data, 0o644)
+	return writeFileAtomic(filepath.Join(dir, jobFile), data, 0o600)
 }
 
 // ReadJob reads the job from <SessionsDir>/<sessionID>/job.json.

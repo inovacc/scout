@@ -54,7 +54,8 @@ type Browser struct {
 	fpRot *fingerprintRotator
 
 	// sessionID tracks this browser's session directory under ~/.scout/sessions/.
-	sessionID string
+	sessionID   string
+	sessionLock *SessionLockGuard
 
 	// cdpURL is the CDP WebSocket URL used to connect to the browser.
 	cdpURL string
@@ -720,6 +721,12 @@ func (b *Browser) Close() error {
 			b.launcher = nil
 		}
 
+		// Release the session lock (M3). Safe to call even if nil.
+		if b.sessionLock != nil {
+			b.sessionLock.Release()
+			b.sessionLock = nil
+		}
+
 		b.closed.Store(true)
 	})
 
@@ -768,6 +775,19 @@ func (b *Browser) registerSession() {
 	if browserName == "" {
 		browserName = "chrome"
 	}
+
+	// Acquire an exclusive cross-process lock for the duration of the
+	// claim and any subsequent reuse. Held until Browser.Close releases
+	// it. Hardening M3.
+	guard, err := AcquireSessionLock(sessionID)
+	if err != nil {
+		// Best-effort: if locking fails (timeout, permission), continue
+		// without it. The lock is a defense-in-depth measure; failing
+		// here would be a regression versus prior behavior.
+		guard = nil
+	}
+
+	b.sessionLock = guard
 
 	// Check if reusing an existing session.
 	if existing, err := ReadSessionInfo(sessionID); err == nil {

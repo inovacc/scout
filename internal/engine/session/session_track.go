@@ -4,12 +4,16 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"golang.org/x/net/publicsuffix"
 )
 
 const (
@@ -29,10 +33,26 @@ var SessionsDir = defaultSessionsDir
 // platform implementation in owner_{unix,windows}.go.
 var dirOwnerCheck = validateDirOwner
 
+// defaultSessionsDir resolves the per-user sessions directory.
+//
+// Precedence (M2 hardening):
+//  1. SCOUT_HOME env var → <SCOUT_HOME>/sessions
+//  2. os.UserHomeDir()   → <home>/.scout/sessions
+//  3. fail closed by returning "" — refuses the previous os.TempDir()
+//     fallback, which is world-readable and shared across local users.
+//     Callers (WriteInfo/MkdirAll) will surface a clear error.
+//
+// Returning "" intentionally produces a downstream "mkdir : no such file or
+// directory" so misconfigured environments fail loudly rather than silently
+// leaking Chrome cookies and OAuth tokens into /tmp.
 func defaultSessionsDir() string {
+	if env := os.Getenv("SCOUT_HOME"); env != "" {
+		return filepath.Join(env, "sessions")
+	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return filepath.Join(os.TempDir(), "scout", "sessions")
+		return ""
 	}
 
 	return filepath.Join(home, ".scout", "sessions")
@@ -83,18 +103,27 @@ func DataDir(id string) string {
 }
 
 // WriteInfo writes the session info as JSON to <SessionsDir>/<id>/scout.pid.
+// Directories and files are created with restrictive modes (0o700/0o600) so
+// other local users cannot read Chrome's cookie database or scraper auth
+// tokens stored under the session's data/ subdir.
+//
+// Hardening M1 — see docs/quality/SESSION_HARDENING.md.
 func WriteInfo(id string, info *SessionInfo) error {
 	dir := Dir(id)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("scout: create session dir: %w", err)
 	}
+
+	// Chmod after MkdirAll so the mode is umask-independent. No-op on
+	// Windows (ACLs handle permissions there).
+	_ = os.Chmod(dir, 0o700)
 
 	data, err := json.MarshalIndent(info, "", "  ")
 	if err != nil {
 		return fmt.Errorf("scout: marshal session info: %w", err)
 	}
 
-	return writeFileAtomic(filepath.Join(dir, "scout.pid"), data, 0o644)
+	return writeFileAtomic(filepath.Join(dir, "scout.pid"), data, 0o600)
 }
 
 // ReadInfo reads the session info from <SessionsDir>/<id>/scout.pid.
@@ -136,6 +165,10 @@ func RemoveInfo(id string) {
 }
 
 // List reads all <dir>/scout.pid files under SessionsDir.
+//
+// Per M5: distinguishes missing scout.pid (orphan dir, silently skipped) from
+// corrupt scout.pid (logged via slog so operators can detect tampering or
+// crash damage) from foreign-owned directories (also logged — see H4).
 func List() ([]SessionListing, error) {
 	sessDir := GetSessionsDir()
 
@@ -159,6 +192,13 @@ func List() ([]SessionListing, error) {
 
 		info, err := ReadInfo(name)
 		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				slog.Warn("scout: session unreadable",
+					"id", name,
+					"err", err,
+				)
+			}
+
 			continue
 		}
 
@@ -246,11 +286,25 @@ func CleanOrphans() (int, error) {
 		// Remove the full session directory (scout.pid + job.json + data/).
 		// Use retry loop for Windows file lock compatibility.
 		sessionDir := Dir(s.ID)
+
+		var lastErr error
 		for range removeRetries {
-			if err := os.RemoveAll(sessionDir); err == nil {
+			lastErr = os.RemoveAll(sessionDir)
+			if lastErr == nil {
 				break
 			}
+
 			time.Sleep(removeRetryWait)
+		}
+
+		if lastErr != nil {
+			// M6: surface persistent removal failures (permission denied,
+			// stuck file lock) instead of silently swallowing them.
+			slog.Warn("scout: session cleanup failed after retries",
+				"id", s.ID,
+				"dir", sessionDir,
+				"err", lastErr,
+			)
 		}
 	}
 
@@ -381,14 +435,24 @@ func CleanStaleSessions() (int, error) {
 		}
 
 		// Retry removal for Windows file locks.
+		var lastErr error
+
 		for range removeRetries {
-			if err := os.RemoveAll(filepath.Join(sessDir, id)); err == nil {
+			lastErr = os.RemoveAll(filepath.Join(sessDir, id))
+			if lastErr == nil {
 				cleaned++
 
 				break
 			}
 
 			time.Sleep(removeRetryWait)
+		}
+
+		if lastErr != nil {
+			slog.Warn("scout: stale session cleanup failed after retries",
+				"id", id,
+				"err", lastErr,
+			)
 		}
 	}
 
@@ -421,14 +485,24 @@ func StartOrphanWatchdog(interval time.Duration, done <-chan struct{}) {
 	}()
 }
 
-// RootDomain extracts the root domain from a URL, stripping subdomains.
-// e.g. "https://sub.admin.mysite.com/path" → "mysite.com"
-// e.g. "https://app.mysite.co.uk/path" → "mysite.co.uk"
+// RootDomain extracts the registrable (eTLD+1) domain from a URL, using the
+// Mozilla Public Suffix List via golang.org/x/net/publicsuffix.
+//
+// Examples:
+//
+//	"https://sub.admin.mysite.com/path"   → "mysite.com"
+//	"https://app.mysite.co.uk/path"       → "mysite.co.uk"
+//	"https://x.gov.uk/path"               → "x.gov.uk"
+//	"https://192.168.1.1:8080/path"       → "192.168.1.1"
+//
+// Hardening M4 — replaces the previous hand-curated two-part-TLD map which
+// missed entries like co.il, gov.uk, ac.uk and would have collapsed
+// unrelated domains into the same session directory.
 func RootDomain(rawURL string) string {
 	if rawURL == "" {
 		return ""
 	}
-	// Ensure scheme for url.Parse.
+
 	if !strings.Contains(rawURL, "://") {
 		rawURL = "https://" + rawURL
 	}
@@ -443,31 +517,17 @@ func RootDomain(rawURL string) string {
 		return ""
 	}
 
-	// Handle IP addresses — no root domain extraction.
+	// Bypass PSL for IP literals — they have no registrable domain.
 	if net := strings.TrimRight(host, "."); strings.ContainsAny(net, ":") || IsIP(net) {
 		return host
 	}
 
-	parts := strings.Split(host, ".")
-	if len(parts) <= 2 {
+	etld1, err := publicsuffix.EffectiveTLDPlusOne(host)
+	if err != nil {
 		return host
 	}
 
-	// Handle two-part TLDs: co.uk, com.br, co.jp, etc.
-	twoPartTLDs := map[string]bool{
-		"co.uk": true, "co.jp": true, "co.kr": true, "co.nz": true, "co.za": true,
-		"com.br": true, "com.au": true, "com.cn": true, "com.mx": true, "com.ar": true,
-		"com.tr": true, "com.tw": true, "com.sg": true, "com.hk": true, "com.my": true,
-		"org.uk": true, "org.au": true, "net.au": true, "net.br": true,
-		"co.in": true, "co.id": true, "co.th": true,
-	}
-
-	lastTwo := strings.Join(parts[len(parts)-2:], ".")
-	if twoPartTLDs[lastTwo] && len(parts) >= 3 {
-		return strings.Join(parts[len(parts)-3:], ".")
-	}
-
-	return strings.Join(parts[len(parts)-2:], ".")
+	return etld1
 }
 
 // IsIP checks whether s looks like an IPv4 address (digits and dots only).
