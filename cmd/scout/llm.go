@@ -60,8 +60,10 @@ var extractAICmd = &cobra.Command{
 	Long: `Navigate to a URL, convert the page to Markdown, and send it to an LLM
 for intelligent extraction. Optionally review the output with a second LLM.
 
-Supported providers: ollama, openai, anthropic, openrouter, deepseek, gemini.
-Any OpenAI-compatible endpoint works via --api-base.
+Supported providers: mcp (sampling via connected MCP host — no API key
+required when scout runs as an MCP server), ollama, openai, anthropic,
+openrouter, deepseek, gemini. Any OpenAI-compatible endpoint works via
+--api-base.
 
 With --review, a second LLM validates the extraction for accuracy.
 With --workspace, jobs are persisted to disk with full metadata.`,
