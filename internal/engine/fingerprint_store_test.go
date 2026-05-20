@@ -92,16 +92,16 @@ func TestFingerprintStore_List(t *testing.T) {
 }
 
 func TestFingerprintStore_DefaultDir(t *testing.T) {
-	// Ensure the default store creation doesn't fail.
+	// Redirect to a tempdir via SCOUT_HOME so the real per-user state
+	// isn't touched (H5 path migration).
+	t.Setenv("SCOUT_HOME", filepath.Join(t.TempDir(), "scout"))
+
 	store, err := NewFingerprintStore("")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Verify dir was created under home.
-	home, _ := os.UserHomeDir()
-
-	expected := filepath.Join(home, ".scout", "fingerprints")
+	expected := filepath.Join(os.Getenv("SCOUT_HOME"), "fingerprints")
 	if _, err := os.Stat(expected); err != nil {
 		t.Fatalf("expected default dir %s to exist: %v", expected, err)
 	}

@@ -103,6 +103,12 @@ var (
 func newTestBrowser(t *testing.T) *Browser {
 	t.Helper()
 
+	// Skip under -short so the default `task test` cycle stays under a
+	// minute. Run `task test:full` for the full browser-driven suite.
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	sharedBrowserOnce.Do(func() {
 		sharedBrowser, errSharedBrowser = New(
 			WithHeadless(true),
@@ -122,6 +128,10 @@ func newTestBrowser(t *testing.T) *Browser {
 // Use this when the test needs to call Close() or modify browser state.
 func newOwnedTestBrowser(t *testing.T) *Browser {
 	t.Helper()
+
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
 
 	b, err := New(
 		WithHeadless(true),

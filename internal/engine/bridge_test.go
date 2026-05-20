@@ -180,6 +180,10 @@ func injectScoutAPI(p *Page) {
 func newBridgeBrowser(t *testing.T) *Browser {
 	t.Helper()
 
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	b, err := New(
 		WithHeadless(true),
 		WithNoSandbox(),
