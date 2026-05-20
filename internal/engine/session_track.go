@@ -161,6 +161,13 @@ func preWriteStubInfo(id, browserName string, reusable, headless bool) {
 		return
 	}
 
+	// Skip if a valid scout.pid already exists — reusing a session must
+	// NOT clobber the existing metadata (BrowserStartToken, CreatedAt,
+	// BrowserParentPID). registerSession runs the proper update path.
+	if _, err := ReadSessionInfo(id); err == nil {
+		return
+	}
+
 	if browserName == "" {
 		browserName = "chrome"
 	}
