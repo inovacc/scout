@@ -359,6 +359,10 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 	// short-lived gather / scrape jobs where persistence is undesirable.
 	if !req.GetEphemeral() {
 		opts = append(opts, scout.WithReusableSession())
+
+		if secs := req.GetExpiresInSeconds(); secs > 0 {
+			opts = append(opts, scout.WithReusableLifetime(time.Duration(secs)*time.Second))
+		}
 	}
 	opts = append(opts, scout.WithHeadless(req.GetHeadless()))
 

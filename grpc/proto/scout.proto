@@ -86,6 +86,7 @@ message CreateSessionRequest {
   bool   devtools = 11; // open Chrome DevTools automatically
   bool   no_sandbox = 12; // disable browser sandbox (containers/WSL)
   bool   ephemeral = 13; // when true the session is non-reusable and cleaned on Close. Default false: reusable, survives daemon restart.
+  int64  expires_in_seconds = 14; // expiration window for reusable sessions in seconds; 0 → default 7d. Ignored for ephemeral.
 }
 
 message CreateSessionResponse {

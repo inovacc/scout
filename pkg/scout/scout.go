@@ -385,6 +385,7 @@ func NewOllamaProvider(opts ...OllamaOption) (*OllamaProvider, error) { return e
 func NewMCPSamplingProvider(opts ...MCPSamplingOption) *MCPSamplingProvider { return engine.NewMCPSamplingProvider(opts...) }
 func WithMCPSamplingMaxTokens(n int64) MCPSamplingOption { return engine.WithMCPSamplingMaxTokens(n) }
 func IsMCPSamplingAvailable() bool { return engine.IsMCPSamplingAvailable() }
+func WithReusableLifetime(d time.Duration) Option { return engine.WithReusableLifetime(d) }
 func ProcessAlive(pid int) bool { return engine.ProcessAlive(pid) }
 func IsScoutProcess(pid int) bool { return engine.IsScoutProcess(pid) }
 func ProcessParentPID(pid int) (int, bool) { return engine.ProcessParentPID(pid) }

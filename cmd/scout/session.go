@@ -31,6 +31,7 @@ func init() {
 	sessionCreateCmd.Flags().Bool("devtools", false, "open Chrome DevTools automatically")
 	sessionCreateCmd.Flags().Bool("no-sandbox", false, "disable browser sandbox (containers/WSL)")
 	sessionCreateCmd.Flags().Bool("ephemeral", false, "create a non-reusable session (cleaned on Close instead of persisted)")
+	sessionCreateCmd.Flags().Duration("expires-in", 0, "expiration window for reusable sessions (e.g. 24h, 7d). 0 = default 7d. Ignored for --ephemeral.")
 	sessionCreateCmd.Flags().String("profile", "", "path to .scoutprofile file to apply at session creation")
 	sessionCreateCmd.Flags().Bool("decrypt", false, "decrypt the profile file (requires --passphrase)")
 	sessionCreateCmd.Flags().String("passphrase", "", "passphrase for encrypted profile decryption")
@@ -82,6 +83,7 @@ var sessionCreateCmd = &cobra.Command{
 		devtools, _ := cmd.Flags().GetBool("devtools")
 		noSandbox, _ := cmd.Flags().GetBool("no-sandbox")
 		ephemeral, _ := cmd.Flags().GetBool("ephemeral")
+		expiresIn, _ := cmd.Flags().GetDuration("expires-in")
 
 		// Load profile if specified, applying overrides to session creation fields.
 		profilePath, _ := cmd.Flags().GetString("profile")
@@ -134,8 +136,9 @@ var sessionCreateCmd = &cobra.Command{
 			CaptureBody: captureBody,
 			Maximized:   maximized,
 			Devtools:    devtools,
-			NoSandbox:   noSandbox,
-			Ephemeral:   ephemeral,
+			NoSandbox:        noSandbox,
+			Ephemeral:        ephemeral,
+			ExpiresInSeconds: int64(expiresIn.Seconds()),
 		})
 		if err != nil {
 			return fmt.Errorf("scout: create session: %w", err)

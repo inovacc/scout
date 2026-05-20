@@ -14,7 +14,8 @@ import (
 // session classifications.
 const (
 	statusHealthy   = "HEALTHY"   // scout alive + browser alive
-	statusReusable  = "REUSABLE"  // reusable flag set; respected per H6
+	statusReusable  = "REUSABLE"  // reusable flag set; respected per H6 (within ExpiresAt window)
+	statusExpired   = "EXPIRED"   // reusable session past ExpiresAt — cleanable
 	statusZombie    = "ZOMBIE"    // scout dead + browser alive (orphan browser)
 	statusStale     = "STALE"     // scout dead + browser dead
 	statusCorrupt   = "CORRUPT"   // scout.pid missing / unreadable
@@ -35,7 +36,9 @@ type auditEntry struct {
 	Browser          string    `json:"browser,omitempty"`
 	Exec             string    `json:"exec,omitempty"`
 	CreatedAt        time.Time `json:"created_at,omitempty"`
+	ExpiresAt        time.Time `json:"expires_at,omitempty"`
 	Age              string    `json:"age,omitempty"`
+	TTL              string    `json:"ttl,omitempty"`
 	Err              string    `json:"err,omitempty"`
 }
 
@@ -141,9 +144,19 @@ func classifySession(id string) auditEntry {
 	e.Browser = info.Browser
 	e.Exec = info.Exec
 	e.CreatedAt = info.CreatedAt
+	e.ExpiresAt = info.ExpiresAt
 
 	if !info.CreatedAt.IsZero() {
 		e.Age = time.Since(info.CreatedAt).Truncate(time.Second).String()
+	}
+
+	if !info.ExpiresAt.IsZero() {
+		ttl := time.Until(info.ExpiresAt).Truncate(time.Second)
+		if ttl < 0 {
+			e.TTL = "EXPIRED"
+		} else {
+			e.TTL = ttl.String()
+		}
 	}
 
 	e.ScoutAlive = info.ScoutPID > 0 && scout.IsScoutProcess(info.ScoutPID)
@@ -154,6 +167,8 @@ func classifySession(id string) auditEntry {
 	e.ParentMatchesScout = e.BrowserParentPID != 0 && e.BrowserParentPID == e.ScoutPID
 
 	switch {
+	case info.Reusable && info.IsExpired():
+		e.Status = statusExpired
 	case info.Reusable:
 		e.Status = statusReusable
 	case e.ScoutAlive && e.BrowserAlive:
@@ -171,8 +186,8 @@ func printAuditTable(cmd *cobra.Command, entries []auditEntry) {
 	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
 	defer func() { _ = w.Flush() }()
 
-	_, _ = fmt.Fprintln(w, "SESSION\tSTATUS\tSCOUT\tBROWSER\tPPID\tBROWSER\tAGE")
-	_, _ = fmt.Fprintln(w, "-------\t------\t-----\t-------\t----\t-------\t---")
+	_, _ = fmt.Fprintln(w, "SESSION\tSTATUS\tSCOUT\tBROWSER\tPPID\tBROWSER\tAGE\tTTL")
+	_, _ = fmt.Fprintln(w, "-------\t------\t-----\t-------\t----\t-------\t---\t---")
 
 	for _, e := range entries {
 		scoutCol := fmt.Sprintf("%d", e.ScoutPID)
@@ -201,8 +216,8 @@ func printAuditTable(cmd *cobra.Command, entries []auditEntry) {
 			shortID = shortID[:36]
 		}
 
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			shortID, e.Status, scoutCol, browserCol, ppidCol, e.Browser, e.Age)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			shortID, e.Status, scoutCol, browserCol, ppidCol, e.Browser, e.Age, e.TTL)
 	}
 }
 
@@ -226,7 +241,7 @@ func enforceAuditCleanup(entries []auditEntry) (killed, removed int) {
 				removed++
 			}
 
-		case statusStale, statusCorrupt:
+		case statusStale, statusCorrupt, statusExpired:
 			if err := scout.ResetSession(e.ID); err == nil {
 				removed++
 			}

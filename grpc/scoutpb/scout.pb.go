@@ -58,22 +58,23 @@ func (*Empty) Descriptor() ([]byte, []int) {
 }
 
 type CreateSessionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Headless      bool                   `protobuf:"varint,1,opt,name=headless,proto3" json:"headless,omitempty"`
-	Stealth       bool                   `protobuf:"varint,2,opt,name=stealth,proto3" json:"stealth,omitempty"`
-	Proxy         string                 `protobuf:"bytes,3,opt,name=proxy,proto3" json:"proxy,omitempty"`
-	UserAgent     string                 `protobuf:"bytes,4,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
-	Width         int32                  `protobuf:"varint,5,opt,name=width,proto3" json:"width,omitempty"`
-	Height        int32                  `protobuf:"varint,6,opt,name=height,proto3" json:"height,omitempty"`
-	InitialUrl    string                 `protobuf:"bytes,7,opt,name=initial_url,json=initialUrl,proto3" json:"initial_url,omitempty"`
-	Record        bool                   `protobuf:"varint,8,opt,name=record,proto3" json:"record,omitempty"`                              // start recording immediately
-	CaptureBody   bool                   `protobuf:"varint,9,opt,name=capture_body,json=captureBody,proto3" json:"capture_body,omitempty"` // capture response bodies
-	Maximized     bool                   `protobuf:"varint,10,opt,name=maximized,proto3" json:"maximized,omitempty"`                       // start window maximized
-	Devtools      bool                   `protobuf:"varint,11,opt,name=devtools,proto3" json:"devtools,omitempty"`                         // open Chrome DevTools automatically
-	NoSandbox     bool                   `protobuf:"varint,12,opt,name=no_sandbox,json=noSandbox,proto3" json:"no_sandbox,omitempty"`      // disable browser sandbox (containers/WSL)
-	Ephemeral     bool                   `protobuf:"varint,13,opt,name=ephemeral,proto3" json:"ephemeral,omitempty"`                       // when true the session is non-reusable and cleaned on Close. Default false: reusable, survives daemon restart.
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Headless         bool                   `protobuf:"varint,1,opt,name=headless,proto3" json:"headless,omitempty"`
+	Stealth          bool                   `protobuf:"varint,2,opt,name=stealth,proto3" json:"stealth,omitempty"`
+	Proxy            string                 `protobuf:"bytes,3,opt,name=proxy,proto3" json:"proxy,omitempty"`
+	UserAgent        string                 `protobuf:"bytes,4,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
+	Width            int32                  `protobuf:"varint,5,opt,name=width,proto3" json:"width,omitempty"`
+	Height           int32                  `protobuf:"varint,6,opt,name=height,proto3" json:"height,omitempty"`
+	InitialUrl       string                 `protobuf:"bytes,7,opt,name=initial_url,json=initialUrl,proto3" json:"initial_url,omitempty"`
+	Record           bool                   `protobuf:"varint,8,opt,name=record,proto3" json:"record,omitempty"`                                                // start recording immediately
+	CaptureBody      bool                   `protobuf:"varint,9,opt,name=capture_body,json=captureBody,proto3" json:"capture_body,omitempty"`                   // capture response bodies
+	Maximized        bool                   `protobuf:"varint,10,opt,name=maximized,proto3" json:"maximized,omitempty"`                                         // start window maximized
+	Devtools         bool                   `protobuf:"varint,11,opt,name=devtools,proto3" json:"devtools,omitempty"`                                           // open Chrome DevTools automatically
+	NoSandbox        bool                   `protobuf:"varint,12,opt,name=no_sandbox,json=noSandbox,proto3" json:"no_sandbox,omitempty"`                        // disable browser sandbox (containers/WSL)
+	Ephemeral        bool                   `protobuf:"varint,13,opt,name=ephemeral,proto3" json:"ephemeral,omitempty"`                                         // when true the session is non-reusable and cleaned on Close. Default false: reusable, survives daemon restart.
+	ExpiresInSeconds int64                  `protobuf:"varint,14,opt,name=expires_in_seconds,json=expiresInSeconds,proto3" json:"expires_in_seconds,omitempty"` // expiration window for reusable sessions in seconds; 0 → default 7d. Ignored for ephemeral.
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CreateSessionRequest) Reset() {
@@ -195,6 +196,13 @@ func (x *CreateSessionRequest) GetEphemeral() bool {
 		return x.Ephemeral
 	}
 	return false
+}
+
+func (x *CreateSessionRequest) GetExpiresInSeconds() int64 {
+	if x != nil {
+		return x.ExpiresInSeconds
+	}
+	return 0
 }
 
 type CreateSessionResponse struct {
@@ -3880,7 +3888,7 @@ var File_grpc_proto_scout_proto protoreflect.FileDescriptor
 const file_grpc_proto_scout_proto_rawDesc = "" +
 	"\n" +
 	"\x16grpc/proto/scout.proto\x12\bscout.v1\"\a\n" +
-	"\x05Empty\"\x82\x03\n" +
+	"\x05Empty\"\xb0\x03\n" +
 	"\x14CreateSessionRequest\x12\x1a\n" +
 	"\bheadless\x18\x01 \x01(\bR\bheadless\x12\x18\n" +
 	"\astealth\x18\x02 \x01(\bR\astealth\x12\x14\n" +
@@ -3898,7 +3906,8 @@ const file_grpc_proto_scout_proto_rawDesc = "" +
 	"\bdevtools\x18\v \x01(\bR\bdevtools\x12\x1d\n" +
 	"\n" +
 	"no_sandbox\x18\f \x01(\bR\tnoSandbox\x12\x1c\n" +
-	"\tephemeral\x18\r \x01(\bR\tephemeral\"^\n" +
+	"\tephemeral\x18\r \x01(\bR\tephemeral\x12,\n" +
+	"\x12expires_in_seconds\x18\x0e \x01(\x03R\x10expiresInSeconds\"^\n" +
 	"\x15CreateSessionResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x10\n" +
