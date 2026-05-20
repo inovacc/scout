@@ -22,7 +22,7 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 | L2 | LOW | DONE | (this PR) |
 | L3 | LOW | DONE | (this PR) |
 | L4 | LOW | DEFERRED | breaks existing session dirs |
-| L5 | LOW | DEFERRED | larger refactor than budgeted |
+| L5 | LOW | DONE | (this PR) |
 | L6 | LOW | DONE | (this PR) |
 
 ## SEV-HIGH

@@ -763,13 +763,18 @@ func (b *Browser) registerSession() {
 		return
 	}
 
-	dataDir := b.launcher.Get(flags.UserDataDir)
-	if dataDir == "" {
-		return
-	}
+	// L5: prefer the canonical sessionID set in New(); fall back to deriving
+	// it from the launcher's UserDataDir basename only for callers that
+	// configure a custom UserDataDir without setting opts.sessionID.
+	sessionID := b.opts.sessionID
+	if sessionID == "" {
+		dataDir := b.launcher.Get(flags.UserDataDir)
+		if dataDir == "" {
+			return
+		}
 
-	// The data dir is sessions/<hash>/data — session ID is the parent dir name.
-	sessionID := filepath.Base(filepath.Dir(dataDir))
+		sessionID = filepath.Base(filepath.Dir(dataDir))
+	}
 
 	browserName := string(b.opts.browserType)
 	if browserName == "" {
