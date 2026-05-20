@@ -93,6 +93,10 @@ func Execute() {
 		}
 
 		if err != nil {
+			// rootCmd has SilenceErrors=true so cobra never prints. Print
+			// here so failures aren't silently swallowed.
+			_, _ = fmt.Fprintf(os.Stderr, "scout: %v\n", err)
+
 			return 1
 		}
 		return 0
