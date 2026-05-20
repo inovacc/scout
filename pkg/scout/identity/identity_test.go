@@ -47,7 +47,11 @@ func TestDeviceIDDeterministic(t *testing.T) {
 	}
 
 	// Computing device ID again from same cert should give same result
-	id2 := DeviceIDFromCert(cert)
+	id2, err := DeviceIDFromCert(cert)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if id.DeviceID != id2 {
 		t.Fatalf("device ID not deterministic: %s != %s", id.DeviceID, id2)
 	}

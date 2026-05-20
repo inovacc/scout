@@ -77,6 +77,11 @@ tasks:
     cmds:
       - go test -v -short ./pkg/scout/... ./internal/... ./grpc/...
 
+  test:full:
+    desc: Full suite including browser-dependent integration tests (multi-minute)
+    cmds:
+      - go test -v -race -count=1 -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./internal/... ./grpc/...
+
   # === CODE QUALITY ===
   fmt:
     desc: Format all Go code

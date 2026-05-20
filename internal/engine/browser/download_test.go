@@ -17,7 +17,7 @@ import (
 )
 
 func TestChromiumDownloadURLs(t *testing.T) {
-	revision := LoadManifest().DefaultRevision()
+	revision := mustLoadManifest().DefaultRevision()
 
 	urls := ChromiumDownloadURLs(revision)
 	if len(urls) == 0 {
@@ -119,7 +119,7 @@ func TestBraveBinPath(t *testing.T) {
 }
 
 func TestBraveDownloadURL(t *testing.T) {
-	m := LoadManifest()
+	m := mustLoadManifest()
 
 	url := m.Brave.DownloadURL("1.87.188")
 	if url == "" {

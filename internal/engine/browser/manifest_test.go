@@ -7,7 +7,8 @@ import (
 )
 
 func TestLoadManifest(t *testing.T) {
-	m := LoadManifest()
+	m, err := LoadManifest()
+	if err != nil { t.Fatal(err) }
 	if m == nil {
 		t.Fatal("LoadManifest() returned nil")
 	}
@@ -18,14 +19,14 @@ func TestLoadManifest(t *testing.T) {
 }
 
 func TestManifestDefaultRevision(t *testing.T) {
-	rev := LoadManifest().DefaultRevision()
+	rev := mustLoadManifest().DefaultRevision()
 	if rev == 0 {
 		t.Fatal("DefaultRevision() should not be 0")
 	}
 }
 
 func TestManifestHostURLs(t *testing.T) {
-	m := LoadManifest()
+	m := mustLoadManifest()
 
 	hosts := m.HostURLs(m.DefaultRevision())
 	if len(hosts) == 0 {
@@ -45,7 +46,7 @@ func TestManifestHostURLs(t *testing.T) {
 }
 
 func TestManifestPlatform(t *testing.T) {
-	p := LoadManifest().Platform()
+	p := mustLoadManifest().Platform()
 	if p == nil {
 		t.Skipf("no platform config for %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
@@ -60,7 +61,7 @@ func TestManifestPlatform(t *testing.T) {
 }
 
 func TestManifestLatestAPI(t *testing.T) {
-	url := LoadManifest().LatestAPI()
+	url := mustLoadManifest().LatestAPI()
 	if url == "" {
 		t.Skipf("no LatestAPI for %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
@@ -106,7 +107,7 @@ func TestHostConf(t *testing.T) {
 }
 
 func TestBrowserDefBrowserAPI(t *testing.T) {
-	m := LoadManifest()
+	m := mustLoadManifest()
 
 	tests := []struct {
 		name   string
@@ -145,7 +146,7 @@ func TestBrowserDefBrowserAPI(t *testing.T) {
 }
 
 func TestBrowserDefBrowserPlatform(t *testing.T) {
-	m := LoadManifest()
+	m := mustLoadManifest()
 
 	for _, tc := range []struct {
 		name string
@@ -169,7 +170,7 @@ func TestBrowserDefBrowserPlatform(t *testing.T) {
 }
 
 func TestBrowserDefBinaryPath(t *testing.T) {
-	m := LoadManifest()
+	m := mustLoadManifest()
 
 	// Chrome should have a platform-specific binary.
 	got := m.Chrome.BinaryPath("fallback")
@@ -189,7 +190,7 @@ func TestBrowserDefBinaryPath(t *testing.T) {
 }
 
 func TestBrowserDefZipName(t *testing.T) {
-	m := LoadManifest()
+	m := mustLoadManifest()
 
 	tests := []struct {
 		name    string
@@ -225,7 +226,7 @@ func TestBrowserDefZipName(t *testing.T) {
 }
 
 func TestBrowserDefDownloadURL(t *testing.T) {
-	m := LoadManifest()
+	m := mustLoadManifest()
 
 	tests := []struct {
 		name    string
