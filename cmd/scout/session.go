@@ -433,37 +433,50 @@ var sessionResetCmd = &cobra.Command{
 	},
 }
 
-// trackSession records a session ID in ~/.scout/sessions/.
-func trackSession(id string) error {
+// trackedSessionsDir is the CLI bookkeeping directory for active session
+// IDs. Kept separate from engine session directories (`<scouthome>/sessions/`)
+// so the two namespaces don't collide. Previously the CLI wrote a 0-byte
+// file named with the session UUID into the same `sessions/` directory the
+// engine uses for real per-session subdirectories; the two coexisted via an
+// `e.IsDir()` filter but the layout was confusing and any future engine
+// session whose UUID matched a tracked file would clobber it.
+func trackedSessionsDir() (string, error) {
 	dir, err := scoutDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dir, "active-sessions"), nil
+}
+
+// trackSession records a session ID in <scouthome>/active-sessions/.
+func trackSession(id string) error {
+	sessDir, err := trackedSessionsDir()
 	if err != nil {
 		return err
 	}
 
-	sessDir := filepath.Join(dir, "sessions")
-	if err := os.MkdirAll(sessDir, 0o755); err != nil {
+	if err := os.MkdirAll(sessDir, 0o700); err != nil {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(sessDir, id), nil, 0o644)
+	return os.WriteFile(filepath.Join(sessDir, id), nil, 0o600)
 }
 
 // untrackSession removes a tracked session.
 func untrackSession(id string) {
-	dir, _ := scoutDir()
-	if dir != "" {
-		_ = os.Remove(filepath.Join(dir, "sessions", id))
+	sessDir, err := trackedSessionsDir()
+	if err == nil && sessDir != "" {
+		_ = os.Remove(filepath.Join(sessDir, id))
 	}
 }
 
 // listTrackedSessions returns all tracked session IDs.
 func listTrackedSessions() ([]string, error) {
-	dir, err := scoutDir()
+	sessDir, err := trackedSessionsDir()
 	if err != nil {
 		return nil, err
 	}
-
-	sessDir := filepath.Join(dir, "sessions")
 
 	entries, err := os.ReadDir(sessDir)
 	if err != nil {
