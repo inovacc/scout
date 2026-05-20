@@ -94,12 +94,38 @@ type SessionInfo struct {
 	Reusable          bool      `json:"reusable"`
 	CreatedAt         time.Time `json:"created_at"`
 	LastUsed          time.Time `json:"last_used"`
-	Headless          bool      `json:"headless"`
-	Browser           string    `json:"browser"`
-	DomainHash        string    `json:"domain_hash,omitempty"`
-	Domain            string    `json:"domain,omitempty"`
-	Exec              string    `json:"exec,omitempty"`
-	BuildVersion      string    `json:"build_version,omitempty"`
+	// ExpiresAt is REQUIRED for Reusable sessions — persistent sessions
+	// must have a bounded lifetime so they don't accumulate forever. Zero
+	// for non-reusable (ephemeral) sessions.
+	ExpiresAt    time.Time `json:"expires_at,omitempty"`
+	Headless     bool      `json:"headless"`
+	Browser      string    `json:"browser"`
+	DomainHash   string    `json:"domain_hash,omitempty"`
+	Domain       string    `json:"domain,omitempty"`
+	Exec         string    `json:"exec,omitempty"`
+	BuildVersion string    `json:"build_version,omitempty"`
+}
+
+// DefaultReusableLifetime is the default expiration window for reusable
+// sessions when callers don't specify one. Seven days is long enough for
+// typical multi-day workflows but short enough that abandoned sessions get
+// cleaned eventually.
+const DefaultReusableLifetime = 7 * 24 * time.Hour
+
+// IsExpired reports whether a reusable session has passed its expiration.
+// Returns false for non-reusable sessions (they're cleaned on Close) and
+// for reusable sessions with no ExpiresAt set (legacy data — treated as
+// not-yet-expired to avoid surprise deletion).
+func (s *SessionInfo) IsExpired() bool {
+	if s == nil || !s.Reusable {
+		return false
+	}
+
+	if s.ExpiresAt.IsZero() {
+		return false
+	}
+
+	return time.Now().After(s.ExpiresAt)
 }
 
 // SessionListing pairs a session ID with its directory and info.
@@ -295,11 +321,10 @@ func CleanOrphans() (int, error) {
 			continue
 		}
 
-		// Reusable sessions persist by user opt-in. Don't kill their
-		// browser or remove their dir even if the owning scout is dead.
-		// The user resumes via `scout client --session <id>` or via the
-		// daemon restart picking up the still-running browser. H6.
-		if s.Info.Reusable {
+		// Reusable sessions persist by user opt-in UNTIL their ExpiresAt
+		// passes. Don't kill their browser or remove their dir while
+		// within the lifetime window. H6 + expiration enforcement.
+		if s.Info.Reusable && !s.Info.IsExpired() {
 			continue
 		}
 
@@ -438,14 +463,19 @@ func CleanStaleSessions() (int, error) {
 			continue
 		}
 
-		// Reusable sessions are NEVER auto-cleaned regardless of process
-		// state — the user explicitly opted in to persistence. Only manual
-		// `scout session destroy <id>` (or `session reset`) removes them.
-		// H6 hardening: previously a reusable session whose owning scout
-		// process had died was treated as cleanable, which contradicted
-		// the "reusable" contract.
+		// Reusable sessions are auto-cleaned ONLY when their ExpiresAt has
+		// passed. Otherwise persistence overrides liveness (H6 contract).
+		// Reusable sessions without ExpiresAt set (legacy data) are treated
+		// as not-yet-expired to avoid surprise deletion on upgrade.
 		if info.Reusable {
-			continue
+			if !info.IsExpired() {
+				continue
+			}
+
+			slog.Info("scout: reusable session expired, cleaning",
+				"id", id,
+				"expires_at", info.ExpiresAt,
+			)
 		}
 
 		// Non-reusable session or dead reusable — kill orphaned browser

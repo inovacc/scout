@@ -76,8 +76,9 @@ type options struct {
 	electronApp        string // path to Electron app dir or packaged binary
 	electronVersion    string // Electron version to download (e.g. "v33.2.0")
 	electronCDP        string // CDP endpoint of running Electron app
-	reusableSession    bool   // enable session reuse via scout.pid
-	sessionID          string // explicit session ID to reuse from scout.pid
+	reusableSession    bool          // enable session reuse via scout.pid
+	reusableLifetime   time.Duration // expiration window for reusable sessions; 0 → default 7d
+	sessionID          string        // explicit session ID to reuse from scout.pid
 	targetURL          string // URL for domain-based session routing
 	systemBrowser      bool   // allow system-installed browsers (not just cache)
 	mobile             *MobileConfig // mobile device automation via ADB
@@ -412,6 +413,18 @@ func WithReuseSession() Option {
 func WithReusableSession() Option {
 	return WithReuseSession()
 }
+
+// WithReusableLifetime sets the expiration window for a reusable session.
+// Reusable sessions are auto-cleaned by CleanStaleSessions / CleanOrphans
+// once ExpiresAt passes. Default is 7 days (DefaultReusableLifetime).
+// Has no effect on non-reusable (ephemeral) sessions.
+func WithReusableLifetime(d time.Duration) Option {
+	return func(o *options) { o.reusableLifetime = d }
+}
+
+// DefaultReusableLifetime re-exports the session-package constant for
+// callers that don't want to import internal/engine/session directly.
+const DefaultReusableLifetime = 7 * 24 * time.Hour
 
 // WithTargetURL sets the target URL for domain-based session routing.
 // Sessions are automatically matched by root domain hash, so

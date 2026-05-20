@@ -826,16 +826,30 @@ func (b *Browser) registerSession() {
 		return
 	}
 
+	now := time.Now()
+
 	info := &SessionInfo{
 		ScoutPID:   os.Getpid(),
 		BrowserPID: b.launcher.PID(),
 		Reusable:   b.opts.reusableSession,
-		CreatedAt:  time.Now(),
-		LastUsed:   time.Now(),
+		CreatedAt:  now,
+		LastUsed:   now,
 		Headless:   b.opts.headless,
 		Browser:    browserName,
 		DomainHash: DomainHash(b.opts.targetURL),
 		Domain:     RootDomain(b.opts.targetURL),
+	}
+
+	// Reusable sessions REQUIRE an expiration. Default 7d; override via
+	// WithReusableLifetime(). Non-reusable sessions get zero (ephemeral
+	// — cleaned on Close anyway).
+	if info.Reusable {
+		lifetime := b.opts.reusableLifetime
+		if lifetime <= 0 {
+			lifetime = DefaultReusableLifetime
+		}
+
+		info.ExpiresAt = now.Add(lifetime)
 	}
 
 	if tok, ok := ProcessStartToken(info.BrowserPID); ok {
