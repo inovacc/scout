@@ -88,7 +88,7 @@ func WriteInfo(id string, info *SessionInfo) error {
 		return fmt.Errorf("scout: marshal session info: %w", err)
 	}
 
-	return os.WriteFile(filepath.Join(dir, "scout.pid"), data, 0o644)
+	return writeFileAtomic(filepath.Join(dir, "scout.pid"), data, 0o644)
 }
 
 // ReadInfo reads the session info from <SessionsDir>/<id>/scout.pid.

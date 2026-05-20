@@ -84,7 +84,7 @@ func WriteJob(sessionID string, job *Job) error {
 		return fmt.Errorf("scout: session: %w", err)
 	}
 
-	return os.WriteFile(filepath.Join(dir, jobFile), data, 0o644)
+	return writeFileAtomic(filepath.Join(dir, jobFile), data, 0o644)
 }
 
 // ReadJob reads the job from <SessionsDir>/<sessionID>/job.json.
