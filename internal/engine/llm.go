@@ -26,6 +26,9 @@ type AnthropicProvider = llm.AnthropicProvider
 type AnthropicOption = llm.AnthropicOption
 type OllamaProvider = llm.OllamaProvider
 type OllamaOption = llm.OllamaOption
+
+type MCPSamplingProvider = llm.MCPSamplingProvider
+type MCPSamplingOption = llm.MCPSamplingOption
 type OpenAIProvider = llm.OpenAIProvider
 type OpenAIOption = llm.OpenAIOption
 
@@ -71,6 +74,14 @@ var (
 	WithOpenAIExtraHeaders = llm.WithOpenAIExtraHeaders
 
 	NewLLMWorkspace = llm.NewWorkspace
+
+	// MCP sampling: routes LLM completions through the connected MCP
+	// host (e.g. Claude Code) via sampling/createMessage reverse-RPC.
+	// No external API keys and no local ollama install — the host does
+	// the inference. Used when scout itself is running as an MCP server.
+	NewMCPSamplingProvider   = llm.NewMCPSamplingProvider
+	WithMCPSamplingMaxTokens = llm.WithMCPSamplingMaxTokens
+	IsMCPSamplingAvailable   = llm.IsMCPSamplingAvailable
 )
 
 // LLMOption configures LLM extraction behavior.

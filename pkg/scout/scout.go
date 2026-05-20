@@ -137,6 +137,8 @@ type MutationEvent = engine.MutationEvent
 type NetworkRecorder = engine.NetworkRecorder
 type OllamaOption = engine.OllamaOption
 type OllamaProvider = engine.OllamaProvider
+type MCPSamplingOption = engine.MCPSamplingOption
+type MCPSamplingProvider = engine.MCPSamplingProvider
 type OpenAIOption = engine.OpenAIOption
 type OpenAIProvider = engine.OpenAIProvider
 type Option = engine.Option
@@ -380,6 +382,9 @@ func NewLLMWorkspace(path string) (*LLMWorkspace, error) { return engine.NewLLMW
 func NewNetworkRecorder(page *Page, opts ...RecorderOption) *NetworkRecorder { return engine.NewNetworkRecorder(page, opts...) }
 func NewManagedPagePool(browser *Browser, size int) (*ManagedPagePool, error) { return engine.NewManagedPagePool(browser, size) }
 func NewOllamaProvider(opts ...OllamaOption) (*OllamaProvider, error) { return engine.NewOllamaProvider(opts...) }
+func NewMCPSamplingProvider(opts ...MCPSamplingOption) *MCPSamplingProvider { return engine.NewMCPSamplingProvider(opts...) }
+func WithMCPSamplingMaxTokens(n int64) MCPSamplingOption { return engine.WithMCPSamplingMaxTokens(n) }
+func IsMCPSamplingAvailable() bool { return engine.IsMCPSamplingAvailable() }
 func NewOpenAIProvider(opts ...OpenAIOption) (*OpenAIProvider, error) { return engine.NewOpenAIProvider(opts...) }
 func NewOpenRouterProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIProvider, error) { return engine.NewOpenRouterProvider(apiKey, model, opts...) }
 func NewRateLimiter(opts ...RateLimitOption) *RateLimiter { return engine.NewRateLimiter(opts...) }

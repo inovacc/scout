@@ -21,7 +21,7 @@ func init() {
 	// extract-ai flags
 	extractAICmd.Flags().String("url", "", "URL to extract from (required)")
 	extractAICmd.Flags().String("prompt", "", "extraction prompt (required)")
-	extractAICmd.Flags().String("provider", "ollama", "LLM provider: ollama, openai, anthropic, openrouter, deepseek, gemini")
+	extractAICmd.Flags().String("provider", "ollama", "LLM provider: mcp (use connected MCP host via sampling/createMessage), ollama, openai, anthropic, openrouter, deepseek, gemini")
 	extractAICmd.Flags().String("model", "", "model name (default: provider-specific)")
 	extractAICmd.Flags().String("api-key", "", "API key for remote providers (or use env: OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.)")
 	extractAICmd.Flags().String("api-base", "", "custom API base URL (for OpenAI-compatible endpoints)")
@@ -524,6 +524,12 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 	}
 
 	switch name {
+	case "mcp", "mcp-sampling":
+		// Route through the connected MCP host via sampling/createMessage.
+		// Requires scout to be running as an MCP server with a host that
+		// negotiated the sampling capability (e.g. Claude Code).
+		return scout.NewMCPSamplingProvider(), nil
+
 	case "ollama":
 		var opts []scout.OllamaOption
 		if ollamaHost != "" {
