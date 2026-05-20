@@ -19,10 +19,33 @@ import (
 const (
 	// removeRetries is the number of attempts to remove a session directory.
 	// Chrome holds file handles briefly after process termination on Windows;
-	// this budget outlasts that lock release. May need tuning — see STATE.md.
-	removeRetries   = 5
-	removeRetryWait = 500 * time.Millisecond
+	// this budget outlasts that lock release.
+	removeRetries = 5
+	// removeRetryWait is the initial backoff between retries. L1 hardening
+	// uses exponential backoff (×2 each attempt) so transient locks clear
+	// quickly without blocking shutdown the full 2.5s flat budget.
+	removeRetryWait = 50 * time.Millisecond
 )
+
+// retryRemoveAll retries os.RemoveAll with exponential backoff. Returns the
+// final error after exhausting removeRetries attempts (nil on success).
+// Hardening L1.
+func retryRemoveAll(path string) error {
+	var lastErr error
+
+	wait := removeRetryWait
+	for range removeRetries {
+		lastErr = os.RemoveAll(path)
+		if lastErr == nil {
+			return nil
+		}
+
+		time.Sleep(wait)
+		wait *= 2
+	}
+
+	return lastErr
+}
 
 // SessionsDir is the function that returns the base directory for session data.
 // It is a variable so tests can override it.
@@ -284,26 +307,15 @@ func CleanOrphans() (int, error) {
 		}
 
 		// Remove the full session directory (scout.pid + job.json + data/).
-		// Use retry loop for Windows file lock compatibility.
+		// Exponential-backoff retry handles Windows file locks (L1).
 		sessionDir := Dir(s.ID)
-
-		var lastErr error
-		for range removeRetries {
-			lastErr = os.RemoveAll(sessionDir)
-			if lastErr == nil {
-				break
-			}
-
-			time.Sleep(removeRetryWait)
-		}
-
-		if lastErr != nil {
+		if err := retryRemoveAll(sessionDir); err != nil {
 			// M6: surface persistent removal failures (permission denied,
 			// stuck file lock) instead of silently swallowing them.
 			slog.Warn("scout: session cleanup failed after retries",
 				"id", s.ID,
 				"dir", sessionDir,
-				"err", lastErr,
+				"err", err,
 			)
 		}
 	}
@@ -320,27 +332,24 @@ func Reset(id string) error {
 		return fmt.Errorf("scout: session %s not found", id)
 	}
 
-	// Kill browser process if still alive AND identity matches.
+	// Kill browser process if still alive AND identity matches. L2: only
+	// sleep after an actual Kill() — skipping the 500ms when the process
+	// is already gone shaves shutdown latency in the common case.
 	if info, err := ReadInfo(id); err == nil && info.BrowserPID != 0 {
 		if verifyProcess(info.BrowserPID, info.BrowserStartToken) {
 			if p, err := os.FindProcess(info.BrowserPID); err == nil {
-				_ = p.Kill()
-				// Give the process time to exit and release file locks.
-				time.Sleep(500 * time.Millisecond)
+				if killErr := p.Kill(); killErr == nil {
+					time.Sleep(500 * time.Millisecond)
+				}
 			}
 		}
 	}
 
-	// Retry removal — Chrome may hold file locks briefly after exit.
-	var err error
-	for range removeRetries {
-		if err = os.RemoveAll(dir); err == nil {
-			return nil
-		}
-		time.Sleep(removeRetryWait)
+	if err := retryRemoveAll(dir); err != nil {
+		return fmt.Errorf("scout: reset session %s: %w", id, err)
 	}
 
-	return fmt.Errorf("scout: reset session %s: %w", id, err)
+	return nil
 }
 
 // ResetAll removes all session directories under SessionsDir, including
@@ -366,6 +375,16 @@ func ResetAll() (int, error) {
 		}
 
 		if err := Reset(e.Name()); err != nil {
+			// L3: surface per-session failures (PID kill failed,
+			// dir still locked) instead of silently swallowing
+			// them. Operator running `scout session reset --all`
+			// previously saw "removed N" with no visibility into
+			// which session refused to die.
+			slog.Warn("scout: session reset failed",
+				"id", e.Name(),
+				"err", err,
+			)
+
 			continue
 		}
 
@@ -434,24 +453,13 @@ func CleanStaleSessions() (int, error) {
 			}
 		}
 
-		// Retry removal for Windows file locks.
-		var lastErr error
-
-		for range removeRetries {
-			lastErr = os.RemoveAll(filepath.Join(sessDir, id))
-			if lastErr == nil {
-				cleaned++
-
-				break
-			}
-
-			time.Sleep(removeRetryWait)
-		}
-
-		if lastErr != nil {
+		// Exponential-backoff retry (L1) for Windows file locks.
+		if err := retryRemoveAll(filepath.Join(sessDir, id)); err == nil {
+			cleaned++
+		} else {
 			slog.Warn("scout: stale session cleanup failed after retries",
 				"id", id,
-				"err", lastErr,
+				"err", err,
 			)
 		}
 	}
@@ -471,6 +479,17 @@ func StartOrphanWatchdog(interval time.Duration, done <-chan struct{}) {
 	}
 
 	go func() {
+		// L6: panic recovery so a single bad iteration (e.g. a gops
+		// internal race or filesystem race triggering nil deref)
+		// doesn't kill the watchdog silently. Log and continue.
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("scout: orphan watchdog panic",
+					"panic", r,
+				)
+			}
+		}()
+
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 

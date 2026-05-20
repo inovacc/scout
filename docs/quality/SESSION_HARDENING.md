@@ -16,7 +16,12 @@ Scope: `internal/engine/session/` + `internal/engine/browser.go` registerSession
 | M4 | MED | DONE | (this PR) |
 | M5 | MED | DONE | (this PR) |
 | M6 | MED | DONE | (this PR) |
-| L1–L6 | LOW | OPEN | — |
+| L1 | LOW | DONE | (this PR) |
+| L2 | LOW | DONE | (this PR) |
+| L3 | LOW | DONE | (this PR) |
+| L4 | LOW | DEFERRED | breaks existing session dirs |
+| L5 | LOW | DEFERRED | larger refactor than budgeted |
+| L6 | LOW | DONE | (this PR) |
 
 ## SEV-HIGH
 
