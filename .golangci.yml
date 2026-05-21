@@ -31,6 +31,19 @@ linters:
         linters:
           - staticcheck
 
+      # Suppress depguard's built-in "Main" deny list false positives on internal imports.
+      # Violations of OUR deny rules (mcp/agent/runbook) are also reported as "Main" by
+      # this depguard version, but we suppress false positives by path: non-aria paths
+      # have depguard fully disabled. Within aria, only our 3 deny targets remain flagged.
+      - path-except: "pkg/scout/aria"
+        linters:
+          - depguard
+      # Within aria, suppress "Main" errors for imports that are legitimately allowed
+      - path: "pkg/scout/aria"
+        linters:
+          - depguard
+        text: "internal/engine|pkg/scout/aria"
+
   disable:
     - tagliatelle
     - gochecknoglobals
@@ -71,3 +84,20 @@ linters:
     - goconst
     - gocyclo
     - whitespace
+
+linters-settings:
+  depguard:
+    rules:
+      # Configure the built-in "Main" rule to only deny the three forbidden upward imports
+      # from pkg/scout/aria. list-mode: lax means only the deny list is checked.
+      # The exclusion rule above disables depguard entirely outside pkg/scout/aria,
+      # so this only activates for aria source files.
+      main:
+        list-mode: lax
+        deny:
+          - pkg: github.com/inovacc/scout/pkg/scout/mcp
+            desc: "pkg/scout/aria must not import pkg/scout/mcp (layering rule)"
+          - pkg: github.com/inovacc/scout/pkg/scout/agent
+            desc: "pkg/scout/aria must not import pkg/scout/agent (layering rule)"
+          - pkg: github.com/inovacc/scout/pkg/scout/runbook
+            desc: "pkg/scout/aria must not import pkg/scout/runbook (layering rule)"

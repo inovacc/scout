@@ -9,5 +9,5 @@
 // Strict layering: this package imports only internal/engine and
 // internal/engine/lib/proto. It MUST NOT import pkg/scout/mcp,
 // pkg/scout/agent, or pkg/scout/runbook — those packages depend on aria,
-// never the other way. The depguard rule in .golangci.yml enforces this.
+// never the other way. The depguard aria-layering rule in .golangci.yml enforces this.
 package aria
