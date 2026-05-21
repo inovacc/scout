@@ -490,12 +490,18 @@ func CleanStaleSessions() (int, error) {
 		info, err := ReadInfo(id)
 
 		// No scout.pid OR legacy JSON format (hard cutover) — remove it.
+		// Use a single-shot RemoveAll for the fast path; on failure (the
+		// usual case for legacy dirs whose Chrome LevelDB / SQLite files
+		// are held by Defender / Search Indexer / OneDrive), enqueue for
+		// the background retrier instead of burning 11 s of startup time
+		// per dir. With 8 stuck dirs this cut startup latency from ~88 s
+		// to <1 s.
+		target := filepath.Join(sessDir, id)
 		if err != nil {
 			if errors.Is(err, ErrLegacyFormat) {
 				slog.Info("scout: removing legacy JSON session", "id", id)
 			}
-			target := filepath.Join(sessDir, id)
-			if removeErr := retryRemoveAll(target); removeErr == nil {
+			if removeErr := os.RemoveAll(target); removeErr == nil {
 				cleaned++
 			} else {
 				recordCleanupFailure(target)
@@ -527,16 +533,16 @@ func CleanStaleSessions() (int, error) {
 			}
 		}
 
-		// Exponential-backoff retry (L1) for Windows file locks. On
-		// persistent failure (AV / Search Indexer / OneDrive holding the
-		// LevelDB files), enqueue for the background retrier instead of
-		// just warning.
-		target := filepath.Join(sessDir, id)
-		if err := retryRemoveAll(target); err == nil {
+		// Single-shot RemoveAll for the fast startup path. On failure
+		// (Windows AV / Search Indexer / OneDrive holding the LevelDB
+		// files), enqueue for the background retrier rather than
+		// blocking startup on retries.
+		target2 := filepath.Join(sessDir, id)
+		if err := os.RemoveAll(target2); err == nil {
 			cleaned++
 		} else {
-			recordCleanupFailure(target)
-			slog.Warn("scout: stale session cleanup failed after retries; queued for background retry",
+			recordCleanupFailure(target2)
+			slog.Warn("scout: stale session cleanup deferred to background retrier",
 				"id", id,
 				"err", err,
 			)
