@@ -490,7 +490,22 @@ func (l *Launcher) Launch() (string, error) {
 	l.pid = cmd.Process.Pid
 
 	go func() {
-		_ = cmd.Wait()
+		werr := cmd.Wait()
+
+		// SCOUT_LAUNCHER_DEBUG=1 surfaces the exit code + the first
+		// stderr bytes so transient "Failed to get the debug url" with
+		// an empty buffer can be diagnosed without recompiling.
+		if os.Getenv("SCOUT_LAUNCHER_DEBUG") == "1" {
+			code := -1
+			if ee, ok := werr.(*exec.ExitError); ok {
+				code = ee.ExitCode()
+			} else if cmd.ProcessState != nil {
+				code = cmd.ProcessState.ExitCode()
+			}
+			_, _ = fmt.Fprintf(os.Stderr, "[launcher-debug] chrome exited pid=%d code=%d werr=%v\n", l.pid, code, werr)
+			_, _ = fmt.Fprintf(os.Stderr, "[launcher-debug] chrome cmdline: %s %v\n", bin, args)
+			_, _ = fmt.Fprintf(os.Stderr, "[launcher-debug] URLParser buffer (%d bytes): %q\n", len(l.parser.Buffer), l.parser.Buffer)
+		}
 
 		close(l.exit)
 	}()

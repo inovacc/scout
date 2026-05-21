@@ -452,15 +452,23 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 	// tooling know which artifacts to finalize even if the daemon restarts
 	// between create and destroy.
 	if engineID := browser.SessionID(); engineID != "" {
+		harPath := "har.json"
+		if p := req.GetHarOut(); p != "" {
+			harPath = p
+		}
+		hijackPath := "hijack.jsonl"
+		if p := req.GetHijackOut(); p != "" {
+			hijackPath = p
+		}
 		cfg := &scout.SessionMonitorConfig{
 			HAR: scout.MonitorSink{
 				Enabled:    req.GetRecord() || req.GetRecordHar(),
-				Path:       "har.json",
+				Path:       harPath,
 				WithBodies: req.GetCaptureBody() || req.GetHijackBodies(),
 			},
 			Hijack: scout.MonitorSink{
 				Enabled:    req.GetRecordHijack(),
-				Path:       "hijack.jsonl",
+				Path:       hijackPath,
 				WithBodies: req.GetHijackBodies(),
 			},
 			Console: scout.MonitorSink{Enabled: req.GetRecordConsole(), Path: "console.log"},
