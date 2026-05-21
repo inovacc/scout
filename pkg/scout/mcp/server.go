@@ -38,6 +38,7 @@ type mcpState struct {
 	config         ServerConfig
 	idle           *idle.Timer
 	ariaStore      *aria.Store
+	hooks          *hookRegistry
 }
 
 // touch resets the idle timer on activity.
@@ -187,7 +188,7 @@ func jsonResult(v any) (*mcp.CallToolResult, error) {
 // call cancelOnIdle when the timeout expires.
 // If cfg.PluginManager is set, plugin-provided MCP tools are registered.
 func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
-	state := &mcpState{config: cfg, ariaStore: aria.NewStore()}
+	state := &mcpState{config: cfg, ariaStore: aria.NewStore(), hooks: newHookRegistry()}
 
 	if cfg.IdleTimeout > 0 && len(cancelOnIdle) > 0 && cancelOnIdle[0] != nil {
 		cb := cancelOnIdle[0]

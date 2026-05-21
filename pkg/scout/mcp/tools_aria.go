@@ -30,6 +30,7 @@ func registerAriaTools(server *mcp.Server, state *mcpState) {
 		}
 
 		state.ariaStore.Put(snap.PageID, snap)
+		installInvalidationHooks(page, state)
 
 		var buf bytes.Buffer
 		if err := snap.RenderYAML(&buf); err != nil {
