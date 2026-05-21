@@ -1,111 +1,90 @@
 package session
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // LockGuard represents an acquired session lock. Call Release to drop it.
-// Releases are idempotent.
+// Releases are idempotent. The underlying OS lock is held via an open file
+// handle on <session>/scout.pid; closing the handle releases the lock.
+//
+// Hardening M3 (revised) — replaces the legacy `.lock` mkdir-mutex with an
+// OS-level advisory lock (LockFileEx on Windows, flock on Unix). This lets
+// the same file carry both metadata (binary SessionInfo) and the lock, and
+// the OS reclaims the lock automatically if the holder crashes — no more
+// stale lock dirs to garbage-collect.
 type LockGuard struct {
-	lockDir  string
+	f        *os.File
 	released bool
 }
 
-// Release drops the lock by removing the lock directory. Safe to call
-// multiple times.
+// Release drops the lock by closing the file handle. Safe to call multiple
+// times. The scout.pid file itself is preserved on disk.
 func (g *LockGuard) Release() {
 	if g == nil || g.released {
 		return
 	}
-
 	g.released = true
 
-	if err := os.RemoveAll(g.lockDir); err != nil {
-		slog.Warn("scout: lock release failed",
-			"dir", g.lockDir,
+	// Unlock first so any error from Close doesn't leave the OS lock held
+	// (Windows: LockFileEx leaks if the process keeps a handle open even
+	// briefly after we've decided to release).
+	_ = unlockFile(g.f)
+
+	if err := g.f.Close(); err != nil {
+		slog.Warn("scout: lock release close failed",
+			"path", g.f.Name(),
 			"err", err,
 		)
 	}
 }
 
-const (
-	lockTimeout    = 5 * time.Second
-	lockPollWait   = 50 * time.Millisecond
-	lockPIDMarker  = "pid"
-	lockDirSubpath = ".lock"
-)
+// File exposes the underlying scout.pid file handle so callers that hold the
+// lock can write to the same fd without re-opening (avoids racing readers).
+func (g *LockGuard) File() *os.File {
+	if g == nil {
+		return nil
+	}
+	return g.f
+}
 
-// AcquireLock takes an exclusive cross-process lock on a session by atomically
-// creating a `.lock` subdirectory under the session dir. The current PID is
-// written inside so a subsequent acquirer can detect a stale lock left by a
-// crashed process (PID no longer alive).
+// AcquireLock takes an exclusive cross-process advisory lock on a session's
+// scout.pid file. Creates the file (zero-length) if it does not yet exist
+// so callers can lock before writing the first SessionInfo.
 //
-// Blocks up to lockTimeout (5s), polling at lockPollWait intervals. Returns
-// an error if the timeout expires.
-//
-// Hardening M3 — prevents read-modify-write races on `scout.pid` between two
-// scout processes both claiming the same reusable session.
+// Returns immediately on success or contention — no spin-wait loop. If the
+// lock is held elsewhere, returns an error with the session id for the
+// caller to act on (audit/list use AcquireSharedLock instead).
 func AcquireLock(id string) (*LockGuard, error) {
-	dir := Dir(id)
+	return acquire(id, false)
+}
 
+// AcquireSharedLock takes a shared advisory lock on scout.pid. Multiple
+// readers (audit, list) may hold the shared lock concurrently while no
+// writer holds the exclusive lock.
+func AcquireSharedLock(id string) (*LockGuard, error) {
+	return acquire(id, true)
+}
+
+func acquire(id string, shared bool) (*LockGuard, error) {
+	dir := Dir(id)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("scout: lock: create session dir: %w", err)
 	}
 
-	lockDir := filepath.Join(dir, lockDirSubpath)
-	deadline := time.Now().Add(lockTimeout)
-
-	for {
-		err := os.Mkdir(lockDir, 0o700)
-		if err == nil {
-			_ = os.WriteFile(
-				filepath.Join(lockDir, lockPIDMarker),
-				[]byte(strconv.Itoa(os.Getpid())),
-				0o600,
-			)
-
-			return &LockGuard{lockDir: lockDir}, nil
-		}
-
-		if !errors.Is(err, os.ErrExist) {
-			return nil, fmt.Errorf("scout: lock: %w", err)
-		}
-
-		// Lock exists — check if the holder is still alive.
-		if isStaleLock(lockDir) {
-			_ = os.RemoveAll(lockDir)
-
-			continue
-		}
-
-		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("scout: lock: session %s busy after %s", id, lockTimeout)
-		}
-
-		time.Sleep(lockPollWait)
-	}
-}
-
-// isStaleLock reports whether the lock directory was left behind by a process
-// that no longer exists. A lock without a readable PID file is considered
-// fresh (some other acquirer is mid-write).
-func isStaleLock(lockDir string) bool {
-	data, err := os.ReadFile(filepath.Join(lockDir, lockPIDMarker))
+	path := filepath.Join(dir, "scout.pid")
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o600)
 	if err != nil {
-		return false
+		return nil, fmt.Errorf("scout: lock: open scout.pid: %w", err)
 	}
 
-	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
-	if err != nil || pid <= 0 {
-		return false
+	if err := lockFile(f, !shared); err != nil {
+		_ = f.Close()
+		return nil, fmt.Errorf("scout: lock: session %s busy: %w", id, err)
 	}
 
-	return !ProcessAlive(pid)
+	return &LockGuard{f: f}, nil
 }

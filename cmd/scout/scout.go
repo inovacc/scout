@@ -6,6 +6,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"time"
 
@@ -148,8 +149,16 @@ func main() {
 
 	defer agent.Close()
 
-	// Clean leftover sessions from previous runs (dead processes, orphaned dirs).
+	// Clean leftover sessions from previous runs (dead processes, orphaned
+	// dirs, and legacy JSON-format scout.pid files from before the binary
+	// cutover).
 	_, _ = session.CleanStaleSessions()
+
+	// Hard-cutover purge: the legacy `active-sessions/` index is no longer
+	// maintained; the per-session scout.pid is the single source of truth.
+	if dir, err := scoutDir(); err == nil && dir != "" {
+		_ = os.RemoveAll(filepath.Join(dir, "active-sessions"))
+	}
 
 	shutdown, err := tracing.Init(context.Background(), tracing.Config{ServiceName: "scout"})
 	if err != nil {

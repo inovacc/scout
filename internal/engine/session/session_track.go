@@ -3,7 +3,6 @@ package session
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -85,7 +84,10 @@ func GetSessionsDir() string {
 }
 
 // SessionInfo holds all metadata for a browser session, stored as scout.pid
-// inside the session's data directory.
+// inside the session's directory using the fixed-width binary v1 layout
+// defined in info_binary.go. JSON tags are retained for ad-hoc tooling
+// (e.g. `scout session audit --json` still emits JSON) but on-disk storage
+// is binary.
 type SessionInfo struct {
 	ScoutPID          int       `json:"scout_pid"`
 	BrowserPID        int       `json:"browser_pid"`
@@ -148,10 +150,13 @@ func DataDir(id string) string {
 	return filepath.Join(GetSessionsDir(), id, "data")
 }
 
-// WriteInfo writes the session info as JSON to <SessionsDir>/<id>/scout.pid.
-// Directories and files are created with restrictive modes (0o700/0o600) so
-// other local users cannot read Chrome's cookie database or scraper auth
-// tokens stored under the session's data/ subdir.
+// WriteInfo writes the session info as a fixed-width binary v1 record to
+// <SessionsDir>/<id>/scout.pid. Writes happen in place (truncate + write)
+// rather than via atomic rename so the same file can carry an OS-level
+// advisory lock (LockFileEx / flock) for concurrent-access safety.
+//
+// Mode 0o600/0o700 keep other local users out of Chrome's cookie database
+// or scraper auth tokens stored under the session's data/ subdir.
 //
 // Hardening M1 — see docs/quality/SESSION_HARDENING.md.
 func WriteInfo(id string, info *SessionInfo) error {
@@ -164,15 +169,33 @@ func WriteInfo(id string, info *SessionInfo) error {
 	// Windows (ACLs handle permissions there).
 	_ = os.Chmod(dir, 0o700)
 
-	data, err := json.MarshalIndent(info, "", "  ")
+	path := filepath.Join(dir, "scout.pid")
+
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
-		return fmt.Errorf("scout: marshal session info: %w", err)
+		return fmt.Errorf("scout: open scout.pid: %w", err)
 	}
 
-	return writeFileAtomic(filepath.Join(dir, "scout.pid"), data, 0o600)
+	if _, err := f.Write(marshalBinary(info)); err != nil {
+		_ = f.Close()
+		return fmt.Errorf("scout: write scout.pid: %w", err)
+	}
+
+	if err := f.Sync(); err != nil {
+		_ = f.Close()
+		return fmt.Errorf("scout: sync scout.pid: %w", err)
+	}
+
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("scout: close scout.pid: %w", err)
+	}
+
+	return nil
 }
 
-// ReadInfo reads the session info from <SessionsDir>/<id>/scout.pid.
+// ReadInfo reads the session info from <SessionsDir>/<id>/scout.pid in the
+// v1 binary format. Legacy JSON-format files yield ErrLegacyFormat so the
+// startup purge can identify and remove them under hard cutover.
 //
 // Refuses to return data from a session directory that is not owned by the
 // current user — H4 hardening against pre-planted directories with predictable
@@ -197,12 +220,7 @@ func ReadInfo(id string) (*SessionInfo, error) {
 		return nil, err
 	}
 
-	var info SessionInfo
-	if err := json.Unmarshal(data, &info); err != nil {
-		return nil, fmt.Errorf("scout: parse session info: %w", err)
-	}
-
-	return &info, nil
+	return unmarshalBinary(data)
 }
 
 // RemoveInfo removes the scout.pid file from a session directory.
@@ -454,9 +472,12 @@ func CleanStaleSessions() (int, error) {
 		id := e.Name()
 		info, err := ReadInfo(id)
 
-		// No scout.pid — orphaned directory, remove it.
+		// No scout.pid OR legacy JSON format (hard cutover) — remove it.
 		if err != nil {
-			if removeErr := os.RemoveAll(filepath.Join(sessDir, id)); removeErr == nil {
+			if errors.Is(err, ErrLegacyFormat) {
+				slog.Info("scout: removing legacy JSON session", "id", id)
+			}
+			if removeErr := retryRemoveAll(filepath.Join(sessDir, id)); removeErr == nil {
 				cleaned++
 			}
 
