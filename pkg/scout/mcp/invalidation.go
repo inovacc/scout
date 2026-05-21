@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"sync"
+	"time"
 
 	"github.com/inovacc/scout/internal/engine/lib/proto"
 	"github.com/inovacc/scout/pkg/scout"
@@ -59,4 +60,57 @@ func installInvalidationHooks(page *scout.Page, state *mcpState) {
 		}
 		return false
 	})()
+
+	installMajorMutationHook(page, state, pageID)
+}
+
+// installMajorMutationHook subscribes to the bridge's mutation stream and
+// clears the aria store entry for the page whenever ≥ majorThreshold mutations
+// land within majorWindow. Phase A heuristic: 20 mutations / 100ms.
+//
+// Returns without doing anything if the bridge is not available on this page
+// (e.g. headless contexts without the bridge extension).
+func installMajorMutationHook(page *scout.Page, state *mcpState, pageID string) {
+	bridge, err := page.Bridge()
+	if err != nil || bridge == nil {
+		return
+	}
+
+	const (
+		majorThreshold = 20
+		majorWindow    = 100 * time.Millisecond
+	)
+
+	var (
+		mu     sync.Mutex
+		window []time.Time // timestamps of recent mutation batches
+	)
+
+	bridge.OnMutation(func(events []scout.MutationEvent) {
+		now := time.Now()
+		mu.Lock()
+		// drop timestamps older than majorWindow
+		cutoff := now.Add(-majorWindow)
+		i := 0
+		for ; i < len(window); i++ {
+			if window[i].After(cutoff) {
+				break
+			}
+		}
+		window = window[i:]
+
+		// each MutationEvent represents one CDP-side mutation;
+		// all events in the batch arrived together so timestamp all at now
+		for range events {
+			window = append(window, now)
+		}
+
+		if len(window) >= majorThreshold {
+			window = window[:0] // reset to avoid re-firing on next event
+			mu.Unlock()
+			state.ariaStore.Clear(pageID)
+			return
+		}
+		mu.Unlock()
+	})
 }
