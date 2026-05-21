@@ -15,6 +15,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/inovacc/scout/internal/engine/scouthome"
+	idpkg "github.com/inovacc/scout/pkg/id"
 )
 
 const (
@@ -220,7 +221,22 @@ func ReadInfo(id string) (*SessionInfo, error) {
 		return nil, err
 	}
 
-	return unmarshalBinary(data)
+	info, err := unmarshalBinary(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Browser, Reusable, Headless are authoritative in the session ID's
+	// attribute prefix, not in the scout.pid body. Overwrite the binary's
+	// values so they're consistent even if a future writer skips them or
+	// records a stale snapshot. Legacy / non-v1 IDs leave info untouched.
+	if attrs, perr := idpkg.Parse(id); perr == nil {
+		info.Browser = attrs.Browser
+		info.Reusable = attrs.Reusable
+		info.Headless = attrs.Headless
+	}
+
+	return info, nil
 }
 
 // RemoveInfo removes the scout.pid file from a session directory.

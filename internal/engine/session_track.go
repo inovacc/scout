@@ -5,10 +5,23 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/internal/engine/session"
+	"github.com/inovacc/scout/pkg/id"
 )
 
 // SessionInfo re-exports session.SessionInfo from sub-package.
 type SessionInfo = session.SessionInfo
+
+// SessionAttrs re-exports pkg/id.Attrs (encoded session-ID attribute prefix).
+type SessionAttrs = id.Attrs
+
+// NewSessionID builds an encoded session ID — see pkg/id.New.
+func NewSessionID(a SessionAttrs) (string, error) { return id.New(a) }
+
+// ParseSessionID decodes the attribute prefix — see pkg/id.Parse.
+func ParseSessionID(s string) (SessionAttrs, error) { return id.Parse(s) }
+
+// IsValidSessionID reports whether s parses without error.
+func IsValidSessionID(s string) bool { return id.Valid(s) }
 type SessionListing = session.SessionListing
 type SessionJob = session.Job
 type SessionJobStep = session.JobStep
@@ -45,6 +58,12 @@ func ProcessAlive(pid int) bool { return session.ProcessAlive(pid) }
 // IsScoutProcess reports whether the given PID belongs to a live scout binary
 // (basename-exact match via gops).
 func IsScoutProcess(pid int) bool { return session.IsScoutProcess(pid) }
+
+// FindBrowsersUsingDataDir scans running chrome/brave/msedge/chromium for
+// processes whose --user-data-dir matches the given path. Returns the PIDs.
+func FindBrowsersUsingDataDir(dataDir string) []int {
+	return session.FindBrowsersUsingDataDir(dataDir)
+}
 
 // SessionLockGuard is re-exported so engine consumers can hold a session lock
 // without importing the internal/engine/session subpackage directly.

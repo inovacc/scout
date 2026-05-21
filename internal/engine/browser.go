@@ -11,7 +11,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/inovacc/scout/internal/engine/browser"
 	launcher2 "github.com/inovacc/scout/internal/engine/lib/launcher"
 	"github.com/inovacc/scout/internal/engine/lib/launcher/flags"
@@ -290,10 +289,23 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 		}
 	}
 
-	// Generate a fresh random session ID for every new browser instance.
-	// Reuse is only possible via explicit WithReuseSession() opt-in (D-01, D-02, D-03).
+	// Generate a fresh session ID for every new browser instance. The
+	// 12-char attribute prefix encodes browser kind, run mode, lifetime,
+	// stealth, bridge, and VPN — queryable without reading scout.pid.
+	// Reuse is only possible via explicit WithReuseSession() opt-in
+	// (D-01, D-02, D-03).
 	if o.userDataDir == "" {
-		id := uuid.Must(uuid.NewV7()).String()
+		id, err := NewSessionID(SessionAttrs{
+			Browser:  string(o.browserType),
+			Headless: o.headless,
+			Reusable: o.reusableSession,
+			Stealth:  o.stealth,
+			Bridge:   o.bridge,
+			VPN:      o.vpnProvider != nil,
+		})
+		if err != nil {
+			return "", nil, fmt.Errorf("scout: id: %w", err)
+		}
 		o.userDataDir = SessionDataDir(id)
 		o.sessionID = id
 	}
