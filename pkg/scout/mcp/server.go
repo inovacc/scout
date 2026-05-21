@@ -216,6 +216,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 	registerSessionTools(server, state)
 	registerSwarmTools(server, state)
 	registerWebSocketTools(server, state)
+	registerAriaTools(server, state)
 	registerResources(server, state)
 
 	if cfg.PluginManager != nil {
