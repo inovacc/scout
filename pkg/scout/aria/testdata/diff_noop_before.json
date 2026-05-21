@@ -1,0 +1,4 @@
+{"page_id":"p","version":5,"nodes":[
+  {"ref":"e1","backend_node_id":100,"role":"WebArea","name":"x","children":[1]},
+  {"ref":"e2","backend_node_id":101,"role":"button","name":"Same","children":[]}
+]}
