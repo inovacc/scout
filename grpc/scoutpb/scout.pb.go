@@ -73,8 +73,17 @@ type CreateSessionRequest struct {
 	NoSandbox        bool                   `protobuf:"varint,12,opt,name=no_sandbox,json=noSandbox,proto3" json:"no_sandbox,omitempty"`                        // disable browser sandbox (containers/WSL)
 	Ephemeral        bool                   `protobuf:"varint,13,opt,name=ephemeral,proto3" json:"ephemeral,omitempty"`                                         // when true the session is non-reusable and cleaned on Close. Default false: reusable, survives daemon restart.
 	ExpiresInSeconds int64                  `protobuf:"varint,14,opt,name=expires_in_seconds,json=expiresInSeconds,proto3" json:"expires_in_seconds,omitempty"` // expiration window for reusable sessions in seconds; 0 → default 7d. Ignored for ephemeral.
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Monitoring + recon. Each flag is independent.
+	RecordHar     bool         `protobuf:"varint,15,opt,name=record_har,json=recordHar,proto3" json:"record_har,omitempty"`             // enable HAR recording for the session; flushed on destroy
+	RecordHijack  bool         `protobuf:"varint,16,opt,name=record_hijack,json=recordHijack,proto3" json:"record_hijack,omitempty"`    // enable real-time hijack capture (CDP requestPaused stream)
+	HijackBodies  bool         `protobuf:"varint,17,opt,name=hijack_bodies,json=hijackBodies,proto3" json:"hijack_bodies,omitempty"`    // also capture request/response bodies in the hijack stream
+	RecordConsole bool         `protobuf:"varint,18,opt,name=record_console,json=recordConsole,proto3" json:"record_console,omitempty"` // capture browser console output to console.log
+	RecordWs      bool         `protobuf:"varint,19,opt,name=record_ws,json=recordWs,proto3" json:"record_ws,omitempty"`                // capture WebSocket frames to ws.jsonl
+	Blocks        []*BlockRule `protobuf:"bytes,20,rep,name=blocks,proto3" json:"blocks,omitempty"`                                     // URL-pattern blocks; matching requests aborted at the browser
+	HarOut        string       `protobuf:"bytes,21,opt,name=har_out,json=harOut,proto3" json:"har_out,omitempty"`                       // override default <session>/har.json
+	HijackOut     string       `protobuf:"bytes,22,opt,name=hijack_out,json=hijackOut,proto3" json:"hijack_out,omitempty"`              // override default <session>/hijack.jsonl
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CreateSessionRequest) Reset() {
@@ -205,6 +214,115 @@ func (x *CreateSessionRequest) GetExpiresInSeconds() int64 {
 	return 0
 }
 
+func (x *CreateSessionRequest) GetRecordHar() bool {
+	if x != nil {
+		return x.RecordHar
+	}
+	return false
+}
+
+func (x *CreateSessionRequest) GetRecordHijack() bool {
+	if x != nil {
+		return x.RecordHijack
+	}
+	return false
+}
+
+func (x *CreateSessionRequest) GetHijackBodies() bool {
+	if x != nil {
+		return x.HijackBodies
+	}
+	return false
+}
+
+func (x *CreateSessionRequest) GetRecordConsole() bool {
+	if x != nil {
+		return x.RecordConsole
+	}
+	return false
+}
+
+func (x *CreateSessionRequest) GetRecordWs() bool {
+	if x != nil {
+		return x.RecordWs
+	}
+	return false
+}
+
+func (x *CreateSessionRequest) GetBlocks() []*BlockRule {
+	if x != nil {
+		return x.Blocks
+	}
+	return nil
+}
+
+func (x *CreateSessionRequest) GetHarOut() string {
+	if x != nil {
+		return x.HarOut
+	}
+	return ""
+}
+
+func (x *CreateSessionRequest) GetHijackOut() string {
+	if x != nil {
+		return x.HijackOut
+	}
+	return ""
+}
+
+// BlockRule describes a single URL-pattern block. See engine.BlockRule.
+type BlockRule struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Pattern       string                 `protobuf:"bytes,1,opt,name=pattern,proto3" json:"pattern,omitempty"` // CDP URLPattern (* wildcard, ? one char)
+	Method        string                 `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`   // optional HTTP method filter; empty = any
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockRule) Reset() {
+	*x = BlockRule{}
+	mi := &file_grpc_proto_scout_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockRule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockRule) ProtoMessage() {}
+
+func (x *BlockRule) ProtoReflect() protoreflect.Message {
+	mi := &file_grpc_proto_scout_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockRule.ProtoReflect.Descriptor instead.
+func (*BlockRule) Descriptor() ([]byte, []int) {
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *BlockRule) GetPattern() string {
+	if x != nil {
+		return x.Pattern
+	}
+	return ""
+}
+
+func (x *BlockRule) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
 type CreateSessionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -216,7 +334,7 @@ type CreateSessionResponse struct {
 
 func (x *CreateSessionResponse) Reset() {
 	*x = CreateSessionResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[2]
+	mi := &file_grpc_proto_scout_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -228,7 +346,7 @@ func (x *CreateSessionResponse) String() string {
 func (*CreateSessionResponse) ProtoMessage() {}
 
 func (x *CreateSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[2]
+	mi := &file_grpc_proto_scout_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -241,7 +359,7 @@ func (x *CreateSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSessionResponse.ProtoReflect.Descriptor instead.
 func (*CreateSessionResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{2}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateSessionResponse) GetSessionId() string {
@@ -274,7 +392,7 @@ type SessionRequest struct {
 
 func (x *SessionRequest) Reset() {
 	*x = SessionRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[3]
+	mi := &file_grpc_proto_scout_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -286,7 +404,7 @@ func (x *SessionRequest) String() string {
 func (*SessionRequest) ProtoMessage() {}
 
 func (x *SessionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[3]
+	mi := &file_grpc_proto_scout_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -299,7 +417,7 @@ func (x *SessionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionRequest.ProtoReflect.Descriptor instead.
 func (*SessionRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{3}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *SessionRequest) GetSessionId() string {
@@ -320,7 +438,7 @@ type NavigateRequest struct {
 
 func (x *NavigateRequest) Reset() {
 	*x = NavigateRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[4]
+	mi := &file_grpc_proto_scout_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -332,7 +450,7 @@ func (x *NavigateRequest) String() string {
 func (*NavigateRequest) ProtoMessage() {}
 
 func (x *NavigateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[4]
+	mi := &file_grpc_proto_scout_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -345,7 +463,7 @@ func (x *NavigateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NavigateRequest.ProtoReflect.Descriptor instead.
 func (*NavigateRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{4}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *NavigateRequest) GetSessionId() string {
@@ -380,7 +498,7 @@ type NavigateResponse struct {
 
 func (x *NavigateResponse) Reset() {
 	*x = NavigateResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[5]
+	mi := &file_grpc_proto_scout_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -392,7 +510,7 @@ func (x *NavigateResponse) String() string {
 func (*NavigateResponse) ProtoMessage() {}
 
 func (x *NavigateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[5]
+	mi := &file_grpc_proto_scout_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -405,7 +523,7 @@ func (x *NavigateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NavigateResponse.ProtoReflect.Descriptor instead.
 func (*NavigateResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{5}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *NavigateResponse) GetUrl() string {
@@ -440,7 +558,7 @@ type ElementRequest struct {
 
 func (x *ElementRequest) Reset() {
 	*x = ElementRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[6]
+	mi := &file_grpc_proto_scout_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -452,7 +570,7 @@ func (x *ElementRequest) String() string {
 func (*ElementRequest) ProtoMessage() {}
 
 func (x *ElementRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[6]
+	mi := &file_grpc_proto_scout_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -465,7 +583,7 @@ func (x *ElementRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ElementRequest.ProtoReflect.Descriptor instead.
 func (*ElementRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{6}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ElementRequest) GetSessionId() string {
@@ -501,7 +619,7 @@ type TypeRequest struct {
 
 func (x *TypeRequest) Reset() {
 	*x = TypeRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[7]
+	mi := &file_grpc_proto_scout_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -513,7 +631,7 @@ func (x *TypeRequest) String() string {
 func (*TypeRequest) ProtoMessage() {}
 
 func (x *TypeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[7]
+	mi := &file_grpc_proto_scout_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -526,7 +644,7 @@ func (x *TypeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TypeRequest.ProtoReflect.Descriptor instead.
 func (*TypeRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{7}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *TypeRequest) GetSessionId() string {
@@ -568,7 +686,7 @@ type SelectRequest struct {
 
 func (x *SelectRequest) Reset() {
 	*x = SelectRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[8]
+	mi := &file_grpc_proto_scout_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -580,7 +698,7 @@ func (x *SelectRequest) String() string {
 func (*SelectRequest) ProtoMessage() {}
 
 func (x *SelectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[8]
+	mi := &file_grpc_proto_scout_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -593,7 +711,7 @@ func (x *SelectRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SelectRequest.ProtoReflect.Descriptor instead.
 func (*SelectRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{8}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SelectRequest) GetSessionId() string {
@@ -628,7 +746,7 @@ type KeyRequest struct {
 
 func (x *KeyRequest) Reset() {
 	*x = KeyRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[9]
+	mi := &file_grpc_proto_scout_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -640,7 +758,7 @@ func (x *KeyRequest) String() string {
 func (*KeyRequest) ProtoMessage() {}
 
 func (x *KeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[9]
+	mi := &file_grpc_proto_scout_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -653,7 +771,7 @@ func (x *KeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyRequest.ProtoReflect.Descriptor instead.
 func (*KeyRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{9}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *KeyRequest) GetSessionId() string {
@@ -688,7 +806,7 @@ type AttributeRequest struct {
 
 func (x *AttributeRequest) Reset() {
 	*x = AttributeRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[10]
+	mi := &file_grpc_proto_scout_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -700,7 +818,7 @@ func (x *AttributeRequest) String() string {
 func (*AttributeRequest) ProtoMessage() {}
 
 func (x *AttributeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[10]
+	mi := &file_grpc_proto_scout_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -713,7 +831,7 @@ func (x *AttributeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AttributeRequest.ProtoReflect.Descriptor instead.
 func (*AttributeRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{10}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *AttributeRequest) GetSessionId() string {
@@ -746,7 +864,7 @@ type TextResponse struct {
 
 func (x *TextResponse) Reset() {
 	*x = TextResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[11]
+	mi := &file_grpc_proto_scout_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -758,7 +876,7 @@ func (x *TextResponse) String() string {
 func (*TextResponse) ProtoMessage() {}
 
 func (x *TextResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[11]
+	mi := &file_grpc_proto_scout_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -771,7 +889,7 @@ func (x *TextResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TextResponse.ProtoReflect.Descriptor instead.
 func (*TextResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{11}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *TextResponse) GetText() string {
@@ -790,7 +908,7 @@ type BoolResponse struct {
 
 func (x *BoolResponse) Reset() {
 	*x = BoolResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[12]
+	mi := &file_grpc_proto_scout_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -802,7 +920,7 @@ func (x *BoolResponse) String() string {
 func (*BoolResponse) ProtoMessage() {}
 
 func (x *BoolResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[12]
+	mi := &file_grpc_proto_scout_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -815,7 +933,7 @@ func (x *BoolResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BoolResponse.ProtoReflect.Descriptor instead.
 func (*BoolResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{12}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *BoolResponse) GetValue() bool {
@@ -835,7 +953,7 @@ type EvalRequest struct {
 
 func (x *EvalRequest) Reset() {
 	*x = EvalRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[13]
+	mi := &file_grpc_proto_scout_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -847,7 +965,7 @@ func (x *EvalRequest) String() string {
 func (*EvalRequest) ProtoMessage() {}
 
 func (x *EvalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[13]
+	mi := &file_grpc_proto_scout_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -860,7 +978,7 @@ func (x *EvalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvalRequest.ProtoReflect.Descriptor instead.
 func (*EvalRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{13}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *EvalRequest) GetSessionId() string {
@@ -886,7 +1004,7 @@ type EvalResponse struct {
 
 func (x *EvalResponse) Reset() {
 	*x = EvalResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[14]
+	mi := &file_grpc_proto_scout_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -898,7 +1016,7 @@ func (x *EvalResponse) String() string {
 func (*EvalResponse) ProtoMessage() {}
 
 func (x *EvalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[14]
+	mi := &file_grpc_proto_scout_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -911,7 +1029,7 @@ func (x *EvalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvalResponse.ProtoReflect.Descriptor instead.
 func (*EvalResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{14}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *EvalResponse) GetResult() string {
@@ -933,7 +1051,7 @@ type ScreenshotRequest struct {
 
 func (x *ScreenshotRequest) Reset() {
 	*x = ScreenshotRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[15]
+	mi := &file_grpc_proto_scout_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -945,7 +1063,7 @@ func (x *ScreenshotRequest) String() string {
 func (*ScreenshotRequest) ProtoMessage() {}
 
 func (x *ScreenshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[15]
+	mi := &file_grpc_proto_scout_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -958,7 +1076,7 @@ func (x *ScreenshotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScreenshotRequest.ProtoReflect.Descriptor instead.
 func (*ScreenshotRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{15}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ScreenshotRequest) GetSessionId() string {
@@ -999,7 +1117,7 @@ type ScreenshotResponse struct {
 
 func (x *ScreenshotResponse) Reset() {
 	*x = ScreenshotResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[16]
+	mi := &file_grpc_proto_scout_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1011,7 +1129,7 @@ func (x *ScreenshotResponse) String() string {
 func (*ScreenshotResponse) ProtoMessage() {}
 
 func (x *ScreenshotResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[16]
+	mi := &file_grpc_proto_scout_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1024,7 +1142,7 @@ func (x *ScreenshotResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScreenshotResponse.ProtoReflect.Descriptor instead.
 func (*ScreenshotResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{16}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ScreenshotResponse) GetData() []byte {
@@ -1050,7 +1168,7 @@ type PDFResponse struct {
 
 func (x *PDFResponse) Reset() {
 	*x = PDFResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[17]
+	mi := &file_grpc_proto_scout_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1062,7 +1180,7 @@ func (x *PDFResponse) String() string {
 func (*PDFResponse) ProtoMessage() {}
 
 func (x *PDFResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[17]
+	mi := &file_grpc_proto_scout_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1075,7 +1193,7 @@ func (x *PDFResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PDFResponse.ProtoReflect.Descriptor instead.
 func (*PDFResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{17}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *PDFResponse) GetData() []byte {
@@ -1095,7 +1213,7 @@ type RecordingRequest struct {
 
 func (x *RecordingRequest) Reset() {
 	*x = RecordingRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[18]
+	mi := &file_grpc_proto_scout_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1107,7 +1225,7 @@ func (x *RecordingRequest) String() string {
 func (*RecordingRequest) ProtoMessage() {}
 
 func (x *RecordingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[18]
+	mi := &file_grpc_proto_scout_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1120,7 +1238,7 @@ func (x *RecordingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordingRequest.ProtoReflect.Descriptor instead.
 func (*RecordingRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{18}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *RecordingRequest) GetSessionId() string {
@@ -1147,7 +1265,7 @@ type HARResponse struct {
 
 func (x *HARResponse) Reset() {
 	*x = HARResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[19]
+	mi := &file_grpc_proto_scout_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1159,7 +1277,7 @@ func (x *HARResponse) String() string {
 func (*HARResponse) ProtoMessage() {}
 
 func (x *HARResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[19]
+	mi := &file_grpc_proto_scout_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1172,7 +1290,7 @@ func (x *HARResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HARResponse.ProtoReflect.Descriptor instead.
 func (*HARResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{19}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *HARResponse) GetData() []byte {
@@ -1201,7 +1319,7 @@ type HijackRequest struct {
 
 func (x *HijackRequest) Reset() {
 	*x = HijackRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[20]
+	mi := &file_grpc_proto_scout_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1213,7 +1331,7 @@ func (x *HijackRequest) String() string {
 func (*HijackRequest) ProtoMessage() {}
 
 func (x *HijackRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[20]
+	mi := &file_grpc_proto_scout_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1226,7 +1344,7 @@ func (x *HijackRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HijackRequest.ProtoReflect.Descriptor instead.
 func (*HijackRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{20}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *HijackRequest) GetSessionId() string {
@@ -1273,7 +1391,7 @@ type HijackedEvent struct {
 
 func (x *HijackedEvent) Reset() {
 	*x = HijackedEvent{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[21]
+	mi := &file_grpc_proto_scout_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1285,7 +1403,7 @@ func (x *HijackedEvent) String() string {
 func (*HijackedEvent) ProtoMessage() {}
 
 func (x *HijackedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[21]
+	mi := &file_grpc_proto_scout_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1298,7 +1416,7 @@ func (x *HijackedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HijackedEvent.ProtoReflect.Descriptor instead.
 func (*HijackedEvent) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{21}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *HijackedEvent) GetSessionId() string {
@@ -1385,7 +1503,7 @@ type HijackedRequestEvent struct {
 
 func (x *HijackedRequestEvent) Reset() {
 	*x = HijackedRequestEvent{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[22]
+	mi := &file_grpc_proto_scout_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1397,7 +1515,7 @@ func (x *HijackedRequestEvent) String() string {
 func (*HijackedRequestEvent) ProtoMessage() {}
 
 func (x *HijackedRequestEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[22]
+	mi := &file_grpc_proto_scout_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1410,7 +1528,7 @@ func (x *HijackedRequestEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HijackedRequestEvent.ProtoReflect.Descriptor instead.
 func (*HijackedRequestEvent) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{22}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *HijackedRequestEvent) GetRequestId() string {
@@ -1470,7 +1588,7 @@ type HijackedResponseEvent struct {
 
 func (x *HijackedResponseEvent) Reset() {
 	*x = HijackedResponseEvent{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[23]
+	mi := &file_grpc_proto_scout_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1482,7 +1600,7 @@ func (x *HijackedResponseEvent) String() string {
 func (*HijackedResponseEvent) ProtoMessage() {}
 
 func (x *HijackedResponseEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[23]
+	mi := &file_grpc_proto_scout_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1495,7 +1613,7 @@ func (x *HijackedResponseEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HijackedResponseEvent.ProtoReflect.Descriptor instead.
 func (*HijackedResponseEvent) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{23}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *HijackedResponseEvent) GetRequestId() string {
@@ -1561,7 +1679,7 @@ type WebSocketFrameEvent struct {
 
 func (x *WebSocketFrameEvent) Reset() {
 	*x = WebSocketFrameEvent{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[24]
+	mi := &file_grpc_proto_scout_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1573,7 +1691,7 @@ func (x *WebSocketFrameEvent) String() string {
 func (*WebSocketFrameEvent) ProtoMessage() {}
 
 func (x *WebSocketFrameEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[24]
+	mi := &file_grpc_proto_scout_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1586,7 +1704,7 @@ func (x *WebSocketFrameEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WebSocketFrameEvent.ProtoReflect.Descriptor instead.
 func (*WebSocketFrameEvent) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{24}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *WebSocketFrameEvent) GetRequestId() string {
@@ -1640,7 +1758,7 @@ type CaptureProfileRequest struct {
 
 func (x *CaptureProfileRequest) Reset() {
 	*x = CaptureProfileRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[25]
+	mi := &file_grpc_proto_scout_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1652,7 +1770,7 @@ func (x *CaptureProfileRequest) String() string {
 func (*CaptureProfileRequest) ProtoMessage() {}
 
 func (x *CaptureProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[25]
+	mi := &file_grpc_proto_scout_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1665,7 +1783,7 @@ func (x *CaptureProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CaptureProfileRequest.ProtoReflect.Descriptor instead.
 func (*CaptureProfileRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{25}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *CaptureProfileRequest) GetSessionId() string {
@@ -1684,7 +1802,7 @@ type CaptureProfileResponse struct {
 
 func (x *CaptureProfileResponse) Reset() {
 	*x = CaptureProfileResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[26]
+	mi := &file_grpc_proto_scout_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1696,7 +1814,7 @@ func (x *CaptureProfileResponse) String() string {
 func (*CaptureProfileResponse) ProtoMessage() {}
 
 func (x *CaptureProfileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[26]
+	mi := &file_grpc_proto_scout_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1709,7 +1827,7 @@ func (x *CaptureProfileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CaptureProfileResponse.ProtoReflect.Descriptor instead.
 func (*CaptureProfileResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{26}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *CaptureProfileResponse) GetProfileJson() string {
@@ -1729,7 +1847,7 @@ type LoadProfileRequest struct {
 
 func (x *LoadProfileRequest) Reset() {
 	*x = LoadProfileRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[27]
+	mi := &file_grpc_proto_scout_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1741,7 +1859,7 @@ func (x *LoadProfileRequest) String() string {
 func (*LoadProfileRequest) ProtoMessage() {}
 
 func (x *LoadProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[27]
+	mi := &file_grpc_proto_scout_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1754,7 +1872,7 @@ func (x *LoadProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoadProfileRequest.ProtoReflect.Descriptor instead.
 func (*LoadProfileRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{27}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *LoadProfileRequest) GetSessionId() string {
@@ -1781,7 +1899,7 @@ type LoadProfileResponse struct {
 
 func (x *LoadProfileResponse) Reset() {
 	*x = LoadProfileResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[28]
+	mi := &file_grpc_proto_scout_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1793,7 +1911,7 @@ func (x *LoadProfileResponse) String() string {
 func (*LoadProfileResponse) ProtoMessage() {}
 
 func (x *LoadProfileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[28]
+	mi := &file_grpc_proto_scout_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1806,7 +1924,7 @@ func (x *LoadProfileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoadProfileResponse.ProtoReflect.Descriptor instead.
 func (*LoadProfileResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{28}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *LoadProfileResponse) GetSuccess() bool {
@@ -1835,7 +1953,7 @@ type InjectJSRequest struct {
 
 func (x *InjectJSRequest) Reset() {
 	*x = InjectJSRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[29]
+	mi := &file_grpc_proto_scout_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1847,7 +1965,7 @@ func (x *InjectJSRequest) String() string {
 func (*InjectJSRequest) ProtoMessage() {}
 
 func (x *InjectJSRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[29]
+	mi := &file_grpc_proto_scout_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1860,7 +1978,7 @@ func (x *InjectJSRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InjectJSRequest.ProtoReflect.Descriptor instead.
 func (*InjectJSRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{29}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *InjectJSRequest) GetSessionId() string {
@@ -1901,7 +2019,7 @@ type InjectJSResponse struct {
 
 func (x *InjectJSResponse) Reset() {
 	*x = InjectJSResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[30]
+	mi := &file_grpc_proto_scout_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1913,7 +2031,7 @@ func (x *InjectJSResponse) String() string {
 func (*InjectJSResponse) ProtoMessage() {}
 
 func (x *InjectJSResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[30]
+	mi := &file_grpc_proto_scout_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1926,7 +2044,7 @@ func (x *InjectJSResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InjectJSResponse.ProtoReflect.Descriptor instead.
 func (*InjectJSResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{30}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *InjectJSResponse) GetResult() string {
@@ -1961,7 +2079,7 @@ type BrowserEvent struct {
 
 func (x *BrowserEvent) Reset() {
 	*x = BrowserEvent{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[31]
+	mi := &file_grpc_proto_scout_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1973,7 +2091,7 @@ func (x *BrowserEvent) String() string {
 func (*BrowserEvent) ProtoMessage() {}
 
 func (x *BrowserEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[31]
+	mi := &file_grpc_proto_scout_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1986,7 +2104,7 @@ func (x *BrowserEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BrowserEvent.ProtoReflect.Descriptor instead.
 func (*BrowserEvent) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{31}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *BrowserEvent) GetSessionId() string {
@@ -2103,7 +2221,7 @@ type NetworkRequestEvent struct {
 
 func (x *NetworkRequestEvent) Reset() {
 	*x = NetworkRequestEvent{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[32]
+	mi := &file_grpc_proto_scout_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2115,7 +2233,7 @@ func (x *NetworkRequestEvent) String() string {
 func (*NetworkRequestEvent) ProtoMessage() {}
 
 func (x *NetworkRequestEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[32]
+	mi := &file_grpc_proto_scout_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2128,7 +2246,7 @@ func (x *NetworkRequestEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NetworkRequestEvent.ProtoReflect.Descriptor instead.
 func (*NetworkRequestEvent) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{32}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *NetworkRequestEvent) GetRequestId() string {
@@ -2189,7 +2307,7 @@ type NetworkResponseEvent struct {
 
 func (x *NetworkResponseEvent) Reset() {
 	*x = NetworkResponseEvent{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[33]
+	mi := &file_grpc_proto_scout_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2201,7 +2319,7 @@ func (x *NetworkResponseEvent) String() string {
 func (*NetworkResponseEvent) ProtoMessage() {}
 
 func (x *NetworkResponseEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[33]
+	mi := &file_grpc_proto_scout_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2214,7 +2332,7 @@ func (x *NetworkResponseEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NetworkResponseEvent.ProtoReflect.Descriptor instead.
 func (*NetworkResponseEvent) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{33}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *NetworkResponseEvent) GetRequestId() string {
@@ -2283,7 +2401,7 @@ type ConsoleEvent struct {
 
 func (x *ConsoleEvent) Reset() {
 	*x = ConsoleEvent{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[34]
+	mi := &file_grpc_proto_scout_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2295,7 +2413,7 @@ func (x *ConsoleEvent) String() string {
 func (*ConsoleEvent) ProtoMessage() {}
 
 func (x *ConsoleEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[34]
+	mi := &file_grpc_proto_scout_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2308,7 +2426,7 @@ func (x *ConsoleEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConsoleEvent.ProtoReflect.Descriptor instead.
 func (*ConsoleEvent) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{34}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ConsoleEvent) GetLevel() string {
@@ -2336,7 +2454,7 @@ type PageEvent struct {
 
 func (x *PageEvent) Reset() {
 	*x = PageEvent{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[35]
+	mi := &file_grpc_proto_scout_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2348,7 +2466,7 @@ func (x *PageEvent) String() string {
 func (*PageEvent) ProtoMessage() {}
 
 func (x *PageEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[35]
+	mi := &file_grpc_proto_scout_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2361,7 +2479,7 @@ func (x *PageEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PageEvent.ProtoReflect.Descriptor instead.
 func (*PageEvent) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{35}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *PageEvent) GetType() string {
@@ -2395,7 +2513,7 @@ type ErrorEvent struct {
 
 func (x *ErrorEvent) Reset() {
 	*x = ErrorEvent{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[36]
+	mi := &file_grpc_proto_scout_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2407,7 +2525,7 @@ func (x *ErrorEvent) String() string {
 func (*ErrorEvent) ProtoMessage() {}
 
 func (x *ErrorEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[36]
+	mi := &file_grpc_proto_scout_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2420,7 +2538,7 @@ func (x *ErrorEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ErrorEvent.ProtoReflect.Descriptor instead.
 func (*ErrorEvent) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{36}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *ErrorEvent) GetMessage() string {
@@ -2458,7 +2576,7 @@ type Command struct {
 
 func (x *Command) Reset() {
 	*x = Command{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[37]
+	mi := &file_grpc_proto_scout_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2470,7 +2588,7 @@ func (x *Command) String() string {
 func (*Command) ProtoMessage() {}
 
 func (x *Command) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[37]
+	mi := &file_grpc_proto_scout_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2483,7 +2601,7 @@ func (x *Command) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Command.ProtoReflect.Descriptor instead.
 func (*Command) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{37}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *Command) GetSessionId() string {
@@ -2640,7 +2758,7 @@ type NavigateAction struct {
 
 func (x *NavigateAction) Reset() {
 	*x = NavigateAction{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[38]
+	mi := &file_grpc_proto_scout_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2652,7 +2770,7 @@ func (x *NavigateAction) String() string {
 func (*NavigateAction) ProtoMessage() {}
 
 func (x *NavigateAction) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[38]
+	mi := &file_grpc_proto_scout_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2665,7 +2783,7 @@ func (x *NavigateAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NavigateAction.ProtoReflect.Descriptor instead.
 func (*NavigateAction) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{38}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *NavigateAction) GetUrl() string {
@@ -2684,7 +2802,7 @@ type ClickAction struct {
 
 func (x *ClickAction) Reset() {
 	*x = ClickAction{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[39]
+	mi := &file_grpc_proto_scout_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2696,7 +2814,7 @@ func (x *ClickAction) String() string {
 func (*ClickAction) ProtoMessage() {}
 
 func (x *ClickAction) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[39]
+	mi := &file_grpc_proto_scout_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2709,7 +2827,7 @@ func (x *ClickAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClickAction.ProtoReflect.Descriptor instead.
 func (*ClickAction) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{39}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *ClickAction) GetSelector() string {
@@ -2729,7 +2847,7 @@ type TypeAction struct {
 
 func (x *TypeAction) Reset() {
 	*x = TypeAction{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[40]
+	mi := &file_grpc_proto_scout_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2741,7 +2859,7 @@ func (x *TypeAction) String() string {
 func (*TypeAction) ProtoMessage() {}
 
 func (x *TypeAction) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[40]
+	mi := &file_grpc_proto_scout_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2754,7 +2872,7 @@ func (x *TypeAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TypeAction.ProtoReflect.Descriptor instead.
 func (*TypeAction) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{40}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *TypeAction) GetSelector() string {
@@ -2780,7 +2898,7 @@ type KeyAction struct {
 
 func (x *KeyAction) Reset() {
 	*x = KeyAction{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[41]
+	mi := &file_grpc_proto_scout_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2792,7 +2910,7 @@ func (x *KeyAction) String() string {
 func (*KeyAction) ProtoMessage() {}
 
 func (x *KeyAction) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[41]
+	mi := &file_grpc_proto_scout_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2805,7 +2923,7 @@ func (x *KeyAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyAction.ProtoReflect.Descriptor instead.
 func (*KeyAction) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{41}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *KeyAction) GetKey() string {
@@ -2824,7 +2942,7 @@ type EvalAction struct {
 
 func (x *EvalAction) Reset() {
 	*x = EvalAction{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[42]
+	mi := &file_grpc_proto_scout_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2836,7 +2954,7 @@ func (x *EvalAction) String() string {
 func (*EvalAction) ProtoMessage() {}
 
 func (x *EvalAction) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[42]
+	mi := &file_grpc_proto_scout_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2849,7 +2967,7 @@ func (x *EvalAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvalAction.ProtoReflect.Descriptor instead.
 func (*EvalAction) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{42}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *EvalAction) GetScript() string {
@@ -2868,7 +2986,7 @@ type ScreenshotAction struct {
 
 func (x *ScreenshotAction) Reset() {
 	*x = ScreenshotAction{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[43]
+	mi := &file_grpc_proto_scout_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2880,7 +2998,7 @@ func (x *ScreenshotAction) String() string {
 func (*ScreenshotAction) ProtoMessage() {}
 
 func (x *ScreenshotAction) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[43]
+	mi := &file_grpc_proto_scout_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2893,7 +3011,7 @@ func (x *ScreenshotAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScreenshotAction.ProtoReflect.Descriptor instead.
 func (*ScreenshotAction) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{43}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *ScreenshotAction) GetFullPage() bool {
@@ -2913,7 +3031,7 @@ type WaitAction struct {
 
 func (x *WaitAction) Reset() {
 	*x = WaitAction{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[44]
+	mi := &file_grpc_proto_scout_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2925,7 +3043,7 @@ func (x *WaitAction) String() string {
 func (*WaitAction) ProtoMessage() {}
 
 func (x *WaitAction) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[44]
+	mi := &file_grpc_proto_scout_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2938,7 +3056,7 @@ func (x *WaitAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WaitAction.ProtoReflect.Descriptor instead.
 func (*WaitAction) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{44}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *WaitAction) GetSelector() string {
@@ -2965,7 +3083,7 @@ type ScrollAction struct {
 
 func (x *ScrollAction) Reset() {
 	*x = ScrollAction{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[45]
+	mi := &file_grpc_proto_scout_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2977,7 +3095,7 @@ func (x *ScrollAction) String() string {
 func (*ScrollAction) ProtoMessage() {}
 
 func (x *ScrollAction) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[45]
+	mi := &file_grpc_proto_scout_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2990,7 +3108,7 @@ func (x *ScrollAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScrollAction.ProtoReflect.Descriptor instead.
 func (*ScrollAction) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{45}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *ScrollAction) GetX() int32 {
@@ -3017,7 +3135,7 @@ type PairRequest struct {
 
 func (x *PairRequest) Reset() {
 	*x = PairRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[46]
+	mi := &file_grpc_proto_scout_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3029,7 +3147,7 @@ func (x *PairRequest) String() string {
 func (*PairRequest) ProtoMessage() {}
 
 func (x *PairRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[46]
+	mi := &file_grpc_proto_scout_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3042,7 +3160,7 @@ func (x *PairRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PairRequest.ProtoReflect.Descriptor instead.
 func (*PairRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{46}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *PairRequest) GetDeviceId() string {
@@ -3069,7 +3187,7 @@ type PairResponse struct {
 
 func (x *PairResponse) Reset() {
 	*x = PairResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[47]
+	mi := &file_grpc_proto_scout_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3081,7 +3199,7 @@ func (x *PairResponse) String() string {
 func (*PairResponse) ProtoMessage() {}
 
 func (x *PairResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[47]
+	mi := &file_grpc_proto_scout_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3094,7 +3212,7 @@ func (x *PairResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PairResponse.ProtoReflect.Descriptor instead.
 func (*PairResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{47}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *PairResponse) GetServerDeviceId() string {
@@ -3122,7 +3240,7 @@ type JoinSwarmRequest struct {
 
 func (x *JoinSwarmRequest) Reset() {
 	*x = JoinSwarmRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[48]
+	mi := &file_grpc_proto_scout_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3134,7 +3252,7 @@ func (x *JoinSwarmRequest) String() string {
 func (*JoinSwarmRequest) ProtoMessage() {}
 
 func (x *JoinSwarmRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[48]
+	mi := &file_grpc_proto_scout_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3147,7 +3265,7 @@ func (x *JoinSwarmRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinSwarmRequest.ProtoReflect.Descriptor instead.
 func (*JoinSwarmRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{48}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *JoinSwarmRequest) GetWorkerId() string {
@@ -3183,7 +3301,7 @@ type JoinSwarmResponse struct {
 
 func (x *JoinSwarmResponse) Reset() {
 	*x = JoinSwarmResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[49]
+	mi := &file_grpc_proto_scout_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3195,7 +3313,7 @@ func (x *JoinSwarmResponse) String() string {
 func (*JoinSwarmResponse) ProtoMessage() {}
 
 func (x *JoinSwarmResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[49]
+	mi := &file_grpc_proto_scout_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3208,7 +3326,7 @@ func (x *JoinSwarmResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinSwarmResponse.ProtoReflect.Descriptor instead.
 func (*JoinSwarmResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{49}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *JoinSwarmResponse) GetAccepted() bool {
@@ -3248,7 +3366,7 @@ type LeaveSwarmRequest struct {
 
 func (x *LeaveSwarmRequest) Reset() {
 	*x = LeaveSwarmRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[50]
+	mi := &file_grpc_proto_scout_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3260,7 +3378,7 @@ func (x *LeaveSwarmRequest) String() string {
 func (*LeaveSwarmRequest) ProtoMessage() {}
 
 func (x *LeaveSwarmRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[50]
+	mi := &file_grpc_proto_scout_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3273,7 +3391,7 @@ func (x *LeaveSwarmRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveSwarmRequest.ProtoReflect.Descriptor instead.
 func (*LeaveSwarmRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{50}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *LeaveSwarmRequest) GetWorkerId() string {
@@ -3293,7 +3411,7 @@ type LeaveSwarmResponse struct {
 
 func (x *LeaveSwarmResponse) Reset() {
 	*x = LeaveSwarmResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[51]
+	mi := &file_grpc_proto_scout_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3305,7 +3423,7 @@ func (x *LeaveSwarmResponse) String() string {
 func (*LeaveSwarmResponse) ProtoMessage() {}
 
 func (x *LeaveSwarmResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[51]
+	mi := &file_grpc_proto_scout_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3318,7 +3436,7 @@ func (x *LeaveSwarmResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveSwarmResponse.ProtoReflect.Descriptor instead.
 func (*LeaveSwarmResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{51}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *LeaveSwarmResponse) GetAcknowledged() bool {
@@ -3345,7 +3463,7 @@ type FetchBatchRequest struct {
 
 func (x *FetchBatchRequest) Reset() {
 	*x = FetchBatchRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[52]
+	mi := &file_grpc_proto_scout_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3357,7 +3475,7 @@ func (x *FetchBatchRequest) String() string {
 func (*FetchBatchRequest) ProtoMessage() {}
 
 func (x *FetchBatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[52]
+	mi := &file_grpc_proto_scout_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3370,7 +3488,7 @@ func (x *FetchBatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FetchBatchRequest.ProtoReflect.Descriptor instead.
 func (*FetchBatchRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{52}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *FetchBatchRequest) GetWorkerId() string {
@@ -3397,7 +3515,7 @@ type FetchBatchResponse struct {
 
 func (x *FetchBatchResponse) Reset() {
 	*x = FetchBatchResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[53]
+	mi := &file_grpc_proto_scout_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3409,7 +3527,7 @@ func (x *FetchBatchResponse) String() string {
 func (*FetchBatchResponse) ProtoMessage() {}
 
 func (x *FetchBatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[53]
+	mi := &file_grpc_proto_scout_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3422,7 +3540,7 @@ func (x *FetchBatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FetchBatchResponse.ProtoReflect.Descriptor instead.
 func (*FetchBatchResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{53}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *FetchBatchResponse) GetUrls() []*CrawlURL {
@@ -3450,7 +3568,7 @@ type CrawlURL struct {
 
 func (x *CrawlURL) Reset() {
 	*x = CrawlURL{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[54]
+	mi := &file_grpc_proto_scout_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3462,7 +3580,7 @@ func (x *CrawlURL) String() string {
 func (*CrawlURL) ProtoMessage() {}
 
 func (x *CrawlURL) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[54]
+	mi := &file_grpc_proto_scout_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3475,7 +3593,7 @@ func (x *CrawlURL) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CrawlURL.ProtoReflect.Descriptor instead.
 func (*CrawlURL) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{54}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *CrawlURL) GetUrl() string {
@@ -3509,7 +3627,7 @@ type SubmitResultsRequest struct {
 
 func (x *SubmitResultsRequest) Reset() {
 	*x = SubmitResultsRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[55]
+	mi := &file_grpc_proto_scout_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3521,7 +3639,7 @@ func (x *SubmitResultsRequest) String() string {
 func (*SubmitResultsRequest) ProtoMessage() {}
 
 func (x *SubmitResultsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[55]
+	mi := &file_grpc_proto_scout_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3534,7 +3652,7 @@ func (x *SubmitResultsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitResultsRequest.ProtoReflect.Descriptor instead.
 func (*SubmitResultsRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{55}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *SubmitResultsRequest) GetWorkerId() string {
@@ -3565,7 +3683,7 @@ type CrawlResultEntry struct {
 
 func (x *CrawlResultEntry) Reset() {
 	*x = CrawlResultEntry{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[56]
+	mi := &file_grpc_proto_scout_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3577,7 +3695,7 @@ func (x *CrawlResultEntry) String() string {
 func (*CrawlResultEntry) ProtoMessage() {}
 
 func (x *CrawlResultEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[56]
+	mi := &file_grpc_proto_scout_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3590,7 +3708,7 @@ func (x *CrawlResultEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CrawlResultEntry.ProtoReflect.Descriptor instead.
 func (*CrawlResultEntry) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{56}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *CrawlResultEntry) GetUrl() string {
@@ -3645,7 +3763,7 @@ type SubmitResultsResponse struct {
 
 func (x *SubmitResultsResponse) Reset() {
 	*x = SubmitResultsResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[57]
+	mi := &file_grpc_proto_scout_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3657,7 +3775,7 @@ func (x *SubmitResultsResponse) String() string {
 func (*SubmitResultsResponse) ProtoMessage() {}
 
 func (x *SubmitResultsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[57]
+	mi := &file_grpc_proto_scout_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3670,7 +3788,7 @@ func (x *SubmitResultsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitResultsResponse.ProtoReflect.Descriptor instead.
 func (*SubmitResultsResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{57}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *SubmitResultsResponse) GetAccepted() int32 {
@@ -3695,7 +3813,7 @@ type SwarmStatusRequest struct {
 
 func (x *SwarmStatusRequest) Reset() {
 	*x = SwarmStatusRequest{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[58]
+	mi := &file_grpc_proto_scout_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3707,7 +3825,7 @@ func (x *SwarmStatusRequest) String() string {
 func (*SwarmStatusRequest) ProtoMessage() {}
 
 func (x *SwarmStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[58]
+	mi := &file_grpc_proto_scout_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3720,7 +3838,7 @@ func (x *SwarmStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SwarmStatusRequest.ProtoReflect.Descriptor instead.
 func (*SwarmStatusRequest) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{58}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{59}
 }
 
 type SwarmStatusResponse struct {
@@ -3737,7 +3855,7 @@ type SwarmStatusResponse struct {
 
 func (x *SwarmStatusResponse) Reset() {
 	*x = SwarmStatusResponse{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[59]
+	mi := &file_grpc_proto_scout_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3749,7 +3867,7 @@ func (x *SwarmStatusResponse) String() string {
 func (*SwarmStatusResponse) ProtoMessage() {}
 
 func (x *SwarmStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[59]
+	mi := &file_grpc_proto_scout_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3762,7 +3880,7 @@ func (x *SwarmStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SwarmStatusResponse.ProtoReflect.Descriptor instead.
 func (*SwarmStatusResponse) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{59}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *SwarmStatusResponse) GetTotalWorkers() int32 {
@@ -3820,7 +3938,7 @@ type SwarmWorkerInfo struct {
 
 func (x *SwarmWorkerInfo) Reset() {
 	*x = SwarmWorkerInfo{}
-	mi := &file_grpc_proto_scout_proto_msgTypes[60]
+	mi := &file_grpc_proto_scout_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3832,7 +3950,7 @@ func (x *SwarmWorkerInfo) String() string {
 func (*SwarmWorkerInfo) ProtoMessage() {}
 
 func (x *SwarmWorkerInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_grpc_proto_scout_proto_msgTypes[60]
+	mi := &file_grpc_proto_scout_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3845,7 +3963,7 @@ func (x *SwarmWorkerInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SwarmWorkerInfo.ProtoReflect.Descriptor instead.
 func (*SwarmWorkerInfo) Descriptor() ([]byte, []int) {
-	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{60}
+	return file_grpc_proto_scout_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *SwarmWorkerInfo) GetWorkerId() string {
@@ -3888,7 +4006,7 @@ var File_grpc_proto_scout_proto protoreflect.FileDescriptor
 const file_grpc_proto_scout_proto_rawDesc = "" +
 	"\n" +
 	"\x16grpc/proto/scout.proto\x12\bscout.v1\"\a\n" +
-	"\x05Empty\"\xb0\x03\n" +
+	"\x05Empty\"\xc2\x05\n" +
 	"\x14CreateSessionRequest\x12\x1a\n" +
 	"\bheadless\x18\x01 \x01(\bR\bheadless\x12\x18\n" +
 	"\astealth\x18\x02 \x01(\bR\astealth\x12\x14\n" +
@@ -3907,7 +4025,20 @@ const file_grpc_proto_scout_proto_rawDesc = "" +
 	"\n" +
 	"no_sandbox\x18\f \x01(\bR\tnoSandbox\x12\x1c\n" +
 	"\tephemeral\x18\r \x01(\bR\tephemeral\x12,\n" +
-	"\x12expires_in_seconds\x18\x0e \x01(\x03R\x10expiresInSeconds\"^\n" +
+	"\x12expires_in_seconds\x18\x0e \x01(\x03R\x10expiresInSeconds\x12\x1d\n" +
+	"\n" +
+	"record_har\x18\x0f \x01(\bR\trecordHar\x12#\n" +
+	"\rrecord_hijack\x18\x10 \x01(\bR\frecordHijack\x12#\n" +
+	"\rhijack_bodies\x18\x11 \x01(\bR\fhijackBodies\x12%\n" +
+	"\x0erecord_console\x18\x12 \x01(\bR\rrecordConsole\x12\x1b\n" +
+	"\trecord_ws\x18\x13 \x01(\bR\brecordWs\x12+\n" +
+	"\x06blocks\x18\x14 \x03(\v2\x13.scout.v1.BlockRuleR\x06blocks\x12\x17\n" +
+	"\ahar_out\x18\x15 \x01(\tR\x06harOut\x12\x1d\n" +
+	"\n" +
+	"hijack_out\x18\x16 \x01(\tR\thijackOut\"=\n" +
+	"\tBlockRule\x12\x18\n" +
+	"\apattern\x18\x01 \x01(\tR\apattern\x12\x16\n" +
+	"\x06method\x18\x02 \x01(\tR\x06method\"^\n" +
 	"\x15CreateSessionResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x10\n" +
@@ -4262,181 +4393,183 @@ func file_grpc_proto_scout_proto_rawDescGZIP() []byte {
 	return file_grpc_proto_scout_proto_rawDescData
 }
 
-var file_grpc_proto_scout_proto_msgTypes = make([]protoimpl.MessageInfo, 66)
+var file_grpc_proto_scout_proto_msgTypes = make([]protoimpl.MessageInfo, 67)
 var file_grpc_proto_scout_proto_goTypes = []any{
 	(*Empty)(nil),                  // 0: scout.v1.Empty
 	(*CreateSessionRequest)(nil),   // 1: scout.v1.CreateSessionRequest
-	(*CreateSessionResponse)(nil),  // 2: scout.v1.CreateSessionResponse
-	(*SessionRequest)(nil),         // 3: scout.v1.SessionRequest
-	(*NavigateRequest)(nil),        // 4: scout.v1.NavigateRequest
-	(*NavigateResponse)(nil),       // 5: scout.v1.NavigateResponse
-	(*ElementRequest)(nil),         // 6: scout.v1.ElementRequest
-	(*TypeRequest)(nil),            // 7: scout.v1.TypeRequest
-	(*SelectRequest)(nil),          // 8: scout.v1.SelectRequest
-	(*KeyRequest)(nil),             // 9: scout.v1.KeyRequest
-	(*AttributeRequest)(nil),       // 10: scout.v1.AttributeRequest
-	(*TextResponse)(nil),           // 11: scout.v1.TextResponse
-	(*BoolResponse)(nil),           // 12: scout.v1.BoolResponse
-	(*EvalRequest)(nil),            // 13: scout.v1.EvalRequest
-	(*EvalResponse)(nil),           // 14: scout.v1.EvalResponse
-	(*ScreenshotRequest)(nil),      // 15: scout.v1.ScreenshotRequest
-	(*ScreenshotResponse)(nil),     // 16: scout.v1.ScreenshotResponse
-	(*PDFResponse)(nil),            // 17: scout.v1.PDFResponse
-	(*RecordingRequest)(nil),       // 18: scout.v1.RecordingRequest
-	(*HARResponse)(nil),            // 19: scout.v1.HARResponse
-	(*HijackRequest)(nil),          // 20: scout.v1.HijackRequest
-	(*HijackedEvent)(nil),          // 21: scout.v1.HijackedEvent
-	(*HijackedRequestEvent)(nil),   // 22: scout.v1.HijackedRequestEvent
-	(*HijackedResponseEvent)(nil),  // 23: scout.v1.HijackedResponseEvent
-	(*WebSocketFrameEvent)(nil),    // 24: scout.v1.WebSocketFrameEvent
-	(*CaptureProfileRequest)(nil),  // 25: scout.v1.CaptureProfileRequest
-	(*CaptureProfileResponse)(nil), // 26: scout.v1.CaptureProfileResponse
-	(*LoadProfileRequest)(nil),     // 27: scout.v1.LoadProfileRequest
-	(*LoadProfileResponse)(nil),    // 28: scout.v1.LoadProfileResponse
-	(*InjectJSRequest)(nil),        // 29: scout.v1.InjectJSRequest
-	(*InjectJSResponse)(nil),       // 30: scout.v1.InjectJSResponse
-	(*BrowserEvent)(nil),           // 31: scout.v1.BrowserEvent
-	(*NetworkRequestEvent)(nil),    // 32: scout.v1.NetworkRequestEvent
-	(*NetworkResponseEvent)(nil),   // 33: scout.v1.NetworkResponseEvent
-	(*ConsoleEvent)(nil),           // 34: scout.v1.ConsoleEvent
-	(*PageEvent)(nil),              // 35: scout.v1.PageEvent
-	(*ErrorEvent)(nil),             // 36: scout.v1.ErrorEvent
-	(*Command)(nil),                // 37: scout.v1.Command
-	(*NavigateAction)(nil),         // 38: scout.v1.NavigateAction
-	(*ClickAction)(nil),            // 39: scout.v1.ClickAction
-	(*TypeAction)(nil),             // 40: scout.v1.TypeAction
-	(*KeyAction)(nil),              // 41: scout.v1.KeyAction
-	(*EvalAction)(nil),             // 42: scout.v1.EvalAction
-	(*ScreenshotAction)(nil),       // 43: scout.v1.ScreenshotAction
-	(*WaitAction)(nil),             // 44: scout.v1.WaitAction
-	(*ScrollAction)(nil),           // 45: scout.v1.ScrollAction
-	(*PairRequest)(nil),            // 46: scout.v1.PairRequest
-	(*PairResponse)(nil),           // 47: scout.v1.PairResponse
-	(*JoinSwarmRequest)(nil),       // 48: scout.v1.JoinSwarmRequest
-	(*JoinSwarmResponse)(nil),      // 49: scout.v1.JoinSwarmResponse
-	(*LeaveSwarmRequest)(nil),      // 50: scout.v1.LeaveSwarmRequest
-	(*LeaveSwarmResponse)(nil),     // 51: scout.v1.LeaveSwarmResponse
-	(*FetchBatchRequest)(nil),      // 52: scout.v1.FetchBatchRequest
-	(*FetchBatchResponse)(nil),     // 53: scout.v1.FetchBatchResponse
-	(*CrawlURL)(nil),               // 54: scout.v1.CrawlURL
-	(*SubmitResultsRequest)(nil),   // 55: scout.v1.SubmitResultsRequest
-	(*CrawlResultEntry)(nil),       // 56: scout.v1.CrawlResultEntry
-	(*SubmitResultsResponse)(nil),  // 57: scout.v1.SubmitResultsResponse
-	(*SwarmStatusRequest)(nil),     // 58: scout.v1.SwarmStatusRequest
-	(*SwarmStatusResponse)(nil),    // 59: scout.v1.SwarmStatusResponse
-	(*SwarmWorkerInfo)(nil),        // 60: scout.v1.SwarmWorkerInfo
-	nil,                            // 61: scout.v1.HijackedRequestEvent.HeadersEntry
-	nil,                            // 62: scout.v1.HijackedResponseEvent.HeadersEntry
-	nil,                            // 63: scout.v1.NetworkRequestEvent.HeadersEntry
-	nil,                            // 64: scout.v1.NetworkResponseEvent.HeadersEntry
-	nil,                            // 65: scout.v1.JoinSwarmRequest.LabelsEntry
+	(*BlockRule)(nil),              // 2: scout.v1.BlockRule
+	(*CreateSessionResponse)(nil),  // 3: scout.v1.CreateSessionResponse
+	(*SessionRequest)(nil),         // 4: scout.v1.SessionRequest
+	(*NavigateRequest)(nil),        // 5: scout.v1.NavigateRequest
+	(*NavigateResponse)(nil),       // 6: scout.v1.NavigateResponse
+	(*ElementRequest)(nil),         // 7: scout.v1.ElementRequest
+	(*TypeRequest)(nil),            // 8: scout.v1.TypeRequest
+	(*SelectRequest)(nil),          // 9: scout.v1.SelectRequest
+	(*KeyRequest)(nil),             // 10: scout.v1.KeyRequest
+	(*AttributeRequest)(nil),       // 11: scout.v1.AttributeRequest
+	(*TextResponse)(nil),           // 12: scout.v1.TextResponse
+	(*BoolResponse)(nil),           // 13: scout.v1.BoolResponse
+	(*EvalRequest)(nil),            // 14: scout.v1.EvalRequest
+	(*EvalResponse)(nil),           // 15: scout.v1.EvalResponse
+	(*ScreenshotRequest)(nil),      // 16: scout.v1.ScreenshotRequest
+	(*ScreenshotResponse)(nil),     // 17: scout.v1.ScreenshotResponse
+	(*PDFResponse)(nil),            // 18: scout.v1.PDFResponse
+	(*RecordingRequest)(nil),       // 19: scout.v1.RecordingRequest
+	(*HARResponse)(nil),            // 20: scout.v1.HARResponse
+	(*HijackRequest)(nil),          // 21: scout.v1.HijackRequest
+	(*HijackedEvent)(nil),          // 22: scout.v1.HijackedEvent
+	(*HijackedRequestEvent)(nil),   // 23: scout.v1.HijackedRequestEvent
+	(*HijackedResponseEvent)(nil),  // 24: scout.v1.HijackedResponseEvent
+	(*WebSocketFrameEvent)(nil),    // 25: scout.v1.WebSocketFrameEvent
+	(*CaptureProfileRequest)(nil),  // 26: scout.v1.CaptureProfileRequest
+	(*CaptureProfileResponse)(nil), // 27: scout.v1.CaptureProfileResponse
+	(*LoadProfileRequest)(nil),     // 28: scout.v1.LoadProfileRequest
+	(*LoadProfileResponse)(nil),    // 29: scout.v1.LoadProfileResponse
+	(*InjectJSRequest)(nil),        // 30: scout.v1.InjectJSRequest
+	(*InjectJSResponse)(nil),       // 31: scout.v1.InjectJSResponse
+	(*BrowserEvent)(nil),           // 32: scout.v1.BrowserEvent
+	(*NetworkRequestEvent)(nil),    // 33: scout.v1.NetworkRequestEvent
+	(*NetworkResponseEvent)(nil),   // 34: scout.v1.NetworkResponseEvent
+	(*ConsoleEvent)(nil),           // 35: scout.v1.ConsoleEvent
+	(*PageEvent)(nil),              // 36: scout.v1.PageEvent
+	(*ErrorEvent)(nil),             // 37: scout.v1.ErrorEvent
+	(*Command)(nil),                // 38: scout.v1.Command
+	(*NavigateAction)(nil),         // 39: scout.v1.NavigateAction
+	(*ClickAction)(nil),            // 40: scout.v1.ClickAction
+	(*TypeAction)(nil),             // 41: scout.v1.TypeAction
+	(*KeyAction)(nil),              // 42: scout.v1.KeyAction
+	(*EvalAction)(nil),             // 43: scout.v1.EvalAction
+	(*ScreenshotAction)(nil),       // 44: scout.v1.ScreenshotAction
+	(*WaitAction)(nil),             // 45: scout.v1.WaitAction
+	(*ScrollAction)(nil),           // 46: scout.v1.ScrollAction
+	(*PairRequest)(nil),            // 47: scout.v1.PairRequest
+	(*PairResponse)(nil),           // 48: scout.v1.PairResponse
+	(*JoinSwarmRequest)(nil),       // 49: scout.v1.JoinSwarmRequest
+	(*JoinSwarmResponse)(nil),      // 50: scout.v1.JoinSwarmResponse
+	(*LeaveSwarmRequest)(nil),      // 51: scout.v1.LeaveSwarmRequest
+	(*LeaveSwarmResponse)(nil),     // 52: scout.v1.LeaveSwarmResponse
+	(*FetchBatchRequest)(nil),      // 53: scout.v1.FetchBatchRequest
+	(*FetchBatchResponse)(nil),     // 54: scout.v1.FetchBatchResponse
+	(*CrawlURL)(nil),               // 55: scout.v1.CrawlURL
+	(*SubmitResultsRequest)(nil),   // 56: scout.v1.SubmitResultsRequest
+	(*CrawlResultEntry)(nil),       // 57: scout.v1.CrawlResultEntry
+	(*SubmitResultsResponse)(nil),  // 58: scout.v1.SubmitResultsResponse
+	(*SwarmStatusRequest)(nil),     // 59: scout.v1.SwarmStatusRequest
+	(*SwarmStatusResponse)(nil),    // 60: scout.v1.SwarmStatusResponse
+	(*SwarmWorkerInfo)(nil),        // 61: scout.v1.SwarmWorkerInfo
+	nil,                            // 62: scout.v1.HijackedRequestEvent.HeadersEntry
+	nil,                            // 63: scout.v1.HijackedResponseEvent.HeadersEntry
+	nil,                            // 64: scout.v1.NetworkRequestEvent.HeadersEntry
+	nil,                            // 65: scout.v1.NetworkResponseEvent.HeadersEntry
+	nil,                            // 66: scout.v1.JoinSwarmRequest.LabelsEntry
 }
 var file_grpc_proto_scout_proto_depIdxs = []int32{
-	22, // 0: scout.v1.HijackedEvent.request:type_name -> scout.v1.HijackedRequestEvent
-	23, // 1: scout.v1.HijackedEvent.response:type_name -> scout.v1.HijackedResponseEvent
-	24, // 2: scout.v1.HijackedEvent.ws_frame:type_name -> scout.v1.WebSocketFrameEvent
-	61, // 3: scout.v1.HijackedRequestEvent.headers:type_name -> scout.v1.HijackedRequestEvent.HeadersEntry
-	62, // 4: scout.v1.HijackedResponseEvent.headers:type_name -> scout.v1.HijackedResponseEvent.HeadersEntry
-	32, // 5: scout.v1.BrowserEvent.request_sent:type_name -> scout.v1.NetworkRequestEvent
-	33, // 6: scout.v1.BrowserEvent.response_received:type_name -> scout.v1.NetworkResponseEvent
-	34, // 7: scout.v1.BrowserEvent.console:type_name -> scout.v1.ConsoleEvent
-	35, // 8: scout.v1.BrowserEvent.page_event:type_name -> scout.v1.PageEvent
-	36, // 9: scout.v1.BrowserEvent.error:type_name -> scout.v1.ErrorEvent
-	63, // 10: scout.v1.NetworkRequestEvent.headers:type_name -> scout.v1.NetworkRequestEvent.HeadersEntry
-	64, // 11: scout.v1.NetworkResponseEvent.headers:type_name -> scout.v1.NetworkResponseEvent.HeadersEntry
-	38, // 12: scout.v1.Command.navigate:type_name -> scout.v1.NavigateAction
-	39, // 13: scout.v1.Command.click:type_name -> scout.v1.ClickAction
-	40, // 14: scout.v1.Command.type:type_name -> scout.v1.TypeAction
-	41, // 15: scout.v1.Command.press_key:type_name -> scout.v1.KeyAction
-	42, // 16: scout.v1.Command.eval:type_name -> scout.v1.EvalAction
-	43, // 17: scout.v1.Command.screenshot:type_name -> scout.v1.ScreenshotAction
-	44, // 18: scout.v1.Command.wait:type_name -> scout.v1.WaitAction
-	45, // 19: scout.v1.Command.scroll:type_name -> scout.v1.ScrollAction
-	65, // 20: scout.v1.JoinSwarmRequest.labels:type_name -> scout.v1.JoinSwarmRequest.LabelsEntry
-	54, // 21: scout.v1.FetchBatchResponse.urls:type_name -> scout.v1.CrawlURL
-	56, // 22: scout.v1.SubmitResultsRequest.results:type_name -> scout.v1.CrawlResultEntry
-	60, // 23: scout.v1.SwarmStatusResponse.workers:type_name -> scout.v1.SwarmWorkerInfo
-	1,  // 24: scout.v1.ScoutService.CreateSession:input_type -> scout.v1.CreateSessionRequest
-	3,  // 25: scout.v1.ScoutService.DestroySession:input_type -> scout.v1.SessionRequest
-	4,  // 26: scout.v1.ScoutService.Navigate:input_type -> scout.v1.NavigateRequest
-	3,  // 27: scout.v1.ScoutService.Reload:input_type -> scout.v1.SessionRequest
-	3,  // 28: scout.v1.ScoutService.GoBack:input_type -> scout.v1.SessionRequest
-	3,  // 29: scout.v1.ScoutService.GoForward:input_type -> scout.v1.SessionRequest
-	6,  // 30: scout.v1.ScoutService.Click:input_type -> scout.v1.ElementRequest
-	6,  // 31: scout.v1.ScoutService.DoubleClick:input_type -> scout.v1.ElementRequest
-	6,  // 32: scout.v1.ScoutService.RightClick:input_type -> scout.v1.ElementRequest
-	6,  // 33: scout.v1.ScoutService.Hover:input_type -> scout.v1.ElementRequest
-	7,  // 34: scout.v1.ScoutService.Type:input_type -> scout.v1.TypeRequest
-	8,  // 35: scout.v1.ScoutService.SelectOption:input_type -> scout.v1.SelectRequest
-	9,  // 36: scout.v1.ScoutService.PressKey:input_type -> scout.v1.KeyRequest
-	6,  // 37: scout.v1.ScoutService.GetText:input_type -> scout.v1.ElementRequest
-	10, // 38: scout.v1.ScoutService.GetAttribute:input_type -> scout.v1.AttributeRequest
-	3,  // 39: scout.v1.ScoutService.GetTitle:input_type -> scout.v1.SessionRequest
-	3,  // 40: scout.v1.ScoutService.GetURL:input_type -> scout.v1.SessionRequest
-	13, // 41: scout.v1.ScoutService.Eval:input_type -> scout.v1.EvalRequest
-	6,  // 42: scout.v1.ScoutService.ElementExists:input_type -> scout.v1.ElementRequest
-	15, // 43: scout.v1.ScoutService.Screenshot:input_type -> scout.v1.ScreenshotRequest
-	3,  // 44: scout.v1.ScoutService.PDF:input_type -> scout.v1.SessionRequest
-	18, // 45: scout.v1.ScoutService.StartRecording:input_type -> scout.v1.RecordingRequest
-	3,  // 46: scout.v1.ScoutService.StopRecording:input_type -> scout.v1.SessionRequest
-	3,  // 47: scout.v1.ScoutService.ExportHAR:input_type -> scout.v1.SessionRequest
-	25, // 48: scout.v1.ScoutService.CaptureProfile:input_type -> scout.v1.CaptureProfileRequest
-	27, // 49: scout.v1.ScoutService.LoadProfile:input_type -> scout.v1.LoadProfileRequest
-	29, // 50: scout.v1.ScoutService.InjectJS:input_type -> scout.v1.InjectJSRequest
-	20, // 51: scout.v1.ScoutService.StartHijack:input_type -> scout.v1.HijackRequest
-	3,  // 52: scout.v1.ScoutService.StopHijack:input_type -> scout.v1.SessionRequest
-	3,  // 53: scout.v1.ScoutService.StreamHijack:input_type -> scout.v1.SessionRequest
-	3,  // 54: scout.v1.ScoutService.StreamEvents:input_type -> scout.v1.SessionRequest
-	37, // 55: scout.v1.ScoutService.Interactive:input_type -> scout.v1.Command
-	48, // 56: scout.v1.ScoutService.JoinSwarm:input_type -> scout.v1.JoinSwarmRequest
-	50, // 57: scout.v1.ScoutService.LeaveSwarm:input_type -> scout.v1.LeaveSwarmRequest
-	52, // 58: scout.v1.ScoutService.FetchBatch:input_type -> scout.v1.FetchBatchRequest
-	55, // 59: scout.v1.ScoutService.SubmitResults:input_type -> scout.v1.SubmitResultsRequest
-	58, // 60: scout.v1.ScoutService.SwarmStatus:input_type -> scout.v1.SwarmStatusRequest
-	46, // 61: scout.v1.PairingService.Pair:input_type -> scout.v1.PairRequest
-	2,  // 62: scout.v1.ScoutService.CreateSession:output_type -> scout.v1.CreateSessionResponse
-	0,  // 63: scout.v1.ScoutService.DestroySession:output_type -> scout.v1.Empty
-	5,  // 64: scout.v1.ScoutService.Navigate:output_type -> scout.v1.NavigateResponse
-	0,  // 65: scout.v1.ScoutService.Reload:output_type -> scout.v1.Empty
-	0,  // 66: scout.v1.ScoutService.GoBack:output_type -> scout.v1.Empty
-	0,  // 67: scout.v1.ScoutService.GoForward:output_type -> scout.v1.Empty
-	0,  // 68: scout.v1.ScoutService.Click:output_type -> scout.v1.Empty
-	0,  // 69: scout.v1.ScoutService.DoubleClick:output_type -> scout.v1.Empty
-	0,  // 70: scout.v1.ScoutService.RightClick:output_type -> scout.v1.Empty
-	0,  // 71: scout.v1.ScoutService.Hover:output_type -> scout.v1.Empty
-	0,  // 72: scout.v1.ScoutService.Type:output_type -> scout.v1.Empty
-	0,  // 73: scout.v1.ScoutService.SelectOption:output_type -> scout.v1.Empty
-	0,  // 74: scout.v1.ScoutService.PressKey:output_type -> scout.v1.Empty
-	11, // 75: scout.v1.ScoutService.GetText:output_type -> scout.v1.TextResponse
-	11, // 76: scout.v1.ScoutService.GetAttribute:output_type -> scout.v1.TextResponse
-	11, // 77: scout.v1.ScoutService.GetTitle:output_type -> scout.v1.TextResponse
-	11, // 78: scout.v1.ScoutService.GetURL:output_type -> scout.v1.TextResponse
-	14, // 79: scout.v1.ScoutService.Eval:output_type -> scout.v1.EvalResponse
-	12, // 80: scout.v1.ScoutService.ElementExists:output_type -> scout.v1.BoolResponse
-	16, // 81: scout.v1.ScoutService.Screenshot:output_type -> scout.v1.ScreenshotResponse
-	17, // 82: scout.v1.ScoutService.PDF:output_type -> scout.v1.PDFResponse
-	0,  // 83: scout.v1.ScoutService.StartRecording:output_type -> scout.v1.Empty
-	0,  // 84: scout.v1.ScoutService.StopRecording:output_type -> scout.v1.Empty
-	19, // 85: scout.v1.ScoutService.ExportHAR:output_type -> scout.v1.HARResponse
-	26, // 86: scout.v1.ScoutService.CaptureProfile:output_type -> scout.v1.CaptureProfileResponse
-	28, // 87: scout.v1.ScoutService.LoadProfile:output_type -> scout.v1.LoadProfileResponse
-	30, // 88: scout.v1.ScoutService.InjectJS:output_type -> scout.v1.InjectJSResponse
-	0,  // 89: scout.v1.ScoutService.StartHijack:output_type -> scout.v1.Empty
-	0,  // 90: scout.v1.ScoutService.StopHijack:output_type -> scout.v1.Empty
-	21, // 91: scout.v1.ScoutService.StreamHijack:output_type -> scout.v1.HijackedEvent
-	31, // 92: scout.v1.ScoutService.StreamEvents:output_type -> scout.v1.BrowserEvent
-	31, // 93: scout.v1.ScoutService.Interactive:output_type -> scout.v1.BrowserEvent
-	49, // 94: scout.v1.ScoutService.JoinSwarm:output_type -> scout.v1.JoinSwarmResponse
-	51, // 95: scout.v1.ScoutService.LeaveSwarm:output_type -> scout.v1.LeaveSwarmResponse
-	53, // 96: scout.v1.ScoutService.FetchBatch:output_type -> scout.v1.FetchBatchResponse
-	57, // 97: scout.v1.ScoutService.SubmitResults:output_type -> scout.v1.SubmitResultsResponse
-	59, // 98: scout.v1.ScoutService.SwarmStatus:output_type -> scout.v1.SwarmStatusResponse
-	47, // 99: scout.v1.PairingService.Pair:output_type -> scout.v1.PairResponse
-	62, // [62:100] is the sub-list for method output_type
-	24, // [24:62] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	2,  // 0: scout.v1.CreateSessionRequest.blocks:type_name -> scout.v1.BlockRule
+	23, // 1: scout.v1.HijackedEvent.request:type_name -> scout.v1.HijackedRequestEvent
+	24, // 2: scout.v1.HijackedEvent.response:type_name -> scout.v1.HijackedResponseEvent
+	25, // 3: scout.v1.HijackedEvent.ws_frame:type_name -> scout.v1.WebSocketFrameEvent
+	62, // 4: scout.v1.HijackedRequestEvent.headers:type_name -> scout.v1.HijackedRequestEvent.HeadersEntry
+	63, // 5: scout.v1.HijackedResponseEvent.headers:type_name -> scout.v1.HijackedResponseEvent.HeadersEntry
+	33, // 6: scout.v1.BrowserEvent.request_sent:type_name -> scout.v1.NetworkRequestEvent
+	34, // 7: scout.v1.BrowserEvent.response_received:type_name -> scout.v1.NetworkResponseEvent
+	35, // 8: scout.v1.BrowserEvent.console:type_name -> scout.v1.ConsoleEvent
+	36, // 9: scout.v1.BrowserEvent.page_event:type_name -> scout.v1.PageEvent
+	37, // 10: scout.v1.BrowserEvent.error:type_name -> scout.v1.ErrorEvent
+	64, // 11: scout.v1.NetworkRequestEvent.headers:type_name -> scout.v1.NetworkRequestEvent.HeadersEntry
+	65, // 12: scout.v1.NetworkResponseEvent.headers:type_name -> scout.v1.NetworkResponseEvent.HeadersEntry
+	39, // 13: scout.v1.Command.navigate:type_name -> scout.v1.NavigateAction
+	40, // 14: scout.v1.Command.click:type_name -> scout.v1.ClickAction
+	41, // 15: scout.v1.Command.type:type_name -> scout.v1.TypeAction
+	42, // 16: scout.v1.Command.press_key:type_name -> scout.v1.KeyAction
+	43, // 17: scout.v1.Command.eval:type_name -> scout.v1.EvalAction
+	44, // 18: scout.v1.Command.screenshot:type_name -> scout.v1.ScreenshotAction
+	45, // 19: scout.v1.Command.wait:type_name -> scout.v1.WaitAction
+	46, // 20: scout.v1.Command.scroll:type_name -> scout.v1.ScrollAction
+	66, // 21: scout.v1.JoinSwarmRequest.labels:type_name -> scout.v1.JoinSwarmRequest.LabelsEntry
+	55, // 22: scout.v1.FetchBatchResponse.urls:type_name -> scout.v1.CrawlURL
+	57, // 23: scout.v1.SubmitResultsRequest.results:type_name -> scout.v1.CrawlResultEntry
+	61, // 24: scout.v1.SwarmStatusResponse.workers:type_name -> scout.v1.SwarmWorkerInfo
+	1,  // 25: scout.v1.ScoutService.CreateSession:input_type -> scout.v1.CreateSessionRequest
+	4,  // 26: scout.v1.ScoutService.DestroySession:input_type -> scout.v1.SessionRequest
+	5,  // 27: scout.v1.ScoutService.Navigate:input_type -> scout.v1.NavigateRequest
+	4,  // 28: scout.v1.ScoutService.Reload:input_type -> scout.v1.SessionRequest
+	4,  // 29: scout.v1.ScoutService.GoBack:input_type -> scout.v1.SessionRequest
+	4,  // 30: scout.v1.ScoutService.GoForward:input_type -> scout.v1.SessionRequest
+	7,  // 31: scout.v1.ScoutService.Click:input_type -> scout.v1.ElementRequest
+	7,  // 32: scout.v1.ScoutService.DoubleClick:input_type -> scout.v1.ElementRequest
+	7,  // 33: scout.v1.ScoutService.RightClick:input_type -> scout.v1.ElementRequest
+	7,  // 34: scout.v1.ScoutService.Hover:input_type -> scout.v1.ElementRequest
+	8,  // 35: scout.v1.ScoutService.Type:input_type -> scout.v1.TypeRequest
+	9,  // 36: scout.v1.ScoutService.SelectOption:input_type -> scout.v1.SelectRequest
+	10, // 37: scout.v1.ScoutService.PressKey:input_type -> scout.v1.KeyRequest
+	7,  // 38: scout.v1.ScoutService.GetText:input_type -> scout.v1.ElementRequest
+	11, // 39: scout.v1.ScoutService.GetAttribute:input_type -> scout.v1.AttributeRequest
+	4,  // 40: scout.v1.ScoutService.GetTitle:input_type -> scout.v1.SessionRequest
+	4,  // 41: scout.v1.ScoutService.GetURL:input_type -> scout.v1.SessionRequest
+	14, // 42: scout.v1.ScoutService.Eval:input_type -> scout.v1.EvalRequest
+	7,  // 43: scout.v1.ScoutService.ElementExists:input_type -> scout.v1.ElementRequest
+	16, // 44: scout.v1.ScoutService.Screenshot:input_type -> scout.v1.ScreenshotRequest
+	4,  // 45: scout.v1.ScoutService.PDF:input_type -> scout.v1.SessionRequest
+	19, // 46: scout.v1.ScoutService.StartRecording:input_type -> scout.v1.RecordingRequest
+	4,  // 47: scout.v1.ScoutService.StopRecording:input_type -> scout.v1.SessionRequest
+	4,  // 48: scout.v1.ScoutService.ExportHAR:input_type -> scout.v1.SessionRequest
+	26, // 49: scout.v1.ScoutService.CaptureProfile:input_type -> scout.v1.CaptureProfileRequest
+	28, // 50: scout.v1.ScoutService.LoadProfile:input_type -> scout.v1.LoadProfileRequest
+	30, // 51: scout.v1.ScoutService.InjectJS:input_type -> scout.v1.InjectJSRequest
+	21, // 52: scout.v1.ScoutService.StartHijack:input_type -> scout.v1.HijackRequest
+	4,  // 53: scout.v1.ScoutService.StopHijack:input_type -> scout.v1.SessionRequest
+	4,  // 54: scout.v1.ScoutService.StreamHijack:input_type -> scout.v1.SessionRequest
+	4,  // 55: scout.v1.ScoutService.StreamEvents:input_type -> scout.v1.SessionRequest
+	38, // 56: scout.v1.ScoutService.Interactive:input_type -> scout.v1.Command
+	49, // 57: scout.v1.ScoutService.JoinSwarm:input_type -> scout.v1.JoinSwarmRequest
+	51, // 58: scout.v1.ScoutService.LeaveSwarm:input_type -> scout.v1.LeaveSwarmRequest
+	53, // 59: scout.v1.ScoutService.FetchBatch:input_type -> scout.v1.FetchBatchRequest
+	56, // 60: scout.v1.ScoutService.SubmitResults:input_type -> scout.v1.SubmitResultsRequest
+	59, // 61: scout.v1.ScoutService.SwarmStatus:input_type -> scout.v1.SwarmStatusRequest
+	47, // 62: scout.v1.PairingService.Pair:input_type -> scout.v1.PairRequest
+	3,  // 63: scout.v1.ScoutService.CreateSession:output_type -> scout.v1.CreateSessionResponse
+	0,  // 64: scout.v1.ScoutService.DestroySession:output_type -> scout.v1.Empty
+	6,  // 65: scout.v1.ScoutService.Navigate:output_type -> scout.v1.NavigateResponse
+	0,  // 66: scout.v1.ScoutService.Reload:output_type -> scout.v1.Empty
+	0,  // 67: scout.v1.ScoutService.GoBack:output_type -> scout.v1.Empty
+	0,  // 68: scout.v1.ScoutService.GoForward:output_type -> scout.v1.Empty
+	0,  // 69: scout.v1.ScoutService.Click:output_type -> scout.v1.Empty
+	0,  // 70: scout.v1.ScoutService.DoubleClick:output_type -> scout.v1.Empty
+	0,  // 71: scout.v1.ScoutService.RightClick:output_type -> scout.v1.Empty
+	0,  // 72: scout.v1.ScoutService.Hover:output_type -> scout.v1.Empty
+	0,  // 73: scout.v1.ScoutService.Type:output_type -> scout.v1.Empty
+	0,  // 74: scout.v1.ScoutService.SelectOption:output_type -> scout.v1.Empty
+	0,  // 75: scout.v1.ScoutService.PressKey:output_type -> scout.v1.Empty
+	12, // 76: scout.v1.ScoutService.GetText:output_type -> scout.v1.TextResponse
+	12, // 77: scout.v1.ScoutService.GetAttribute:output_type -> scout.v1.TextResponse
+	12, // 78: scout.v1.ScoutService.GetTitle:output_type -> scout.v1.TextResponse
+	12, // 79: scout.v1.ScoutService.GetURL:output_type -> scout.v1.TextResponse
+	15, // 80: scout.v1.ScoutService.Eval:output_type -> scout.v1.EvalResponse
+	13, // 81: scout.v1.ScoutService.ElementExists:output_type -> scout.v1.BoolResponse
+	17, // 82: scout.v1.ScoutService.Screenshot:output_type -> scout.v1.ScreenshotResponse
+	18, // 83: scout.v1.ScoutService.PDF:output_type -> scout.v1.PDFResponse
+	0,  // 84: scout.v1.ScoutService.StartRecording:output_type -> scout.v1.Empty
+	0,  // 85: scout.v1.ScoutService.StopRecording:output_type -> scout.v1.Empty
+	20, // 86: scout.v1.ScoutService.ExportHAR:output_type -> scout.v1.HARResponse
+	27, // 87: scout.v1.ScoutService.CaptureProfile:output_type -> scout.v1.CaptureProfileResponse
+	29, // 88: scout.v1.ScoutService.LoadProfile:output_type -> scout.v1.LoadProfileResponse
+	31, // 89: scout.v1.ScoutService.InjectJS:output_type -> scout.v1.InjectJSResponse
+	0,  // 90: scout.v1.ScoutService.StartHijack:output_type -> scout.v1.Empty
+	0,  // 91: scout.v1.ScoutService.StopHijack:output_type -> scout.v1.Empty
+	22, // 92: scout.v1.ScoutService.StreamHijack:output_type -> scout.v1.HijackedEvent
+	32, // 93: scout.v1.ScoutService.StreamEvents:output_type -> scout.v1.BrowserEvent
+	32, // 94: scout.v1.ScoutService.Interactive:output_type -> scout.v1.BrowserEvent
+	50, // 95: scout.v1.ScoutService.JoinSwarm:output_type -> scout.v1.JoinSwarmResponse
+	52, // 96: scout.v1.ScoutService.LeaveSwarm:output_type -> scout.v1.LeaveSwarmResponse
+	54, // 97: scout.v1.ScoutService.FetchBatch:output_type -> scout.v1.FetchBatchResponse
+	58, // 98: scout.v1.ScoutService.SubmitResults:output_type -> scout.v1.SubmitResultsResponse
+	60, // 99: scout.v1.ScoutService.SwarmStatus:output_type -> scout.v1.SwarmStatusResponse
+	48, // 100: scout.v1.PairingService.Pair:output_type -> scout.v1.PairResponse
+	63, // [63:101] is the sub-list for method output_type
+	25, // [25:63] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_grpc_proto_scout_proto_init() }
@@ -4444,19 +4577,19 @@ func file_grpc_proto_scout_proto_init() {
 	if File_grpc_proto_scout_proto != nil {
 		return
 	}
-	file_grpc_proto_scout_proto_msgTypes[21].OneofWrappers = []any{
+	file_grpc_proto_scout_proto_msgTypes[22].OneofWrappers = []any{
 		(*HijackedEvent_Request)(nil),
 		(*HijackedEvent_Response)(nil),
 		(*HijackedEvent_WsFrame)(nil),
 	}
-	file_grpc_proto_scout_proto_msgTypes[31].OneofWrappers = []any{
+	file_grpc_proto_scout_proto_msgTypes[32].OneofWrappers = []any{
 		(*BrowserEvent_RequestSent)(nil),
 		(*BrowserEvent_ResponseReceived)(nil),
 		(*BrowserEvent_Console)(nil),
 		(*BrowserEvent_PageEvent)(nil),
 		(*BrowserEvent_Error)(nil),
 	}
-	file_grpc_proto_scout_proto_msgTypes[37].OneofWrappers = []any{
+	file_grpc_proto_scout_proto_msgTypes[38].OneofWrappers = []any{
 		(*Command_Navigate)(nil),
 		(*Command_Click)(nil),
 		(*Command_Type)(nil),
@@ -4472,7 +4605,7 @@ func file_grpc_proto_scout_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_grpc_proto_scout_proto_rawDesc), len(file_grpc_proto_scout_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   66,
+			NumMessages:   67,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

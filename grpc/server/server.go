@@ -394,6 +394,17 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 		opts = append(opts, scout.WithNoSandbox())
 	}
 
+	// Block rules from CreateSessionRequest.Blocks. Each matching request
+	// is aborted at the browser; pair with --record-har or --record-hijack
+	// to capture the intended payload before abort.
+	if blocks := req.GetBlocks(); len(blocks) > 0 {
+		rules := make([]scout.BlockRule, 0, len(blocks))
+		for _, b := range blocks {
+			rules = append(rules, scout.BlockRule{Pattern: b.GetPattern(), Method: b.GetMethod()})
+		}
+		opts = append(opts, scout.WithBlockRules(rules...))
+	}
+
 	browser, err := scout.New(opts...)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "browser launch failed: %v", sanitizeError(err))
@@ -420,10 +431,11 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 	// Wire CDP events to broadcast
 	s.wireEvents(sess)
 
-	// Start recording if requested
-	if req.GetRecord() {
+	// Start recording if requested. Either the legacy 'record' field
+	// or the new 'record_har' field enables the network recorder.
+	if req.GetRecord() || req.GetRecordHar() {
 		recOpts := []scout.RecorderOption{}
-		if req.GetCaptureBody() {
+		if req.GetCaptureBody() || req.GetHijackBodies() {
 			recOpts = append(recOpts, scout.WithCaptureBody(true))
 		}
 

@@ -31,6 +31,12 @@ func init() {
 	sessionCreateCmd.Flags().Bool("no-sandbox", false, "disable browser sandbox (containers/WSL)")
 	sessionCreateCmd.Flags().Bool("ephemeral", false, "create a non-reusable session (cleaned on Close instead of persisted)")
 	sessionCreateCmd.Flags().Duration("expires-in", 0, "expiration window for reusable sessions (e.g. 24h, 7d). 0 = default 7d. Ignored for --ephemeral.")
+	sessionCreateCmd.Flags().StringSlice("block", nil, "URL pattern(s) whose matching requests should be aborted at the browser; repeatable. CDP URLPattern syntax (* wildcards)")
+	sessionCreateCmd.Flags().StringSlice("block-method", nil, "HTTP method(s) paired by index with --block (empty = any). Repeatable")
+	sessionCreateCmd.Flags().Bool("har", false, "enable HAR recording (alias for --record)")
+	sessionCreateCmd.Flags().Bool("hijack", false, "enable real-time hijack capture stream")
+	sessionCreateCmd.Flags().Bool("hijack-bodies", false, "capture request + response bodies in hijack stream")
+
 	sessionCreateCmd.Flags().String("profile", "", "path to .scoutprofile file to apply at session creation")
 	sessionCreateCmd.Flags().Bool("decrypt", false, "decrypt the profile file (requires --passphrase)")
 	sessionCreateCmd.Flags().String("passphrase", "", "passphrase for encrypted profile decryption")
@@ -84,6 +90,21 @@ var sessionCreateCmd = &cobra.Command{
 		ephemeral, _ := cmd.Flags().GetBool("ephemeral")
 		expiresIn, _ := cmd.Flags().GetDuration("expires-in")
 
+		blockPatterns, _ := cmd.Flags().GetStringSlice("block")
+		blockMethods, _ := cmd.Flags().GetStringSlice("block-method")
+		blocks := make([]*pb.BlockRule, 0, len(blockPatterns))
+		for i, p := range blockPatterns {
+			m := ""
+			if i < len(blockMethods) {
+				m = blockMethods[i]
+			}
+			blocks = append(blocks, &pb.BlockRule{Pattern: p, Method: m})
+		}
+
+		harFlag, _ := cmd.Flags().GetBool("har")
+		hijackFlag, _ := cmd.Flags().GetBool("hijack")
+		hijackBodies, _ := cmd.Flags().GetBool("hijack-bodies")
+
 		// Load profile if specified, applying overrides to session creation fields.
 		profilePath, _ := cmd.Flags().GetString("profile")
 		if profilePath != "" {
@@ -126,18 +147,22 @@ var sessionCreateCmd = &cobra.Command{
 		}
 
 		resp, err := client.CreateSession(context.Background(), &pb.CreateSessionRequest{
-			Headless:    headless,
-			Stealth:     stealth,
-			Proxy:       proxy,
-			UserAgent:   userAgent,
-			InitialUrl:  url,
-			Record:      record,
-			CaptureBody: captureBody,
-			Maximized:   maximized,
-			Devtools:    devtools,
+			Headless:         headless,
+			Stealth:          stealth,
+			Proxy:            proxy,
+			UserAgent:        userAgent,
+			InitialUrl:       url,
+			Record:           record,
+			CaptureBody:      captureBody,
+			Maximized:        maximized,
+			Devtools:         devtools,
 			NoSandbox:        noSandbox,
 			Ephemeral:        ephemeral,
 			ExpiresInSeconds: int64(expiresIn.Seconds()),
+			Blocks:           blocks,
+			RecordHar:        harFlag,
+			RecordHijack:     hijackFlag,
+			HijackBodies:     hijackBodies,
 		})
 		if err != nil {
 			return fmt.Errorf("scout: create session: %w", err)
