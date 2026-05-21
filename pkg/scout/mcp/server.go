@@ -15,6 +15,7 @@ import (
 	"github.com/inovacc/scout/internal/metrics"
 	"github.com/inovacc/scout/internal/tracing"
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/aria"
 	"github.com/inovacc/scout/pkg/scout/plugin"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -36,6 +37,7 @@ type mcpState struct {
 	page           *scout.Page
 	config         ServerConfig
 	idle           *idle.Timer
+	ariaStore      *aria.Store
 }
 
 // touch resets the idle timer on activity.
@@ -185,7 +187,7 @@ func jsonResult(v any) (*mcp.CallToolResult, error) {
 // call cancelOnIdle when the timeout expires.
 // If cfg.PluginManager is set, plugin-provided MCP tools are registered.
 func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
-	state := &mcpState{config: cfg}
+	state := &mcpState{config: cfg, ariaStore: aria.NewStore()}
 
 	if cfg.IdleTimeout > 0 && len(cancelOnIdle) > 0 && cancelOnIdle[0] != nil {
 		cb := cancelOnIdle[0]
