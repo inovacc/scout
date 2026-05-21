@@ -53,8 +53,9 @@ type Browser struct {
 	fpRot *fingerprintRotator
 
 	// sessionID tracks this browser's session directory under ~/.scout/sessions/.
-	sessionID   string
-	sessionLock *SessionLockGuard
+	sessionID    string
+	sessionLock  *SessionLockGuard
+	blockRouter  *rodHijackRouter
 
 	// cdpURL is the CDP WebSocket URL used to connect to the browser.
 	cdpURL string
@@ -257,6 +258,12 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 	// Register session in tracker for local launches.
 	if l != nil {
 		br.registerSession()
+	}
+
+	// Install block-rule hijacker if configured. Done after registerSession
+	// so the launcher is fully ready and CDP commands succeed.
+	if len(o.blockRules) > 0 {
+		br.installBlockRules(o.blockRules)
 	}
 
 	// Periodic orphan watchdog — kills dangling browsers whose scout died.
@@ -688,6 +695,12 @@ func (b *Browser) Close() error {
 		if b.bridgeServer != nil {
 			_ = b.bridgeServer.Stop()
 			b.bridgeServer = nil
+		}
+
+		// 2b. Stop the block-rule hijack router if installed.
+		if b.blockRouter != nil {
+			_ = b.blockRouter.Stop()
+			b.blockRouter = nil
 		}
 
 		// 3. Stop VPN rotator and disconnect VPN auth handler.

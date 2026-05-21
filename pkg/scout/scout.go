@@ -386,6 +386,8 @@ func NewMCPSamplingProvider(opts ...MCPSamplingOption) *MCPSamplingProvider { re
 func WithMCPSamplingMaxTokens(n int64) MCPSamplingOption { return engine.WithMCPSamplingMaxTokens(n) }
 func IsMCPSamplingAvailable() bool { return engine.IsMCPSamplingAvailable() }
 func WithReusableLifetime(d time.Duration) Option { return engine.WithReusableLifetime(d) }
+type BlockRule = engine.BlockRule
+func WithBlockRules(rules ...BlockRule) Option { return engine.WithBlockRules(rules...) }
 type SessionAttrs = engine.SessionAttrs
 func NewSessionID(a SessionAttrs) (string, error) { return engine.NewSessionID(a) }
 func ParseSessionID(id string) (SessionAttrs, error) { return engine.ParseSessionID(id) }

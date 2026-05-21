@@ -83,6 +83,17 @@ type options struct {
 	systemBrowser      bool   // allow system-installed browsers (not just cache)
 	mobile             *MobileConfig // mobile device automation via ADB
 	touchEmulation     bool          // enable touch simulation on desktop
+	blockRules         []BlockRule   // network requests to abort at the browser (recon: capture payload without server hit)
+}
+
+// BlockRule declares a network-request blocking pattern. Pattern uses CDP
+// URLPattern syntax (`*` matches anything, `?` one char). Method is
+// optional; empty matches any HTTP method. When a request matches, the
+// browser aborts it locally — useful for capturing intended request
+// payloads via HAR / hijack before the server sees them.
+type BlockRule struct {
+	Pattern string
+	Method  string
 }
 
 func defaults() *options {
@@ -444,6 +455,16 @@ func WithAutoDetect() Option {
 // /usr/bin, etc.). Without this option, only browsers in ~/.scout/browsers/ are used.
 func WithSystemBrowser() Option {
 	return func(o *options) { o.systemBrowser = true }
+}
+
+// WithBlockRules installs URL-pattern-based request blocking. Matching
+// requests are aborted at the browser before reaching the network. Use
+// alongside WithSessionHijack() or a HAR recorder to capture the
+// would-be-sent request body for replay / recon.
+func WithBlockRules(rules ...BlockRule) Option {
+	return func(o *options) {
+		o.blockRules = append(o.blockRules, rules...)
+	}
 }
 
 // WithSessionID reuses a specific session by its UUID from scout.pid.
