@@ -109,6 +109,17 @@ func StartOrphanWatchdog(interval time.Duration, done <-chan struct{}) {
 	session.StartOrphanWatchdog(interval, done)
 }
 
+// StartCleanupRetrier launches the background retrier for session dirs
+// whose initial cleanup was blocked by Windows file locks. See
+// session.StartCleanupRetrier.
+func StartCleanupRetrier(done <-chan struct{}) {
+	session.StartCleanupRetrier(done)
+}
+
+// PendingCleanupCount reports the queue depth of stale-session dirs
+// awaiting background cleanup.
+func PendingCleanupCount() int { return session.PendingCleanupCount() }
+
 // RootDomain extracts the root domain from a URL.
 func RootDomain(rawURL string) string { return session.RootDomain(rawURL) }
 

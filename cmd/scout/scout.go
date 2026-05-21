@@ -160,6 +160,11 @@ func main() {
 		_ = os.RemoveAll(filepath.Join(dir, "active-sessions"))
 	}
 
+	// Background retrier for stale dirs that resisted the bounded
+	// startup cleanup (Windows AV / Search Indexer / OneDrive holding
+	// Chrome SQLite + LevelDB files). Runs for the process lifetime.
+	session.StartCleanupRetrier(nil)
+
 	shutdown, err := tracing.Init(context.Background(), tracing.Config{ServiceName: "scout"})
 	if err != nil {
 		log.Printf("scout: tracing: %v", err)

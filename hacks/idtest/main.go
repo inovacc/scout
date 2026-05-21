@@ -1,30 +1,25 @@
-// idtest creates a reusable browser, prints its session ID, then exits
-// WITHOUT closing — the reusable session dir stays so we can inspect it.
+// idtest exercises CleanStaleSessions + StartCleanupRetrier. Runs for
+// 75 seconds so the 60-second retry tick fires once.
 package main
 
 import (
 	"fmt"
-	"os"
 	"time"
 
-	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/internal/engine/session"
 )
 
 func main() {
-	br, err := scout.New(
-		scout.WithBrowser(scout.BrowserChrome),
-		scout.WithHeadless(true),
-		scout.WithReusableSession(),
-		scout.WithReusableLifetime(1*time.Minute),
-	)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "New:", err)
-		os.Exit(1)
+	n, err := session.CleanStaleSessions()
+	fmt.Printf("CleanStaleSessions: cleaned=%d err=%v\n", n, err)
+	fmt.Printf("PendingCleanupCount after first sweep: %d\n", session.PendingCleanupCount())
+
+	done := make(chan struct{})
+	session.StartCleanupRetrier(done)
+	defer close(done)
+
+	for i := 0; i < 5; i++ {
+		time.Sleep(15 * time.Second)
+		fmt.Printf("[t=%2ds] pending=%d\n", (i+1)*15, session.PendingCleanupCount())
 	}
-
-	fmt.Println("SESSION_ID:", br.SessionID())
-
-	_, _ = br.NewPage("about:blank")
-	time.Sleep(1 * time.Second)
-	// Do NOT call br.Close(); reusable session must persist.
 }

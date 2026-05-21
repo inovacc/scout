@@ -494,8 +494,11 @@ func CleanStaleSessions() (int, error) {
 			if errors.Is(err, ErrLegacyFormat) {
 				slog.Info("scout: removing legacy JSON session", "id", id)
 			}
-			if removeErr := retryRemoveAll(filepath.Join(sessDir, id)); removeErr == nil {
+			target := filepath.Join(sessDir, id)
+			if removeErr := retryRemoveAll(target); removeErr == nil {
 				cleaned++
+			} else {
+				recordCleanupFailure(target)
 			}
 
 			continue
@@ -524,11 +527,16 @@ func CleanStaleSessions() (int, error) {
 			}
 		}
 
-		// Exponential-backoff retry (L1) for Windows file locks.
-		if err := retryRemoveAll(filepath.Join(sessDir, id)); err == nil {
+		// Exponential-backoff retry (L1) for Windows file locks. On
+		// persistent failure (AV / Search Indexer / OneDrive holding the
+		// LevelDB files), enqueue for the background retrier instead of
+		// just warning.
+		target := filepath.Join(sessDir, id)
+		if err := retryRemoveAll(target); err == nil {
 			cleaned++
 		} else {
-			slog.Warn("scout: stale session cleanup failed after retries",
+			recordCleanupFailure(target)
+			slog.Warn("scout: stale session cleanup failed after retries; queued for background retry",
 				"id", id,
 				"err", err,
 			)
