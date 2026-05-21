@@ -40,7 +40,7 @@ func SessionDir(id string) string { return session.Dir(id) }
 // SessionDataDir returns the browser user-data directory for a given session ID.
 func SessionDataDir(id string) string { return session.DataDir(id) }
 
-// WriteSessionInfo writes the session info as JSON to <SessionsDir>/<id>/scout.pid.
+// WriteSessionInfo writes the session info to <SessionsDir>/<id>/scout.pid.
 func WriteSessionInfo(id string, info *SessionInfo) error { return session.WriteInfo(id, info) }
 
 // ProcessStartToken returns an opaque token uniquely identifying the process

@@ -9,13 +9,16 @@ import (
 
 // LockGuard represents an acquired session lock. Call Release to drop it.
 // Releases are idempotent. The underlying OS lock is held via an open file
-// handle on <session>/scout.pid; closing the handle releases the lock.
+// handle on <session>/scout.lock; closing the handle releases the lock.
+//
+// The lock file is intentionally separate from scout.pid so the metadata
+// file can be truncated and re-written freely without invalidating the
+// long-lived OS-level range lock held by the owning scout process.
 //
 // Hardening M3 (revised) — replaces the legacy `.lock` mkdir-mutex with an
-// OS-level advisory lock (LockFileEx on Windows, flock on Unix). This lets
-// the same file carry both metadata (binary SessionInfo) and the lock, and
-// the OS reclaims the lock automatically if the holder crashes — no more
-// stale lock dirs to garbage-collect.
+// OS-level advisory lock (LockFileEx on Windows, flock on Unix). The OS
+// reclaims the lock automatically if the holder crashes — no more stale
+// lock dirs to garbage-collect.
 type LockGuard struct {
 	f        *os.File
 	released bool
@@ -51,9 +54,13 @@ func (g *LockGuard) File() *os.File {
 	return g.f
 }
 
+// LockFileName is the per-session zero-byte file that carries the OS-level
+// advisory lock.
+const LockFileName = "scout.lock"
+
 // AcquireLock takes an exclusive cross-process advisory lock on a session's
-// scout.pid file. Creates the file (zero-length) if it does not yet exist
-// so callers can lock before writing the first SessionInfo.
+// scout.lock file. Creates the file (zero-length) if it does not yet exist
+// so callers can lock before any metadata is written.
 //
 // Returns immediately on success or contention — no spin-wait loop. If the
 // lock is held elsewhere, returns an error with the session id for the
@@ -75,10 +82,10 @@ func acquire(id string, shared bool) (*LockGuard, error) {
 		return nil, fmt.Errorf("scout: lock: create session dir: %w", err)
 	}
 
-	path := filepath.Join(dir, "scout.pid")
+	path := filepath.Join(dir, LockFileName)
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o600)
 	if err != nil {
-		return nil, fmt.Errorf("scout: lock: open scout.pid: %w", err)
+		return nil, fmt.Errorf("scout: lock: open scout.lock: %w", err)
 	}
 
 	if err := lockFile(f, !shared); err != nil {

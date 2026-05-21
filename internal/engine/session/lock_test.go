@@ -19,9 +19,9 @@ func TestAcquireLockBasic(t *testing.T) {
 		t.Fatalf("AcquireLock: %v", err)
 	}
 
-	pidPath := filepath.Join(dir, "sess-lock-1", "scout.pid")
-	if _, err := os.Stat(pidPath); err != nil {
-		t.Fatalf("scout.pid not present after acquire: %v", err)
+	lockPath := filepath.Join(dir, "sess-lock-1", LockFileName)
+	if _, err := os.Stat(lockPath); err != nil {
+		t.Fatalf("scout.lock not present after acquire: %v", err)
 	}
 
 	g.Release()

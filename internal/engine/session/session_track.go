@@ -194,6 +194,7 @@ func WriteInfo(id string, info *SessionInfo) error {
 	return nil
 }
 
+
 // ReadInfo reads the session info from <SessionsDir>/<id>/scout.pid in the
 // v1 binary format. Legacy JSON-format files yield ErrLegacyFormat so the
 // startup purge can identify and remove them under hard cutover.
