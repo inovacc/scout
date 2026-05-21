@@ -94,9 +94,28 @@ func Capture(ctx context.Context, page *engine.Page, opts ...Option) (*Snapshot,
 		opt(cfg)
 	}
 
-	result, err := proto2.AccessibilityGetFullAXTree{}.Call(page.RodPage())
-	if err != nil {
-		return nil, fmt.Errorf("scout: aria: capture: getFullAXTree: %w", err)
+	ctx, cancel := context.WithTimeout(ctx, cfg.timeout)
+	defer cancel()
+
+	type axResult struct {
+		res *proto2.AccessibilityGetFullAXTreeResult
+		err error
+	}
+	resultCh := make(chan axResult, 1)
+	go func() {
+		res, err := proto2.AccessibilityGetFullAXTree{}.Call(page.RodPage())
+		resultCh <- axResult{res, err}
+	}()
+
+	var result *proto2.AccessibilityGetFullAXTreeResult
+	select {
+	case r := <-resultCh:
+		if r.err != nil {
+			return nil, fmt.Errorf("scout: aria: capture: getFullAXTree: %w", r.err)
+		}
+		result = r.res
+	case <-ctx.Done():
+		return nil, fmt.Errorf("scout: aria: capture: %w", ctx.Err())
 	}
 
 	counter := 0
@@ -104,7 +123,6 @@ func Capture(ctx context.Context, page *engine.Page, opts ...Option) (*Snapshot,
 
 	pageID := string(page.RodPage().TargetID)
 	version := versionCounter.Add(1)
-	_ = ctx
 	return &Snapshot{
 		PageID:     pageID,
 		Version:    version,
