@@ -391,6 +391,23 @@ func (p *Page) ElementFromPoint(x, y int) (*Element, error) {
 	return &Element{element: el}, nil
 }
 
+// ElementFromBackendNodeID resolves a CDP backend node ID to a live *Element.
+// Returns an error if the node has been detached from the DOM since it was
+// observed (e.g. the page navigated away or the element was removed).
+func (p *Page) ElementFromBackendNodeID(id int) (*Element, error) {
+	res, err := proto2.DOMResolveNode{
+		BackendNodeID: proto2.DOMBackendNodeID(id),
+	}.Call(p.page)
+	if err != nil {
+		return nil, fmt.Errorf("scout: element from backend node %d: %w", id, err)
+	}
+	el, err := p.page.ElementFromObject(res.Object)
+	if err != nil {
+		return nil, fmt.Errorf("scout: element from backend node %d: %w", id, err)
+	}
+	return &Element{element: el}, nil
+}
+
 // Search finds the first element matching the query using Chrome DevTools search.
 // The query can be a CSS selector, XPath expression, or text.
 func (p *Page) Search(query string) (*Element, error) {
