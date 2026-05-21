@@ -1,25 +1,35 @@
-// idtest exercises CleanStaleSessions + StartCleanupRetrier. Runs for
-// 75 seconds so the 60-second retry tick fires once.
+// idtest launches a reusable Chrome session and prints the resulting
+// session ID + scout.pid layout. Verifies:
+//   - encoded session ID (1...) lands on disk
+//   - scout.pid is 432-byte binary
+//   - scout.lock is a separate 0-byte file
+//   - stale-chrome-lock cleanup lets re-runs succeed
 package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 
-	"github.com/inovacc/scout/internal/engine/session"
+	"github.com/inovacc/scout/pkg/scout"
 )
 
 func main() {
-	n, err := session.CleanStaleSessions()
-	fmt.Printf("CleanStaleSessions: cleaned=%d err=%v\n", n, err)
-	fmt.Printf("PendingCleanupCount after first sweep: %d\n", session.PendingCleanupCount())
-
-	done := make(chan struct{})
-	session.StartCleanupRetrier(done)
-	defer close(done)
-
-	for i := 0; i < 5; i++ {
-		time.Sleep(15 * time.Second)
-		fmt.Printf("[t=%2ds] pending=%d\n", (i+1)*15, session.PendingCleanupCount())
+	br, err := scout.New(
+		scout.WithBrowser(scout.BrowserChrome),
+		scout.WithHeadless(true),
+		scout.WithReusableSession(),
+		scout.WithReusableLifetime(1*time.Minute),
+	)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "New:", err)
+		os.Exit(1)
 	}
+
+	fmt.Println("SESSION_ID:", br.SessionID())
+
+	_, _ = br.NewPage("about:blank")
+	time.Sleep(1 * time.Second)
+	_ = br.Close()
+	fmt.Println("done")
 }

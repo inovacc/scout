@@ -388,6 +388,13 @@ func IsMCPSamplingAvailable() bool { return engine.IsMCPSamplingAvailable() }
 func WithReusableLifetime(d time.Duration) Option { return engine.WithReusableLifetime(d) }
 type BlockRule = engine.BlockRule
 func WithBlockRules(rules ...BlockRule) Option { return engine.WithBlockRules(rules...) }
+type SessionMonitorConfig = engine.SessionMonitorConfig
+type MonitorSink = engine.MonitorSink
+type SessionMonitorRule = engine.SessionMonitorRule
+func WriteSessionMonitors(id string, cfg *SessionMonitorConfig) error { return engine.WriteSessionMonitors(id, cfg) }
+func ReadSessionMonitors(id string) (*SessionMonitorConfig, error) { return engine.ReadSessionMonitors(id) }
+func DefaultHARPath(id string) string { return engine.DefaultHARPath(id) }
+func DefaultHijackPath(id string) string { return engine.DefaultHijackPath(id) }
 type SessionAttrs = engine.SessionAttrs
 func NewSessionID(a SessionAttrs) (string, error) { return engine.NewSessionID(a) }
 func ParseSessionID(id string) (SessionAttrs, error) { return engine.ParseSessionID(id) }

@@ -464,6 +464,13 @@ func (l *Launcher) Launch() (string, error) {
 
 	l.setupUserPreferences()
 
+	// Pre-launch sanity: if the user-data-dir carries a stale Chrome
+	// lockfile (host\npid) from a previous crashed/killed instance,
+	// Chrome refuses to start and our URLParser blocks waiting for a
+	// debug URL that never arrives. Remove the lockfile when the PID
+	// inside is no longer alive.
+	clearStaleChromeLock(l.Get(flags.UserDataDir))
+
 	args := l.FormatArgs()
 
 	port := l.Get(flags.RemoteDebuggingPort)

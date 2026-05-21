@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -445,6 +448,30 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 	s.sessions.Store(sess.id, sess)
 	s.trackPeer(ctx, sess.id)
 
+	// Persist monitors.json sidecar so 'scout session destroy' and audit
+	// tooling know which artifacts to finalize even if the daemon restarts
+	// between create and destroy.
+	if engineID := browser.SessionID(); engineID != "" {
+		cfg := &scout.SessionMonitorConfig{
+			HAR: scout.MonitorSink{
+				Enabled:    req.GetRecord() || req.GetRecordHar(),
+				Path:       "har.json",
+				WithBodies: req.GetCaptureBody() || req.GetHijackBodies(),
+			},
+			Hijack: scout.MonitorSink{
+				Enabled:    req.GetRecordHijack(),
+				Path:       "hijack.jsonl",
+				WithBodies: req.GetHijackBodies(),
+			},
+			Console: scout.MonitorSink{Enabled: req.GetRecordConsole(), Path: "console.log"},
+			WS:      scout.MonitorSink{Enabled: req.GetRecordWs(), Path: "ws.jsonl"},
+		}
+		for _, b := range req.GetBlocks() {
+			cfg.Blocks = append(cfg.Blocks, scout.SessionMonitorRule{Pattern: b.GetPattern(), Method: b.GetMethod()})
+		}
+		_ = scout.WriteSessionMonitors(engineID, cfg)
+	}
+
 	title, _ := page.Title()
 	currentURL, _ := page.URL()
 
@@ -461,7 +488,23 @@ func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) 
 		return nil, err
 	}
 
+	// Flush HAR sidecar before shutting down the recorder. Reads
+	// monitors.json to learn the target path (default: har.json under the
+	// engine session dir). Best-effort; failures don't block destroy.
 	if sess.recorder != nil {
+		engineID := sess.browser.SessionID()
+		if engineID != "" {
+			if data, _, err := sess.recorder.ExportHAR(); err == nil && len(data) > 0 {
+				cfg, _ := scout.ReadSessionMonitors(engineID)
+				outPath := scout.DefaultHARPath(engineID)
+				if cfg != nil && cfg.HAR.Path != "" {
+					outPath = filepath.Join(scout.SessionDir(engineID), cfg.HAR.Path)
+				}
+				if werr := os.WriteFile(outPath, data, 0o600); werr != nil {
+					slog.Warn("scout: HAR flush on destroy failed", "path", outPath, "err", werr)
+				}
+			}
+		}
 		sess.recorder.Stop()
 	}
 

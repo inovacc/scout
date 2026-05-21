@@ -109,6 +109,32 @@ func StartOrphanWatchdog(interval time.Duration, done <-chan struct{}) {
 	session.StartOrphanWatchdog(interval, done)
 }
 
+// SessionMonitorConfig re-exports session.MonitorConfig for the public facade.
+type SessionMonitorConfig = session.MonitorConfig
+
+// MonitorSink re-exports session.MonitorSink.
+type MonitorSink = session.MonitorSink
+
+// SessionMonitorRule re-exports session.MonitorRule.
+type SessionMonitorRule = session.MonitorRule
+
+// WriteSessionMonitors writes the monitors.json sidecar for a session.
+func WriteSessionMonitors(id string, cfg *SessionMonitorConfig) error {
+	return session.WriteMonitors(id, cfg)
+}
+
+// ReadSessionMonitors loads monitors.json. Returns a zero config (no error)
+// when the file is absent.
+func ReadSessionMonitors(id string) (*SessionMonitorConfig, error) {
+	return session.ReadMonitors(id)
+}
+
+// DefaultHARPath returns the default HAR sidecar path for a session.
+func DefaultHARPath(id string) string { return session.DefaultHARPath(id) }
+
+// DefaultHijackPath returns the default hijack sidecar path for a session.
+func DefaultHijackPath(id string) string { return session.DefaultHijackPath(id) }
+
 // StartCleanupRetrier launches the background retrier for session dirs
 // whose initial cleanup was blocked by Windows file locks. See
 // session.StartCleanupRetrier.

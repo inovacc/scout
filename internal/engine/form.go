@@ -317,12 +317,28 @@ func (f *Form) fillField(key, value string) error {
 		return fmt.Errorf("field %q not found", key)
 	}
 
-	tagResult, err := el.Eval(`() => this.tagName.toLowerCase()`)
+	tagResult, err := el.Eval(`() => this.tagName.toLowerCase() + ":" + (this.type || "").toLowerCase()`)
 	if err != nil {
 		return err
 	}
 
-	tag := tagResult.Value.Str()
+	parts := strings.SplitN(tagResult.Value.Str(), ":", 2)
+	tag := parts[0]
+	inputType := ""
+	if len(parts) == 2 {
+		inputType = parts[1]
+	}
+
+	// File inputs need CDP's DOM.setFileInputFiles via SetFiles — typing
+	// into them is a no-op. Accept ';'-separated paths for multi-file
+	// inputs ('<input type="file" multiple>').
+	if tag == "input" && inputType == "file" {
+		paths := strings.Split(value, ";")
+		for i := range paths {
+			paths[i] = strings.TrimSpace(paths[i])
+		}
+		return el.SetFiles(paths)
+	}
 
 	if tag == "select" {
 		// For select, try setting value via JS
