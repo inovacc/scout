@@ -26,6 +26,7 @@ const (
 type auditEntry struct {
 	ID               string    `json:"id"`
 	Status           string    `json:"status"`
+	Monitors         string    `json:"monitors,omitempty"`
 	Reusable         bool      `json:"reusable"`
 	ScoutPID         int       `json:"scout_pid"`
 	ScoutAlive       bool      `json:"scout_alive"`
@@ -162,6 +163,32 @@ func classifySession(id string) auditEntry {
 	e.ScoutAlive = info.ScoutPID > 0 && scout.IsScoutProcess(info.ScoutPID)
 	e.BrowserAlive = info.BrowserPID > 0 && scout.ProcessAlive(info.BrowserPID)
 
+	// monitors.json sidecar — surface which monitors are active as a
+	// short compact column (H=har, J=hijack, C=console, W=ws, Bn=N blocks).
+	if cfg, _ := scout.ReadSessionMonitors(id); cfg != nil {
+		var marks []byte
+		if cfg.HAR.Enabled {
+			marks = append(marks, 'H')
+		}
+		if cfg.Hijack.Enabled {
+			marks = append(marks, 'J')
+		}
+		if cfg.Console.Enabled {
+			marks = append(marks, 'C')
+		}
+		if cfg.WS.Enabled {
+			marks = append(marks, 'W')
+		}
+		if n := len(cfg.Blocks); n > 0 {
+			marks = append(marks, 'B')
+			marks = append(marks, fmt.Sprintf("%d", n)...)
+		}
+		if len(marks) == 0 {
+			marks = []byte("-")
+		}
+		e.Monitors = string(marks)
+	}
+
 	// Parent-pid sanity: a healthy session's browser PPID should equal the
 	// scout PID that launched it.
 	e.ParentMatchesScout = e.BrowserParentPID != 0 && e.BrowserParentPID == e.ScoutPID
@@ -186,8 +213,8 @@ func printAuditTable(cmd *cobra.Command, entries []auditEntry) {
 	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
 	defer func() { _ = w.Flush() }()
 
-	_, _ = fmt.Fprintln(w, "SESSION\tSTATUS\tSCOUT\tBROWSER\tPPID\tBROWSER\tAGE\tTTL")
-	_, _ = fmt.Fprintln(w, "-------\t------\t-----\t-------\t----\t-------\t---\t---")
+	_, _ = fmt.Fprintln(w, "SESSION\tSTATUS\tSCOUT\tBROWSER\tPPID\tBROWSER\tAGE\tTTL\tMON")
+	_, _ = fmt.Fprintln(w, "-------\t------\t-----\t-------\t----\t-------\t---\t---\t---")
 
 	for _, e := range entries {
 		scoutCol := fmt.Sprintf("%d", e.ScoutPID)
@@ -216,8 +243,12 @@ func printAuditTable(cmd *cobra.Command, entries []auditEntry) {
 			shortID = shortID[:36]
 		}
 
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			shortID, e.Status, scoutCol, browserCol, ppidCol, e.Browser, e.Age, e.TTL)
+		mon := e.Monitors
+		if mon == "" {
+			mon = "-"
+		}
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			shortID, e.Status, scoutCol, browserCol, ppidCol, e.Browser, e.Age, e.TTL, mon)
 	}
 }
 

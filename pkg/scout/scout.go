@@ -388,6 +388,7 @@ func IsMCPSamplingAvailable() bool { return engine.IsMCPSamplingAvailable() }
 func WithReusableLifetime(d time.Duration) Option { return engine.WithReusableLifetime(d) }
 type BlockRule = engine.BlockRule
 func WithBlockRules(rules ...BlockRule) Option { return engine.WithBlockRules(rules...) }
+type ConsoleMessage = engine.ConsoleMessage
 type SessionMonitorConfig = engine.SessionMonitorConfig
 type MonitorSink = engine.MonitorSink
 type SessionMonitorRule = engine.SessionMonitorRule

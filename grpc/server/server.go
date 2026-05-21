@@ -29,14 +29,15 @@ import (
 
 // session holds a browser instance, page, recorder, and event subscribers.
 type session struct {
-	id         string
-	browser    *scout.Browser
-	page       *scout.Page
-	recorder   *scout.NetworkRecorder
-	hijacker   *scout.SessionHijacker
-	subs       map[string]chan *pb.BrowserEvent
-	hijackSubs map[string]chan *pb.HijackedEvent
-	mu         sync.RWMutex
+	id            string
+	browser       *scout.Browser
+	page          *scout.Page
+	recorder      *scout.NetworkRecorder
+	hijacker      *scout.SessionHijacker
+	subs          map[string]chan *pb.BrowserEvent
+	hijackSubs    map[string]chan *pb.HijackedEvent
+	mu            sync.RWMutex
+	monitorCancel func() // stops console/ws sidecar goroutines on destroy
 }
 
 func (s *session) broadcast(ev *pb.BrowserEvent) {
@@ -445,6 +446,46 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 		sess.recorder = scout.NewNetworkRecorder(page, recOpts...)
 	}
 
+	// Console + WS sidecar writers run as goroutines that drain the
+	// respective event sources to files under the engine session dir.
+	// sess.monitorCancel stops them at destroy time.
+	if engineID := browser.SessionID(); engineID != "" {
+		var stoppers []func()
+		if req.GetRecordConsole() {
+			if f, err := os.OpenFile(filepath.Join(scout.SessionDir(engineID), "console.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600); err == nil {
+				cancel := page.OnConsole(func(msg scout.ConsoleMessage) {
+					_, _ = fmt.Fprintf(f, "[%s] %s\n", msg.Level, msg.Text)
+				})
+				stoppers = append(stoppers, func() { cancel(); _ = f.Close() })
+			}
+		}
+		if req.GetRecordWs() {
+			if msgs, stop, err := page.MonitorWebSockets(); err == nil {
+				f, ferr := os.OpenFile(filepath.Join(scout.SessionDir(engineID), "ws.jsonl"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+				if ferr == nil {
+					done := make(chan struct{})
+					go func() {
+						enc := json.NewEncoder(f)
+						for m := range msgs {
+							_ = enc.Encode(m)
+						}
+						close(done)
+					}()
+					stoppers = append(stoppers, func() { stop(); <-done; _ = f.Close() })
+				} else {
+					stop()
+				}
+			}
+		}
+		if len(stoppers) > 0 {
+			sess.monitorCancel = func() {
+				for _, s := range stoppers {
+					s()
+				}
+			}
+		}
+	}
+
 	s.sessions.Store(sess.id, sess)
 	s.trackPeer(ctx, sess.id)
 
@@ -494,6 +535,13 @@ func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) 
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
+	}
+
+	// Stop console + WS sidecar writers first so their files flush
+	// before the browser is torn down.
+	if sess.monitorCancel != nil {
+		sess.monitorCancel()
+		sess.monitorCancel = nil
 	}
 
 	// Flush HAR sidecar before shutting down the recorder. Reads

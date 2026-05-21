@@ -38,6 +38,8 @@ func init() {
 	sessionCreateCmd.Flags().Bool("hijack-bodies", false, "capture request + response bodies in hijack stream")
 	sessionCreateCmd.Flags().String("har-out", "", "override default <session>/har.json (path relative to session dir or absolute)")
 	sessionCreateCmd.Flags().String("hijack-out", "", "override default <session>/hijack.jsonl")
+	sessionCreateCmd.Flags().Bool("console", false, "capture browser console output to <session>/console.log")
+	sessionCreateCmd.Flags().Bool("ws", false, "capture WebSocket frames to <session>/ws.jsonl")
 
 	sessionCreateCmd.Flags().String("profile", "", "path to .scoutprofile file to apply at session creation")
 	sessionCreateCmd.Flags().Bool("decrypt", false, "decrypt the profile file (requires --passphrase)")
@@ -108,6 +110,8 @@ var sessionCreateCmd = &cobra.Command{
 		hijackBodies, _ := cmd.Flags().GetBool("hijack-bodies")
 		harOut, _ := cmd.Flags().GetString("har-out")
 		hijackOut, _ := cmd.Flags().GetString("hijack-out")
+		consoleFlag, _ := cmd.Flags().GetBool("console")
+		wsFlag, _ := cmd.Flags().GetBool("ws")
 
 		// Load profile if specified, applying overrides to session creation fields.
 		profilePath, _ := cmd.Flags().GetString("profile")
@@ -169,6 +173,8 @@ var sessionCreateCmd = &cobra.Command{
 			HijackBodies:     hijackBodies,
 			HarOut:           harOut,
 			HijackOut:        hijackOut,
+			RecordConsole:    consoleFlag,
+			RecordWs:         wsFlag,
 		})
 		if err != nil {
 			return fmt.Errorf("scout: create session: %w", err)
