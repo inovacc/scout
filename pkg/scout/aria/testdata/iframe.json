@@ -1,0 +1,10 @@
+{
+  "page_id": "p-iframe",
+  "version": 2,
+  "nodes": [
+    {"ref": "e1", "backend_node_id": 1, "role": "WebArea", "name": "Outer", "children": [1, 2]},
+    {"ref": "e2", "backend_node_id": 2, "role": "button", "name": "Outer Click", "children": []},
+    {"ref": "f1:e1", "backend_node_id": 10, "role": "WebArea", "name": "Inner", "frame_id": "f1", "children": [3]},
+    {"ref": "f1:e2", "backend_node_id": 11, "role": "textbox", "name": "Inner Input", "frame_id": "f1", "children": []}
+  ]
+}

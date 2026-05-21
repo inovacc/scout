@@ -49,6 +49,22 @@ func loadFixture(t *testing.T, name string) *aria.Snapshot {
 	}
 }
 
+func TestRenderYAML_Iframe(t *testing.T) {
+	t.Parallel()
+	snap := loadFixture(t, "iframe")
+	var buf bytes.Buffer
+	if err := snap.RenderYAML(&buf); err != nil {
+		t.Fatalf("RenderYAML err=%v", err)
+	}
+	want, err := os.ReadFile(filepath.Join("testdata", "iframe.yaml"))
+	if err != nil {
+		t.Fatalf("read golden: %v", err)
+	}
+	if !bytes.Equal(buf.Bytes(), want) {
+		t.Errorf("rendering mismatch\n--- got ---\n%s\n--- want ---\n%s", buf.String(), want)
+	}
+}
+
 func TestRenderYAML_SimpleForm(t *testing.T) {
 	t.Parallel()
 	snap := loadFixture(t, "simple_form")

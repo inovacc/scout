@@ -86,8 +86,16 @@ func WithMaxNodes(n int) Option { return func(c *captureCfg) { c.maxNodes = n } 
 // WithCaptureTimeout sets a deadline for the CDP call.
 func WithCaptureTimeout(d time.Duration) Option { return func(c *captureCfg) { c.timeout = d } }
 
-// Capture runs CDP Accessibility.getFullAXTree on the page (root frame) and
-// converts the result to a *Snapshot.
+// Capture runs CDP Accessibility.getFullAXTree on the page and all child
+// frames, converting the result to a *Snapshot.
+//
+// Root-frame refs are "eN". Child-frame refs are prefixed "f<F>:eN" where F is
+// the 1-based enumeration index returned by Page.getFrameTree.
+//
+// Known limitation (Phase A): child-frame node Children indices are
+// frame-internal and are NOT rebased to the combined Nodes slice. Cross-frame
+// parent/child links are therefore broken at the boundary. Phase B+ can fix
+// this by stitching owner-element references.
 func Capture(ctx context.Context, page *engine.Page, opts ...Option) (*Snapshot, error) {
 	cfg := defaultCfg()
 	for _, opt := range opts {
@@ -121,6 +129,26 @@ func Capture(ctx context.Context, page *engine.Page, opts ...Option) (*Snapshot,
 	counter := 0
 	nodes, truncated := convertAXNodes(result.Nodes, cfg, "", &counter)
 
+	// Enumerate child frames via CDP Page.getFrameTree and append their AX
+	// nodes with "f<N>:" prefixes.
+	frameTreeResult, ftErr := proto2.PageGetFrameTree{}.Call(page.RodPage())
+	if ftErr == nil {
+		childFrames := collectChildFrameIDs(frameTreeResult.FrameTree)
+		for i, fid := range childFrames {
+			framePrefix := fmt.Sprintf("f%d", i+1)
+			fResult, ferr := proto2.AccessibilityGetFullAXTree{FrameID: fid}.Call(page.RodPage())
+			if ferr != nil {
+				continue
+			}
+			frameCounter := 0
+			frameNodes, frameTrunc := convertAXNodes(fResult.Nodes, cfg, framePrefix, &frameCounter)
+			nodes = append(nodes, frameNodes...)
+			if frameTrunc {
+				truncated = true
+			}
+		}
+	}
+
 	pageID := string(page.RodPage().TargetID)
 	version := versionCounter.Add(1)
 	return &Snapshot{
@@ -131,6 +159,20 @@ func Capture(ctx context.Context, page *engine.Page, opts ...Option) (*Snapshot,
 		CapturedAt: time.Now(),
 		Truncated:  truncated,
 	}, nil
+}
+
+// collectChildFrameIDs returns a flat slice of all non-root frame IDs in
+// breadth-first order, suitable for 1-based prefix assignment.
+func collectChildFrameIDs(tree *proto2.PageFrameTree) []proto2.PageFrameID {
+	if tree == nil {
+		return nil
+	}
+	var ids []proto2.PageFrameID
+	for _, child := range tree.ChildFrames {
+		ids = append(ids, child.Frame.ID)
+		ids = append(ids, collectChildFrameIDs(child)...)
+	}
+	return ids
 }
 
 func convertAXNodes(in []*proto2.AccessibilityAXNode, cfg *captureCfg, framePrefix string, counter *int) ([]Node, bool) {

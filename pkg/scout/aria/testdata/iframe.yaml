@@ -1,0 +1,4 @@
+- WebArea "Outer" [ref=e1]
+  - button "Outer Click" [ref=e2]
+  - WebArea "Inner" [ref=f1:e1]
+    - textbox "Inner Input" [ref=f1:e2]
