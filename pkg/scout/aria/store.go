@@ -2,34 +2,7 @@ package aria
 
 import (
 	"sync"
-	"time"
 )
-
-// Node is a single entry in a Snapshot's flat node list. Children are encoded
-// by index references into the parent Snapshot.Nodes slice — see axtree.go for
-// the rendering walker. Defined here so the Store can stand alone; the
-// authoritative documentation is in axtree.go (added in Task 4 of the plan).
-type Node struct {
-	Ref           string // "e15" (root) or "f2:e3" (frame 2)
-	BackendNodeID int64  // CDP DOM.BackendNodeId
-	Role          string // e.g. "button", "textbox"
-	Name          string // accessible name
-	Value         string // current value, if any
-	Children      []int  // indices into Snapshot.Nodes
-	FrameID       string // "" for root frame
-}
-
-// Snapshot is a captured accessibility tree at a point in time. Immutable
-// once Put into the Store; Capture (axtree.go, Task 5) builds a new Snapshot
-// for each version bump.
-type Snapshot struct {
-	PageID     string
-	Version    uint64
-	Nodes      []Node
-	URI        string
-	CapturedAt time.Time
-	Truncated  bool
-}
 
 // Store maps page IDs to their current Snapshot. Concurrent-safe.
 type Store struct {

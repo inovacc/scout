@@ -1,0 +1,3 @@
+- WebArea "Simple Form" [ref=e1]
+  - textbox "Email" [ref=e2]
+  - button "Submit" [ref=e3]

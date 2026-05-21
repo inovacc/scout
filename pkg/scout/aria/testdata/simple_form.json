@@ -1,0 +1,10 @@
+{
+  "page_id": "p-simple-form",
+  "version": 1,
+  "nodes": [
+    {"ref": "e1", "backend_node_id": 100, "role": "WebArea", "name": "Simple Form", "children": [1, 2]},
+    {"ref": "e2", "backend_node_id": 101, "role": "textbox", "name": "Email", "value": "", "children": []},
+    {"ref": "e3", "backend_node_id": 102, "role": "button", "name": "Submit", "children": []}
+  ],
+  "truncated": false
+}
