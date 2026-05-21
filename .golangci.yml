@@ -67,7 +67,6 @@ linters:
     - thelper
     - usetesting
     - wrapcheck
-    - depguard
     - dupl
     - goconst
     - gocyclo

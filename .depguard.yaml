@@ -1,0 +1,18 @@
+version: 1
+rules:
+  aria-layering:
+    list-mode: lax
+    files:
+      - "**/pkg/scout/aria/**"
+    deny:
+      - pkg: github.com/inovacc/scout/pkg/scout/mcp
+        desc: "pkg/scout/aria must not import pkg/scout/mcp (layering rule, see docs/superpowers/specs/2026-05-21-playwright-mcp-aria-ref-design.md §4)"
+      - pkg: github.com/inovacc/scout/pkg/scout/agent
+        desc: "pkg/scout/aria must not import pkg/scout/agent (layering rule)"
+      - pkg: github.com/inovacc/scout/pkg/scout/runbook
+        desc: "pkg/scout/aria must not import pkg/scout/runbook (layering rule)"
+    allow:
+      - $gostd
+      - github.com/inovacc/scout/internal/engine
+      - github.com/inovacc/scout/internal/engine/lib/proto
+      - github.com/inovacc/scout/pkg/scout/aria
