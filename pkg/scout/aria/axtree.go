@@ -1,10 +1,15 @@
 package aria
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
+	"sync/atomic"
 	"time"
+
+	"github.com/inovacc/scout/internal/engine"
+	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
 )
 
 // Node is a single entry in a Snapshot's flat node list. Children are encoded
@@ -59,6 +64,105 @@ func (s *Snapshot) RenderYAML(w io.Writer) error {
 		}
 	}
 	return nil
+}
+
+var versionCounter atomic.Uint64
+
+// Option configures a Capture call.
+type Option func(*captureCfg)
+
+type captureCfg struct {
+	maxNodes int
+	timeout  time.Duration
+}
+
+func defaultCfg() *captureCfg {
+	return &captureCfg{maxNodes: 10000, timeout: 5 * time.Second}
+}
+
+// WithMaxNodes limits the number of nodes captured from the AX tree.
+func WithMaxNodes(n int) Option { return func(c *captureCfg) { c.maxNodes = n } }
+
+// WithCaptureTimeout sets a deadline for the CDP call.
+func WithCaptureTimeout(d time.Duration) Option { return func(c *captureCfg) { c.timeout = d } }
+
+// Capture runs CDP Accessibility.getFullAXTree on the page (root frame) and
+// converts the result to a *Snapshot.
+func Capture(ctx context.Context, page *engine.Page, opts ...Option) (*Snapshot, error) {
+	cfg := defaultCfg()
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
+	result, err := proto2.AccessibilityGetFullAXTree{}.Call(page.RodPage())
+	if err != nil {
+		return nil, fmt.Errorf("scout: aria: capture: getFullAXTree: %w", err)
+	}
+
+	counter := 0
+	nodes, truncated := convertAXNodes(result.Nodes, cfg, "", &counter)
+
+	pageID := string(page.RodPage().TargetID)
+	version := versionCounter.Add(1)
+	_ = ctx
+	return &Snapshot{
+		PageID:     pageID,
+		Version:    version,
+		Nodes:      nodes,
+		URI:        fmt.Sprintf("scout://snapshot/%s?v=%d", pageID, version),
+		CapturedAt: time.Now(),
+		Truncated:  truncated,
+	}, nil
+}
+
+func convertAXNodes(in []*proto2.AccessibilityAXNode, cfg *captureCfg, framePrefix string, counter *int) ([]Node, bool) {
+	truncated := false
+	if len(in) > cfg.maxNodes {
+		in = in[:cfg.maxNodes]
+		truncated = true
+	}
+	idByAX := make(map[proto2.AccessibilityAXNodeID]int, len(in))
+	for i, ax := range in {
+		idByAX[ax.NodeID] = i
+	}
+	out := make([]Node, 0, len(in))
+	for _, ax := range in {
+		*counter++
+		ref := fmt.Sprintf("e%d", *counter)
+		if framePrefix != "" {
+			ref = framePrefix + ":" + ref
+		}
+		role, name, val := axStrings(ax)
+		children := make([]int, 0, len(ax.ChildIDs))
+		for _, cid := range ax.ChildIDs {
+			if ci, ok := idByAX[cid]; ok {
+				children = append(children, ci)
+			}
+		}
+		out = append(out, Node{
+			Ref:           ref,
+			BackendNodeID: int64(ax.BackendDOMNodeID),
+			Role:          role,
+			Name:          name,
+			Value:         val,
+			Children:      children,
+			FrameID:       framePrefix,
+		})
+	}
+	return out, truncated
+}
+
+func axStrings(ax *proto2.AccessibilityAXNode) (role, name, val string) {
+	if ax.Role != nil {
+		role = ax.Role.Value.Str()
+	}
+	if ax.Name != nil {
+		name = ax.Name.Value.Str()
+	}
+	if ax.Value != nil {
+		val = ax.Value.Value.Str()
+	}
+	return
 }
 
 func renderNode(w io.Writer, s *Snapshot, idx, depth int) error {
