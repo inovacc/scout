@@ -832,6 +832,20 @@ func (b *Browser) registerSession() {
 			existing.Domain = RootDomain(b.opts.targetURL)
 		}
 
+		// Stamp ExpiresAt the first time a reusable session is registered.
+		// preWriteStubInfo writes the stub before launcher PIDs are known
+		// and does not set ExpiresAt; without this branch the file stays
+		// at ExpiresAt=0 and IsExpired() never trips, so reusable sessions
+		// would persist past their intended lifetime.
+		existing.Reusable = b.opts.reusableSession
+		if existing.Reusable && existing.ExpiresAt.IsZero() {
+			lifetime := b.opts.reusableLifetime
+			if lifetime <= 0 {
+				lifetime = DefaultReusableLifetime
+			}
+			existing.ExpiresAt = existing.LastUsed.Add(lifetime)
+		}
+
 		_ = WriteSessionInfo(sessionID, existing)
 		b.sessionID = sessionID
 
