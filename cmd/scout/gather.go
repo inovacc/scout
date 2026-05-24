@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -35,67 +37,28 @@ func init() {
 var gatherCmd = &cobra.Command{
 	Use:   "gather <url>",
 	Short: "Collect all page intelligence in one shot: DOM, HAR, links, screenshots, cookies, metadata",
-	Args:  cobra.ExactArgs(1),
+	Long: `Collect all page intelligence in one shot.
+
+Also available as MCP tool ` + "`mcp__scout__gather`" + ` — both surfaces delegate to
+pkg/scout/tools.Gather so flags and arguments behave identically.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		targetURL := args[0]
-
 		opts := baseOpts(cmd)
-
 		b, err := scout.New(opts...)
 		if err != nil {
 			return fmt.Errorf("scout: gather: %w", err)
 		}
-
 		defer func() { _ = b.Close() }()
 
-		var gatherOpts []scout.GatherOption
+		in := gatherInputFromFlags(cmd, args[0])
 
-		// Check if any specific flags are set.
-		anySpecific := false
-		flagChecks := []struct {
-			name string
-			opt  scout.GatherOption
-		}{
-			{"html", scout.WithGatherHTML()},
-			{"markdown", scout.WithGatherMarkdown()},
-			{"screenshot", scout.WithGatherScreenshot()},
-			{"snapshot", scout.WithGatherSnapshot()},
-			{"har", scout.WithGatherHAR()},
-			{"links", scout.WithGatherLinks()},
-			{"cookies", scout.WithGatherCookies()},
-			{"meta", scout.WithGatherMeta()},
-			{"frameworks", scout.WithGatherFrameworks()},
-			{"console", scout.WithGatherConsole()},
-		}
-
-		for _, fc := range flagChecks {
-			if v, _ := cmd.Flags().GetBool(fc.name); v {
-				gatherOpts = append(gatherOpts, fc.opt)
-				anySpecific = true
-			}
-		}
-
-		// If --all or no specific flags, default behavior is all.
-		_ = anySpecific
-
-		if timeout, _ := cmd.Flags().GetDuration("timeout"); timeout > 0 {
-			gatherOpts = append(gatherOpts, scout.WithGatherTimeout(timeout))
-		}
-
-		result, err := b.Gather(targetURL, gatherOpts...)
+		result, err := tools.Gather(context.Background(), b, in)
 		if err != nil {
 			return err
 		}
 
-		// Auto-save report to ~/.scout/reports/ if --report flag is set.
-		saveReport, _ := cmd.Flags().GetBool("report")
-		if saveReport {
-			r := &scout.Report{
-				Type:   "gather",
-				URL:    targetURL,
-				Gather: result,
-			}
-
+		if save, _ := cmd.Flags().GetBool("report"); save {
+			r := &scout.Report{Type: "gather", URL: in.URL, Gather: result}
 			id, saveErr := scout.SaveReport(r)
 			if saveErr != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: save report: %v\n", saveErr)
@@ -108,13 +71,11 @@ var gatherCmd = &cobra.Command{
 		saveScreenshot, _ := cmd.Flags().GetBool("save-screenshot")
 		saveHAR, _ := cmd.Flags().GetBool("save-har")
 
-		// Save screenshot as separate file if requested.
 		if saveScreenshot && result.Screenshot != "" {
 			ssFile := "gather_screenshot.png"
 			if outFile != "" && outFile != "-" {
 				ssFile = outFile[:len(outFile)-len(filepath.Ext(outFile))] + "_screenshot.png"
 			}
-
 			if data, err := decodeBase64(result.Screenshot); err == nil {
 				if err := os.WriteFile(ssFile, data, 0o644); err == nil {
 					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Screenshot saved: %s\n", ssFile)
@@ -122,39 +83,59 @@ var gatherCmd = &cobra.Command{
 			}
 		}
 
-		// Save HAR as separate file if requested.
 		if saveHAR && len(result.HAR) > 0 {
 			harFile := "gather.har"
 			if outFile != "" && outFile != "-" {
 				harFile = outFile[:len(outFile)-len(filepath.Ext(outFile))] + ".har"
 			}
-
 			if err := os.WriteFile(harFile, result.HAR, 0o644); err == nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "HAR saved: %s (%d entries)\n", harFile, result.HAREntries)
 			}
 		}
 
-		// For JSON output, omit large binary fields if saved separately.
 		outputResult := *result
 		if saveScreenshot {
 			outputResult.Screenshot = ""
 		}
-
 		if saveHAR {
 			outputResult.HAR = nil
 		}
 
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
-
 		if err := enc.Encode(outputResult); err != nil {
 			return fmt.Errorf("scout: gather: encode: %w", err)
 		}
-
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Gathered %s in %s\n", result.URL, result.Duration)
-
 		return nil
 	},
+}
+
+// gatherInputFromFlags translates the cobra flag bag into the unified
+// tools.GatherInput. Single source of truth for flag→input mapping; both
+// the CLI handler above and any future shim (e.g. an `--input-file json`
+// path) can re-use it.
+func gatherInputFromFlags(cmd *cobra.Command, url string) tools.GatherInput {
+	getBool := func(name string) bool { v, _ := cmd.Flags().GetBool(name); return v }
+	timeoutStr := ""
+	if d, _ := cmd.Flags().GetDuration("timeout"); d > 0 {
+		timeoutStr = d.String()
+	}
+	return tools.GatherInput{
+		URL:        url,
+		HTML:       getBool("html"),
+		Markdown:   getBool("markdown"),
+		Screenshot: getBool("screenshot"),
+		Snapshot:   getBool("snapshot"),
+		HAR:        getBool("har"),
+		Links:      getBool("links"),
+		Cookies:    getBool("cookies"),
+		Meta:       getBool("meta"),
+		Frameworks: getBool("frameworks"),
+		Console:    getBool("console"),
+		All:        getBool("all"),
+		Timeout:    timeoutStr,
+	}
 }
 
 func decodeBase64(s string) ([]byte, error) {

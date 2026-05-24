@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -25,16 +27,12 @@ func init() {
 var testSiteCmd = &cobra.Command{
 	Use:   "test-site <url>",
 	Short: "Check site health: broken links, console errors, JS exceptions, network failures",
-	Args:  cobra.ExactArgs(1),
+	Long: `Check site health.
+
+Also available as MCP tool ` + "`mcp__scout__test_site`" + ` — both surfaces delegate
+to pkg/scout/tools.TestSite.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		targetURL := args[0]
-
-		depth, _ := cmd.Flags().GetInt("depth")
-		concurrency, _ := cmd.Flags().GetInt("concurrency")
-		click, _ := cmd.Flags().GetBool("click")
-		jsonOut, _ := cmd.Flags().GetBool("json")
-		timeout, _ := cmd.Flags().GetDuration("timeout")
-
 		opts := baseOpts(cmd)
 		opts = append(opts, scout.WithNoSandbox())
 
@@ -42,35 +40,31 @@ var testSiteCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("scout: test-site: %w", err)
 		}
-
 		defer func() { _ = b.Close() }()
 
-		var healthOpts []scout.HealthCheckOption
+		depth, _ := cmd.Flags().GetInt("depth")
+		conc, _ := cmd.Flags().GetInt("concurrency")
+		click, _ := cmd.Flags().GetBool("click")
+		jsonOut, _ := cmd.Flags().GetBool("json")
+		timeout, _ := cmd.Flags().GetDuration("timeout")
 
-		healthOpts = append(healthOpts,
-			scout.WithHealthDepth(depth),
-			scout.WithHealthConcurrency(concurrency),
-			scout.WithHealthTimeout(timeout),
-		)
-
-		if click {
-			healthOpts = append(healthOpts, scout.WithHealthClickElements())
+		in := tools.TestSiteInput{
+			URL:           args[0],
+			Depth:         depth,
+			Concurrency:   conc,
+			ClickElements: click,
+		}
+		if timeout > 0 {
+			in.Timeout = timeout.String()
 		}
 
-		report, err := b.HealthCheck(targetURL, healthOpts...)
+		report, err := tools.TestSite(context.Background(), b, in)
 		if err != nil {
 			return err
 		}
 
-		// Auto-save report to ~/.scout/reports/ if --report flag is set.
-		saveReport, _ := cmd.Flags().GetBool("report")
-		if saveReport {
-			r := &scout.Report{
-				Type:   "health_check",
-				URL:    targetURL,
-				Health: report,
-			}
-
+		if save, _ := cmd.Flags().GetBool("report"); save {
+			r := &scout.Report{Type: "health_check", URL: in.URL, Health: report}
 			id, saveErr := scout.SaveReport(r)
 			if saveErr != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: save report: %v\n", saveErr)
@@ -82,11 +76,9 @@ var testSiteCmd = &cobra.Command{
 		if jsonOut {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
-
 			return enc.Encode(report)
 		}
 
-		// Table output.
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Health Check: %s\n", report.URL)
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Pages checked: %d  Duration: %s\n\n", report.Pages, report.Duration)
 
@@ -97,12 +89,10 @@ var testSiteCmd = &cobra.Command{
 
 		w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
 		_, _ = fmt.Fprintln(w, "SEVERITY\tSOURCE\tURL\tMESSAGE")
-
 		for _, issue := range report.Issues {
 			_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
 				issue.Severity, issue.Source, truncate(issue.URL, 50), truncate(issue.Message, 80))
 		}
-
 		_ = w.Flush()
 
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nSummary: errors=%d warnings=%d info=%d\n",
@@ -111,7 +101,6 @@ var testSiteCmd = &cobra.Command{
 		if report.Summary["error"] > 0 {
 			os.Exit(1)
 		}
-
 		return nil
 	},
 }

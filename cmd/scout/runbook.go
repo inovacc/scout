@@ -11,6 +11,7 @@ import (
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/runbook"
 	"github.com/inovacc/scout/pkg/scout/runbooks"
+	"github.com/inovacc/scout/pkg/scout/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -70,24 +71,18 @@ var runbookCmd = &cobra.Command{
 
 var runbookApplyCmd = &cobra.Command{
 	Use:   "apply",
-	Short: "Execute a runbook file",
+	Short: "Execute a runbook file (also: MCP tool `mcp__scout__runbook_apply`)",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		file, _ := cmd.Flags().GetString("file")
 		output, _ := cmd.Flags().GetString("output")
-
-		r, err := runbook.LoadFile(file)
-		if err != nil {
-			return err
-		}
 
 		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
-
 		defer func() { _ = browser.Close() }()
 
-		result, err := runbook.Apply(context.Background(), browser, r)
+		result, err := tools.RunbookApply(context.Background(), browser, tools.RunbookApplyInput{File: file})
 		if err != nil {
 			return err
 		}
@@ -148,27 +143,25 @@ var runbookValidateCmd = &cobra.Command{
 
 var runbookPlanCmd = &cobra.Command{
 	Use:   "plan",
-	Short: "Dry-run a runbook: navigate to the URL and validate all selectors",
+	Short: "Dry-run a runbook (also: MCP tool `mcp__scout__runbook_plan`)",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		file, _ := cmd.Flags().GetString("file")
 		format, _ := cmd.Flags().GetString("format")
-
-		r, err := runbook.LoadFile(file)
-		if err != nil {
-			return err
-		}
 
 		browser, err := scout.New(baseOpts(cmd)...)
 		if err != nil {
 			return fmt.Errorf("scout: browser launch: %w", err)
 		}
-
 		defer func() { _ = browser.Close() }()
 
-		plan, err := runbook.Plan(browser, r)
+		plan, err := tools.RunbookPlan(context.Background(), browser, tools.RunbookPlanInput{File: file})
 		if err != nil {
 			return err
 		}
+		// For --validate-ai (LLM-backed selector validation) we still need
+		// the loaded Runbook to feed into runbook.ValidateAI below.
+		r, _ := runbook.LoadFile(file)
+		_ = r
 
 		if format == "json" {
 			data, err := json.MarshalIndent(plan, "", "  ")

@@ -218,6 +218,11 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 	registerSwarmTools(server, state)
 	registerWebSocketTools(server, state)
 	registerAriaTools(server, state)
+	registerGatherTool(server, state)   // unified via pkg/scout/tools
+	registerTestSiteTool(server, state) // unified via pkg/scout/tools
+	registerSitemapTool(server, state)  // unified via pkg/scout/tools
+	registerReportTools(server, state)  // unified via pkg/scout/tools
+	registerRunbookTools(server, state) // unified via pkg/scout/tools
 	registerResources(server, state)
 
 	if cfg.PluginManager != nil {

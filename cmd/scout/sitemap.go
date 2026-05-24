@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -33,8 +35,19 @@ var sitemapCmd = &cobra.Command{
 var sitemapExtractCmd = &cobra.Command{
 	Use:   "extract <url>",
 	Short: "Crawl a site and extract DOM JSON + Markdown for every page",
-	Args:  cobra.ExactArgs(1),
+	Long: `Crawl a site and extract DOM JSON + Markdown for every page.
+
+Also available as MCP tool ` + "`mcp__scout__sitemap`" + ` — both surfaces delegate
+to pkg/scout/tools.Sitemap.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		browserOpts := append(baseOpts(cmd), scout.WithBridge(), scout.WithTimeout(30*time.Second))
+		browser, err := scout.New(browserOpts...)
+		if err != nil {
+			return fmt.Errorf("scout: launch browser: %w", err)
+		}
+		defer func() { _ = browser.Close() }()
+
 		depth, _ := cmd.Flags().GetInt("depth")
 		maxPages, _ := cmd.Flags().GetInt("max-pages")
 		delay, _ := cmd.Flags().GetDuration("delay")
@@ -45,53 +58,25 @@ var sitemapExtractCmd = &cobra.Command{
 		skipJSON, _ := cmd.Flags().GetBool("skip-json")
 		skipMD, _ := cmd.Flags().GetBool("skip-markdown")
 		outputDir, _ := cmd.Flags().GetString("output")
-
-		browserOpts := append(baseOpts(cmd), scout.WithBridge(), scout.WithTimeout(30*time.Second))
-
-		browser, err := scout.New(browserOpts...)
-		if err != nil {
-			return fmt.Errorf("scout: launch browser: %w", err)
-		}
-
-		defer func() { _ = browser.Close() }()
-
-		var opts []scout.SitemapOption
-
-		opts = append(opts, scout.WithSitemapMaxDepth(depth))
-		opts = append(opts, scout.WithSitemapMaxPages(maxPages))
-		opts = append(opts, scout.WithSitemapDelay(delay))
-
-		if len(domains) > 0 {
-			opts = append(opts, scout.WithSitemapAllowedDomains(domains...))
-		}
-
-		if domDepth != 50 {
-			opts = append(opts, scout.WithSitemapDOMDepth(domDepth))
-		}
-
-		if selector != "" {
-			opts = append(opts, scout.WithSitemapSelector(selector))
-		}
-
-		if mainOnly {
-			opts = append(opts, scout.WithSitemapMainOnly())
-		}
-
-		if skipJSON {
-			opts = append(opts, scout.WithSitemapSkipJSON())
-		}
-
-		if skipMD {
-			opts = append(opts, scout.WithSitemapSkipMarkdown())
-		}
-
-		if outputDir != "" {
-			opts = append(opts, scout.WithSitemapOutputDir(outputDir))
-		}
-
 		format, _ := cmd.Flags().GetString("format")
 
-		result, err := browser.SitemapExtract(args[0], opts...)
+		in := tools.SitemapInput{
+			URL:            args[0],
+			MaxDepth:       depth,
+			MaxPages:       maxPages,
+			AllowedDomains: domains,
+			DOMDepth:       domDepth,
+			Selector:       selector,
+			MainOnly:       mainOnly,
+			SkipJSON:       skipJSON,
+			SkipMarkdown:   skipMD,
+			OutputDir:      outputDir,
+		}
+		if delay > 0 {
+			in.Delay = delay.String()
+		}
+
+		result, err := tools.Sitemap(context.Background(), browser, in)
 		if err != nil {
 			return fmt.Errorf("scout: sitemap extract: %w", err)
 		}
@@ -99,7 +84,6 @@ var sitemapExtractCmd = &cobra.Command{
 		if format == "json" {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
-
 			return enc.Encode(result)
 		}
 
@@ -108,17 +92,13 @@ var sitemapExtractCmd = &cobra.Command{
 			if p.Error != "" {
 				status = p.Error
 			}
-
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "[depth=%d] %s  %s  links=%d dom=%v md=%d\n",
 				p.Depth, status, p.URL, len(p.Links), p.DOM != nil, len(p.Markdown))
 		}
-
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\nExtracted %d pages\n", result.Total)
-
 		if outputDir != "" {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Output: %s\n", outputDir)
 		}
-
 		return nil
 	},
 }
