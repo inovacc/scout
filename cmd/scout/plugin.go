@@ -37,8 +37,8 @@ func init() {
 }
 
 var pluginCmd = &cobra.Command{
-	Use:   "plugin",
-	Short: "Manage Scout plugins",
+	Use:   "subplugin",
+	Short: "Manage Scout subprocess plugins (JSON-RPC runtime). For AI-host plugin packaging (Claude Code, Codex, Gemini) see `scout plugin`.",
 }
 
 var pluginListCmd = &cobra.Command{
