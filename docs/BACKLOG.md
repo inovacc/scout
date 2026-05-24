@@ -12,6 +12,7 @@
 
 | Priority | Item | Notes |
 |----------|------|-------|
+| P1 | **DEPRECATION**: remove `scout agent serve` + `pkg/scout/agent/` (REST AI ingress) | Marker added 2026-05-24; removal **2026-07-23** (60-day window per CLAUDE.md). Superseded by MCP server. Per plugin-first OKR T2: two AI ingresses = forever drift. Migration: `scout plugin install --host all`. |
 | P3 | iOS Safari via ios-webkit-debug-proxy | Extend Phase 73 mobile to iOS |
 | P3 | Claude Code marketplace submission | Submit plugin to official Anthropic marketplace |
 
@@ -107,6 +108,16 @@
 | Claude Code plugin | Phase 73.7 — plugin manifest, 6 skills, 3 agents, MCP config, SessionStart hook |
 | Plugin distribution | GoReleaser + GitHub Actions release workflow, auto-download in SessionStart hook |
 | Cloud deployment | Phase 74 — Helm chart (HPA, PVC), `scout cloud` CLI, Prometheus metrics |
+| Encoded session ID + binary scout.pid | Phase 77.1 (2026-05-21) — 12-char attr prefix + 24 `[A-Z]`, 432-byte `SCT1` binary record, `scout.lock` sibling |
+| Persistent-session expiration | Phase 77.2 — `WithExpiration` required for reusable sessions; `ExpiresAt` stamped in reuse branch |
+| Session audit tool | Phase 77.2 — `scout session audit` classifies live/orphaned/corrupt/expired/zombie and kills zombies |
+| monitors.json sidecar | Phase 77.3 — per-session HAR/hijack/console/WS/blocks config; `scout session create --har --hijack --block` |
+| Request blocking option | Phase 77.3 — `WithBlockRules(BlockRule{Pattern, Method})` via CDP URLPattern; aborts with `BlockedByClient` |
+| AV-resilient cleanup retrier | Phase 77.4 — single-shot `RemoveAll` fast path; `StartCleanupRetrier` (60 s, process lifetime) for AV/OneDrive locks |
+| MCP-host LLM provider | Phase 77.5 — `MCPSamplingProvider` routes completions via MCP host (no direct provider creds) |
+| Cobra errors to stderr | Phase 77.5 — fixes silently dropped error output |
+| Browser-test gating under `-short` | Phase 77.6 — `task test:unit` runs without Chromium; `task test:full` for the multi-minute browser suite |
+| Toolchain bump | Phase 77.6 — Go 1.26.0, otel 1.43.0, grpc 1.81.1, ollama 0.24.0, x/crypto 0.51.0, x/net 0.54.0, x/oauth2 0.36.0 |
 </details>
 
 <details>

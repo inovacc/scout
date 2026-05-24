@@ -1,6 +1,31 @@
 # Scout
 
-A Go browser automation library and CLI for headless browser control, web scraping, and AI-powered extraction. Built on an internalized rod fork with a public facade, gRPC service layer, MCP server, plugin system, and unified Cobra CLI.
+Browser automation, web scraping, and site testing for AI agents.
+
+Scout ships as a **Claude Code plugin** (with Codex CLI and Gemini CLI on the roadmap). Install the plugin, restart your AI host, and Scout's full surface — agents, skills, slash commands, and 27 MCP tools — is available to your agent without writing a line of code.
+
+## Quick start
+
+```bash
+# 1. Install the scout binary
+go install github.com/inovacc/scout/cmd/scout@latest
+
+# 2. Install the plugin into your AI host (default: Claude Code)
+scout plugin install
+
+# 3. Restart Claude Code. That's it.
+```
+
+After restart you have:
+
+- **6 skills** (auto-triggered): `scrape`, `screenshot`, `test-site`, `gather`, `crawl`, `monitor`
+- **6 slash commands** (user-invoked): `/scout:scrape`, `/scout:screenshot`, `/scout:test-site`, `/scout:gather`, `/scout:crawl`, `/scout:monitor`
+- **6 agents** (via Task tool): `browser-automation`, `site-tester`, `web-scraper`, `site-mapper`, `session-capture`, `flow-porter`
+- **27 MCP tools** (direct): `gather`, `test_site`, `sitemap`, `report_*`, `runbook_*`, `screenshot`, `snapshot`, `navigate`, `click`, `type`, `eval`, `swarm_crawl`, `ws_listen`, … (full list: `scout plugin extract --target ./out && cat ./out/.mcp.json`)
+
+Verify the install: `scout plugin doctor --host claude`. Other hosts: `scout plugin install --host all`.
+
+> **Heads-up — `scout agent serve` (REST AI ingress) is deprecated** and will be removed on 2026-07-23. Migrate to the MCP server via the plugin install above. See `docs/BACKLOG.md`.
 
 ## Features
 
@@ -37,7 +62,9 @@ A Go browser automation library and CLI for headless browser control, web scrapi
 - **Chrome Extensions** - Load unpacked, download from Chrome Web Store, embedded bridge extension
 - **Cloud Upload** - OAuth2 upload to Google Drive and OneDrive
 
-## Installation
+## Installation (library + standalone CLI)
+
+> **For most users, prefer the plugin install above.** This section is for embedding Scout in your own Go application, scripting from a shell, or running the standalone CLI without an AI host.
 
 **CLI (Go):**
 
@@ -58,6 +85,8 @@ go get github.com/inovacc/scout/pkg/scout
 ```
 
 Requires Go 1.25+ for building from source. A Chromium-based browser is auto-downloaded if not present.
+
+The full CLI surface (~60 verbs, 188 leaf commands) remains available as thin shims over the same `pkg/scout/tools/` package the MCP server uses. Every ported verb's `--help` text points at its MCP equivalent (e.g. `scout gather --help` → "Also available as MCP tool `mcp__scout__gather`").
 
 ## Quick Start
 

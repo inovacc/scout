@@ -14,9 +14,17 @@ import (
 )
 
 var agentCmd = &cobra.Command{
-	Use:   "agent",
-	Short: "AI agent integration tools",
-	Long:  `Tools for integrating Scout with AI agent frameworks (OpenAI, Anthropic, LangChain, etc.).`,
+	Use:        "agent",
+	Short:      "[DEPRECATED — removal 2026-07-23] AI agent integration tools (use MCP server instead)",
+	Deprecated: "the REST agent server is superseded by the MCP server (`scout mcp`). Removal date: 2026-07-23. See docs/BACKLOG.md.",
+	Long: `[DEPRECATED] Tools for integrating Scout with AI agent frameworks via a REST API
+exposing OpenAI/Anthropic tool schemas.
+
+This subsystem is deprecated in favour of the MCP server (` + "`scout mcp`" + `).
+Removal date: 2026-07-23 (60 days from 2026-05-24 per CLAUDE.md deprecation policy).
+
+Migration path: install the scout plugin into your AI host via
+` + "`scout plugin install --host all`" + ` and configure your client to speak MCP.`,
 }
 
 var agentServeCmd = &cobra.Command{
@@ -72,6 +80,11 @@ Examples:
 		}
 
 		logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+		logger.Warn("scout agent serve is DEPRECATED — superseded by MCP server",
+			"removal_date", "2026-07-23",
+			"migration", "scout plugin install --host all && configure your AI host for MCP",
+			"reason", "consolidating to a single AI ingress (MCP) per plugin-first OKR")
 
 		cfg := agent.ServerConfig{
 			Addr:        addr,
