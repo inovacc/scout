@@ -223,6 +223,8 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 	registerSitemapTool(server, state)  // unified via pkg/scout/tools
 	registerReportTools(server, state)  // unified via pkg/scout/tools
 	registerRunbookTools(server, state) // unified via pkg/scout/tools
+	registerCrawlTool(server, state)    // unified via pkg/scout/tools
+	registerFormTools(server, state)    // unified via pkg/scout/tools
 	registerResources(server, state)
 
 	if cfg.PluginManager != nil {
