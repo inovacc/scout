@@ -33,6 +33,15 @@ func (Host) InstallTarget() (string, error) {
 	return filepath.Join(home, ".codex", "plugins", claude.Name), nil
 }
 
+// Install satisfies aihost.Installer.
+func (Host) Install(target string) (int, error) { return Install(target) }
+
+// Uninstall satisfies aihost.Installer.
+func (Host) Uninstall(target string) error { return Uninstall(target) }
+
+// PrintStatus satisfies aihost.Status.
+func (Host) PrintStatus(w *os.File) error { return PrintStatus(w) }
+
 // Walk re-uses the claude asset set. Codex consumes the same agent /
 // skill / command markdown — only the manifest shape differs.
 func (Host) Walk(fn func(path string, data []byte) error) error {
