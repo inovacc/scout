@@ -116,7 +116,7 @@ func ReapOnce() ReapStats {
 //  3. retryRemoveAll(Dir(id)); on failure RecordCleanupFailure(Dir(id)).
 func reapFolder(id string, browserPID int, startToken string, stats *ReapStats) {
 	// 1. Recorded BrowserPID, identity-verified + TOCTOU re-check.
-	if browserPID != 0 && verifyProcess(browserPID, startToken) {
+	if browserPID != 0 && browserPID != os.Getpid() && verifyProcess(browserPID, startToken) {
 		if ProcessAlive(browserPID) {
 			if p, err := os.FindProcess(browserPID); err == nil {
 				if killErr := p.Kill(); killErr == nil {
