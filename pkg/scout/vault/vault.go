@@ -124,6 +124,17 @@ func (v *Vault) Get(id string) (*SecretProfile, error) {
 	return materialize(v.data.Profiles[idx]), nil
 }
 
+// Use returns an operational Handle for the profile. The Handle shares the
+// profile's secret buffers; Close the Handle when done. Returns ErrVaultClosed
+// (via Get) if the vault is closed.
+func (v *Vault) Use(id string) (*Handle, error) {
+	p, err := v.Get(id)
+	if err != nil {
+		return nil, err
+	}
+	return &Handle{profile: p}, nil
+}
+
 // List returns metadata for every profile (never any secret value).
 func (v *Vault) List() []ProfileMeta {
 	v.mu.Lock()
