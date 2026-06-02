@@ -83,6 +83,10 @@ func (b *Browser) recycleBrowser() error {
 	_ = b.browser.Close()
 	if b.launcher != nil {
 		b.launcher.Kill()
+		// Remove the old user-data dir before relaunch. Cleanup() blocks on
+		// <-l.exit; bound it so a hung process exit cannot deadlock under b.mu.
+		l := b.launcher
+		boundedCleanup(l.Cleanup, 3*time.Second)
 		b.launcher = nil
 	}
 
@@ -112,4 +116,24 @@ func (b *Browser) recycleBrowser() error {
 	b.recycles++
 
 	return nil
+}
+
+// boundedCleanup runs fn in a goroutine and waits up to timeout for it to
+// return. Reports true if fn completed in time, false if the timeout fired.
+// Used by recycleBrowser so Launcher.Cleanup()'s blocking <-l.exit wait cannot
+// deadlock the recycle loop while b.mu is held.
+func boundedCleanup(fn func(), timeout time.Duration) bool {
+	done := make(chan struct{})
+
+	go func() {
+		fn()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }
