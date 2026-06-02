@@ -44,3 +44,30 @@ func TestLockedBufferEqualConstantTime(t *testing.T) {
 		t.Fatal("Equal returned true for different-length token")
 	}
 }
+
+func TestNewLockedBufferEmpty(t *testing.T) {
+	lb := NewLockedBuffer(nil)
+	if lb.Len() != 0 {
+		t.Fatalf("Len() = %d, want 0 for nil input", lb.Len())
+	}
+	if lb.locked {
+		t.Fatal("empty buffer should not be marked locked")
+	}
+	lb.Zero() // must not panic
+	if err := lb.Close(); err != nil {
+		t.Fatalf("Close() on empty buffer error = %v", err)
+	}
+}
+
+func TestLockedBufferDoubleClose(t *testing.T) {
+	lb := NewLockedBuffer([]byte("secret"))
+	if err := lb.Close(); err != nil {
+		t.Fatalf("first Close error = %v", err)
+	}
+	if err := lb.Close(); err != nil { // must be safe and idempotent
+		t.Fatalf("second Close error = %v", err)
+	}
+	if lb.Len() != 0 {
+		t.Fatalf("Len() = %d after double close, want 0", lb.Len())
+	}
+}

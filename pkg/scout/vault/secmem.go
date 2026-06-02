@@ -2,7 +2,10 @@
 // secrets into live browser pages without leaking plaintext to child processes.
 package vault
 
-import "crypto/subtle"
+import (
+	"crypto/subtle"
+	"runtime"
+)
 
 // LockedBuffer wraps a []byte holding secret material. On allocation it best-effort
 // locks the pages out of swap; Zero overwrites the bytes and unlocks. Secrets held
@@ -33,11 +36,15 @@ func (lb *LockedBuffer) Equal(other []byte) bool {
 	return subtle.ConstantTimeCompare(lb.buf, other) == 1
 }
 
-// Zero overwrites the secret with zeros and unlocks the pages.
+// Zero overwrites the secret with zeros and unlocks the pages. The zeroed backing
+// array is deliberately retained (resliced to length 0), not freed: there is no
+// dangling secret because the bytes are zero. runtime.KeepAlive prevents the
+// compiler from treating the overwrite as a dead store and eliding it.
 func (lb *LockedBuffer) Zero() {
 	for i := range lb.buf {
 		lb.buf[i] = 0
 	}
+	runtime.KeepAlive(lb.buf)
 	if lb.locked {
 		_ = unlockPages(lb.buf)
 		lb.locked = false
