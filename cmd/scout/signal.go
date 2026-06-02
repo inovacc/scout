@@ -4,6 +4,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	"github.com/inovacc/scout/pkg/scout"
 )
 
 // signalExitFunc terminates the process after signal cleanup. It is a package
@@ -31,4 +34,12 @@ func installSignalCleanup(cleanup func()) chan os.Signal {
 	}()
 
 	return sigCh
+}
+
+// closeAllLiveCleanup closes every live browser with a bounded per-browser
+// timeout. It is the cleanup callback installed by main()'s signal handler.
+// scout.CloseAllLive ranges the live-browser registry and Closes each (so chrome
+// children + scout.lock are released) and returns the count closed.
+func closeAllLiveCleanup() {
+	_ = scout.CloseAllLive(5 * time.Second)
 }

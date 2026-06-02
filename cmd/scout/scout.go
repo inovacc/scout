@@ -172,5 +172,11 @@ func main() {
 		defer func() { _ = shutdown(context.Background()) }()
 	}
 
+	// Best-effort SIGINT/SIGTERM handler (session-hardening "best-effort"
+	// tier): on Ctrl-C / kill, close every live browser so chrome children
+	// and scout.lock files are not leaked, then exit 130. NOT the
+	// OS-guaranteed tier (Job Object / CTRL_CLOSE are out of scope).
+	_ = installSignalCleanup(closeAllLiveCleanup)
+
 	Execute()
 }

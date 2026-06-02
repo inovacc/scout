@@ -68,3 +68,9 @@ func TestInstallSignalCleanup_ReturnsBufferedChannel(t *testing.T) {
 	// Ensure the channel actually carries os.Signal values.
 	var _ chan os.Signal = sigCh
 }
+
+func TestCloseAllLiveCleanup_DoesNotPanicWithNoBrowsers(t *testing.T) {
+	// With no live browsers registered, CloseAllLive returns 0 and the
+	// cleanup closure must complete without panicking.
+	closeAllLiveCleanup()
+}
