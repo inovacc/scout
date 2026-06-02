@@ -61,6 +61,22 @@ func TestHandleApplyToPageInjectsCookieAndHeader(t *testing.T) {
 	}
 }
 
+func TestHandleCloseZerosSecrets(t *testing.T) {
+	lb := NewLockedBuffer([]byte("top-secret"))
+	backing := lb.Bytes()
+	p := &SecretProfile{ID: "p", Secrets: map[string]*LockedBuffer{"k": lb}}
+	h := &Handle{profile: p}
+
+	if err := h.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	for i, b := range backing {
+		if b != 0 {
+			t.Fatalf("secret byte %d not zeroed after Handle.Close", i)
+		}
+	}
+}
+
 func TestHandleSecret(t *testing.T) {
 	p := &SecretProfile{ID: "p", Secrets: map[string]*LockedBuffer{"k": NewLockedBuffer([]byte("v"))}}
 	defer p.Close()

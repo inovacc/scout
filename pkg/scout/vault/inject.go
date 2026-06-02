@@ -13,8 +13,10 @@ type Handle struct {
 }
 
 // ApplyToPage injects the profile's cookies and auth headers into page via CDP.
-// Call BEFORE navigating to the target origin. Cookies and headers take effect on
-// the next navigation.
+// Call BEFORE navigating to the target origin; cookies and headers take effect on
+// the next navigation. Web storage (profile.Storage) is NOT seeded here — that is
+// origin-specific and happens post-navigation. On error the page may be partially
+// mutated (e.g. cookies set but headers not); the caller should discard it.
 func (h *Handle) ApplyToPage(page *scout.Page) error {
 	if len(h.profile.Cookies) > 0 {
 		if err := page.SetCookies(h.profile.Cookies...); err != nil {
@@ -34,8 +36,8 @@ func (h *Handle) ApplyToPage(page *scout.Page) error {
 }
 
 // Secret returns the named scout-internal secret as a zeroable buffer. The
-// returned buffer is owned by the profile; do not Close it directly — Close the
-// Handle (or the Vault) instead.
+// returned buffer is owned by the profile and is valid only until Handle.Close()
+// (or Vault.Close()); do not Close it directly and do not retain it past then.
 func (h *Handle) Secret(name string) (*LockedBuffer, error) {
 	lb, ok := h.profile.Secrets[name]
 	if !ok {
