@@ -133,6 +133,30 @@ func baseOpts(cmd *cobra.Command) []scout.Option {
 	return opts
 }
 
+// readPassphraseBytes reads a passphrase as a zeroable []byte. It honors
+// SCOUT_VAULT_PASSPHRASE (with a stderr leak warning) for non-interactive use,
+// then falls back to a no-echo terminal prompt, then a piped line.
+func readPassphraseBytes(w io.Writer, prompt string) ([]byte, error) {
+	if v := os.Getenv("SCOUT_VAULT_PASSPHRASE"); v != "" {
+		_, _ = fmt.Fprintln(w, "warning: SCOUT_VAULT_PASSPHRASE is visible to child processes; prefer the interactive prompt")
+		return []byte(v), nil
+	}
+	if f, ok := w.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
+		_, _ = fmt.Fprint(w, prompt)
+		b, err := term.ReadPassword(int(f.Fd()))
+		_, _ = fmt.Fprintln(w)
+		if err != nil {
+			return nil, fmt.Errorf("scout: read passphrase: %w", err)
+		}
+		return b, nil
+	}
+	sc := bufio.NewScanner(os.Stdin)
+	if !sc.Scan() {
+		return nil, fmt.Errorf("scout: read passphrase: no input")
+	}
+	return append([]byte(nil), sc.Bytes()...), nil
+}
+
 // truncate truncates a string to maxLen, appending "..." if needed.
 func truncate(s string, maxLen int) string {
 	if len(s) <= maxLen {
