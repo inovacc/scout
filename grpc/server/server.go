@@ -133,9 +133,30 @@ type ScoutServer struct {
 	}
 }
 
+// reapHook performs a single on-disk orphan-reaping pass and returns the
+// number of holder processes killed. It is a package var so tests can stub
+// it without a live browser. Production wires it to scout.ReapOnce in
+// reconcile_wire.go.
+var reapHook = func() int { return 0 }
+
 // New creates a new ScoutServer.
 func New() *ScoutServer {
 	return &ScoutServer{}
+}
+
+// Reconcile reaps prior-instance session orphans on the disk at daemon
+// startup. The in-memory session map is empty at boot, so there is nothing
+// to adopt — Reconcile only kills/removes on-disk orphans left by a crashed
+// or force-killed previous daemon. It returns the number of holder processes
+// killed during the pass. Best-effort; never fatal.
+func (s *ScoutServer) Reconcile() int {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Warn("scout: reconcile: recovered from panic", "panic", r)
+		}
+	}()
+
+	return reapHook()
 }
 
 // SetSwarm attaches a swarm coordinator for distributed crawling RPCs.
