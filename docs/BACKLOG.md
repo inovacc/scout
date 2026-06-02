@@ -15,6 +15,7 @@
 | P1 | **DEPRECATION**: remove `scout agent serve` + `pkg/scout/agent/` (REST AI ingress) | Marker added 2026-05-24; removal **2026-07-23** (60-day window per CLAUDE.md). Superseded by MCP server. Per plugin-first OKR T2: two AI ingresses = forever drift. Migration: `scout plugin install --host all`. |
 | P3 | iOS Safari via ios-webkit-debug-proxy | Extend Phase 73 mobile to iOS |
 | P3 | Claude Code marketplace submission | Submit plugin to official Anthropic marketplace |
+| P2 | **DEPRECATION** (removal after 2026-07-02): remove `UserProfile.Cookies/Storage/Headers` (`internal/engine/profile.go`). Superseded by `pkg/scout/vault`. Migrate callers of `CaptureProfile`/`ApplyProfile` to read browser-bound secrets from the vault, then drop the fields and their capture/apply branches. | Fields marked deprecated 2026-06-02. |
 
 ## Completed Items (Archive)
 
