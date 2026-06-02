@@ -1,8 +1,11 @@
 package session
 
 import (
+	"io/fs"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 )
@@ -30,11 +33,10 @@ func recordCleanupFailure(path string) {
 	pendingMu.Lock()
 	defer pendingMu.Unlock()
 
-	for _, p := range pendingCleanup {
-		if p == path {
-			return // already queued
-		}
+	if slices.Contains(pendingCleanup, path) {
+		return // already queued
 	}
+
 	pendingCleanup = append(pendingCleanup, path)
 }
 
@@ -43,8 +45,10 @@ func recordCleanupFailure(path string) {
 func snapshotPending() []string {
 	pendingMu.Lock()
 	defer pendingMu.Unlock()
+
 	out := make([]string, len(pendingCleanup))
 	copy(out, pendingCleanup)
+
 	return out
 }
 
@@ -52,6 +56,7 @@ func snapshotPending() []string {
 func removePending(path string) {
 	pendingMu.Lock()
 	defer pendingMu.Unlock()
+
 	for i, p := range pendingCleanup {
 		if p == path {
 			pendingCleanup = append(pendingCleanup[:i], pendingCleanup[i+1:]...)
@@ -66,12 +71,36 @@ func removePending(path string) {
 func PendingCleanupCount() int {
 	pendingMu.Lock()
 	defer pendingMu.Unlock()
+
 	return len(pendingCleanup)
+}
+
+// RecordCleanupFailure enqueues path for background retry. Exported wrapper
+// over recordCleanupFailure so package engine's Browser.Close can enqueue a
+// session dir whose single-shot RemoveAll lost to a Windows file lock,
+// instead of leaking it. Safe to call from any goroutine.
+func RecordCleanupFailure(path string) {
+	recordCleanupFailure(path)
+}
+
+// PendingCleanup returns a snapshot of the dirs currently queued for
+// background retry. Backs `scout session list --pending`. The returned slice
+// is a copy and safe to retain.
+func PendingCleanup() []string {
+	return snapshotPending()
 }
 
 // DefaultCleanupRetryInterval is the base interval between retry sweeps.
 // Each sweep walks all pending dirs once with a short per-dir budget.
 const DefaultCleanupRetryInterval = 60 * time.Second
+
+// forceBreakThreshold is the number of consecutive retry misses on the same
+// dir after which the retrier escalates from polite RemoveAll to a
+// best-effort force removal (chmod-walk + RemoveAll). At the 60 s default
+// interval this is ~20 minutes — long enough that a genuinely-busy holder
+// has almost certainly exited, short enough that a stuck dir does not leak
+// for the whole process lifetime.
+const forceBreakThreshold = 20
 
 // StartCleanupRetrier launches a background goroutine that periodically
 // retries removing dirs that CleanStaleSessions could not clean (typically
@@ -119,6 +148,7 @@ func retryPending(failCount map[string]int) {
 		if _, err := os.Stat(p); os.IsNotExist(err) {
 			removePending(p)
 			delete(failCount, p)
+
 			continue // already gone — maybe another process removed it
 		}
 
@@ -126,10 +156,27 @@ func retryPending(failCount map[string]int) {
 			slog.Info("scout: background cleanup removed stale session", "dir", p)
 			removePending(p)
 			delete(failCount, p)
+
 			continue
 		}
 
 		failCount[p]++
+
+		// Force-break escalation: after forceBreakThreshold consecutive
+		// misses the polite RemoveAll is clearly losing to a persistent
+		// holder (broken AV, OneDrive sync). The reaper has already killed
+		// any browser holding this dir, so attempt an aggressive removal:
+		// clear read-only attributes on every entry, then RemoveAll again.
+		// Best-effort and logged at WARN; never panics.
+		if failCount[p] >= forceBreakThreshold {
+			if err := forceRemoveAll(p); err == nil {
+				slog.Warn("scout: background cleanup force-removed stuck session", "dir", p)
+				removePending(p)
+				delete(failCount, p)
+
+				continue
+			}
+		}
 
 		// Cap consecutive-failure logging at 10 to bound noise; dirs
 		// that survive a full hour are likely held by something
@@ -139,4 +186,28 @@ func retryPending(failCount map[string]int) {
 			slog.Warn("scout: background cleanup still blocked after 10 attempts", "dir", p)
 		}
 	}
+}
+
+// forceRemoveAll clears the read-only bit on every entry under root, then
+// retries removal. On Windows a read-only file (Chrome leaves some profile
+// files read-only) makes os.RemoveAll fail with ERROR_ACCESS_DENIED even
+// after the owning process has exited; chmod 0o600/0o700 unsticks it.
+// Best-effort: walk errors are ignored so a vanished entry mid-walk does not
+// abort the cleanup.
+func forceRemoveAll(root string) error {
+	_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil //nolint:nilerr // tolerate races; keep walking
+		}
+
+		if d.IsDir() {
+			_ = os.Chmod(p, 0o700)
+		} else {
+			_ = os.Chmod(p, 0o600)
+		}
+
+		return nil
+	})
+
+	return retryRemoveAll(root)
 }
