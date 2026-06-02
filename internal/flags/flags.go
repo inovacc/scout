@@ -159,28 +159,6 @@ func getFlags() map[string]bool {
 	return flags
 }
 
-func IsFeatureSet(feature string) bool {
-	flags := getFlags()
-	if flags == nil {
-		return false
-	}
-
-	_, exists := flags[strings.ToUpper(feature)]
-
-	return exists
-}
-
-func IsFeatureDisabled(feature string) bool {
-	flags := getFlags()
-	if flags == nil {
-		return false
-	}
-
-	enabled, exists := flags[strings.ToUpper(feature)]
-
-	return exists && !enabled
-}
-
 func IsFeatureEnabled(feature string) bool {
 	flags := getFlags()
 	if flags == nil {
