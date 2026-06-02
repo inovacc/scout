@@ -153,6 +153,15 @@ var serverCmd = &cobra.Command{
 		scoutServer.OnIdleShutdown = func() {
 			_, _ = fmt.Fprintln(os.Stdout, "\nidle timeout reached, shutting down gRPC server...")
 
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						_, _ = fmt.Fprintf(os.Stdout, "session teardown panicked: %v\n", r)
+					}
+				}()
+				scoutServer.DestroyAllSessions()
+			}()
+
 			if pairingGRPC != nil {
 				pairingGRPC.GracefulStop()
 			}
@@ -165,6 +174,13 @@ var serverCmd = &cobra.Command{
 
 		printTable(nil)
 
+		// Reap prior-instance session orphans left by a crashed or
+		// force-killed previous daemon before we start serving. Map is
+		// empty at boot, so this only touches on-disk orphans.
+		if killed := scoutServer.Reconcile(); killed > 0 {
+			_, _ = fmt.Fprintf(os.Stdout, "reconcile: reaped %d orphaned browser process(es)\n", killed)
+		}
+
 		// Graceful shutdown
 		go func() {
 			sigCh := make(chan os.Signal, 1)
@@ -172,6 +188,15 @@ var serverCmd = &cobra.Command{
 			<-sigCh
 
 			_, _ = fmt.Fprintln(os.Stdout, "\nshutting down gRPC server...")
+
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						_, _ = fmt.Fprintf(os.Stdout, "session teardown panicked: %v\n", r)
+					}
+				}()
+				scoutServer.DestroyAllSessions()
+			}()
 
 			if pairingGRPC != nil {
 				pairingGRPC.GracefulStop()
