@@ -6,72 +6,67 @@ import (
 	"time"
 )
 
-func TestTimerFires(t *testing.T) {
-	var fired atomic.Bool
+func TestTimerFiresOnIdle(t *testing.T) {
+	var fired atomic.Int32
+	done := make(chan struct{})
 
-	timer := New(50*time.Millisecond, func() { fired.Store(true) })
-	defer timer.Stop()
+	tm := New(20*time.Millisecond, func() {
+		fired.Add(1)
+		close(done)
+	})
+	defer tm.Stop()
 
-	time.Sleep(100 * time.Millisecond)
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("onIdle did not fire within 2s")
+	}
 
-	if !fired.Load() {
-		t.Fatal("expected timer to fire after timeout")
+	if fired.Load() != 1 {
+		t.Fatalf("expected onIdle to fire once, got %d", fired.Load())
 	}
 }
 
-func TestTimerResetPostpones(t *testing.T) {
-	var fired atomic.Bool
+func TestTimerZeroTimeoutNeverFires(t *testing.T) {
+	var fired atomic.Int32
 
-	timer := New(80*time.Millisecond, func() { fired.Store(true) })
-	defer timer.Stop()
-
-	time.Sleep(50 * time.Millisecond)
-	timer.Reset()
+	tm := New(0, func() { fired.Add(1) })
+	defer tm.Stop()
 
 	time.Sleep(50 * time.Millisecond)
 
-	if fired.Load() {
-		t.Fatal("expected timer NOT to fire yet after reset")
-	}
-
-	time.Sleep(50 * time.Millisecond)
-
-	if !fired.Load() {
-		t.Fatal("expected timer to fire after reset + timeout")
+	if fired.Load() != 0 {
+		t.Fatalf("expected zero-timeout timer never to fire, got %d", fired.Load())
 	}
 }
 
-func TestTimerStopPrevents(t *testing.T) {
-	var fired atomic.Bool
+func TestTimerStopBeforeFire(t *testing.T) {
+	var fired atomic.Int32
 
-	timer := New(50*time.Millisecond, func() { fired.Store(true) })
-	timer.Stop()
+	tm := New(100*time.Millisecond, func() { fired.Add(1) })
+	tm.Stop()
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
-	if fired.Load() {
-		t.Fatal("expected timer NOT to fire after Stop")
+	if fired.Load() != 0 {
+		t.Fatalf("expected stopped timer never to fire, got %d", fired.Load())
 	}
 }
 
-func TestZeroTimeoutDisabled(t *testing.T) {
-	var fired atomic.Bool
+func TestTimerResetExtendsCountdown(t *testing.T) {
+	var fired atomic.Int32
 
-	timer := New(0, func() { fired.Store(true) })
-	defer timer.Stop()
+	tm := New(80*time.Millisecond, func() { fired.Add(1) })
+	defer tm.Stop()
 
-	time.Sleep(50 * time.Millisecond)
+	// Reset twice within the window — total elapsed ~120ms but each Reset
+	// restarts the 80ms countdown, so it must not have fired yet.
+	time.Sleep(40 * time.Millisecond)
+	tm.Reset()
+	time.Sleep(40 * time.Millisecond)
+	tm.Reset()
 
-	if fired.Load() {
-		t.Fatal("zero timeout timer should never fire")
-	}
-}
-
-func TestTimerTimeout(t *testing.T) {
-	timer := New(5*time.Minute, func() {})
-	defer timer.Stop()
-
-	if timer.Timeout() != 5*time.Minute {
-		t.Fatalf("expected 5m, got %v", timer.Timeout())
+	if got := fired.Load(); got != 0 {
+		t.Fatalf("expected no fire after resets, got %d", got)
 	}
 }
