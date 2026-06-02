@@ -165,6 +165,11 @@ func main() {
 	// Chrome SQLite + LevelDB files). Runs for the process lifetime.
 	session.StartCleanupRetrier(nil)
 
+	// Start the single process-wide reaper watchdog. Idempotent — safe even
+	// if a browser is created before this point (EnsureReaperWatchdog uses
+	// sync.Once so the goroutine starts exactly once per process).
+	scout.EnsureReaperWatchdog()
+
 	shutdown, err := tracing.Init(context.Background(), tracing.Config{ServiceName: "scout"})
 	if err != nil {
 		log.Printf("scout: tracing: %v", err)

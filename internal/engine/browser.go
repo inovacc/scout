@@ -223,8 +223,8 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 			br.registerSession()
 		}
 
-		// Periodic orphan watchdog — kills dangling browsers whose scout died.
-		StartOrphanWatchdog(DefaultOrphanCheckInterval, br.done)
+		// Ensure the single process-wide reaper watchdog is running.
+		EnsureReaperWatchdog()
 
 		br.register()
 
@@ -269,8 +269,8 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 		br.installBlockRules(o.blockRules)
 	}
 
-	// Periodic orphan watchdog — kills dangling browsers whose scout died.
-	StartOrphanWatchdog(DefaultOrphanCheckInterval, br.done)
+	// Ensure the single process-wide reaper watchdog is running.
+	EnsureReaperWatchdog()
 
 	br.register()
 

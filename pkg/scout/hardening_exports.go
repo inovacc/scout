@@ -33,6 +33,12 @@ func StartReaperWatchdog(interval time.Duration, done <-chan struct{}) {
 	engine.StartReaperWatchdog(interval, done)
 }
 
+// EnsureReaperWatchdog starts the single process-wide session reaper watchdog
+// exactly once per process. Safe to call repeatedly (idempotent via sync.Once).
+func EnsureReaperWatchdog() {
+	engine.EnsureReaperWatchdog()
+}
+
 // RecordCleanupFailure enqueues path for background retry cleanup.
 func RecordCleanupFailure(path string) {
 	engine.RecordCleanupFailure(path)

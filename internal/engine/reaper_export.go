@@ -1,10 +1,21 @@
 package engine
 
 import (
+	"sync"
 	"time"
 
 	"github.com/inovacc/scout/internal/engine/session"
 )
+
+var reaperWatchdogOnce sync.Once
+
+// EnsureReaperWatchdog starts the single process-wide session reaper watchdog
+// exactly once per process. Safe to call repeatedly (idempotent via sync.Once).
+func EnsureReaperWatchdog() {
+	reaperWatchdogOnce.Do(func() {
+		session.StartReaperWatchdog(session.DefaultReaperInterval, nil)
+	})
+}
 
 // ReapStats re-exports session.ReapStats so engine/facade callers can name the
 // return type of ReapOnce without importing the sub-package directly.

@@ -1,6 +1,7 @@
 package engine_test
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -49,6 +50,20 @@ func TestStartReaperWatchdog_Delegates(t *testing.T) {
 	close(done)
 }
 
+// TestEnsureReaperWatchdog_Idempotent verifies that calling EnsureReaperWatchdog
+// multiple times does not panic and starts the watchdog exactly once (sync.Once
+// semantics). The test is deliberately non-flaky: it does not rely on the
+// 2-minute default tick — it only asserts the calls complete without panic.
+func TestEnsureReaperWatchdog_Idempotent(t *testing.T) {
+	t.Setenv("SCOUT_HOME", t.TempDir())
+
+	// Call three times — only the first should launch a goroutine; the rest
+	// are no-ops. Must not panic on any invocation.
+	engine.EnsureReaperWatchdog()
+	engine.EnsureReaperWatchdog()
+	engine.EnsureReaperWatchdog()
+}
+
 // TestRecordAndPendingCleanup_Delegates verifies that RecordCleanupFailure
 // enqueues a path and PendingCleanup reflects it.
 func TestRecordAndPendingCleanup_Delegates(t *testing.T) {
@@ -60,17 +75,7 @@ func TestRecordAndPendingCleanup_Delegates(t *testing.T) {
 
 	pending := engine.PendingCleanup()
 
-	found := false
-
-	for _, p := range pending {
-		if p == fakePath {
-			found = true
-
-			break
-		}
-	}
-
-	if !found {
+	if !slices.Contains(pending, fakePath) {
 		t.Fatalf("RecordCleanupFailure(%q) not reflected in PendingCleanup(); got %v", fakePath, pending)
 	}
 }
