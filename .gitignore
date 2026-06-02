@@ -21,3 +21,16 @@ extract/
 .claude/worktrees/
 build/
 .scripts/
+
+# Compiled CLI/plugin binaries left at repo root (build to ./bin instead)
+/scout
+/scout-diag
+# Windows reserved-name stray artifact from a failed redirect
+nul
+# IDE / tool workspace caches
+.thimble/
+# Personal planning scaffolding (not shared project state)
+.planning-archive/
+# Generated code-quality analysis reports (regenerable; not source of truth)
+/docs/quality/
+/CODE-SWEEP.md
