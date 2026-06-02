@@ -123,8 +123,8 @@ func fmtSscanf(s string, p *int) (int, error) {
 	return 1, nil
 }
 
-var errNotInt = &parseErr{msg: "not an int"}
+var errNotInt = &parseError{msg: "not an int"}
 
-type parseErr struct{ msg string }
+type parseError struct{ msg string }
 
-func (e *parseErr) Error() string { return e.msg }
+func (e *parseError) Error() string { return e.msg }
