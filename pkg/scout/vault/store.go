@@ -56,7 +56,7 @@ func saveVault(path string, data *vaultData, passphrase []byte) error {
 	if err != nil {
 		return err
 	}
-	return atomicWrite(path, blob, 0o600)
+	return atomicWrite(path, blob)
 }
 
 func loadVault(path string, passphrase []byte) (*vaultData, error) {

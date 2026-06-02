@@ -7,8 +7,9 @@ import (
 )
 
 // atomicWrite writes data to path via a temp-file-then-rename, so a crash never
-// leaves a partial file. The parent directory must already exist.
-func atomicWrite(path string, data []byte, mode os.FileMode) error {
+// leaves a partial file. The parent directory must already exist. The file is
+// always created with mode 0o600.
+func atomicWrite(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	base := filepath.Base(path)
 
@@ -31,7 +32,7 @@ func atomicWrite(path string, data []byte, mode os.FileMode) error {
 		_ = os.Remove(tmp)
 		return fmt.Errorf("scout: vault: close temp: %w", err)
 	}
-	if err := os.Chmod(tmp, mode); err != nil {
+	if err := os.Chmod(tmp, 0o600); err != nil {
 		_ = os.Remove(tmp)
 		return fmt.Errorf("scout: vault: chmod temp: %w", err)
 	}

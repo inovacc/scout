@@ -1,8 +1,8 @@
-// cmd/scout/vault.go
 package main
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -60,9 +60,7 @@ var vaultSetCmd = &cobra.Command{
 		if in.Secrets == nil {
 			in.Secrets = map[string][]byte{}
 		}
-		for k, v := range parsed {
-			in.Secrets[k] = v
-		}
+		maps.Copy(in.Secrets, parsed)
 
 		pass, err := readPassphraseBytes(cmd.ErrOrStderr(), "Vault passphrase: ")
 		if err != nil {

@@ -16,8 +16,7 @@ func FromUserProfile(path string) (SecretProfileInput, error) {
 		return SecretProfileInput{}, fmt.Errorf("scout: vault: load profile: %w", err)
 	}
 	// The vault is the sanctioned migration target for these deprecated, secret-bearing fields.
-	//nolint:staticcheck // SA1019: the importer must read the deprecated UserProfile secret fields
-	cookies, headers, storage := up.Cookies, up.Headers, up.Storage
+	cookies, headers, storage := up.Cookies, up.Headers, up.Storage //nolint:SA1019 // the importer must read the deprecated UserProfile secret fields
 
 	in := SecretProfileInput{Name: up.Name, Cookies: cookies}
 	if len(headers) > 0 {

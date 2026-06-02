@@ -10,7 +10,7 @@ func TestAtomicWriteCreatesFileWithMode(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "vault.bin")
 
-	if err := atomicWrite(path, []byte("payload"), 0o600); err != nil {
+	if err := atomicWrite(path, []byte("payload")); err != nil {
 		t.Fatalf("atomicWrite: %v", err)
 	}
 	got, err := os.ReadFile(path)
@@ -30,10 +30,10 @@ func TestAtomicWriteCreatesFileWithMode(t *testing.T) {
 func TestAtomicWriteReplacesAtomically(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "vault.bin")
-	if err := atomicWrite(path, []byte("v1"), 0o600); err != nil {
+	if err := atomicWrite(path, []byte("v1")); err != nil {
 		t.Fatal(err)
 	}
-	if err := atomicWrite(path, []byte("v2-longer"), 0o600); err != nil {
+	if err := atomicWrite(path, []byte("v2-longer")); err != nil {
 		t.Fatal(err)
 	}
 	got, _ := os.ReadFile(path)
