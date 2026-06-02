@@ -53,15 +53,15 @@ var vaultSetCmd = &cobra.Command{
 			in.Name = name
 		}
 		in.ID = id
+		parsed, err := parseSecretArgs(args)
+		if err != nil {
+			return err
+		}
 		if in.Secrets == nil {
 			in.Secrets = map[string][]byte{}
 		}
-		for _, kv := range args {
-			k, val, ok := strings.Cut(kv, "=")
-			if !ok {
-				return fmt.Errorf("scout: vault: %q is not KEY=VALUE", kv)
-			}
-			in.Secrets[k] = []byte(val)
+		for k, v := range parsed {
+			in.Secrets[k] = v
 		}
 
 		pass, err := readPassphraseBytes(cmd.ErrOrStderr(), "Vault passphrase: ")
@@ -120,7 +120,7 @@ var vaultGetCmd = &cobra.Command{
 
 var vaultUseCmd = &cobra.Command{
 	Use:   "use <id> --url <url>",
-	Short: "Inject a profile into a browser page via CDP",
+	Short: "Inject a profile into a one-shot browser page via CDP (closes after load)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		url, _ := cmd.Flags().GetString("url")
@@ -217,6 +217,20 @@ func openVaultCLI(cmd *cobra.Command) (*vault.Vault, error) {
 	}
 	defer zeroBytesCLI(pass)
 	return vault.Open(pass, vaultPathOpts(cmd)...)
+}
+
+// parseSecretArgs converts KEY=VALUE arguments into a secrets map. On a malformed
+// argument it reports only the position — NEVER the raw value, which may be a secret.
+func parseSecretArgs(args []string) (map[string][]byte, error) {
+	secrets := make(map[string][]byte, len(args))
+	for i, kv := range args {
+		k, val, ok := strings.Cut(kv, "=")
+		if !ok || k == "" {
+			return nil, fmt.Errorf("scout: vault: argument %d is not KEY=VALUE", i+1)
+		}
+		secrets[k] = []byte(val)
+	}
+	return secrets, nil
 }
 
 // renderVaultList formats profile metadata. It MUST NOT print any secret value.
