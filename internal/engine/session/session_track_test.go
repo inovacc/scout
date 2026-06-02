@@ -362,7 +362,10 @@ func TestCleanOrphans(t *testing.T) {
 		LastUsed:   now,
 	})
 
-	// Session with zero PIDs should be skipped.
+	// Session with zero ScoutPID — ReapOnce treats this as ownerless and
+	// reaps it (ScoutPID == 0 means no owner recorded). This is the correct
+	// behaviour after the thin-wrapper refactor: CleanOrphans now delegates
+	// entirely to ReapOnce.
 	_ = WriteInfo("zero-pids", &SessionInfo{
 		ScoutPID:   0,
 		BrowserPID: 0,
@@ -376,18 +379,18 @@ func TestCleanOrphans(t *testing.T) {
 		t.Fatalf("CleanOrphans: %v", err)
 	}
 
-	// The orphan's scout PID is dead, so its info should be removed.
+	// The orphan's scout PID is dead, so its dir should be removed.
 	// Browser PID is also dead, so killed count depends on ProcessAlive.
 	t.Logf("CleanOrphans killed=%d", killed)
 
-	// The "orphan" info file should be removed (scout PID is dead).
-	if _, err := ReadInfo("orphan"); !os.IsNotExist(err) {
-		t.Error("expected orphan info to be removed")
+	// Both dirs should be removed: "orphan" has a dead ScoutPID, "zero-pids"
+	// has ScoutPID==0 (unowned). ReapOnce reaps both.
+	if _, err := os.Stat(filepath.Join(dir, "orphan")); !os.IsNotExist(err) {
+		t.Error("expected orphan dir to be removed")
 	}
 
-	// The "zero-pids" session should still exist (skipped).
-	if _, err := ReadInfo("zero-pids"); err != nil {
-		t.Error("zero-pids session should not be touched")
+	if _, err := os.Stat(filepath.Join(dir, "zero-pids")); !os.IsNotExist(err) {
+		t.Error("expected zero-pids dir to be removed (ScoutPID==0 means unowned)")
 	}
 }
 

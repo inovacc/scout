@@ -163,6 +163,59 @@ func deadPID(t *testing.T) int {
 	return pid
 }
 
+func TestCleanStaleSessions_WrapsReapOnce(t *testing.T) {
+	dir := t.TempDir()
+	orig := SessionsDir
+	SessionsDir = func() string { return dir }
+	t.Cleanup(func() { SessionsDir = orig })
+
+	now := time.Now()
+	sid := writeSession(t, &SessionInfo{
+		ScoutPID:  deadPID(t),
+		Reusable:  false,
+		CreatedAt: now,
+		LastUsed:  now,
+		Browser:   "chrome",
+	})
+
+	n, err := CleanStaleSessions()
+	if err != nil {
+		t.Fatalf("CleanStaleSessions: %v", err)
+	}
+	if n < 1 {
+		t.Fatalf("CleanStaleSessions returned %d, want >= 1 (Removed count)", n)
+	}
+	if _, statErr := os.Stat(Dir(sid)); !os.IsNotExist(statErr) {
+		t.Fatalf("session dir still present after CleanStaleSessions")
+	}
+}
+
+func TestCleanOrphans_WrapsReapOnce(t *testing.T) {
+	dir := t.TempDir()
+	orig := SessionsDir
+	SessionsDir = func() string { return dir }
+	t.Cleanup(func() { SessionsDir = orig })
+
+	now := time.Now()
+	// Dead scout, no live browser → 0 killed but dir removed. CleanOrphans
+	// must report the Killed count (0 here) and not error.
+	_ = writeSession(t, &SessionInfo{
+		ScoutPID:  deadPID(t),
+		Reusable:  false,
+		CreatedAt: now,
+		LastUsed:  now,
+		Browser:   "chrome",
+	})
+
+	killed, err := CleanOrphans()
+	if err != nil {
+		t.Fatalf("CleanOrphans: %v", err)
+	}
+	if killed != 0 {
+		t.Fatalf("CleanOrphans killed = %d, want 0 (no live browser)", killed)
+	}
+}
+
 func spawnAndReapExited(t *testing.T) int {
 	t.Helper()
 	var cmd *exec.Cmd

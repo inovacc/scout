@@ -38,6 +38,7 @@ func retryRemoveAll(path string) error {
 	var lastErr error
 
 	wait := removeRetryWait
+
 	for range removeRetries {
 		lastErr = os.RemoveAll(path)
 		if lastErr == nil {
@@ -194,7 +195,6 @@ func WriteInfo(id string, info *SessionInfo) error {
 	return nil
 }
 
-
 // ReadInfo reads the session info from <SessionsDir>/<id>/scout.pid in the
 // v1 binary format. Legacy JSON-format files yield ErrLegacyFormat so the
 // startup purge can identify and remove them under hard cutover.
@@ -336,56 +336,16 @@ func FindReusable(browser string, headless bool) *SessionListing {
 	return nil
 }
 
-// CleanOrphans scans SessionsDir for sessions where the scout process is dead
-// but the browser process is still running, and kills the orphaned browser.
-// Returns the number of orphaned browsers killed.
+// CleanOrphans scans SessionsDir for sessions whose scout owner has died and
+// kills the orphaned browser, removing the folder. Returns the number of
+// browser processes killed.
+//
+// Deprecated: CleanOrphans is now a thin wrapper over ReapOnce, which is the
+// single canonical reaping pass. Prefer ReapOnce()/StartReaperWatchdog
+// directly. This wrapper is retained for source compatibility and will be
+// removed after 2026-07-15 (tracked in docs/BACKLOG.md).
 func CleanOrphans() (int, error) {
-	sessions, err := List()
-	if err != nil {
-		return 0, err
-	}
-
-	killed := 0
-
-	for _, s := range sessions {
-		if s.Info.ScoutPID == 0 || s.Info.BrowserPID == 0 {
-			continue
-		}
-
-		if IsScoutProcess(s.Info.ScoutPID) {
-			continue
-		}
-
-		// Reusable sessions persist by user opt-in UNTIL their ExpiresAt
-		// passes. Don't kill their browser or remove their dir while
-		// within the lifetime window. H6 + expiration enforcement.
-		if s.Info.Reusable && !s.Info.IsExpired() {
-			continue
-		}
-
-		if verifyProcess(s.Info.BrowserPID, s.Info.BrowserStartToken) {
-			if p, err := os.FindProcess(s.Info.BrowserPID); err == nil {
-				_ = p.Kill()
-			}
-
-			killed++
-		}
-
-		// Remove the full session directory (scout.pid + job.json + data/).
-		// Exponential-backoff retry handles Windows file locks (L1).
-		sessionDir := Dir(s.ID)
-		if err := retryRemoveAll(sessionDir); err != nil {
-			// M6: surface persistent removal failures (permission denied,
-			// stuck file lock) instead of silently swallowing them.
-			slog.Warn("scout: session cleanup failed after retries",
-				"id", s.ID,
-				"dir", sessionDir,
-				"err", err,
-			)
-		}
-	}
-
-	return killed, nil
+	return ReapOnce().Killed, nil
 }
 
 // Reset removes an entire session directory (all browser data + scout.pid).
@@ -468,88 +428,7 @@ func ResetAll() (int, error) {
 // Only explicitly reusable sessions with a live process are preserved.
 // Returns the number of sessions cleaned.
 func CleanStaleSessions() (int, error) {
-	sessDir := GetSessionsDir()
-
-	entries, err := os.ReadDir(sessDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return 0, nil
-		}
-
-		return 0, fmt.Errorf("scout: read sessions dir: %w", err)
-	}
-
-	cleaned := 0
-
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-
-		id := e.Name()
-		info, err := ReadInfo(id)
-
-		// No scout.pid OR legacy JSON format (hard cutover) — remove it.
-		// Use a single-shot RemoveAll for the fast path; on failure (the
-		// usual case for legacy dirs whose Chrome LevelDB / SQLite files
-		// are held by Defender / Search Indexer / OneDrive), enqueue for
-		// the background retrier instead of burning 11 s of startup time
-		// per dir. With 8 stuck dirs this cut startup latency from ~88 s
-		// to <1 s.
-		target := filepath.Join(sessDir, id)
-		if err != nil {
-			if errors.Is(err, ErrLegacyFormat) {
-				slog.Info("scout: removing legacy JSON session", "id", id)
-			}
-			if removeErr := os.RemoveAll(target); removeErr == nil {
-				cleaned++
-			} else {
-				recordCleanupFailure(target)
-			}
-
-			continue
-		}
-
-		// Reusable sessions are auto-cleaned ONLY when their ExpiresAt has
-		// passed. Otherwise persistence overrides liveness (H6 contract).
-		// Reusable sessions without ExpiresAt set (legacy data) are treated
-		// as not-yet-expired to avoid surprise deletion on upgrade.
-		if info.Reusable {
-			if !info.IsExpired() {
-				continue
-			}
-
-			slog.Info("scout: reusable session expired, cleaning",
-				"id", id,
-				"expires_at", info.ExpiresAt,
-			)
-		}
-
-		// Non-reusable session or dead reusable — kill orphaned browser
-		// only if we can confirm identity.
-		if info.BrowserPID != 0 && verifyProcess(info.BrowserPID, info.BrowserStartToken) {
-			if p, err := os.FindProcess(info.BrowserPID); err == nil {
-				_ = p.Kill()
-			}
-		}
-
-		// Single-shot RemoveAll for the fast startup path. On failure
-		// (Windows AV / Search Indexer / OneDrive holding the LevelDB
-		// files), enqueue for the background retrier rather than
-		// blocking startup on retries.
-		target2 := filepath.Join(sessDir, id)
-		if err := os.RemoveAll(target2); err == nil {
-			cleaned++
-		} else {
-			recordCleanupFailure(target2)
-			slog.Warn("scout: stale session cleanup deferred to background retrier",
-				"id", id,
-				"err", err,
-			)
-		}
-	}
-
-	return cleaned, nil
+	return ReapOnce().Removed, nil
 }
 
 // DefaultOrphanCheckInterval is the default interval for periodic orphan checks.
