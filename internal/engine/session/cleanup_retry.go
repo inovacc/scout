@@ -1,7 +1,6 @@
 package session
 
 import (
-	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -25,6 +24,12 @@ import (
 var (
 	pendingMu      sync.Mutex
 	pendingCleanup []string
+
+	// removeAllFn indirects os.RemoveAll so tests can inject a deterministic
+	// failing remover for the normal retry path. The force-break path
+	// (forceBreakDir) deliberately calls os.RemoveAll directly so it is never
+	// short-circuited by this seam.
+	removeAllFn = os.RemoveAll
 )
 
 // recordCleanupFailure adds path to the retry queue. Called from
@@ -152,7 +157,7 @@ func retryPending(failCount map[string]int) {
 			continue // already gone — maybe another process removed it
 		}
 
-		if err := retryRemoveAll(p); err == nil {
+		if err := removeAllFn(p); err == nil {
 			slog.Info("scout: background cleanup removed stale session", "dir", p)
 			removePending(p)
 			delete(failCount, p)
@@ -162,52 +167,78 @@ func retryPending(failCount map[string]int) {
 
 		failCount[p]++
 
-		// Force-break escalation: after forceBreakThreshold consecutive
-		// misses the polite RemoveAll is clearly losing to a persistent
-		// holder (broken AV, OneDrive sync). The reaper has already killed
-		// any browser holding this dir, so attempt an aggressive removal:
-		// clear read-only attributes on every entry, then RemoveAll again.
-		// Best-effort and logged at WARN; never panics.
+		// Cap consecutive-failure logging at 10 to bound noise; dirs
+		// that survive ~10 min are likely held by something persistent
+		// (OneDrive sync, broken AV). Entry stays in queue for next tick.
+		if failCount[p] == 10 {
+			slog.Warn("scout: background cleanup still blocked after 10 attempts", "dir", p)
+		}
+
+		// Force-break escalation: once a dir has resisted forceBreakThreshold
+		// consecutive sweeps (~20 min), stop waiting and break it
+		// aggressively. Best-effort: a still-failing force-break leaves the
+		// dir queued for the next tick (we never panic, never block).
 		if failCount[p] >= forceBreakThreshold {
-			if err := forceRemoveAll(p); err == nil {
-				slog.Warn("scout: background cleanup force-removed stuck session", "dir", p)
+			if err := forceBreakDir(p); err == nil {
+				slog.Warn("scout: force-broke stuck session dir after threshold",
+					"dir", p, "attempts", failCount[p])
 				removePending(p)
 				delete(failCount, p)
 
 				continue
+			} else {
+				slog.Warn("scout: force-break of stuck session dir failed",
+					"dir", p, "attempts", failCount[p], "err", err)
 			}
-		}
-
-		// Cap consecutive-failure logging at 10 to bound noise; dirs
-		// that survive a full hour are likely held by something
-		// persistent (OneDrive sync, broken AV) — keep retrying
-		// silently. Entry stays in queue for next tick.
-		if failCount[p] == 10 {
-			slog.Warn("scout: background cleanup still blocked after 10 attempts", "dir", p)
 		}
 	}
 }
 
-// forceRemoveAll clears the read-only bit on every entry under root, then
-// retries removal. On Windows a read-only file (Chrome leaves some profile
-// files read-only) makes os.RemoveAll fail with ERROR_ACCESS_DENIED even
-// after the owning process has exited; chmod 0o600/0o700 unsticks it.
-// Best-effort: walk errors are ignored so a vanished entry mid-walk does not
-// abort the cleanup.
-func forceRemoveAll(root string) error {
-	_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil //nolint:nilerr // tolerate races; keep walking
-		}
+// forceBreakDir aggressively removes a session dir that survived
+// forceBreakThreshold normal retry sweeps. It is the terminal escalation: it
+// loops os.RemoveAll a few times (clearing read-only attrs between passes),
+// then falls back to a low-level platform rmdir walk. Best-effort: it returns
+// the last error and never panics. It deliberately calls os.RemoveAll directly
+// (not removeAllFn) so the force-break path is never short-circuited by a
+// test-injected failing remover.
+func forceBreakDir(path string) error {
+	// A few direct passes: clearing the read-only bit between passes lets a
+	// dir whose entries were marked read-only (common on Windows AV
+	// quarantine) finally delete.
+	for range 3 {
+		_ = clearReadOnly(path)
 
-		if d.IsDir() {
-			_ = os.Chmod(p, 0o700)
-		} else {
-			_ = os.Chmod(p, 0o600)
+		if err := os.RemoveAll(path); err == nil {
+			return nil
 		}
+	}
+
+	// Platform last resort: low-level directory removal.
+	if err := rmdirLowLevel(path); err == nil {
+		return nil
+	}
+
+	// Final stat: if it is gone despite the last RemoveAll error, treat as
+	// success — a concurrent remover may have beaten us.
+	if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
+		return nil
+	}
+
+	// Return a synthetic sentinel so callers know the dir is still present.
+	return &os.PathError{Op: "remove", Path: path, Err: os.ErrPermission}
+}
+
+// clearReadOnly best-effort walks path and clears the read-only bit on every
+// entry so a subsequent RemoveAll can proceed. Errors are not fatal — the
+// caller retries regardless.
+func clearReadOnly(path string) error {
+	return filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil //nolint:nilerr // skip unreadable entries; keep walking
+		}
+		// Add owner write bit; harmless on dirs, clears the RO attr on files.
+		_ = os.Chmod(p, info.Mode()|0o200)
 
 		return nil
 	})
-
-	return retryRemoveAll(root)
 }
