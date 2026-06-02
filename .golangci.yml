@@ -56,6 +56,7 @@ linters:
     - cyclop
     - err113
     - wsl
+    - wsl_v5
     - errorlint
     - exhaustruct
     - forcetypeassert
