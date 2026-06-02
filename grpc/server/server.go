@@ -172,19 +172,11 @@ func (s *ScoutServer) StartIdleTimer() {
 	}
 
 	s.idle = idle.New(s.IdleTimeout, func() {
-		// Destroy all sessions.
-		s.sessions.Range(func(key, value any) bool {
-			sess := value.(*session)
-			if sess.recorder != nil {
-				sess.recorder.Stop()
-			}
-
-			_ = sess.browser.Close()
-
-			s.sessions.Delete(key)
-
-			return true
-		})
+		// Full teardown of every session: stops monitor sidecars + hijacker,
+		// flushes HAR, stops recorders, closes browsers, untracks peers.
+		// Runs BEFORE OnIdleShutdown so artifacts are flushed before the
+		// gRPC server stops accepting calls.
+		s.DestroyAllSessions()
 
 		if s.OnIdleShutdown != nil {
 			s.OnIdleShutdown()
