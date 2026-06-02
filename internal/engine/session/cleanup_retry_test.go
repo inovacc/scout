@@ -3,6 +3,7 @@ package session
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -85,5 +86,92 @@ func TestRetryPendingForceBreakAfterThreshold(t *testing.T) {
 	}
 	if calls == 0 {
 		t.Fatalf("removeAllFn was never exercised on the normal path")
+	}
+}
+
+// TestRetryPendingRemovesBeforeThreshold proves a dir that removes cleanly on
+// the first sweep is dequeued immediately and the force-break path is never
+// taken (failCount never reaches the threshold).
+func TestRetryPendingRemovesBeforeThreshold(t *testing.T) {
+	resetPending(t)
+
+	dir := t.TempDir()
+	target := filepath.Join(dir, "easy-sess")
+	if err := os.MkdirAll(target, 0o700); err != nil {
+		t.Fatalf("mkdir target: %v", err)
+	}
+
+	// Default removeAllFn (os.RemoveAll) — succeeds on the first try.
+	recordCleanupFailure(target)
+	if got := PendingCleanupCount(); got != 1 {
+		t.Fatalf("PendingCleanupCount after enqueue = %d, want 1", got)
+	}
+
+	failCount := make(map[string]int)
+	retryPending(failCount)
+
+	if got := PendingCleanupCount(); got != 0 {
+		t.Fatalf("after one sweep: PendingCleanupCount = %d, want 0", got)
+	}
+	if _, ok := failCount[target]; ok {
+		t.Fatalf("failCount unexpectedly tracked a successfully-removed dir")
+	}
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Fatalf("target still present after clean removal: %v", err)
+	}
+}
+
+// TestRetryPendingForceBreakRealLock exercises the force-break path against a
+// genuinely locked file (open handle) on Windows, where os.RemoveAll fails
+// while a handle is held. The handle is released just before the threshold
+// sweep so the force-break (forceBreakDir -> os.RemoveAll loop / rmdirLowLevel)
+// can finally remove the dir. Non-Windows cannot reproduce the lock (open
+// handles do not block unlink) and is skipped.
+func TestRetryPendingForceBreakRealLock(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("open-handle removal lock is Windows-specific")
+	}
+	resetPending(t)
+
+	dir := t.TempDir()
+	target := filepath.Join(dir, "locked-sess")
+	if err := os.MkdirAll(target, 0o700); err != nil {
+		t.Fatalf("mkdir target: %v", err)
+	}
+	locked := filepath.Join(target, "scout.lock")
+	f, err := os.Create(locked)
+	if err != nil {
+		t.Fatalf("create locked file: %v", err)
+	}
+	released := false
+	releaseOnce := func() {
+		if !released {
+			_ = f.Close()
+			released = true
+		}
+	}
+	t.Cleanup(releaseOnce)
+
+	// Use the real remover so the open handle actually blocks removal.
+	recordCleanupFailure(target)
+	failCount := make(map[string]int)
+
+	// Sweeps 1..threshold-1: handle held → RemoveAll fails → stays queued.
+	for sweep := range forceBreakThreshold - 1 {
+		retryPending(failCount)
+		if PendingCleanupCount() != 1 {
+			t.Fatalf("sweep %d: dir dequeued early while locked", sweep+1)
+		}
+	}
+
+	// Release the handle, then the threshold-th sweep force-breaks the dir.
+	releaseOnce()
+	retryPending(failCount)
+
+	if got := PendingCleanupCount(); got != 0 {
+		t.Fatalf("after force-break: PendingCleanupCount = %d, want 0", got)
+	}
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Fatalf("locked dir survived force-break: %v", err)
 	}
 }
