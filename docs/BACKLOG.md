@@ -145,3 +145,13 @@
 | Cloud Consoles | Phase 38 |
 | Grafana/Datadog | Phase 38 |
 </details>
+
+## Session Hardening — deferred (phase B)
+
+| Tag | Item | Rationale |
+|-----|------|-----------|
+| FOLLOW-UP | **Windows Job Object** (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`) — wrap every launched browser in a Windows Job Object so Chrome child processes are killed by the OS when the scout process exits via SIGKILL or console-close, eliminating the entire class of Windows orphan-browser leaks. | `p.Kill()` + retries are a best-effort workaround; a Job Object is the only true OS-level guarantee on Windows. |
+| FOLLOW-UP | **Windows `CTRL_CLOSE_EVENT` / `CTRL_SHUTDOWN_EVENT` handler** — register a `SetConsoleCtrlHandler` callback so console-window close and system shutdown trigger the same graceful teardown as SIGINT/SIGTERM. | The current signal handler only catches SIGINT/SIGTERM; console-close bypasses it and leaves browsers alive. |
+| FOLLOW-UP | **macOS/BSD `ProcessStartToken` / parent-PID cross-check** — add a `sysctl KERN_PROC` parent-PID comparison (or `libproc` start-time) to `verifyProcess` on Darwin so PID reuse is detected even when the process happens to be a Go binary (gops false-positive). | Current macOS path falls back to alive-only after start-token fails, which degrades PID-reuse protection to near-zero on a busy system. |
+| FOLLOW-UP | **macOS/BSD `FindBrowsersUsingDataDir` returns nil** — implement `sysctl KERN_PROC_ALL` cmdline read to scan running processes for `--user-data-dir=<path>` on Darwin so `ReapSession` can kill a zombie whose `scout.pid` is corrupt or missing. | The current macOS implementation returns `nil, nil`, making a corrupt-pid zombie un-killable via the path-based fallback. |
+| FOLLOW-UP | **Linux cmdline scan hardening** — fix `isBrowserCmdline` to handle (a) unquoted `--user-data-dir` values containing spaces (currently truncated at the first space by `/proc/<pid>/cmdline` NUL splitting) and (b) missing `/msedge` path suffix so Edge zombies are recognised. | Both cases cause `FindBrowsersUsingDataDir` to miss live orphan browsers, leaving them unkilled after a corrupt-pid reap. |

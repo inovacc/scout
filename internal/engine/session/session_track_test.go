@@ -315,6 +315,41 @@ func TestReset(t *testing.T) {
 	}
 }
 
+// TestResetSelfPidGuard proves that Reset() never attempts to kill the current
+// process, even when BrowserPID == os.Getpid(). Without the self-pid guard
+// added in Fix C the call os.FindProcess(pid).Kill() would terminate the test
+// runner itself. With the guard the session dir is still removed cleanly.
+func TestResetSelfPidGuard(t *testing.T) {
+	dir := t.TempDir()
+	origFunc := SessionsDir
+	SessionsDir = func() string { return dir }
+
+	defer func() { SessionsDir = origFunc }()
+
+	id := "test-self-pid-guard"
+	now := time.Now()
+
+	// Record the current process PID as the "browser" PID — the most
+	// dangerous value possible: it's alive and would be kill-able.
+	_ = WriteInfo(id, &SessionInfo{
+		Browser:    "chrome",
+		BrowserPID: os.Getpid(), // self-pid
+		ScoutPID:   0,
+		CreatedAt:  now,
+		LastUsed:   now,
+	})
+
+	// Reset must complete without killing us (no panic, no signal).
+	if err := Reset(id); err != nil {
+		t.Fatalf("Reset with self-BrowserPID: %v", err)
+	}
+
+	// Dir must be gone.
+	if _, err := os.Stat(Dir(id)); !os.IsNotExist(err) {
+		t.Fatalf("session dir still present after Reset with self-BrowserPID")
+	}
+}
+
 func TestResetAll(t *testing.T) {
 	dir := t.TempDir()
 	origFunc := SessionsDir

@@ -545,6 +545,15 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 }
 
 func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
+	// Recover from any panic in teardown so a single bad session cannot
+	// crash the RPC handler (mirrors DestroyAllSessions per-session guard).
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Warn("scout: DestroySession: teardown panicked",
+				"session", req.GetSessionId(), "panic", r)
+		}
+	}()
+
 	sess, err := s.getSession(req.GetSessionId())
 	if err != nil {
 		return nil, err
@@ -577,7 +586,9 @@ func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) 
 		sess.recorder.Stop()
 	}
 
-	_ = sess.browser.Close()
+	if sess.browser != nil {
+		_ = sess.browser.Close()
+	}
 
 	s.sessions.Delete(req.GetSessionId())
 	s.untrackPeer(req.GetSessionId())

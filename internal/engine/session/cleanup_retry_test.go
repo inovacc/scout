@@ -121,6 +121,60 @@ func TestRetryPendingRemovesBeforeThreshold(t *testing.T) {
 	}
 }
 
+// TestForceBreakStatBasedSuccess proves that forceBreakDir reports success only
+// when the path is actually gone (stat-based), not when rmdirLowLevel returns
+// nil. On non-Windows rmdirLowLevel calls os.RemoveAll, so we verify the
+// positive case (path removed) and the negative case (path still present after
+// all attempts) independently.
+func TestForceBreakStatBasedSuccess(t *testing.T) {
+	t.Run("path_actually_removed", func(t *testing.T) {
+		dir := t.TempDir()
+		target := filepath.Join(dir, "to-remove")
+		if err := os.MkdirAll(target, 0o700); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+
+		if err := forceBreakDir(target); err != nil {
+			t.Fatalf("forceBreakDir returned error for a removable dir: %v", err)
+		}
+		if _, err := os.Stat(target); !os.IsNotExist(err) {
+			t.Fatalf("dir still present after forceBreakDir: stat=%v", err)
+		}
+	})
+
+	t.Run("path_still_present_is_not_success", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("cannot reliably keep a dir undeletable without syscall tricks on Windows")
+		}
+
+		// Make a dir that os.RemoveAll cannot remove by placing a
+		// non-empty, permission-locked child inside it. We remove write
+		// permission from the parent so RemoveAll cannot descend.
+		dir := t.TempDir()
+		target := filepath.Join(dir, "sticky")
+		child := filepath.Join(target, "child")
+		if err := os.MkdirAll(child, 0o700); err != nil {
+			t.Fatalf("mkdir child: %v", err)
+		}
+		// Lock: remove write+exec from target so RemoveAll cannot descend.
+		if err := os.Chmod(target, 0o500); err != nil {
+			t.Fatalf("chmod: %v", err)
+		}
+		// Restore so t.TempDir cleanup can proceed.
+		t.Cleanup(func() { _ = os.Chmod(target, 0o700) })
+
+		err := forceBreakDir(target)
+		if err == nil {
+			// If we're running as root, RemoveAll succeeds regardless —
+			// skip rather than fail.
+			if _, statErr := os.Stat(target); os.IsNotExist(statErr) {
+				t.Skip("running as root: undeletable dir not achievable")
+			}
+			t.Fatalf("forceBreakDir returned nil but path still exists")
+		}
+	})
+}
+
 // TestRetryPendingForceBreakRealLock exercises the force-break path against a
 // genuinely locked file (open handle) on Windows, where os.RemoveAll fails
 // while a handle is held. The handle is released just before the threshold

@@ -361,7 +361,8 @@ func Reset(id string) error {
 	// sleep after an actual Kill() — skipping the 500ms when the process
 	// is already gone shaves shutdown latency in the common case.
 	if info, err := ReadInfo(id); err == nil && info.BrowserPID != 0 {
-		if verifyProcess(info.BrowserPID, info.BrowserStartToken) {
+		// Self-pid guard: never kill the current process (mirrors reaper.go).
+		if info.BrowserPID != os.Getpid() && verifyProcess(info.BrowserPID, info.BrowserStartToken) {
 			if p, err := os.FindProcess(info.BrowserPID); err == nil {
 				if killErr := p.Kill(); killErr == nil {
 					time.Sleep(500 * time.Millisecond)

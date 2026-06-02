@@ -194,14 +194,27 @@ func classifySession(id string) auditEntry {
 	e.ParentMatchesScout = e.BrowserParentPID != 0 && e.BrowserParentPID == e.ScoutPID
 
 	switch {
-	case info.Reusable && info.IsExpired():
-		e.Status = statusExpired
-	case info.Reusable:
-		e.Status = statusReusable
-	case e.ScoutAlive && e.BrowserAlive:
-		e.Status = statusHealthy
+	// ZOMBIE wins over expired/reusable: a live orphan browser must be
+	// visible to `scout session doctor` even when the session is also
+	// expired or marked reusable. Without this ordering an expired session
+	// whose browser is still running would be mis-classified as EXPIRED and
+	// the doctor would report a false CLEAN.
 	case !e.ScoutAlive && e.BrowserAlive:
 		e.Status = statusZombie
+	case e.ScoutAlive && e.BrowserAlive:
+		e.Status = statusHealthy
+	case info.Reusable && e.ScoutAlive:
+		// Reusable with live owner: REUSABLE (within window) or EXPIRED.
+		if info.IsExpired() {
+			e.Status = statusExpired
+		} else {
+			e.Status = statusReusable
+		}
+	case info.Reusable && !e.ScoutAlive && info.IsExpired():
+		e.Status = statusExpired
+	case info.Reusable && !e.ScoutAlive:
+		// Owner died but not yet expired — still reusable by a new daemon.
+		e.Status = statusReusable
 	case !e.ScoutAlive && !e.BrowserAlive:
 		e.Status = statusStale
 	}

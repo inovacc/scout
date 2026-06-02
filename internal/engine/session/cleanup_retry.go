@@ -213,13 +213,14 @@ func forceBreakDir(path string) error {
 		}
 	}
 
-	// Platform last resort: low-level directory removal.
-	if err := rmdirLowLevel(path); err == nil {
-		return nil
-	}
+	// Platform last resort: low-level directory removal. Do NOT short-circuit
+	// on a nil return from rmdirLowLevel — on non-Windows it delegates to
+	// os.RemoveAll which can return nil even when the path still exists (race)
+	// or is a no-op. Always let the stat below decide success.
+	_ = rmdirLowLevel(path)
 
-	// Final stat: if it is gone despite the last RemoveAll error, treat as
-	// success — a concurrent remover may have beaten us.
+	// Authoritative success check: the path is gone regardless of which
+	// removal attempt removed it (including a concurrent remover).
 	if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
 		return nil
 	}
