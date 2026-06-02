@@ -2,11 +2,10 @@
 
 package session
 
-import "os"
-
-// rmdirLowLevel is the platform last-resort removal. On non-Windows platforms
-// a plain os.RemoveAll is sufficient; the real low-level syscall escalation
-// is only needed on Windows (see cleanup_retry_windows.go, added in Task 7.2).
-func rmdirLowLevel(path string) error {
-	return os.RemoveAll(path)
+// rmdirLowLevel is the non-Windows fallback. On Unix-like systems os.RemoveAll
+// already handles every removable case (there is no AV/indexer lock
+// pathology), so this is a no-op that reports success and lets forceBreakDir's
+// final stat decide the outcome.
+func rmdirLowLevel(_ string) error {
+	return nil
 }
