@@ -133,6 +133,7 @@ Import: `github.com/inovacc/scout/pkg/scout`. Public facade re-exports `internal
 - **Helm values schema**: `deploy/helm/scout/values.schema.json` validates chart values. Update when adding Helm options.
 - **Grafana dashboard**: `deploy/grafana/scout-dashboard.json` — 15 panels, import into Grafana with Prometheus datasource.
 - **npm package**: `npm/scout-browser/` published as `@inovacc/scout-browser` to GitHub Packages. Bump version in `package.json` before `npm publish`.
+- **Secrets vault**: `pkg/scout/vault` stores named secret profiles in one Argon2id+AES-256-GCM file at `<scouthome>/profiles/vault.bin` (0o600 in a 0o700 dir). Secrets live in `LockedBuffer` (`[]byte` + `VirtualLock`/`Mlock` + explicit zero) and never become `string`. `Vault.Use(id)` returns a `Handle` that injects cookies/headers into a live page via CDP (`Handle.ApplyToPage`) and yields scout-internal secrets via `Handle.Secret` — never env vars. `scout vault rotate` re-keys atomically. CLI: `scout vault init/set/get/list/use/rotate/rm`. `--from-profile` imports a `.scoutprofile`'s secret fields (deprecating `UserProfile.Cookies/Storage/Headers`, removal after 2026-07-02).
 
 ## Dependencies
 

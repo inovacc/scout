@@ -490,6 +490,22 @@ srv.Run()
 
 Plugins declare capabilities (`scraper_mode`, `extractor`, `mcp_tool`) in their `plugin.json` manifest.
 
+## Secrets vault
+
+Store secrets (API keys, cookies, auth headers) encrypted at rest and inject them into a browser without ever leaking plaintext to child processes.
+
+```bash
+scout vault init                                   # create <scouthome>/profiles/vault.bin (Argon2id + AES-256-GCM)
+scout vault set --name openai api_key=sk-live-xyz  # prints an opaque profile ID
+scout vault set --from-profile ./session.scoutprofile --name web   # import browser cookies/storage/headers
+scout vault list                                   # metadata only — never secret values
+scout vault use <id> --url https://example.com     # inject cookies/headers into a page via CDP
+scout vault rotate                                 # re-key under a new passphrase (atomic)
+scout vault rm <id>
+```
+
+Secrets are held in swap-locked, explicitly-zeroed buffers and are never passed via environment variables. Set `SCOUT_VAULT_PASSPHRASE` for non-interactive use (a stderr warning notes it is visible to child processes; prefer the interactive prompt).
+
 ## Cloud Deployment
 
 Scout can be deployed to Kubernetes using the included Helm chart.
