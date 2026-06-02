@@ -15,16 +15,20 @@ func FromUserProfile(path string) (SecretProfileInput, error) {
 	if err != nil {
 		return SecretProfileInput{}, fmt.Errorf("scout: vault: load profile: %w", err)
 	}
-	in := SecretProfileInput{Name: up.Name, Cookies: up.Cookies}
-	if len(up.Headers) > 0 {
-		in.Headers = make(map[string][]byte, len(up.Headers))
-		for k, val := range up.Headers {
+	// The vault is the sanctioned migration target for these deprecated, secret-bearing fields.
+	//nolint:staticcheck // SA1019: the importer must read the deprecated UserProfile secret fields
+	cookies, headers, storage := up.Cookies, up.Headers, up.Storage
+
+	in := SecretProfileInput{Name: up.Name, Cookies: cookies}
+	if len(headers) > 0 {
+		in.Headers = make(map[string][]byte, len(headers))
+		for k, val := range headers {
 			in.Headers[k] = []byte(val)
 		}
 	}
-	if len(up.Storage) > 0 {
-		in.Storage = make(map[string]OriginStore, len(up.Storage))
-		for origin, os := range up.Storage {
+	if len(storage) > 0 {
+		in.Storage = make(map[string]OriginStore, len(storage))
+		for origin, os := range storage {
 			in.Storage[origin] = OriginStore{LocalStorage: os.LocalStorage, SessionStorage: os.SessionStorage}
 		}
 	}
