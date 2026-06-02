@@ -10,6 +10,9 @@ import (
 // ErrProfileNotFound is returned when an ID does not match any profile.
 var ErrProfileNotFound = errors.New("scout: vault: profile not found")
 
+// ErrVaultClosed is returned by operations on a Vault after Close.
+var ErrVaultClosed = errors.New("scout: vault: closed")
+
 type config struct{ path string }
 
 // Option configures a Vault.
@@ -36,10 +39,11 @@ func resolve(opts []Option) (config, error) {
 // Vault is an opened secret store. It holds the passphrase in a LockedBuffer for
 // the lifetime of the handle so it can re-encrypt on every mutation and on Rotate.
 type Vault struct {
-	mu   sync.Mutex
-	path string
-	pass *LockedBuffer
-	data *vaultData
+	mu     sync.Mutex
+	path   string
+	pass   *LockedBuffer
+	data   *vaultData
+	closed bool
 }
 
 // Create initializes a new empty vault at the resolved path. It errors if a
@@ -79,6 +83,9 @@ func Open(passphrase []byte, opts ...Option) (*Vault, error) {
 func (v *Vault) Set(in SecretProfileInput) (string, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return "", ErrVaultClosed
+	}
 
 	now := time.Now().UTC()
 	sp := storedProfile{
@@ -107,6 +114,9 @@ func (v *Vault) Set(in SecretProfileInput) (string, error) {
 func (v *Vault) Get(id string) (*SecretProfile, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return nil, ErrVaultClosed
+	}
 	idx := v.indexOf(id)
 	if idx < 0 {
 		return nil, ErrProfileNotFound
@@ -118,6 +128,9 @@ func (v *Vault) Get(id string) (*SecretProfile, error) {
 func (v *Vault) List() []ProfileMeta {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return nil
+	}
 	out := make([]ProfileMeta, 0, len(v.data.Profiles))
 	for _, sp := range v.data.Profiles {
 		p := materialize(sp)
@@ -131,6 +144,9 @@ func (v *Vault) List() []ProfileMeta {
 func (v *Vault) Remove(id string) error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return ErrVaultClosed
+	}
 	idx := v.indexOf(id)
 	if idx < 0 {
 		return ErrProfileNotFound
@@ -141,14 +157,21 @@ func (v *Vault) Remove(id string) error {
 	return saveVault(v.path, v.data, v.pass.Bytes())
 }
 
-// Close zeros the cached passphrase and decrypted secret bytes.
+// Close zeros the cached passphrase and decrypted secret bytes. After Close the
+// Vault is unusable: Set/Get/List/Remove return ErrVaultClosed (List returns nil).
+// This guard prevents a post-Close Set/Remove from re-encrypting the on-disk vault
+// under the now-zeroed passphrase, which would corrupt the file.
 func (v *Vault) Close() error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.closed {
+		return nil
+	}
 	for i := range v.data.Profiles {
 		zeroStored(&v.data.Profiles[i])
 	}
 	v.pass.Zero()
+	v.closed = true
 	return nil
 }
 

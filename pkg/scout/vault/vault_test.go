@@ -1,6 +1,7 @@
 package vault
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 )
@@ -84,5 +85,49 @@ func TestGetUnknownID(t *testing.T) {
 	defer func() { _ = v.Close() }()
 	if _, err := v.Get("does-not-exist"); err == nil {
 		t.Fatal("Get succeeded for unknown id")
+	}
+}
+
+func TestVaultUseAfterCloseDoesNotCorruptDisk(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "vault.bin")
+	pass := []byte("real-pass")
+
+	v, err := Create(pass, WithPath(path))
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if _, err := v.Set(SecretProfileInput{Name: "a", Secrets: map[string][]byte{"k": []byte("v")}}); err != nil {
+		t.Fatalf("Set: %v", err)
+	}
+	if err := v.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	// All ops must now refuse with ErrVaultClosed and must NOT touch disk.
+	if _, err := v.Set(SecretProfileInput{Name: "b"}); !errors.Is(err, ErrVaultClosed) {
+		t.Fatalf("Set after Close = %v, want ErrVaultClosed", err)
+	}
+	if _, err := v.Get("anything"); !errors.Is(err, ErrVaultClosed) {
+		t.Fatalf("Get after Close = %v, want ErrVaultClosed", err)
+	}
+	if err := v.Remove("anything"); !errors.Is(err, ErrVaultClosed) {
+		t.Fatalf("Remove after Close = %v, want ErrVaultClosed", err)
+	}
+	if v.List() != nil {
+		t.Fatal("List after Close should return nil")
+	}
+	// Second Close is a no-op.
+	if err := v.Close(); err != nil {
+		t.Fatalf("second Close: %v", err)
+	}
+
+	// The on-disk vault must STILL open with the real passphrase and retain data.
+	v2, err := Open(pass, WithPath(path))
+	if err != nil {
+		t.Fatalf("Open after Close: %v (disk corrupted?)", err)
+	}
+	defer func() { _ = v2.Close() }()
+	if len(v2.List()) != 1 {
+		t.Fatalf("expected 1 profile after reopen, got %d", len(v2.List()))
 	}
 }
