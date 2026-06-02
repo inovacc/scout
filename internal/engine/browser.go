@@ -728,6 +728,15 @@ func (b *Browser) Close() error {
 			b.browser = nil
 		}
 
+		// 5b. Remove the ADB port forward set up for a mobile session. Without
+		// this the forward leaked on every mobile Browser.Close() (DC-WIRE-001).
+		// Done after CDP close because the CDP connection rides this forward.
+		if b.opts != nil && b.opts.mobile != nil {
+			adbCtx, adbCancel := context.WithTimeout(context.Background(), 3*time.Second)
+			_ = RemoveADBForward(adbCtx, *b.opts.mobile)
+			adbCancel()
+		}
+
 		// 6. Update session info: clear PIDs or remove entirely.
 		if b.sessionID != "" {
 			if b.opts.reusableSession {
