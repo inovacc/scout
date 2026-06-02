@@ -175,6 +175,22 @@ func (v *Vault) Close() error {
 	return nil
 }
 
+// Rotate re-encrypts the vault under a new passphrase and atomically rewrites it.
+// The old cached passphrase buffer is zeroed and replaced.
+func (v *Vault) Rotate(newPassphrase []byte) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	if v.closed {
+		return ErrVaultClosed
+	}
+	if err := saveVault(v.path, v.data, newPassphrase); err != nil {
+		return err
+	}
+	v.pass.Zero()
+	v.pass = NewLockedBuffer(append([]byte(nil), newPassphrase...))
+	return nil
+}
+
 func (v *Vault) indexOf(id string) int {
 	for i := range v.data.Profiles {
 		if v.data.Profiles[i].ID == id {
