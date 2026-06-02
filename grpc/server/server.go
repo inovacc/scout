@@ -593,6 +593,72 @@ func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) 
 	return &pb.Empty{}, nil
 }
 
+// DestroyAllSessions tears down every in-flight session: it stops monitor
+// sidecars, flushes the HAR artifact, stops the recorder and hijacker,
+// closes the browser, untracks the peer, and deletes the session from the
+// map. Each session's teardown runs under its own recover() so a single
+// panicking session cannot abort the sweep. Used by daemon idle/shutdown
+// paths so no session is leaked when the server stops.
+func (s *ScoutServer) DestroyAllSessions() {
+	s.sessions.Range(func(key, value any) bool {
+		func() {
+			// Always delete the session from the map, even if teardown panics.
+			defer s.sessions.Delete(key)
+
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Warn("scout: destroy all: session teardown panicked", "session", key, "panic", r)
+				}
+			}()
+
+			sess, ok := value.(*session)
+			if !ok || sess == nil {
+				return
+			}
+
+			// Stop console + WS sidecar writers first so their files flush
+			// before the browser is torn down.
+			if sess.monitorCancel != nil {
+				sess.monitorCancel()
+				sess.monitorCancel = nil
+			}
+
+			// Flush HAR sidecar before stopping the recorder. Mirrors
+			// DestroySession: reads monitors.json for the target path,
+			// defaults to DefaultHARPath. Best-effort; never blocks teardown.
+			if sess.recorder != nil {
+				if sess.browser != nil {
+					if engineID := sess.browser.SessionID(); engineID != "" {
+						if data, _, err := sess.recorder.ExportHAR(); err == nil && len(data) > 0 {
+							cfg, _ := scout.ReadSessionMonitors(engineID)
+							outPath := scout.DefaultHARPath(engineID)
+							if cfg != nil && cfg.HAR.Path != "" {
+								outPath = filepath.Join(scout.SessionDir(engineID), cfg.HAR.Path)
+							}
+							if werr := os.WriteFile(outPath, data, 0o600); werr != nil {
+								slog.Warn("scout: HAR flush on destroy-all failed", "path", outPath, "err", werr)
+							}
+						}
+					}
+				}
+				sess.recorder.Stop()
+			}
+
+			// Stop the hijack fan-out goroutine if one is active.
+			if sess.hijacker != nil {
+				sess.hijacker.Stop()
+				sess.hijacker = nil
+			}
+
+			_ = sess.browser.Close()
+
+			s.untrackPeer(sess.id)
+		}()
+
+		return true
+	})
+}
+
 // ════════════════════════ Navigation ════════════════════════
 
 func (s *ScoutServer) Navigate(_ context.Context, req *pb.NavigateRequest) (*pb.NavigateResponse, error) {
