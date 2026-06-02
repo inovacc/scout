@@ -29,3 +29,13 @@ No open issues at this time.
 | MCP session disconnect after `session_reset` | Fixed: close page before browser + 500ms delay for OS port/dir cleanup | 2026-03 |
 | Sitemap extract drops CDP connection on Chrome for Testing | Fixed: `Bridge.ResetReady()` clears stale `available` flag before each navigation; Chrome for Testing kills WebSocket on stale binding access | 2026-03 |
 | `scout browser list` leaks system browser paths | Fixed: default mode shows only `~/.scout/browsers/` cache; system scan moved behind `--detect` flag | 2026-03 |
+| Cobra command errors silently dropped | Fixed: CLI now prints cobra errors to stderr | 2026-05-21 |
+| Session dirs leaked when `New()` partially failed | Fixed: enforce cleanup of partial `New()` failures | 2026-05-21 |
+| Reusable daemon sessions lost on daemon restart | Fixed (H6 follow-up): persistent reusable sessions survive daemon restart | 2026-05-21 |
+| Open-ended reusable sessions accumulated forever | Fixed (Phase 77.2): persistent sessions now require `WithExpiration()`; `ExpiresAt` enforced via audit | 2026-05-21 |
+| Advisory lock collided with `scout.pid` writes | Fixed (Phase 77.1): lock moved to sibling `scout.lock` (`LockFileEx` Windows, `flock` Unix) | 2026-05-21 |
+| Cleanup stalled on AV / OneDrive / Search Indexer–held dirs | Fixed (Phase 77.4): single-shot `RemoveAll` fast path + `StartCleanupRetrier` (60 s for process lifetime) | 2026-05-21 |
+| Stale Chrome lock blocked session reuse | Fixed (Phase 77.4): stale Chrome lock files reclaimed on session reuse | 2026-05-21 |
+| `preWriteStubInfo` overwrote existing `scout.pid` | Fixed (Phase 77.4): `preWriteStubInfo` skips when `scout.pid` already exists | 2026-05-21 |
+| `registerSession` lost canonical sessionID through plumbing (deferred L5) | Fixed (Phase 77.1): canonical sessionID plumbed through reuse + ephemeral branches | 2026-05-21 |
+| CLI session tracker collided with engine session dirs | Fixed: CLI session tracker moved to (now removed) `active-sessions/`; canonical session dir is authoritative | 2026-05-21 |

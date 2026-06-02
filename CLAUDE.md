@@ -170,12 +170,12 @@ Scout is a Go browser automation library with an internalized rod fork, public f
 ## Technology Stack
 
 ## Languages
-- Go 1.25.0 - All application code (`go.mod` line 3)
+- Go 1.26.0 - All application code (`go.mod` line 3)
 - JavaScript - Stealth evasion scripts (`internal/engine/stealth/stealth_extra.go`), bridge extension (`extensions/`), snapshot scripts (`snapshot_script.go`)
 - Protocol Buffers - gRPC service definition (`grpc/proto/scout.proto`)
 - Node.js - npm package installer (`npm/scout-browser/install.js`), stealth asset generation (`pkg/stealth/generate/`)
 ## Runtime
-- Go 1.25.0 (requires Go toolchain)
+- Go 1.26.0 (requires Go toolchain)
 - Chromium/Chrome browser (headless or headed) for core functionality
 - Optional: Electron runtime for `WithElectronApp()` support
 - Go modules (`go.mod` / `go.sum`)
@@ -194,21 +194,21 @@ Scout is a Go browser automation library with an internalized rod fork, public f
 ## Key Dependencies
 - `github.com/ysmood/gson` v0.7.3 - JSON handling for CDP protocol
 - `github.com/ysmood/goob` v0.4.0 - Observable pattern (event system)
-- `github.com/ollama/ollama` v0.18.3 - Ollama LLM client SDK
+- `github.com/ollama/ollama` v0.24.0 - Ollama LLM client SDK
 - `github.com/modelcontextprotocol/go-sdk` v1.4.1 - MCP server implementation
-- `google.golang.org/grpc` v1.78.0 - gRPC framework
+- `google.golang.org/grpc` v1.81.1 - gRPC framework
 - `google.golang.org/protobuf` v1.36.11 - Protobuf runtime
 - `github.com/spf13/cobra` v1.10.2 - CLI framework
-- `golang.org/x/oauth2` v0.34.0 - OAuth2 for cloud uploads (Google Drive, OneDrive)
-- `golang.org/x/crypto` v0.48.0 - AES-256-GCM encryption for scraper auth
-- `golang.org/x/net` v0.49.0 - HTML parsing (`x/net/html`)
+- `golang.org/x/oauth2` v0.36.0 - OAuth2 for cloud uploads (Google Drive, OneDrive)
+- `golang.org/x/crypto` v0.51.0 - AES-256-GCM encryption for scraper auth
+- `golang.org/x/net` v0.54.0 - HTML parsing (`x/net/html`)
 - `golang.org/x/time` v0.14.0 - Rate limiting (`x/time/rate`)
 - `github.com/google/gops` v0.3.29 - Process discovery and orphan detection
 - `github.com/google/uuid` v1.6.0 - UUID generation (UUIDv7 for reports)
 - `github.com/segmentio/ksuid` v1.0.4 - K-Sortable unique IDs for command logging
 - `github.com/grandcat/zeroconf` v1.0.0 - mDNS service discovery (`pkg/scout/discovery/`)
-- `go.opentelemetry.io/otel` v1.41.0 - OpenTelemetry tracing
-- `go.opentelemetry.io/otel/sdk` v1.41.0 - OTel SDK
+- `go.opentelemetry.io/otel` v1.43.0 - OpenTelemetry tracing
+- `go.opentelemetry.io/otel/sdk` v1.43.0 - OTel SDK
 - `go.opentelemetry.io/otel/exporters/stdout/stdouttrace` v1.41.0 - Trace export
 - `github.com/gin-gonic/gin` v1.10.0 - HTTP framework (indirect, used by ollama dep)
 - `github.com/mattn/go-sqlite3` v1.14.24 - SQLite (indirect, via ollama)
@@ -239,7 +239,7 @@ Scout is a Go browser automation library with an internalized rod fork, public f
 - `deploy/helm/scout/Chart.yaml` - Helm chart (v0.1.0, appVersion 1.0.0)
 - `docs/openapi.yaml` - OpenAPI 3.1.0 spec for agent HTTP API
 ## Platform Requirements
-- Go 1.25.0+
+- Go 1.26.0+
 - Chromium or Chrome browser (auto-downloaded via `BestCached()` if missing)
 - `protoc` + Go plugins (for proto regeneration only)
 - `golangci-lint` (for linting)

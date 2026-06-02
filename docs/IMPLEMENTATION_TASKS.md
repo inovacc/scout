@@ -8,14 +8,18 @@ Granular tasks broken down by domain from `docs/ROADMAP.md` (Phase 75+ Future), 
 
 | ID | What | Status |
 |----|------|--------|
-| 1.1 | Regenerate `coverage.out` | OPEN — full suite multi-minute; defer to dedicated coverage run |
-| 1.2 | Add `task test:full` target | OPEN |
-| 1.3 | Audit `testing.Short()` skip coverage | OPEN |
+| 1.1 | Regenerate `coverage.out` | DONE — `task test:cover` (2026-05-21) — total 36.1% under `-short`; full suite remains multi-minute |
+| 1.2 | Add `task test:full` target | DONE — Taskfile `test:full` runs the multi-minute suite |
+| 1.3 | Audit `testing.Short()` skip coverage | DONE — browser-dependent tests gated; `task test:unit` runs without Chromium |
 | 1.4 | Document `.planning-archive/` policy | DONE (CLAUDE.md updated 2026-05-20) |
 
 ## Domain 1B — Session Hardening (v1.0.4) [DONE]
 
 All 14 findings from `docs/quality/SESSION_HARDENING.md` closed (12 fixed, 2 LOW deferred with rationale). See ROADMAP Phase 76 + MILESTONES v1.0.4.
+
+## Domain 1C — Session Monitors & Encoded IDs (v1.0.5) [IN PROGRESS]
+
+Encoded session ID (`pkg/id`), binary `scout.pid` + sibling `scout.lock`, `monitors.json` sidecar, `WithBlockRules`, `scout session audit`, AV-resilient cleanup retrier, and toolchain bump to Go 1.26. See ROADMAP Phase 77 + MILESTONES v1.0.5.
 
 ## Domain 2 — Mobile Expansion (BACKLOG P3)
 
@@ -42,7 +46,7 @@ All 14 findings from `docs/quality/SESSION_HARDENING.md` closed (12 fixed, 2 LOW
 
 | ID | What | Files | Environment | Depends | Effort |
 |----|------|-------|-------------|---------|--------|
-| 4.1 | Capture fresh per-package coverage table; compare against v1.0.1 baselines (agent 91.4%, plugin 84.4%, metrics 100%, hijack 97.4%) | `docs/ROADMAP.md` (Test Coverage section) | Go | 1.1 | Small |
+| 4.1 | Capture fresh per-package coverage table; compare against v1.0.1 baselines (agent 91.4%, plugin 84.4%, metrics 100%, hijack 97.4%) | `docs/ROADMAP.md` (Test Coverage section) | Go | 1.1 | Small — DONE 2026-05-21: agent 96.5%, plugin 88.7%, metrics 100%, hijack 97.4%, fingerprint 90.6%; total 36.1% under `-short` |
 | 4.2 | Backfill tests for packages without `*_test.go` (run audit after 1.1) | `internal/**/`, `pkg/scout/**/` | Go | 4.1 | Large |
 | 4.3 | Add benchmark guard: regression-flag if `BenchmarkPageCreation` slows >25% | `.github/workflows/test.yml`, `scripts/bench-diff.sh` | CI / Bash | 4.1 | Medium |
 

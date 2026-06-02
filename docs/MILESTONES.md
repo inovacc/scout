@@ -427,3 +427,57 @@
 - [x] Session contract change: `TestCleanStaleSessions` — reusable sessions are kept under H6 regardless of process liveness
 - [x] End-to-end validation: daemon-created reusable session survives daemon kill AND restart; 3 concurrent ephemeral gathers pass M3 lock without contention; planted zombie removed on next startup
 - **Coverage:** session pkg 78 tests passing, 0 failing (was 2 pre-existing failures on `main` — both fixed by Windows `ProcessAlive` access mask fix)
+
+## v1.0.5 - Session Monitors & Encoded Session IDs [IN PROGRESS]
+
+**Goal:** Per-session monitor sidecars (HAR / hijack / console / WS / blocks), encoded session IDs with attribute prefix, request blocking, audit tooling, and AV-resilient cleanup.
+
+**Session ID & lock layout:**
+- [x] Encoded session ID — 12-char attribute prefix (`pkg/id`) + 24 random `[A-Z]`, replacing UUID v7
+- [x] Binary `scout.pid` (432-byte fixed-width, `SCT1` magic, v1) replaces JSON stub
+- [x] Advisory lock split to sibling `scout.lock` (0-byte; `LockFileEx` on Windows, `flock` on Unix)
+- [x] Drop `active-sessions/` tracker; canonical session directory is authoritative
+- [x] `registerSession` plumbs canonical sessionID through reuse + ephemeral branches (closes deferred L5)
+
+**Session lifetime & audit:**
+- [x] Persistent (reusable) sessions require `WithExpiration()` — open-ended reusable sessions rejected
+- [x] `ExpiresAt` stamped in `registerSession` reuse branch
+- [x] `scout session audit` — classifies all sessions (live / orphaned / corrupt / expired / zombie) and kills zombies
+- [x] gRPC `CreateSession` exposes `ephemeral` flag and wires `expires_in` proto field
+- [x] EXPIRED audit status surfaced in MON column
+
+**Monitors & blocking:**
+- [x] `monitors.json` sidecar persists per-session monitor config (HAR / hijack / console / WS / blocks)
+- [x] `scout session create --har --hijack --block <pattern> --block-method POST` enables monitoring in one command
+- [x] `--har-out` / `--hijack-out` flags for explicit artifact destinations; `SCOUT_LAUNCHER_DEBUG` env
+- [x] `WithBlockRules(BlockRule{Pattern, Method})` aborts matching requests with `BlockedByClient` (CDP URLPattern syntax)
+- [x] Console + WebSocket sidecar writers, integration tests
+- [x] `MON` audit column shows which monitors are active
+
+**Cleanup & reliability:**
+- [x] Single-shot `RemoveAll` on startup (fast path)
+- [x] Background cleanup retrier for AV-locked / OneDrive / Search Indexer–held dirs (60 s for process lifetime)
+- [x] Lock on `scout.lock` (was `scout.pid`) for predictable AV behaviour
+- [x] Stale Chrome lock files reclaimed on session reuse
+- [x] `preWriteStubInfo` skips when `scout.pid` already exists (avoids stub overwrite)
+- [x] Cleanup of partial `New()` failures enforced
+
+**MCP & LLM:**
+- [x] `MCPSamplingProvider` — route LLM completions via MCP host
+- [x] `extract ai` Long description mentions MCP provider
+
+**CLI polish:**
+- [x] Cobra errors print to stderr (were silently dropped)
+- [x] `scout browser list` header shows resolved cache path
+
+**Dependency upgrades:**
+- [x] ollama → v0.24.0, grpc-go → v1.81.1, x/net → v0.54.0 (patched versions)
+- [x] otel core → v1.43.0, x/oauth2 → v0.36.0, x/crypto → v0.51.0
+- [x] Go toolchain bumped to 1.26.0
+
+**Testing:**
+- [x] Browser-dependent tests gated behind `testing.Short()` — `task test:unit` finishes without Chromium
+- [x] `task test:full` runs the multi-minute suite with Chromium
+- [x] `test:unit` unblocks browser + identity packages
+- **Coverage (statement, `task test:cover` on this run, `-short` mode without browser):**
+  Total **36.1%** — internal/engine/hijack 97.4%, internal/engine/fingerprint 90.6%, internal/engine/vpn 54.4%, internal/engine/scouthome 56.1%, internal/engine/session 62.1%, internal/engine/llm 77.3%, internal/engine/browser 45.8%, internal/engine 30.1%, internal/engine/swarm 77.4% (1 flake under -short), pkg/scout/agent 96.5%, pkg/scout/plugin 88.7%, pkg/scout/plugin/sdk 96.0%, pkg/scout/recipes/runbooks 96.4%, pkg/scout/strategy 59.6%, pkg/scout/scraper modes 38–76%, internal/metrics 100%.

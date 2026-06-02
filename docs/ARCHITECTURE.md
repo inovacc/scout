@@ -96,7 +96,7 @@ flowchart TB
     end
 
     subgraph MCP["MCP Server (pkg/scout/mcp/)"]
-        MCPServer["MCP Server\n(41 tools, 3 resources)\n12 handler files"]
+        MCPServer["MCP Server\n(18 built-in tools, 3 resources)\nplugin-contributed tools"]
         MCPTransport["stdio / SSE\n(server.go)"]
     end
 
@@ -183,7 +183,7 @@ Each handler file implements a `register*Tools(server *mcp.Server, state *mcpSta
 | `tools_swarm.go` | `registerSwarmTools` | swarm_crawl (1) |
 | `resources.go` | `registerResources` | markdown, url, title (3 resources) |
 
-**Total: 41 tools + 3 resources across 14 handler files**
+**Total: 18 built-in tools + 3 resources (28 deprecated tools migrated to plugins in Phase 72.5). Plugins contribute additional tools at runtime via the plugin manager.**
 
 ### Organization Principles
 

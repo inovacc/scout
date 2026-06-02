@@ -15,3 +15,7 @@
 | MCP `screenshot`/`navigate` timeout (`context deadline exceeded`) | Fixed: `WithTimeout(0)` disables rod 30s page timeout for MCP; `WaitLoad` made best-effort with 15s cap | 2026-03 |
 | MCP session disconnect after `session_reset` | Fixed: close page before browser + 500ms delay for OS port/dir cleanup | 2026-03 |
 | Sitemap extract fails on Chrome for Testing after first page | Fixed: stale `Bridge.available` flag never reset between navigations; `ResetReady()` added before each `page.Navigate()` | 2026-03 |
+| Windows `ProcessAlive` returned false for every PID | Fixed (Phase 76 H2 bonus): missing `SYNCHRONIZE` access right on `OpenProcess` call | 2026-04 |
+| Cobra command errors swallowed instead of printed | Fixed: CLI prints cobra errors to stderr | 2026-05-21 |
+| `ExpiresAt` not stamped when reusing a session | Fixed: `registerSession` reuse branch now stamps `ExpiresAt` | 2026-05-21 |
+| Advisory lock on `scout.pid` corrupted atomic rewrites | Fixed: lock moved to sibling `scout.lock` (`LockFileEx` Windows, `flock` Unix) | 2026-05-21 |

@@ -641,8 +641,93 @@ Shipped as v1.0.3 under the Superpowers workflow (brainstorm → spec → execut
 
 ---
 
-## Phase 77+ — Future
+## Phase 77 — Session Monitors, Encoded IDs & AV-Resilient Cleanup [IN PROGRESS]
+
+**Goal:** Per-session monitor sidecars and request blocking with a canonical session-ID encoding, so a session's intent (what to capture, where to write, what to block) and identity (browser, mode, lifetime, stealth, bridge, vpn) survive process restart and audit. Track for v1.0.5.
+
+### 77.1 — Encoded session ID + binary scout.pid [DONE]
+
+- 12-char attribute prefix (`pkg/id`) + 24 random `[A-Z]` replaces UUID v7
+- `scout.pid` becomes a 432-byte fixed-width binary record (`SCT1` magic, v1, little-endian)
+- Advisory lock split to sibling `scout.lock` (0-byte; `LockFileEx` Windows, `flock` Unix)
+- `active-sessions/` tracker dropped — canonical session directory is authoritative
+- `registerSession` plumbs canonical sessionID through reuse + ephemeral branches (closes deferred L5)
+
+### 77.2 — Session lifetime & audit [DONE]
+
+- Persistent (reusable) sessions require `WithExpiration()`; open-ended reusable rejected
+- `ExpiresAt` stamped in `registerSession` reuse branch
+- `scout session audit` classifies sessions (live / orphaned / corrupt / expired / zombie) and kills zombies
+- gRPC `CreateSession` exposes `ephemeral` flag and wires `expires_in` proto field
+- EXPIRED audit status surfaced; MON column shows active monitors
+
+### 77.3 — Monitors & request blocking [DONE]
+
+- `monitors.json` sidecar persists per-session monitor config (HAR / hijack / console / WS / blocks)
+- `scout session create --har --hijack --block <pattern> --block-method POST` enables all monitors in one call
+- `--har-out` / `--hijack-out` explicit artifact destinations; `SCOUT_LAUNCHER_DEBUG` env
+- `WithBlockRules(BlockRule{Pattern, Method})` aborts matching requests via CDP URLPattern + `BlockedByClient` reason
+- Console + WebSocket sidecar writers + integration tests
+
+### 77.4 — Cleanup hardening [DONE]
+
+- Single-shot `RemoveAll` on startup (fast path); persistent failures handed off to `StartCleanupRetrier` (60 s, process lifetime) for AV / OneDrive / Search Indexer–held dirs
+- Lock on `scout.lock` (not `scout.pid`) for predictable AV behaviour
+- Stale Chrome lock files reclaimed on session reuse
+- `preWriteStubInfo` skips when `scout.pid` already exists
+- Cleanup of partial `New()` failures enforced; CLI session tracker moved to `active-sessions/` (now removed)
+
+### 77.5 — LLM via MCP host + CLI polish [DONE]
+
+- `MCPSamplingProvider` routes LLM completions via the MCP host (no direct provider creds)
+- `extract ai` Long description mentions MCP provider
+- Cobra errors print to stderr (were silently dropped)
+- `scout browser list` header shows resolved cache path
+
+### 77.6 — Toolchain + deps [DONE]
+
+- Go bumped to 1.26.0; otel core → v1.43.0; grpc-go → v1.81.1; ollama → v0.24.0
+- x/crypto → 0.51.0; x/net → 0.54.0; x/oauth2 → 0.36.0
+- Browser-dependent tests gated behind `testing.Short()`; `task test:unit` runs without Chromium; `task test:full` for the multi-minute suite
+
+---
+
+## Phase 78+ — Future
 
 ### Remaining Work
 
 See [BACKLOG.md](BACKLOG.md) for future work — current open items: iOS Safari (P3), Claude Code marketplace submission (P3). Breakdown in [IMPLEMENTATION_TASKS.md](IMPLEMENTATION_TASKS.md).
+
+### Test Coverage (`task test:cover -short`, 2026-05-21)
+
+Total **36.1%** of statements. Highlights:
+
+| Package | Coverage |
+|---|---:|
+| internal/engine/hijack | 97.4% |
+| internal/engine/fingerprint | 90.6% |
+| internal/engine/llm | 77.3% |
+| internal/engine/swarm | 77.4% |
+| internal/engine/session | 62.1% |
+| internal/engine/scouthome | 56.1% |
+| internal/engine/vpn | 54.4% |
+| internal/engine/browser | 45.8% |
+| internal/engine | 30.1% |
+| internal/engine/lib/launcher | 26.6% |
+| internal/engine/lib/{proto,cdp,defaults,devices,input,utils} | 0.0% (CDP types / no tests) |
+| internal/metrics | 100% |
+| internal/idle | 91.2% |
+| internal/flags | 55.8% |
+| internal/logger | 52.8% |
+| internal/tracing | varies |
+| pkg/scout/agent | 96.5% |
+| pkg/scout/plugin | 88.7% |
+| pkg/scout/plugin/sdk | 96.0% |
+| pkg/scout/recipes / runbooks | 96.4% |
+| pkg/scout/runbook | 58.0% |
+| pkg/scout/strategy | 59.6% |
+| pkg/scout/scraper/modes/* | 38–76% |
+| grpc/server | 29.7% |
+| grpc/scoutpb | 0.0% (generated) |
+
+Browser-dependent paths in `internal/engine` (bridge, inject, network blocking) skip under `-short` on machines without Chromium; expected to climb under `task test:full`.

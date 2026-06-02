@@ -11,7 +11,7 @@
 ### Setup
 
 1. Clone the repository
-2. Install [Go 1.25+](https://go.dev/dl/)
+2. Install [Go 1.26+](https://go.dev/dl/)
 3. Install [Task](https://taskfile.dev)
 4. Install [golangci-lint](https://golangci-lint.run/welcome/install/)
 
@@ -24,8 +24,17 @@ task build
 # Run all quality checks
 task check
 
-# Run tests only
+# Run unit tests (skips browser-dependent tests via -short)
+task test:unit
+
+# Run tests with coverage
 task test
+
+# Run the full browser-dependent suite (multi-minute, needs Chromium)
+task test:full
+
+# Show coverage percentage
+task test:cover
 
 # Run a single test
 go test -v -run TestName ./pkg/scout/...
