@@ -1,5 +1,7 @@
 # ARIA-Ref Model — Phase A: Foundation Implementation Plan
 
+> **STATUS (2026-06-02): Phase A complete (verified).** `pkg/scout/aria/` (errors / store / axtree / diff / resolve + tests), the `browser_snapshot` MCP tool (`pkg/scout/mcp/tools_aria.go`), the `scout://snapshot/{pageId}` MCP resource (`resources.go`), and the `depguard` layering rule (`.golangci.yml`) are all implemented and passing (`go test ./pkg/scout/aria/` green). The per-task checkboxes below were not individually maintained during implementation — done-ness is established by the code + tests, not the boxes. No feature work remains; only optional coverage-gate wiring (spec targets ≥90% aria / ≥80% tools_aria, not yet a CI gate).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Spec:** `docs/superpowers/specs/2026-05-21-playwright-mcp-aria-ref-design.md`

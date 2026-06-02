@@ -18,5 +18,6 @@ forensic_*.har
 /.scripts/
 extract/
 .worktrees/
+.claude/worktrees/
 build/
 .scripts/
