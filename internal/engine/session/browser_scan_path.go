@@ -72,19 +72,14 @@ func isUnderDir(p, root string) bool {
 func extractUserDataDir(cmdline string) string {
 	const flag = "--user-data-dir"
 
-	idx := strings.Index(cmdline, flag)
-	if idx < 0 {
-		return ""
-	}
-
-	rest := cmdline[idx+len(flag):]
-	if rest == "" {
+	_, rest, found := strings.Cut(cmdline, flag)
+	if !found || rest == "" {
 		return ""
 	}
 
 	// "=value" form (possibly quoted).
-	if strings.HasPrefix(rest, "=") {
-		return unquoteValue(strings.TrimPrefix(rest, "="))
+	if v, ok := strings.CutPrefix(rest, "="); ok {
+		return unquoteValue(v)
 	}
 
 	// " value" form: skip the separating spaces, then take the next token.
@@ -100,18 +95,17 @@ func extractUserDataDir(cmdline string) string {
 // leading double quote (everything up to the closing quote) so paths with
 // spaces survive intact.
 func unquoteValue(s string) string {
-	if strings.HasPrefix(s, `"`) {
-		s = s[1:]
-		if end := strings.IndexByte(s, '"'); end >= 0 {
-			return s[:end]
+	if v, ok := strings.CutPrefix(s, `"`); ok {
+		if before, _, found := strings.Cut(v, `"`); found {
+			return before
 		}
 
-		return s
+		return v
 	}
 
 	// Unquoted: read up to the next space (or end of string).
-	if end := strings.IndexByte(s, ' '); end >= 0 {
-		return s[:end]
+	if before, _, found := strings.Cut(s, " "); found {
+		return before
 	}
 
 	return s
