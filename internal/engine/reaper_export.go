@@ -25,6 +25,11 @@ func StartReaperWatchdog(interval time.Duration, done <-chan struct{}) {
 	session.StartReaperWatchdog(interval, done)
 }
 
+// ReapSession force-reaps a single session dir: kills any browser holding its
+// data dir (recorded PID + path-bounded scan, self-pid-guarded) and removes
+// the dir. For the CLI enforcement path (audit --kill / doctor --fix).
+func ReapSession(id string) ReapStats { return session.ReapSession(id) }
+
 // RecordCleanupFailure enqueues path for background retry. Engine callers
 // (e.g. Browser.Close) use this instead of importing session directly.
 func RecordCleanupFailure(path string) { session.RecordCleanupFailure(path) }

@@ -49,6 +49,13 @@ func PendingCleanupCount() int {
 	return engine.PendingCleanupCount()
 }
 
+// ReapSession force-reaps a single session dir by id: kills any browser
+// holding its data dir (recorded PID + path-bounded scan, self-pid-guarded)
+// and removes the dir. For the CLI enforcement path (audit --kill / doctor --fix).
+func ReapSession(id string) ReapStats {
+	return engine.ReapSession(id)
+}
+
 // FindBrowsersUsingDataDir scans running browsers for processes whose
 // --user-data-dir is under dataDir. Returns the matching PIDs.
 func FindBrowsersUsingDataDir(dataDir string) []int {

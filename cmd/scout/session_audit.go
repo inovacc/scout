@@ -252,30 +252,25 @@ func printAuditTable(cmd *cobra.Command, entries []auditEntry) {
 	}
 }
 
-// enforceAuditCleanup kills zombie browsers and removes stale/corrupt dirs.
-// Healthy and reusable sessions are NEVER touched. Uses scout.ResetSession
-// which kills the browser (if alive) and retries removal with exponential
-// backoff — survives Windows AV / indexer locks better than plain RemoveAll.
+// enforceAuditCleanup kills zombie browsers and removes stale/corrupt/expired
+// dirs. Healthy and reusable sessions are NEVER touched.
+//
+// All non-healthy statuses route through scout.ReapSession which:
+//   - kills the recorded BrowserPID (identity-verified, self-pid-guarded), AND
+//   - kills any holder found via path-bounded FindBrowsersUsingDataDir scan —
+//     the only path that reaches a zombie whose scout.pid is missing/corrupt.
+//   - removes the session dir with retry on Windows lock contention.
+//
+// The former bare os.FindProcess(e.BrowserPID).Kill() block has been removed:
+// it was PID-reuse-unsafe (no identity check), had no self-pid guard, and
+// silently skipped the kill when scout.pid was corrupt (BrowserPID == 0).
 func enforceAuditCleanup(entries []auditEntry) (killed, removed int) {
 	for _, e := range entries {
 		switch e.Status {
-		case statusZombie:
-			if e.BrowserPID > 0 {
-				if p, err := os.FindProcess(e.BrowserPID); err == nil {
-					if err := p.Kill(); err == nil {
-						killed++
-					}
-				}
-			}
-
-			if err := scout.ResetSession(e.ID); err == nil {
-				removed++
-			}
-
-		case statusStale, statusCorrupt, statusExpired:
-			if err := scout.ResetSession(e.ID); err == nil {
-				removed++
-			}
+		case statusZombie, statusStale, statusCorrupt, statusExpired:
+			stats := scout.ReapSession(e.ID)
+			killed += stats.Killed
+			removed += stats.Removed
 		}
 	}
 

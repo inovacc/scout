@@ -146,6 +146,67 @@ func TestReapOnce_Acceptance_NeverKillsSelf(t *testing.T) {
 // browserShim returns the path to a sleeper binary whose basename matches
 // isBrowserCmdline (e.g. "chrome"/"chrome.exe"), built into t.TempDir on the
 // fly from a tiny Go program, or "" if it cannot be produced (→ skip).
+// TestReapSession_KillsCorruptPidHolder proves that ReapSession kills a live
+// browser holding the session data dir even when scout.pid is MISSING/CORRUPT
+// (the ReadInfo path returns an error, so BrowserPID is unknown). The old
+// scout.ResetSession path only killed the recorded BrowserPID and skipped the
+// kill entirely when that was zero — leaving a zombie. ReapSession must kill
+// via the path-bounded scan (FindBrowsersUsingDataDir) regardless.
+//
+// RED before Part A (ReapSession unexported / does not exist).
+// GREEN after Part A+B+C.
+func TestReapSession_KillsCorruptPidHolder(t *testing.T) {
+	dir := t.TempDir()
+	orig := SessionsDir
+	SessionsDir = func() string { return dir }
+	t.Cleanup(func() { SessionsDir = orig })
+
+	sid, err := idpkg.New(idpkg.Attrs{})
+	if err != nil {
+		t.Fatalf("idpkg.New: %v", err)
+	}
+
+	// Create the session data dir but write CORRUPT scout.pid so ReadInfo fails.
+	dataDir := DataDir(sid)
+	if mkErr := os.MkdirAll(dataDir, 0o700); mkErr != nil {
+		t.Fatalf("mkdir data dir: %v", mkErr)
+	}
+	if wErr := os.WriteFile(filepath.Join(Dir(sid), "scout.pid"), []byte("not-binary-garbage"), 0o600); wErr != nil {
+		t.Fatalf("write corrupt pid: %v", wErr)
+	}
+
+	// Spawn a real child holding --user-data-dir=<dataDir>. This simulates a
+	// zombie chrome that survived because scout.pid was unreadable.
+	holder := spawnHolder(t, dataDir)
+	holderPID := holder.Process.Pid
+
+	// Sanity: holder must be visible before we call ReapSession.
+	if len(FindBrowsersUsingDataDir(dataDir)) == 0 {
+		t.Skip("holder not observable via FindBrowsersUsingDataDir; skipping")
+	}
+
+	stats := ReapSession(sid)
+
+	// The scan-kill path must have fired.
+	if stats.Killed < 1 {
+		t.Fatalf("ReapSession Killed = %d, want >= 1 (corrupt-pid zombie must be killed via scan path)", stats.Killed)
+	}
+
+	// Poll until the OS confirms the holder is dead (bounded at 5 s).
+	deadline := time.Now().Add(5 * time.Second)
+	for ProcessAlive(holderPID) && time.Now().Before(deadline) {
+		time.Sleep(50 * time.Millisecond)
+	}
+	if ProcessAlive(holderPID) {
+		t.Fatalf("holder PID %d still alive after ReapSession — corrupt-pid zombie not killed", holderPID)
+	}
+
+	// Session dir must be removed.
+	if _, statErr := os.Stat(Dir(sid)); !os.IsNotExist(statErr) {
+		t.Fatalf("session dir %q still present after ReapSession", Dir(sid))
+	}
+}
+
 func browserShim(t *testing.T) string {
 	t.Helper()
 

@@ -161,6 +161,30 @@ func reapFolder(id string, browserPID int, startToken string, stats *ReapStats) 
 	stats.Removed++
 }
 
+// ReapSession force-reaps a single session dir by id: kills any browser
+// holding its data dir (recorded PID + path-bounded scan, self-pid-guarded)
+// and removes the dir. For the CLI enforcement path (audit --kill / doctor --fix).
+//
+// scout.pid is read best-effort; if missing/corrupt (the CORRUPT zombie case)
+// browserPID is 0 and the kill falls through to the path-bounded scan via
+// FindBrowsersUsingDataDir — so the zombie IS killed even when scout.pid is
+// unreadable. This is the fix for the defect where the CLI path missed such zombies.
+func ReapSession(id string) ReapStats {
+	var stats ReapStats
+
+	info, readErr := ReadInfo(id)
+	if readErr != nil {
+		// Missing / corrupt scout.pid — cannot read BrowserPID.
+		// Pass 0/"" so reapFolder skips the recorded-PID kill and falls
+		// straight through to the path-bounded scan-and-kill.
+		reapFolder(id, 0, "", &stats)
+		return stats
+	}
+
+	reapFolder(id, info.BrowserPID, info.BrowserStartToken, &stats)
+	return stats
+}
+
 // DefaultReaperInterval is the default interval for the process-wide reaper
 // watchdog. Mirrors the previous per-browser orphan check cadence.
 const DefaultReaperInterval = DefaultOrphanCheckInterval
