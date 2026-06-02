@@ -765,7 +765,7 @@ func (b *Browser) Close() error {
 		// / OneDrive holding LevelDB/SQLite handles), enqueue the dir into the
 		// background retrier instead of dropping it (fixes the leaked-locked-dir
 		// gap — Close previously did a single-shot RemoveAll with no re-enqueue).
-		if !b.opts.reusableSession && b.sessionID != "" {
+		if b.sessionID != "" && b.opts != nil && !b.opts.reusableSession {
 			dir := SessionDir(b.sessionID)
 			if err := os.RemoveAll(dir); err != nil {
 				session.RecordCleanupFailure(dir)
