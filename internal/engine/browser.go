@@ -15,6 +15,7 @@ import (
 	launcher2 "github.com/inovacc/scout/internal/engine/lib/launcher"
 	"github.com/inovacc/scout/internal/engine/lib/launcher/flags"
 	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
+	"github.com/inovacc/scout/internal/engine/session"
 )
 
 // Browser wraps a rod browser instance with a simplified API.
@@ -752,11 +753,23 @@ func (b *Browser) Close() error {
 				// Do NOT call ResetSession — it sleeps 500ms unconditionally and
 				// is for external/CLI force-reset only (process already dead here).
 				b.launcher.Cleanup()
-				_ = os.RemoveAll(SessionDir(b.sessionID))
 			}
 			// Reusable sessions: do NOT clean up — session must persist for reuse.
 
 			b.launcher = nil
+		}
+
+		// 7b. Remove the session parent dir for non-reusable sessions. Runs even
+		// when launcher == nil (e.g. teardown after a partial launch) so the
+		// dir is never leaked. On RemoveAll failure (Windows AV / Search Indexer
+		// / OneDrive holding LevelDB/SQLite handles), enqueue the dir into the
+		// background retrier instead of dropping it (fixes the leaked-locked-dir
+		// gap — Close previously did a single-shot RemoveAll with no re-enqueue).
+		if !b.opts.reusableSession && b.sessionID != "" {
+			dir := SessionDir(b.sessionID)
+			if err := os.RemoveAll(dir); err != nil {
+				session.RecordCleanupFailure(dir)
+			}
 		}
 
 		// Release the session lock (M3). Safe to call even if nil.
