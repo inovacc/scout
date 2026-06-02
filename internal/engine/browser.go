@@ -225,6 +225,8 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 		// Periodic orphan watchdog — kills dangling browsers whose scout died.
 		StartOrphanWatchdog(DefaultOrphanCheckInterval, br.done)
 
+		br.register()
+
 		return br, nil
 	}
 
@@ -268,6 +270,8 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 
 	// Periodic orphan watchdog — kills dangling browsers whose scout died.
 	StartOrphanWatchdog(DefaultOrphanCheckInterval, br.done)
+
+	br.register()
 
 	return br, nil
 }
@@ -760,6 +764,10 @@ func (b *Browser) Close() error {
 			b.sessionLock.Release()
 			b.sessionLock = nil
 		}
+
+		// Remove from the process-wide live-browser registry (Task 3.1).
+		// closeOnce guarantees this runs at most once, so no double-delete risk.
+		b.unregister()
 
 		b.closed.Store(true)
 	})
