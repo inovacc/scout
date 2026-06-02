@@ -17,6 +17,8 @@ func init() {
 	sessionCmd.AddCommand(sessionCreateCmd, sessionDestroyCmd, sessionListCmd, sessionUseCmd,
 		sessionDirListCmd, sessionDirPruneCmd, sessionDirCleanCmd, sessionDirRmCmd, sessionResetCmd)
 
+	sessionListCmd.Flags().Bool("pending", false, "list directories the reaper could not remove (locked/stuck) instead of tracked sessions")
+
 	sessionResetCmd.Flags().Bool("all", false, "reset all sessions")
 
 	sessionCreateCmd.Flags().Bool("headless", true, "run browser in headless mode")
@@ -247,6 +249,20 @@ var sessionListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List tracked browser sessions",
 	RunE: func(cmd *cobra.Command, _ []string) error {
+		if pending, _ := cmd.Flags().GetBool("pending"); pending {
+			dirs := scout.PendingCleanup()
+			if len(dirs) == 0 {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "No pending cleanup.")
+				return nil
+			}
+
+			for _, d := range dirs {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), d)
+			}
+
+			return nil
+		}
+
 		ids, err := listTrackedSessions()
 		if err != nil {
 			return err
