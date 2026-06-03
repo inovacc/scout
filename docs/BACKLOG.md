@@ -17,7 +17,6 @@
 | P3 | Claude Code marketplace submission | Submit plugin to official Anthropic marketplace |
 | P2 | **DEPRECATION** (removal after 2026-07-02): remove `UserProfile.Cookies/Storage/Headers` (`internal/engine/profile.go`). Superseded by `pkg/scout/vault`. Migrate callers of `CaptureProfile`/`ApplyProfile` to read browser-bound secrets from the vault, then drop the fields and their capture/apply branches. | Fields marked deprecated 2026-06-02. |
 | P3 | **ERR-01**: finish the `scout:` error-prefix migration across the remaining ~750 non-`scout:` `fmt.Errorf` call sites. STRUCT-03 (2026-06-03) covered the highest-impact paths (`cmd/scout/update.go`, `pkg/scout/browser/`, `pkg/scout/runbook/`, `pkg/scout/identity/identity.go`). The remainder already carry a subsystem prefix (e.g. `pkg/scout/scraper/modes/*` ×292, plus `plugin`/`archive`/`strategy`/`tools`, and `pkg/scout/identity/trust.go`) and are deferred to v2 for the outer `scout:` wrap. | Mechanical prefix-only change; no behavior impact. Convention per CLAUDE.md error-wrapping. |
-| P3 | **PHASE6-REMAINDER**: `swarm_crawl` + `ws_listen`/`ws_send`/`ws_connections` MCP handlers still contain inline browser logic; extract `tools.SwarmCrawl` + `tools.WSListen`/`tools.WSSend`/`tools.WSConnections` verbs and route them to fully meet the "no inline rod in MCP" criterion. | Phase 6 shared-command-executor follow-up (2026-06-03). The 14 page verbs + Tabs/NewTab + capture are unified; these four remain. |
 
 ### SSRF-V2 — deeper SSRF coverage (v1 shipped 2026-06-03)
 
@@ -39,6 +38,7 @@ at MCP + agent ingress. Out of scope, tracked here:
 | Test coverage for gRPC streaming RPCs | v0.28.0 — StreamHijack, double-start/stop, invalid session tests |
 | Benchmark suite for core operations | BenchmarkPageCreation, BenchmarkExtract, BenchmarkPagination, BenchmarkSnapshot |
 | Fuzz testing for recipe parser | v0.28.0 — FuzzParse + FuzzResolveSelector with 12 seed corpus entries |
+| **PHASE6-REMAINDER**: extract `swarm_crawl` + `ws_listen`/`ws_send`/`ws_connections` MCP handlers into `tools.SwarmCrawl`/`tools.WSListen`/`tools.WSSend`/`tools.WSConnections` verbs | 2026-06-03 — all four routed through `pkg/scout/tools/`; no inline browser logic remains in `tools_swarm.go`/`tools_websocket.go`. Closes the "no inline rod in MCP" criterion. |
 </details>
 
 <details>
