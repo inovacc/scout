@@ -2,6 +2,8 @@ module github.com/inovacc/scout
 
 go 1.26.0
 
+toolchain go1.26.4
+
 require (
 	github.com/google/gops v0.3.29
 	github.com/google/uuid v1.6.0
@@ -18,10 +20,10 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.41.0
 	go.opentelemetry.io/otel/sdk v1.43.0
 	go.opentelemetry.io/otel/trace v1.43.0
-	golang.org/x/crypto v0.51.0
-	golang.org/x/net v0.54.0
+	golang.org/x/crypto v0.52.0
+	golang.org/x/net v0.55.0
 	golang.org/x/oauth2 v0.36.0
-	golang.org/x/sys v0.44.0
+	golang.org/x/sys v0.45.0
 	golang.org/x/term v0.43.0
 	golang.org/x/time v0.14.0
 	google.golang.org/grpc v1.81.1
