@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -144,7 +143,7 @@ func provisionBrowserForPlugin(cmd *cobra.Command) (*plugin.BrowserContext, erro
 
 func main() {
 	if err := agent.Listen(agent.Options{ShutdownCleanup: true}); err != nil {
-		log.Printf("scout: gops agent: %v", err)
+		slog.Warn("scout: gops agent", "error", err)
 	}
 
 	defer agent.Close()
@@ -172,7 +171,7 @@ func main() {
 
 	shutdown, err := tracing.Init(context.Background(), tracing.Config{ServiceName: "scout"})
 	if err != nil {
-		log.Printf("scout: tracing: %v", err)
+		slog.Warn("scout: tracing", "error", err)
 	} else {
 		defer func() { _ = shutdown(context.Background()) }()
 	}
