@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
+	"strings"
 	"sync"
 )
 
@@ -40,6 +42,34 @@ func NewClient(manifest *Manifest, logger *slog.Logger) *Client {
 	}
 }
 
+// sensitiveEnvKey reports whether an environment variable name looks like it
+// carries a secret a plugin subprocess must not inherit ambiently.
+func sensitiveEnvKey(key string) bool {
+	up := strings.ToUpper(key)
+	for _, frag := range []string{"PASSPHRASE", "PASSWORD", "SECRET", "TOKEN", "APIKEY", "API_KEY", "PRIVATE_KEY", "CREDENTIAL"} {
+		if strings.Contains(up, frag) {
+			return true
+		}
+	}
+	return false
+}
+
+// filteredPluginEnv returns the parent environment with secret-bearing
+// variables removed, so a plugin cannot read the vault passphrase, agent API
+// key, or similar ambient secrets. Non-secret vars (PATH, HOME, ...) are kept.
+func filteredPluginEnv() []string {
+	parent := os.Environ()
+	out := make([]string, 0, len(parent))
+	for _, kv := range parent {
+		key, _, ok := strings.Cut(kv, "=")
+		if ok && sensitiveEnvKey(key) {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
+}
+
 // Start launches the plugin subprocess.
 func (c *Client) Start(ctx context.Context) error {
 	c.mu.Lock()
@@ -51,6 +81,9 @@ func (c *Client) Start(ctx context.Context) error {
 
 	cmd := exec.CommandContext(ctx, c.manifest.CommandPath())
 	cmd.Dir = c.manifest.Dir
+	// Do not leak ambient secrets (vault passphrase, agent API key, etc.) into
+	// untrusted plugin subprocesses; pass a scrubbed copy of the environment.
+	cmd.Env = filteredPluginEnv()
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
