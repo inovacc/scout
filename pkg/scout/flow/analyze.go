@@ -1,0 +1,231 @@
+package flow
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"maps"
+	"time"
+
+	"github.com/inovacc/scout/internal/engine/llm"
+)
+
+// AnalyzeOptions configures analysis.
+type AnalyzeOptions struct {
+	Name    string
+	Timeout time.Duration // per-pass; 0 → 60s
+}
+
+// Report is the human-review surface emitted alongside the spec.
+type Report struct {
+	Degraded bool     `json:"degraded"` // true if the LLM failed and a raw skeleton was emitted
+	Dropped  []int    `json:"dropped"`  // capture entry indexes classified as noise
+	Chains   []Chain  `json:"chains"`   // inferred correlations (review these)
+	Notes    []string `json:"notes"`
+}
+
+// Chain is one inferred value correlation: extract a value from from_entry's
+// response and inject it into to_entry's request.
+type Chain struct {
+	FromEntry  int     `json:"from_entry"`
+	From       string  `json:"from"`
+	Path       string  `json:"path"`
+	ToEntry    int     `json:"to_entry"`
+	Into       string  `json:"into"`
+	Name       string  `json:"name"`
+	Template   string  `json:"template"`
+	Var        string  `json:"var"`
+	Confidence float64 `json:"confidence"`
+}
+
+// Analyze turns a Capture into a FlowSpec + Report using staged LLM passes.
+func Analyze(capt *Capture, provider llm.Provider, opts AnalyzeOptions) (*FlowSpec, *Report, error) {
+	if capt == nil || len(capt.Entries) == 0 {
+		return nil, nil, fmt.Errorf("scout: flow: analyze: empty capture")
+	}
+	timeout := opts.Timeout
+	if timeout == 0 {
+		timeout = 60 * time.Second
+	}
+
+	spec := skeleton(capt, opts.Name)
+	report := &Report{}
+
+	keep, dropped, classifyOK := passClassify(provider, capt, timeout)
+	if !classifyOK {
+		report.Degraded = true
+		report.Notes = append(report.Notes, "LLM classify failed; emitted raw skeleton — review every step")
+		return spec, report, nil
+	}
+	report.Dropped = dropped
+	spec = skeletonKeep(capt, opts.Name, keep)
+
+	chains, correlateOK := passCorrelate(provider, capt, timeout)
+	if correlateOK {
+		report.Chains = chains
+		applyChains(spec, keep, chains)
+	} else {
+		report.Notes = append(report.Notes, "LLM correlate failed; no chains inferred — add extract/inject manually")
+	}
+
+	if name, nameOK := passName(provider, capt, timeout); nameOK && name != "" {
+		spec.Name = name
+	}
+	return spec, report, nil
+}
+
+func skeleton(capt *Capture, name string) *FlowSpec {
+	idx := make([]int, len(capt.Entries))
+	for i := range idx {
+		idx[i] = i
+	}
+	return skeletonKeep(capt, name, idx)
+}
+
+func skeletonKeep(capt *Capture, name string, keep []int) *FlowSpec {
+	f := &FlowSpec{Version: "1", Name: name}
+	for n, ei := range keep {
+		if ei < 0 || ei >= len(capt.Entries) {
+			continue
+		}
+		e := capt.Entries[ei]
+		step := FlowStep{
+			ID:      fmt.Sprintf("step%d", n+1),
+			Request: Request{Method: e.Method, URL: e.URL, Headers: cloneHeaders(e.ReqHeaders)},
+		}
+		if e.Status != 0 {
+			step.Expect = &Expect{Status: e.Status}
+		}
+		f.Steps = append(f.Steps, step)
+	}
+	return f
+}
+
+func cloneHeaders(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	maps.Copy(out, in)
+	return out
+}
+
+func applyChains(spec *FlowSpec, keep []int, chains []Chain) {
+	pos := make(map[int]int, len(keep))
+	for stepIdx, entryIdx := range keep {
+		pos[entryIdx] = stepIdx
+	}
+	for _, c := range chains {
+		src, okS := pos[c.FromEntry]
+		dst, okD := pos[c.ToEntry]
+		if !okS || !okD {
+			continue
+		}
+		spec.Steps[src].Extract = append(spec.Steps[src].Extract, Extract{Var: c.Var, From: c.From, Path: c.Path})
+		if c.Into == "header" {
+			if spec.Steps[dst].Request.Headers == nil {
+				spec.Steps[dst].Request.Headers = map[string]string{}
+			}
+			spec.Steps[dst].Request.Headers[c.Name] = c.Template
+		}
+	}
+}
+
+const (
+	classifySys  = "You classify captured HTTP entries. Drop static assets/telemetry; keep API calls. Return JSON: {\"keep\":[indexes],\"drop\":[indexes]}."
+	correlateSys = "You correlate captured HTTP entries. Find values from one response reused in a later request (auth tokens, CSRF, IDs). Return JSON {\"chains\":[{from_entry,from,path,to_entry,into,name,template,var,confidence}]}."
+	nameSys      = "Name this API flow in kebab-case. Return JSON {\"name\":\"...\"}."
+)
+
+func passClassify(p llm.Provider, capt *Capture, timeout time.Duration) (keep, dropped []int, ok bool) {
+	out, err := complete(p, classifySys, captureDigest(capt), timeout)
+	if err != nil {
+		return nil, nil, false
+	}
+	var r struct {
+		Keep []int `json:"keep"`
+		Drop []int `json:"drop"`
+	}
+	if json.Unmarshal([]byte(out), &r) != nil || len(r.Keep) == 0 {
+		return nil, nil, false
+	}
+	return r.Keep, r.Drop, true
+}
+
+func passCorrelate(p llm.Provider, capt *Capture, timeout time.Duration) ([]Chain, bool) {
+	out, err := complete(p, correlateSys, captureDigest(capt), timeout)
+	if err != nil {
+		return nil, false
+	}
+	var r struct {
+		Chains []Chain `json:"chains"`
+	}
+	if json.Unmarshal([]byte(out), &r) != nil {
+		return nil, false
+	}
+	return r.Chains, true
+}
+
+func passName(p llm.Provider, capt *Capture, timeout time.Duration) (string, bool) {
+	out, err := complete(p, nameSys, captureDigest(capt), timeout)
+	if err != nil {
+		return "", false
+	}
+	var r struct {
+		Name string `json:"name"`
+	}
+	if json.Unmarshal([]byte(out), &r) != nil {
+		return "", false
+	}
+	return r.Name, true
+}
+
+func complete(p llm.Provider, sys, user string, timeout time.Duration) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return p.Complete(ctx, sys, user)
+}
+
+// captureDigest renders a compact, SECRET-REDACTED view of the capture for the LLM.
+func captureDigest(capt *Capture) string {
+	type de struct {
+		I      int               `json:"i"`
+		Method string            `json:"method"`
+		URL    string            `json:"url"`
+		Req    map[string]string `json:"req_headers,omitempty"`
+		Status int               `json:"status"`
+		Resp   string            `json:"resp_excerpt,omitempty"`
+	}
+	ds := make([]de, 0, len(capt.Entries))
+	for i, e := range capt.Entries {
+		ds = append(ds, de{I: i, Method: e.Method, URL: e.URL, Req: redactHeaders(e.ReqHeaders), Status: e.Status, Resp: excerpt(e.RespBody)})
+	}
+	b, err := json.Marshal(ds)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func redactHeaders(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	for k, v := range in {
+		if len(v) > 8 {
+			out[k] = fmt.Sprintf("<redacted:%d>", len(v))
+		} else {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+func excerpt(s string) string {
+	const maxLen = 400
+	if len(s) > maxLen {
+		return s[:maxLen]
+	}
+	return s
+}
