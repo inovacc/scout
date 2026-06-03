@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/inovacc/scout/internal/engine/browser"
 	scoutmcp "github.com/inovacc/scout/pkg/scout/mcp"
@@ -99,6 +100,13 @@ Subcommands:
 		browserType, _ := cmd.Flags().GetString("browser")
 		idleTimeout, _ := cmd.Flags().GetDuration("idle-timeout")
 
+		if v, _ := cmd.Flags().GetBool("allow-local-targets"); v {
+			_ = os.Setenv("SCOUT_ALLOW_LOCAL_TARGETS", "1")
+		}
+		if v, _ := cmd.Flags().GetStringSlice("allow-target"); len(v) > 0 {
+			_ = os.Setenv("SCOUT_ALLOW_TARGETS", strings.Join(v, ","))
+		}
+
 		// Resolve --browser type name to a binary path if --bin is not set.
 		if bin == "" && browserType != "" {
 			if resolved, err := browser.ResolveCached(context.Background(), browser.BrowserType(browserType)); err == nil {
@@ -122,4 +130,6 @@ func init() {
 	mcpCmd.Flags().String("addr", "localhost:8080", "Listen address for SSE transport")
 	mcpCmd.Flags().String("bin", "", "Path to browser executable")
 	mcpCmd.Flags().String("browser", "", "Browser type: chrome, brave, edge (resolves to cached binary)")
+	mcpCmd.Flags().Bool("allow-local-targets", false, "allow MCP tools to navigate to local/internal addresses (off by default)")
+	mcpCmd.Flags().StringSlice("allow-target", nil, "allow a specific host or CIDR as an MCP navigation target (repeatable)")
 }

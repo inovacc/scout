@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/inovacc/scout/internal/engine/browser"
@@ -85,6 +86,13 @@ Examples:
 			}
 		}
 
+		if v, _ := cmd.Flags().GetBool("allow-local-targets"); v {
+			_ = os.Setenv("SCOUT_ALLOW_LOCAL_TARGETS", "1")
+		}
+		if v, _ := cmd.Flags().GetStringSlice("allow-target"); len(v) > 0 {
+			_ = os.Setenv("SCOUT_ALLOW_TARGETS", strings.Join(v, ","))
+		}
+
 		// Resolve --browser type name to a binary path if --bin is not set.
 		if bin == "" && browserType != "" {
 			if resolved, err := browser.ResolveCached(context.Background(), browser.BrowserType(browserType)); err == nil {
@@ -160,6 +168,8 @@ func init() {
 	agentServeCmd.Flags().String("browser", "", "Browser type: chrome, brave, edge (resolves to cached binary)")
 	agentServeCmd.Flags().Float64("rate-limit", 100, "Max requests per second (0 = unlimited)")
 	agentServeCmd.Flags().String("api-key", "", "API key for authentication (empty = no auth, env: SCOUT_AGENT_API_KEY)")
+	agentServeCmd.Flags().Bool("allow-local-targets", false, "allow agent tools to navigate to local/internal addresses (off by default)")
+	agentServeCmd.Flags().StringSlice("allow-target", nil, "allow a specific host or CIDR as an agent navigation target (repeatable)")
 
 	agentToolsCmd.Flags().String("format", "openai", "Output format: openai, anthropic")
 }
