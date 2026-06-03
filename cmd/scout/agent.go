@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -70,6 +71,18 @@ Examples:
 		apiKey, _ := cmd.Flags().GetString("api-key")
 		if apiKey == "" {
 			apiKey = os.Getenv("SCOUT_AGENT_API_KEY")
+		}
+
+		// Refuse to expose a non-loopback bind with no authentication — the agent
+		// exposes browser eval/navigation/SSRF to any client that can reach it.
+		if apiKey == "" && addr != "" {
+			hostOnly := addr
+			if host, _, splitErr := net.SplitHostPort(addr); splitErr == nil {
+				hostOnly = host
+			}
+			if !isLoopbackHost(hostOnly) {
+				return fmt.Errorf("scout: agent serve: refusing to bind non-loopback address %q with no authentication; set --api-key or SCOUT_AGENT_API_KEY", addr)
+			}
 		}
 
 		// Resolve --browser type name to a binary path if --bin is not set.
