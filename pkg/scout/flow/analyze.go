@@ -57,6 +57,7 @@ func Analyze(capt *Capture, provider llm.Provider, opts AnalyzeOptions) (*FlowSp
 	if !classifyOK {
 		report.Degraded = true
 		report.Notes = append(report.Notes, "LLM classify failed; emitted raw skeleton — review every step")
+		report.Notes = append(report.Notes, sanitizeSpec(spec)...)
 		return spec, report, nil
 	}
 	report.Dropped = dropped
@@ -73,6 +74,7 @@ func Analyze(capt *Capture, provider llm.Provider, opts AnalyzeOptions) (*FlowSp
 	if name, nameOK := passName(provider, capt, timeout); nameOK && name != "" {
 		spec.Name = name
 	}
+	report.Notes = append(report.Notes, sanitizeSpec(spec)...)
 	return spec, report, nil
 }
 
@@ -134,6 +136,84 @@ func applyChains(spec *FlowSpec, report *Report, keep []int, chains []Chain) {
 			report.Notes = append(report.Notes, fmt.Sprintf("chain %q: into=%q not auto-applied — wire %q manually", c.Var, c.Into, c.Name))
 		}
 	}
+}
+
+// sanitizeSpec replaces raw secret-bearing values the skeleton copied from the
+// capture (sensitive request headers, URL query tokens) with ${secret.*}
+// placeholders, so the emitted spec is secret-free (design §10) yet still runnable
+// once the user adds the named secrets to a vault profile. It returns review notes.
+func sanitizeSpec(spec *FlowSpec) []string {
+	var notes []string
+	for i := range spec.Steps {
+		st := &spec.Steps[i]
+		for name, val := range st.Request.Headers {
+			if val == "" || isTemplate(val) {
+				continue
+			}
+			if isSensitiveHeader(name) {
+				ph := "${secret." + secretName(name) + "}"
+				st.Request.Headers[name] = ph
+				notes = append(notes, fmt.Sprintf("step %q: header %q parameterized to %s — add %s to your vault profile", st.ID, name, ph, secretName(name)))
+			}
+		}
+		if u, changed := parameterizeURLSecrets(st.Request.URL); len(changed) > 0 {
+			st.Request.URL = u
+			notes = append(notes, fmt.Sprintf("step %q: URL query %v parameterized to ${secret.*} — provide via vault/vars", st.ID, changed))
+		}
+	}
+	return notes
+}
+
+func isTemplate(s string) bool { return strings.Contains(s, "${") }
+
+// sensitiveQueryKeys are query-parameter names that conventionally carry secrets.
+var sensitiveQueryKeys = map[string]bool{
+	"code": true, "token": true, "access_token": true, "refresh_token": true,
+	"id_token": true, "secret": true, "client_secret": true, "signature": true,
+	"sig": true, "key": true, "apikey": true, "api_key": true, "password": true,
+	"state": true, "session": true, "auth": true,
+}
+
+// parameterizeURLSecrets rewrites sensitive query-param VALUES to ${secret.KEY}
+// placeholders, preserving the rest of the URL verbatim (NOT url-encoding, so the
+// runtime's ${...} interpolation still matches). Returns the rewritten URL and the
+// list of parameterized keys.
+func parameterizeURLSecrets(raw string) (string, []string) {
+	base, query, found := strings.Cut(raw, "?")
+	if !found {
+		return raw, nil
+	}
+	parts := strings.Split(query, "&")
+	var changed []string
+	for idx, p := range parts {
+		k, _, ok := strings.Cut(p, "=")
+		if !ok {
+			continue
+		}
+		if sensitiveQueryKeys[strings.ToLower(k)] {
+			parts[idx] = k + "=${secret." + secretName(k) + "}"
+			changed = append(changed, k)
+		}
+	}
+	if len(changed) == 0 {
+		return raw, nil
+	}
+	return base + "?" + strings.Join(parts, "&"), changed
+}
+
+// secretName normalizes a header/query name into a ${secret.NAME}-safe token.
+func secretName(s string) string {
+	s = strings.ToUpper(s)
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+		default:
+			b.WriteByte('_')
+		}
+	}
+	return b.String()
 }
 
 const (

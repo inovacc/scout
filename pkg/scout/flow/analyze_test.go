@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 // stubProvider implements llm.Provider with canned, prompt-keyed responses.
@@ -122,6 +124,36 @@ func TestAnalyzeDegradesOnMalformedClassifyJSON(t *testing.T) {
 	}
 	if len(spec.Steps) != 1 || !report.Degraded {
 		t.Fatalf("expected degraded skeleton on malformed JSON: %+v report=%+v", spec, report)
+	}
+}
+
+func TestAnalyzeOutputSpecIsSecretFree(t *testing.T) {
+	capt := &Capture{Version: "1", Entries: []CaptureEntry{
+		{Method: "GET", URL: "https://api.x/cb?code=AUTHCODE_SECRET&page=2",
+			ReqHeaders: map[string]string{"Authorization": "Bearer LIVE_TOKEN_SECRET", "Accept": "application/json"},
+			Status:     200, RespBody: `{"id":"u"}`},
+	}}
+	// Use the degraded (LLM-error) path: the rawest possible skeleton must STILL be secret-free.
+	spec, _, err := Analyze(capt, errProvider{}, AnalyzeOptions{Name: "x"})
+	if err != nil {
+		t.Fatalf("Analyze: %v", err)
+	}
+	out, err := yaml.Marshal(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(out)
+	for _, leak := range []string{"AUTHCODE_SECRET", "LIVE_TOKEN_SECRET"} {
+		if strings.Contains(s, leak) {
+			t.Fatalf("output spec leaked secret %q:\n%s", leak, s)
+		}
+	}
+	if !strings.Contains(s, "${secret.") {
+		t.Fatalf("expected ${secret.*} placeholders in sanitized spec:\n%s", s)
+	}
+	// Benign fields must be preserved (not over-redacted).
+	if !strings.Contains(s, "page=2") || !strings.Contains(s, "Accept") {
+		t.Fatalf("benign fields lost:\n%s", s)
 	}
 }
 
