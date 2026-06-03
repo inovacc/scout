@@ -14,10 +14,10 @@ import (
 
 // ════════════════════════ Navigation ════════════════════════
 
-func (s *ScoutServer) Navigate(_ context.Context, req *pb.NavigateRequest) (*pb.NavigateResponse, error) {
+func (s *ScoutServer) Navigate(ctx context.Context, req *pb.NavigateRequest) (*pb.NavigateResponse, error) {
 	s.touchIdle()
 
-	sess, err := s.getSession(req.GetSessionId())
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -41,8 +41,8 @@ func (s *ScoutServer) Navigate(_ context.Context, req *pb.NavigateRequest) (*pb.
 	}, nil
 }
 
-func (s *ScoutServer) Reload(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) Reload(ctx context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +54,8 @@ func (s *ScoutServer) Reload(_ context.Context, req *pb.SessionRequest) (*pb.Emp
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) GoBack(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) GoBack(ctx context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +67,8 @@ func (s *ScoutServer) GoBack(_ context.Context, req *pb.SessionRequest) (*pb.Emp
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) GoForward(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) GoForward(ctx context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -82,10 +82,10 @@ func (s *ScoutServer) GoForward(_ context.Context, req *pb.SessionRequest) (*pb.
 
 // ════════════════════════ Element Interaction ════════════════════════
 
-func (s *ScoutServer) Click(_ context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
+func (s *ScoutServer) Click(ctx context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
 	s.touchIdle()
 
-	sess, err := s.getSession(req.GetSessionId())
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +102,8 @@ func (s *ScoutServer) Click(_ context.Context, req *pb.ElementRequest) (*pb.Empt
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) DoubleClick(_ context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) DoubleClick(ctx context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -120,8 +120,8 @@ func (s *ScoutServer) DoubleClick(_ context.Context, req *pb.ElementRequest) (*p
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) RightClick(_ context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) RightClick(ctx context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -138,8 +138,8 @@ func (s *ScoutServer) RightClick(_ context.Context, req *pb.ElementRequest) (*pb
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) Hover(_ context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) Hover(ctx context.Context, req *pb.ElementRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -156,10 +156,10 @@ func (s *ScoutServer) Hover(_ context.Context, req *pb.ElementRequest) (*pb.Empt
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) Type(_ context.Context, req *pb.TypeRequest) (*pb.Empty, error) {
+func (s *ScoutServer) Type(ctx context.Context, req *pb.TypeRequest) (*pb.Empty, error) {
 	s.touchIdle()
 
-	sess, err := s.getSession(req.GetSessionId())
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -180,8 +180,8 @@ func (s *ScoutServer) Type(_ context.Context, req *pb.TypeRequest) (*pb.Empty, e
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) SelectOption(_ context.Context, req *pb.SelectRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) SelectOption(ctx context.Context, req *pb.SelectRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +198,8 @@ func (s *ScoutServer) SelectOption(_ context.Context, req *pb.SelectRequest) (*p
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) PressKey(_ context.Context, req *pb.KeyRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) PressKey(ctx context.Context, req *pb.KeyRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -214,10 +214,10 @@ func (s *ScoutServer) PressKey(_ context.Context, req *pb.KeyRequest) (*pb.Empty
 
 // ════════════════════════ Query ════════════════════════
 
-func (s *ScoutServer) GetText(_ context.Context, req *pb.ElementRequest) (*pb.TextResponse, error) {
+func (s *ScoutServer) GetText(ctx context.Context, req *pb.ElementRequest) (*pb.TextResponse, error) {
 	s.touchIdle()
 
-	sess, err := s.getSession(req.GetSessionId())
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -235,8 +235,8 @@ func (s *ScoutServer) GetText(_ context.Context, req *pb.ElementRequest) (*pb.Te
 	return &pb.TextResponse{Text: text}, nil
 }
 
-func (s *ScoutServer) GetAttribute(_ context.Context, req *pb.AttributeRequest) (*pb.TextResponse, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) GetAttribute(ctx context.Context, req *pb.AttributeRequest) (*pb.TextResponse, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -254,8 +254,8 @@ func (s *ScoutServer) GetAttribute(_ context.Context, req *pb.AttributeRequest) 
 	return &pb.TextResponse{Text: val}, nil
 }
 
-func (s *ScoutServer) GetTitle(_ context.Context, req *pb.SessionRequest) (*pb.TextResponse, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) GetTitle(ctx context.Context, req *pb.SessionRequest) (*pb.TextResponse, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -268,8 +268,8 @@ func (s *ScoutServer) GetTitle(_ context.Context, req *pb.SessionRequest) (*pb.T
 	return &pb.TextResponse{Text: title}, nil
 }
 
-func (s *ScoutServer) GetURL(_ context.Context, req *pb.SessionRequest) (*pb.TextResponse, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) GetURL(ctx context.Context, req *pb.SessionRequest) (*pb.TextResponse, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -282,10 +282,10 @@ func (s *ScoutServer) GetURL(_ context.Context, req *pb.SessionRequest) (*pb.Tex
 	return &pb.TextResponse{Text: url}, nil
 }
 
-func (s *ScoutServer) Eval(_ context.Context, req *pb.EvalRequest) (*pb.EvalResponse, error) {
+func (s *ScoutServer) Eval(ctx context.Context, req *pb.EvalRequest) (*pb.EvalResponse, error) {
 	s.touchIdle()
 
-	sess, err := s.getSession(req.GetSessionId())
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -303,8 +303,8 @@ func (s *ScoutServer) Eval(_ context.Context, req *pb.EvalRequest) (*pb.EvalResp
 	return &pb.EvalResponse{Result: string(data)}, nil
 }
 
-func (s *ScoutServer) InjectJS(_ context.Context, req *pb.InjectJSRequest) (*pb.InjectJSResponse, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) InjectJS(ctx context.Context, req *pb.InjectJSRequest) (*pb.InjectJSResponse, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -348,8 +348,8 @@ func (s *ScoutServer) InjectJS(_ context.Context, req *pb.InjectJSRequest) (*pb.
 	return &pb.InjectJSResponse{Result: string(resultData)}, nil
 }
 
-func (s *ScoutServer) ElementExists(_ context.Context, req *pb.ElementRequest) (*pb.BoolResponse, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) ElementExists(ctx context.Context, req *pb.ElementRequest) (*pb.BoolResponse, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -366,10 +366,10 @@ func (s *ScoutServer) ElementExists(_ context.Context, req *pb.ElementRequest) (
 
 // ════════════════════════ Capture ════════════════════════
 
-func (s *ScoutServer) Screenshot(_ context.Context, req *pb.ScreenshotRequest) (*pb.ScreenshotResponse, error) {
+func (s *ScoutServer) Screenshot(ctx context.Context, req *pb.ScreenshotRequest) (*pb.ScreenshotResponse, error) {
 	s.touchIdle()
 
-	sess, err := s.getSession(req.GetSessionId())
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -399,8 +399,8 @@ func (s *ScoutServer) Screenshot(_ context.Context, req *pb.ScreenshotRequest) (
 	}, nil
 }
 
-func (s *ScoutServer) PDF(_ context.Context, req *pb.SessionRequest) (*pb.PDFResponse, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) PDF(ctx context.Context, req *pb.SessionRequest) (*pb.PDFResponse, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -415,8 +415,8 @@ func (s *ScoutServer) PDF(_ context.Context, req *pb.SessionRequest) (*pb.PDFRes
 
 // ════════════════════════ Forensic Recording ════════════════════════
 
-func (s *ScoutServer) StartRecording(_ context.Context, req *pb.RecordingRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) StartRecording(ctx context.Context, req *pb.RecordingRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -435,8 +435,8 @@ func (s *ScoutServer) StartRecording(_ context.Context, req *pb.RecordingRequest
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) StopRecording(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) StopRecording(ctx context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -449,8 +449,8 @@ func (s *ScoutServer) StopRecording(_ context.Context, req *pb.SessionRequest) (
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) ExportHAR(_ context.Context, req *pb.SessionRequest) (*pb.HARResponse, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) ExportHAR(ctx context.Context, req *pb.SessionRequest) (*pb.HARResponse, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}

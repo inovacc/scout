@@ -200,7 +200,7 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 	}, nil
 }
 
-func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
+func (s *ScoutServer) DestroySession(ctx context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
 	// Recover from any panic in teardown so a single bad session cannot
 	// crash the RPC handler (mirrors DestroyAllSessions per-session guard).
 	defer func() {
@@ -210,7 +210,7 @@ func (s *ScoutServer) DestroySession(_ context.Context, req *pb.SessionRequest) 
 		}
 	}()
 
-	sess, err := s.getSession(req.GetSessionId())
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}

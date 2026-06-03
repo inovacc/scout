@@ -58,8 +58,8 @@ func (s *session) unsubscribeHijack(id string) {
 	}
 }
 
-func (s *ScoutServer) StartHijack(_ context.Context, req *pb.HijackRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) StartHijack(ctx context.Context, req *pb.HijackRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +95,8 @@ func (s *ScoutServer) StartHijack(_ context.Context, req *pb.HijackRequest) (*pb
 	return &pb.Empty{}, nil
 }
 
-func (s *ScoutServer) StopHijack(_ context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) StopHijack(ctx context.Context, req *pb.SessionRequest) (*pb.Empty, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (s *ScoutServer) StopHijack(_ context.Context, req *pb.SessionRequest) (*pb
 }
 
 func (s *ScoutServer) StreamHijack(req *pb.SessionRequest, stream pb.ScoutService_StreamHijackServer) error {
-	sess, err := s.getSession(req.GetSessionId())
+	sess, err := s.getSession(stream.Context(), req.GetSessionId())
 	if err != nil {
 		return err
 	}
@@ -187,8 +187,8 @@ func hijackEventToProto(ev scout.HijackEvent) *pb.HijackedEvent {
 
 // ════════════════════════ Profile ════════════════════════
 
-func (s *ScoutServer) CaptureProfile(_ context.Context, req *pb.CaptureProfileRequest) (*pb.CaptureProfileResponse, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) CaptureProfile(ctx context.Context, req *pb.CaptureProfileRequest) (*pb.CaptureProfileResponse, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -208,8 +208,8 @@ func (s *ScoutServer) CaptureProfile(_ context.Context, req *pb.CaptureProfileRe
 	return &pb.CaptureProfileResponse{ProfileJson: string(data)}, nil
 }
 
-func (s *ScoutServer) LoadProfile(_ context.Context, req *pb.LoadProfileRequest) (*pb.LoadProfileResponse, error) {
-	sess, err := s.getSession(req.GetSessionId())
+func (s *ScoutServer) LoadProfile(ctx context.Context, req *pb.LoadProfileRequest) (*pb.LoadProfileResponse, error) {
+	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func (s *ScoutServer) LoadProfile(_ context.Context, req *pb.LoadProfileRequest)
 // ════════════════════════ Event Streaming ════════════════════════
 
 func (s *ScoutServer) StreamEvents(req *pb.SessionRequest, stream pb.ScoutService_StreamEventsServer) error {
-	sess, err := s.getSession(req.GetSessionId())
+	sess, err := s.getSession(stream.Context(), req.GetSessionId())
 	if err != nil {
 		return err
 	}
@@ -278,7 +278,7 @@ func (s *ScoutServer) Interactive(stream pb.ScoutService_InteractiveServer) erro
 
 		// Lazy session binding on first command
 		if sess == nil {
-			sess, err = s.getSession(cmd.GetSessionId())
+			sess, err = s.getSession(stream.Context(), cmd.GetSessionId())
 			if err != nil {
 				return err
 			}

@@ -264,16 +264,11 @@ func (s *ScoutServer) Peers() []ConnectedPeer {
 }
 
 func (s *ScoutServer) trackPeer(ctx context.Context, sessionID string) {
-	deviceID := "unknown"
+	deviceID := callerDeviceID(ctx)
 	addr := "unknown"
 
 	if p, ok := peer.FromContext(ctx); ok {
 		addr = p.Addr.String()
-		if tlsInfo, ok := p.AuthInfo.(credentials.TLSInfo); ok {
-			if len(tlsInfo.State.PeerCertificates) > 0 {
-				deviceID, _ = identity.DeviceIDFromCert(tlsInfo.State.PeerCertificates[0])
-			}
-		}
 	}
 
 	s.sessionPeer.Store(sessionID, deviceID)
@@ -343,10 +338,55 @@ func (s *ScoutServer) peerShortID(sessionID string) string {
 	return identity.ShortID(v.(string))
 }
 
-func (s *ScoutServer) getSession(id string) (*session, error) {
+// unknownDeviceID is the owner placeholder recorded for sessions created
+// without a verified mTLS client identity (e.g. the insecure / loopback
+// daemon). Ownership is not enforced against this value.
+const unknownDeviceID = "unknown"
+
+// callerDeviceID returns the verified device ID of the gRPC caller, derived
+// from its mTLS client certificate, or unknownDeviceID when the request
+// carries no usable client certificate (insecure / loopback transport, or a
+// server-initiated call with no peer in context).
+func callerDeviceID(ctx context.Context) string {
+	p, ok := peer.FromContext(ctx)
+	if !ok {
+		return unknownDeviceID
+	}
+
+	tlsInfo, ok := p.AuthInfo.(credentials.TLSInfo)
+	if !ok || len(tlsInfo.State.PeerCertificates) == 0 {
+		return unknownDeviceID
+	}
+
+	deviceID, err := identity.DeviceIDFromCert(tlsInfo.State.PeerCertificates[0])
+	if err != nil || deviceID == "" {
+		return unknownDeviceID
+	}
+
+	return deviceID
+}
+
+// getSession looks up a session by ID and enforces per-caller ownership: a
+// session created by one device must not be driven by a different device.
+//
+// Enforcement applies ONLY when both the recorded owner and the calling peer
+// carry a real mTLS identity. In insecure / loopback mode (or for
+// server-initiated calls) either side is unknownDeviceID, so the local daemon
+// and single-user deployments are unaffected. Unknown IDs return NotFound;
+// a known session owned by another device returns PermissionDenied.
+func (s *ScoutServer) getSession(ctx context.Context, id string) (*session, error) {
 	v, ok := s.sessions.Load(id)
 	if !ok {
 		return nil, status.Errorf(codes.NotFound, "session %q not found", id)
+	}
+
+	if owner, ok := s.sessionPeer.Load(id); ok {
+		ownerID, _ := owner.(string)
+		caller := callerDeviceID(ctx)
+
+		if ownerID != "" && ownerID != unknownDeviceID && caller != unknownDeviceID && caller != ownerID {
+			return nil, status.Errorf(codes.PermissionDenied, "session %q is owned by another device", id)
+		}
 	}
 
 	return v.(*session), nil
