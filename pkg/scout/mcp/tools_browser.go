@@ -11,7 +11,7 @@ import (
 )
 
 // registerBrowserTools adds navigation and interaction tools.
-func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:maintidx // tool registration function is necessarily long
+func registerBrowserTools(server *mcp.Server, state *mcpState) {
 	addTracedTool(server, &mcp.Tool{
 		Name:        "navigate",
 		Description: "Navigate the browser to a URL",
@@ -203,5 +203,107 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 		}
 
 		return textResult("Page loaded")
+	})
+
+	registerContentTools(server, state)
+}
+
+// registerContentTools adds the page-content read tools (html, markdown,
+// cookies, page_url, page_title) that give MCP parity with the REPL's
+// read-only commands. Each routes through a pkg/scout/tools verb.
+func registerContentTools(server *mcp.Server, state *mcpState) {
+	addTracedTool(server, &mcp.Tool{
+		Name:        "html",
+		Description: "Get the full HTML of the current page",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
+	}, func(ctx context.Context, _ *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		page, err := state.ensurePage(ctx)
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		res, err := tools.HTML(ctx, page, tools.HTMLInput{})
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		return textResult(res.HTML)
+	})
+
+	addTracedTool(server, &mcp.Tool{
+		Name:        "markdown",
+		Description: "Get the current page rendered as Markdown",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
+	}, func(ctx context.Context, _ *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		page, err := state.ensurePage(ctx)
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		res, err := tools.Markdown(ctx, page, tools.MarkdownInput{})
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		return textResult(res.Markdown)
+	})
+
+	addTracedTool(server, &mcp.Tool{
+		Name:        "cookies",
+		Description: "Get the cookies visible to the current page as JSON",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
+	}, func(ctx context.Context, _ *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		page, err := state.ensurePage(ctx)
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		res, err := tools.Cookies(ctx, page, tools.CookiesInput{})
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		data, err := json.Marshal(res.Cookies)
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		return textResult(string(data))
+	})
+
+	addTracedTool(server, &mcp.Tool{
+		Name:        "page_url",
+		Description: "Get the URL of the current page",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
+	}, func(ctx context.Context, _ *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		page, err := state.ensurePage(ctx)
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		res, err := tools.URL(ctx, page, tools.URLInput{})
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		return textResult(res.URL)
+	})
+
+	addTracedTool(server, &mcp.Tool{
+		Name:        "page_title",
+		Description: "Get the title of the current page",
+		InputSchema: json.RawMessage(`{"type":"object","properties":{}}`),
+	}, func(ctx context.Context, _ *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		page, err := state.ensurePage(ctx)
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		res, err := tools.Title(ctx, page, tools.TitleInput{})
+		if err != nil {
+			return errResult(err.Error())
+		}
+
+		return textResult(res.Title)
 	})
 }
