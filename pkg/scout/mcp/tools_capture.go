@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/inovacc/scout/internal/metrics"
-	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/tools"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -28,13 +28,7 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
-		var data []byte
-		if args.FullPage {
-			data, err = page.FullScreenshot()
-		} else {
-			data, err = page.Screenshot()
-		}
-
+		res, err := tools.Screenshot(ctx, page, tools.ScreenshotInput{FullPage: args.FullPage})
 		if err != nil {
 			return errResult(err.Error())
 		}
@@ -44,7 +38,7 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.ImageContent{
 				MIMEType: "image/png",
-				Data:     data,
+				Data:     res.Data,
 			}},
 		}, nil
 	})
@@ -68,31 +62,19 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
-		var opts []scout.SnapshotOption
-		if args.InteractableOnly {
-			opts = append(opts, scout.WithSnapshotInteractableOnly())
-		}
-
-		if args.MaxDepth > 0 {
-			opts = append(opts, scout.WithSnapshotMaxDepth(args.MaxDepth))
-		}
-
-		if args.Iframes {
-			opts = append(opts, scout.WithSnapshotIframes())
-		}
-
-		if args.Filter != "" {
-			opts = append(opts, scout.WithSnapshotFilter(args.Filter))
-		}
-
-		snap, err := page.SnapshotWithOptions(opts...)
+		res, err := tools.Snapshot(ctx, page, tools.SnapshotInput{
+			InteractableOnly: args.InteractableOnly,
+			MaxDepth:         args.MaxDepth,
+			Iframes:          args.Iframes,
+			Filter:           args.Filter,
+		})
 		if err != nil {
 			return errResult(err.Error())
 		}
 
 		metrics.Get().ExtractionsTotal.Add(1)
 
-		return textResult(snap)
+		return textResult(res.Snapshot)
 	})
 
 	addTracedTool(server, &mcp.Tool{
@@ -113,17 +95,11 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
-		var data []byte
-		if args.Landscape || args.PrintBackground || args.Scale > 0 {
-			data, err = page.PDFWithOptions(scout.PDFOptions{
-				Landscape:       args.Landscape,
-				PrintBackground: args.PrintBackground,
-				Scale:           args.Scale,
-			})
-		} else {
-			data, err = page.PDF()
-		}
-
+		res, err := tools.PDF(ctx, page, tools.PDFInput{
+			Landscape:       args.Landscape,
+			PrintBackground: args.PrintBackground,
+			Scale:           args.Scale,
+		})
 		if err != nil {
 			return errResult(fmt.Sprintf("scout-mcp: pdf: %s", err))
 		}
@@ -133,7 +109,7 @@ func registerCaptureTools(server *mcp.Server, state *mcpState) {
 		return &mcp.CallToolResult{
 			Content: []mcp.Content{&mcp.ImageContent{
 				MIMEType: "application/pdf",
-				Data:     data,
+				Data:     res.Data,
 			}},
 		}, nil
 	})

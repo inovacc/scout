@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/inovacc/scout/internal/metrics"
+	"github.com/inovacc/scout/pkg/scout/tools"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -33,30 +33,14 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			return errResult(err.Error())
 		}
 
-		if err := page.Navigate(args.URL); err != nil {
+		res, err := tools.Navigate(ctx, page, tools.NavigateInput{URL: args.URL})
+		if err != nil {
 			return errResult(fmt.Sprintf("scout: navigate to %s: %s", args.URL, err))
-		}
-
-		// Best-effort WaitLoad with 15s timeout — SPAs may never fire the load event.
-		done := make(chan struct{})
-
-		go func() {
-			_ = page.WaitLoad()
-
-			close(done)
-		}()
-
-		select {
-		case <-done:
-		case <-time.After(15 * time.Second):
 		}
 
 		metrics.Get().NavigationsTotal.Add(1)
 
-		title, _ := page.Title()
-		url, _ := page.URL()
-
-		return textResult(fmt.Sprintf("Navigated to %s (%s)", url, title))
+		return textResult(fmt.Sprintf("Navigated to %s (%s)", res.URL, res.Title))
 	})
 
 	addTracedTool(server, &mcp.Tool{
@@ -76,12 +60,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			return errResult(err.Error())
 		}
 
-		el, err := page.Element(args.Selector)
-		if err != nil {
-			return errResult(err.Error())
-		}
-
-		if err := el.Click(); err != nil {
+		if _, err := tools.Click(ctx, page, tools.ClickInput{Selector: args.Selector}); err != nil {
 			return errResult(err.Error())
 		}
 
@@ -106,12 +85,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			return errResult(err.Error())
 		}
 
-		el, err := page.Element(args.Selector)
-		if err != nil {
-			return errResult(err.Error())
-		}
-
-		if err := el.Input(args.Text); err != nil {
+		if _, err := tools.Type(ctx, page, tools.TypeInput{Selector: args.Selector, Text: args.Text}); err != nil {
 			return errResult(err.Error())
 		}
 
@@ -135,19 +109,14 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			return errResult(err.Error())
 		}
 
-		el, err := page.Element(args.Selector)
-		if err != nil {
-			return errResult(err.Error())
-		}
-
-		text, err := el.Text()
+		res, err := tools.Extract(ctx, page, tools.ExtractInput{Selector: args.Selector})
 		if err != nil {
 			return errResult(err.Error())
 		}
 
 		metrics.Get().ExtractionsTotal.Add(1)
 
-		return textResult(text)
+		return textResult(res.Text)
 	})
 
 	addTracedTool(server, &mcp.Tool{
@@ -167,12 +136,12 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			return errResult(err.Error())
 		}
 
-		result, err := page.Eval(args.Expression)
+		res, err := tools.Eval(ctx, page, tools.EvalInput{Expression: args.Expression})
 		if err != nil {
 			return errResult(err.Error())
 		}
 
-		return textResult(result.String())
+		return textResult(res.Result)
 	})
 
 	addTracedTool(server, &mcp.Tool{
@@ -185,7 +154,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			return errResult(err.Error())
 		}
 
-		if err := page.NavigateBack(); err != nil {
+		if _, err := tools.Back(ctx, page, tools.BackInput{}); err != nil {
 			return errResult(err.Error())
 		}
 
@@ -202,7 +171,7 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			return errResult(err.Error())
 		}
 
-		if err := page.NavigateForward(); err != nil {
+		if _, err := tools.Forward(ctx, page, tools.ForwardInput{}); err != nil {
 			return errResult(err.Error())
 		}
 
@@ -225,16 +194,12 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			return errResult(err.Error())
 		}
 
-		if args.Selector != "" {
-			if _, err := page.WaitSelector(args.Selector); err != nil {
-				return errResult(err.Error())
-			}
-
-			return textResult(fmt.Sprintf("Found %s", args.Selector))
+		if _, err := tools.Wait(ctx, page, tools.WaitInput{Selector: args.Selector}); err != nil {
+			return errResult(err.Error())
 		}
 
-		if err := page.WaitLoad(); err != nil {
-			return errResult(err.Error())
+		if args.Selector != "" {
+			return textResult(fmt.Sprintf("Found %s", args.Selector))
 		}
 
 		return textResult("Page loaded")
