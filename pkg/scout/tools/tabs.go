@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/inovacc/scout/pkg/scout"
 )
@@ -66,7 +67,7 @@ func NewTab(_ context.Context, b *scout.Browser, in NewTabInput) (*NewTabOutput,
 	}
 
 	if in.URL != "" {
-		_ = p.WaitLoad()
+		waitLoadBounded(p, 15*time.Second)
 	}
 
 	u, _ := p.URL()

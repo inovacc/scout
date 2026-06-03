@@ -3,9 +3,21 @@ package tools
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/inovacc/scout/pkg/scout"
 )
+
+// waitLoadBounded waits for page load but never blocks longer than d, so a
+// page that never fires `load` (some SPAs) cannot hang the caller.
+func waitLoadBounded(p *scout.Page, d time.Duration) {
+	done := make(chan struct{})
+	go func() { _ = p.WaitLoad(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(d):
+	}
+}
 
 // NavigateInput targets a URL on the caller's page.
 type NavigateInput struct {
@@ -32,7 +44,7 @@ func Navigate(_ context.Context, p *scout.Page, in NavigateInput) (*NavigateOutp
 		return nil, fmt.Errorf("tools: navigate: %w", err)
 	}
 
-	_ = p.WaitLoad()
+	waitLoadBounded(p, 15*time.Second)
 
 	url, _ := p.URL()
 	title, _ := p.Title()
@@ -103,7 +115,7 @@ func Wait(_ context.Context, p *scout.Page, in WaitInput) (*EmptyOutput, error) 
 	}
 
 	if in.Selector == "" {
-		_ = p.WaitLoad()
+		waitLoadBounded(p, 15*time.Second)
 		return &EmptyOutput{OK: true}, nil
 	}
 
