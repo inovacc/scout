@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/inovacc/scout/internal/engine/llm"
@@ -63,7 +65,7 @@ func Analyze(capt *Capture, provider llm.Provider, opts AnalyzeOptions) (*FlowSp
 	chains, correlateOK := passCorrelate(provider, capt, timeout)
 	if correlateOK {
 		report.Chains = chains
-		applyChains(spec, keep, chains)
+		applyChains(spec, report, keep, chains)
 	} else {
 		report.Notes = append(report.Notes, "LLM correlate failed; no chains inferred — add extract/inject manually")
 	}
@@ -110,7 +112,7 @@ func cloneHeaders(in map[string]string) map[string]string {
 	return out
 }
 
-func applyChains(spec *FlowSpec, keep []int, chains []Chain) {
+func applyChains(spec *FlowSpec, report *Report, keep []int, chains []Chain) {
 	pos := make(map[int]int, len(keep))
 	for stepIdx, entryIdx := range keep {
 		pos[entryIdx] = stepIdx
@@ -119,6 +121,7 @@ func applyChains(spec *FlowSpec, keep []int, chains []Chain) {
 		src, okS := pos[c.FromEntry]
 		dst, okD := pos[c.ToEntry]
 		if !okS || !okD {
+			report.Notes = append(report.Notes, fmt.Sprintf("chain %q skipped: references a dropped/unknown entry (from=%d to=%d)", c.Var, c.FromEntry, c.ToEntry))
 			continue
 		}
 		spec.Steps[src].Extract = append(spec.Steps[src].Extract, Extract{Var: c.Var, From: c.From, Path: c.Path})
@@ -127,6 +130,8 @@ func applyChains(spec *FlowSpec, keep []int, chains []Chain) {
 				spec.Steps[dst].Request.Headers = map[string]string{}
 			}
 			spec.Steps[dst].Request.Headers[c.Name] = c.Template
+		} else {
+			report.Notes = append(report.Notes, fmt.Sprintf("chain %q: into=%q not auto-applied — wire %q manually", c.Var, c.Into, c.Name))
 		}
 	}
 }
@@ -198,7 +203,8 @@ func captureDigest(capt *Capture) string {
 	}
 	ds := make([]de, 0, len(capt.Entries))
 	for i, e := range capt.Entries {
-		ds = append(ds, de{I: i, Method: e.Method, URL: e.URL, Req: redactHeaders(e.ReqHeaders), Status: e.Status, Resp: excerpt(e.RespBody)})
+		// ReqBody is deliberately excluded — it can hold passwords / credential grants.
+		ds = append(ds, de{I: i, Method: e.Method, URL: redactURL(e.URL), Req: redactHeaders(e.ReqHeaders), Status: e.Status, Resp: redactBody(e.RespBody)})
 	}
 	b, err := json.Marshal(ds)
 	if err != nil {
@@ -207,13 +213,27 @@ func captureDigest(capt *Capture) string {
 	return string(b)
 }
 
+// isSensitiveHeader reports whether a header name conventionally carries a secret.
+func isSensitiveHeader(name string) bool {
+	n := strings.ToLower(name)
+	for _, s := range []string{"authorization", "cookie", "token", "csrf", "auth", "session", "secret", "api-key", "apikey", "signature", "password"} {
+		if strings.Contains(n, s) {
+			return true
+		}
+	}
+	return false
+}
+
+// redactHeaders keeps header NAMES but redacts values that are sensitive by name
+// or long enough to be a credential. Short, non-sensitive values (Accept, etc.)
+// are kept to give the LLM structural context.
 func redactHeaders(in map[string]string) map[string]string {
 	if len(in) == 0 {
 		return nil
 	}
 	out := make(map[string]string, len(in))
 	for k, v := range in {
-		if len(v) > 8 {
+		if isSensitiveHeader(k) || len(v) > 8 {
 			out[k] = fmt.Sprintf("<redacted:%d>", len(v))
 		} else {
 			out[k] = v
@@ -222,6 +242,67 @@ func redactHeaders(in map[string]string) map[string]string {
 	return out
 }
 
+// redactURL keeps scheme/host/path but redacts every query-parameter VALUE
+// (tokens ride in query strings: ?code=, ?access_token=, ?Signature=).
+func redactURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		if base, _, found := strings.Cut(raw, "?"); found {
+			return base + "?<redacted>"
+		}
+		return raw
+	}
+	if u.RawQuery == "" {
+		return raw
+	}
+	q := u.Query()
+	for k := range q {
+		q[k] = []string{"<redacted>"}
+	}
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
+// redactBody returns a secret-free structural view of a response body for the LLM:
+// JSON keys + shape are kept; every JSON string VALUE is replaced with a length
+// placeholder; non-JSON bodies are never shipped raw.
+func redactBody(s string) string {
+	if s == "" {
+		return ""
+	}
+	var v any
+	if err := json.Unmarshal([]byte(s), &v); err != nil {
+		return fmt.Sprintf("<redacted-body:%d>", len(s))
+	}
+	b, err := json.Marshal(redactJSONValues(v))
+	if err != nil {
+		return fmt.Sprintf("<redacted-body:%d>", len(s))
+	}
+	return excerpt(string(b))
+}
+
+func redactJSONValues(v any) any {
+	switch t := v.(type) {
+	case string:
+		return fmt.Sprintf("<redacted:%d>", len(t))
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for k, val := range t {
+			out[k] = redactJSONValues(val)
+		}
+		return out
+	case []any:
+		out := make([]any, len(t))
+		for i, val := range t {
+			out[i] = redactJSONValues(val)
+		}
+		return out
+	default:
+		return v
+	}
+}
+
+// excerpt caps a string to keep the digest compact.
 func excerpt(s string) string {
 	const maxLen = 400
 	if len(s) > maxLen {
