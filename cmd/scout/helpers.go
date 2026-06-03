@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/subtle"
 	"fmt"
 	"io"
 	"os"
@@ -75,7 +76,7 @@ func readPassphraseConfirm(w io.Writer) (string, error) {
 		return "", err
 	}
 
-	if pass1 != pass2 {
+	if subtle.ConstantTimeCompare([]byte(pass1), []byte(pass2)) != 1 {
 		return "", fmt.Errorf("scout: passphrases do not match")
 	}
 

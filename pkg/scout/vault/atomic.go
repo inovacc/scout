@@ -40,5 +40,12 @@ func atomicWrite(path string, data []byte) error {
 		_ = os.Remove(tmp)
 		return fmt.Errorf("scout: vault: rename: %w", err)
 	}
+	// Best-effort fsync of the parent directory so the rename of the rotated/
+	// updated vault survives a crash. Directory fsync is a no-op/unsupported on
+	// some platforms (e.g. Windows); ignore its error.
+	if d, err := os.Open(dir); err == nil {
+		_ = d.Sync()
+		_ = d.Close()
+	}
 	return nil
 }
