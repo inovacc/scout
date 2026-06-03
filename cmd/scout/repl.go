@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -37,12 +38,15 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 
 		var page *scout.Page
 		if len(args) > 0 && args[0] != "" {
-			page, err = b.NewPage(args[0])
+			// Adapter bookkeeping: create the first page, then navigate via the verb.
+			page, err = b.NewPage("")
 			if err != nil {
-				return fmt.Errorf("scout: repl: navigate: %w", err)
+				return fmt.Errorf("scout: repl: %w", err)
 			}
 
-			_ = page.WaitLoad()
+			if _, err := tools.Navigate(cmd.Context(), page, tools.NavigateInput{URL: args[0]}); err != nil {
+				return fmt.Errorf("scout: repl: navigate: %w", err)
+			}
 		}
 
 		out := cmd.OutOrStdout()
@@ -87,13 +91,21 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				newPage, err := b.NewPage(parts[1])
+				// Adapter bookkeeping: open a fresh page to navigate (preserves the
+				// "each navigate is a new tab" REPL UX). The navigation itself
+				// routes through the tools.Navigate verb.
+				newPage, err := b.NewPage("")
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 					continue
 				}
 
-				_ = newPage.WaitLoad()
+				res, err := tools.Navigate(cmd.Context(), newPage, tools.NavigateInput{URL: parts[1]})
+				if err != nil {
+					_ = newPage.Close()
+					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
+					continue
+				}
 
 				if page != nil {
 					_ = page.Close()
@@ -101,8 +113,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 
 				page = newPage
 
-				title, _ := page.Title()
-				_, _ = fmt.Fprintf(out, "Page: %s\n", title)
+				_, _ = fmt.Fprintf(out, "Page: %s\n", res.Title)
 
 			case "eval":
 				if page == nil {
@@ -117,13 +128,13 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 
 				expr := strings.Join(parts[1:], " ")
 
-				result, err := page.Eval(expr)
+				res, err := tools.Eval(cmd.Context(), page, tools.EvalInput{Expression: expr})
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 					continue
 				}
 
-				_, _ = fmt.Fprintln(out, result)
+				_, _ = fmt.Fprintln(out, res.Result)
 
 			case "click":
 				if page == nil {
@@ -136,13 +147,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				el, err := page.Element(parts[1])
-				if err != nil {
-					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
-					continue
-				}
-
-				if err := el.Click(); err != nil {
+				if _, err := tools.Click(cmd.Context(), page, tools.ClickInput{Selector: parts[1]}); err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				} else {
 					_, _ = fmt.Fprintln(out, "clicked")
@@ -159,13 +164,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				el, err := page.Element(parts[1])
-				if err != nil {
-					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
-					continue
-				}
-
-				if err := el.Input(parts[2]); err != nil {
+				if _, err := tools.Type(cmd.Context(), page, tools.TypeInput{Selector: parts[1], Text: parts[2]}); err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				} else {
 					_, _ = fmt.Fprintln(out, "typed")
@@ -182,11 +181,11 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				text, err := page.ExtractText(parts[1])
+				res, err := tools.Extract(cmd.Context(), page, tools.ExtractInput{Selector: parts[1]})
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				} else {
-					_, _ = fmt.Fprintln(out, text)
+					_, _ = fmt.Fprintln(out, res.Text)
 				}
 
 			case "screenshot":
@@ -200,13 +199,13 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					filename = parts[1]
 				}
 
-				data, err := page.Screenshot()
+				res, err := tools.Screenshot(cmd.Context(), page, tools.ScreenshotInput{})
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 					continue
 				}
 
-				if err := os.WriteFile(filename, data, 0o644); err != nil {
+				if err := os.WriteFile(filename, res.Data, 0o644); err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				} else {
 					_, _ = fmt.Fprintf(out, "Saved: %s\n", filename)
@@ -218,11 +217,11 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				md, err := page.Markdown()
+				res, err := tools.Markdown(cmd.Context(), page, tools.MarkdownInput{})
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				} else {
-					_, _ = fmt.Fprintln(out, md)
+					_, _ = fmt.Fprintln(out, res.Markdown)
 				}
 
 			case "html":
@@ -231,11 +230,11 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				html, err := page.HTML()
+				res, err := tools.HTML(cmd.Context(), page, tools.HTMLInput{})
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				} else {
-					_, _ = fmt.Fprintln(out, html)
+					_, _ = fmt.Fprintln(out, res.HTML)
 				}
 
 			case "cookies":
@@ -244,7 +243,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				cookies, err := page.GetCookies()
+				res, err := tools.Cookies(cmd.Context(), page, tools.CookiesInput{})
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 					continue
@@ -253,7 +252,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 				enc := json.NewEncoder(out)
 				enc.SetIndent("", "  ")
 
-				if err := enc.Encode(cookies); err != nil {
+				if err := enc.Encode(res.Cookies); err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				}
 
@@ -263,11 +262,11 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				u, err := page.URL()
+				res, err := tools.URL(cmd.Context(), page, tools.URLInput{})
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				} else {
-					_, _ = fmt.Fprintln(out, u)
+					_, _ = fmt.Fprintln(out, res.URL)
 				}
 
 			case "title":
@@ -276,11 +275,11 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				title, err := page.Title()
+				res, err := tools.Title(cmd.Context(), page, tools.TitleInput{})
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				} else {
-					_, _ = fmt.Fprintln(out, title)
+					_, _ = fmt.Fprintln(out, res.Title)
 				}
 
 			case "wait":
@@ -290,11 +289,14 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 				}
 
 				if len(parts) < 2 {
-					_ = page.WaitLoad()
-					_, _ = fmt.Fprintln(out, "page loaded")
+					if _, err := tools.Wait(cmd.Context(), page, tools.WaitInput{}); err != nil {
+						_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
+					} else {
+						_, _ = fmt.Fprintln(out, "page loaded")
+					}
 				} else {
-					// Wait for element to exist (Element blocks until found or timeout).
-					if _, err := page.Element(parts[1]); err != nil {
+					// Wait for element to exist (Wait blocks until found or timeout).
+					if _, err := tools.Wait(cmd.Context(), page, tools.WaitInput{Selector: parts[1]}); err != nil {
 						_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 					} else {
 						_, _ = fmt.Fprintf(out, "found: %s\n", parts[1])
@@ -307,7 +309,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				if err := page.NavigateBack(); err != nil {
+				if _, err := tools.Back(cmd.Context(), page, tools.BackInput{}); err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				}
 
@@ -317,7 +319,7 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				if err := page.NavigateForward(); err != nil {
+				if _, err := tools.Forward(cmd.Context(), page, tools.ForwardInput{}); err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				}
 
@@ -327,32 +329,32 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				if err := page.Reload(); err != nil {
+				if _, err := tools.Reload(cmd.Context(), page, tools.ReloadInput{}); err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 				} else {
 					_, _ = fmt.Fprintln(out, "reloaded")
 				}
 
 			case "tabs":
-				pages, err := b.Pages()
+				res, err := tools.Tabs(cmd.Context(), b, tools.TabsInput{})
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 					continue
 				}
 
-				for i, p := range pages {
-					u, _ := p.URL()
-					t, _ := p.Title()
+				// Adapter bookkeeping: highlight the current tab by URL.
+				var currentURL string
+				if page != nil {
+					currentURL, _ = page.URL()
+				}
 
+				for _, tab := range res.Tabs {
 					marker := "  "
-
-					if page != nil {
-						if pu, _ := page.URL(); pu == u {
-							marker = "* "
-						}
+					if currentURL != "" && tab.URL == currentURL {
+						marker = "* "
 					}
 
-					_, _ = fmt.Fprintf(out, "%s[%d] %s - %s\n", marker, i, truncate(t, 40), truncate(u, 60))
+					_, _ = fmt.Fprintf(out, "%s[%d] %s - %s\n", marker, tab.Index, truncate(tab.Title, 40), truncate(tab.URL, 60))
 				}
 
 			case "tab":
@@ -361,6 +363,8 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
+				// Adapter bookkeeping: switching the "current tab" requires the
+				// concrete *scout.Page handle, which is local REPL state.
 				pages, err := b.Pages()
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
@@ -375,8 +379,13 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 
 				page = pages[idx]
 
-				title, _ := page.Title()
-				_, _ = fmt.Fprintf(out, "Switched to: %s\n", title)
+				res, err := tools.Title(cmd.Context(), page, tools.TitleInput{})
+				if err != nil {
+					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
+					continue
+				}
+
+				_, _ = fmt.Fprintf(out, "Switched to: %s\n", res.Title)
 
 			case "newtab":
 				u := ""
@@ -384,17 +393,22 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					u = parts[1]
 				}
 
-				newPage, err := b.NewPage(u)
+				if _, err := tools.NewTab(cmd.Context(), b, tools.NewTabInput{URL: u}); err != nil {
+					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
+					continue
+				}
+
+				// Adapter bookkeeping: the new tab is the last opened page; track
+				// it as the current page for subsequent commands.
+				pages, err := b.Pages()
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 					continue
 				}
 
-				if u != "" {
-					_ = newPage.WaitLoad()
+				if len(pages) > 0 {
+					page = pages[len(pages)-1]
 				}
-
-				page = newPage
 
 				_, _ = fmt.Fprintln(out, "new tab opened")
 
@@ -404,9 +418,13 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 					continue
 				}
 
-				u, _ := page.URL()
+				urlRes, err := tools.URL(cmd.Context(), page, tools.URLInput{})
+				if err != nil {
+					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
+					continue
+				}
 
-				report, err := b.HealthCheck(u, scout.WithHealthDepth(1), scout.WithHealthConcurrency(1))
+				report, err := tools.TestSite(cmd.Context(), b, tools.TestSiteInput{URL: urlRes.URL, Depth: 1, Concurrency: 1})
 				if err != nil {
 					_, _ = fmt.Fprintf(out, "ERROR: %v\n", err)
 					continue
