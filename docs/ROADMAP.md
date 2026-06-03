@@ -641,7 +641,7 @@ Shipped as v1.0.3 under the Superpowers workflow (brainstorm → spec → execut
 
 ---
 
-## Phase 77 — Session Monitors, Encoded IDs & AV-Resilient Cleanup [IN PROGRESS]
+## Phase 77 — Session Monitors, Encoded IDs & AV-Resilient Cleanup [DONE]
 
 **Goal:** Per-session monitor sidecars and request blocking with a canonical session-ID encoding, so a session's intent (what to capture, where to write, what to block) and identity (browser, mode, lifetime, stealth, bridge, vpn) survive process restart and audit. Track for v1.0.5.
 
@@ -692,7 +692,27 @@ Shipped as v1.0.3 under the Superpowers workflow (brainstorm → spec → execut
 
 ---
 
-## Phase 78+ — Future
+## Phase 78 — Secrets Vault [DONE]
+
+**Goal:** An isolation layer between secrets and the scout process — secrets at rest are encrypted, in memory are locked + zeroed, and never become a Go `string`.
+
+- `pkg/scout/vault`: one Argon2id + AES-256-GCM file at `<scouthome>/profiles/vault.bin` (0o600 in a 0o700 dir)
+- `LockedBuffer` (`[]byte` + `VirtualLock`/`Mlock` + explicit zero + `runtime.KeepAlive`); secrets never converted to `string`
+- `Vault.Use(id)` → `Handle` injects cookies/headers into a live page via CDP (`Handle.ApplyToPage`) and yields scout-internal secrets via `Handle.Secret`; closed-guard prevents use-after-Close corruption
+- `scout vault init/set/get/list/use/rotate/rm`; atomic re-key on `rotate`; `--from-profile` imports `.scoutprofile` secret fields (deprecates `UserProfile.Cookies/Storage/Headers`, removal after 2026-07-02)
+
+## Phase 79 — Flow Capture → Replay [DONE]
+
+**Goal:** Record a browser flow once, then replay its underlying API calls deterministically with no browser.
+
+- `pkg/scout/flow` + `scout flow capture|analyze|run|verify`
+- capture (browser hijack → normalized `capture.json`) → analyze (staged-LLM → reviewed `flow.yaml` + report, degrades safely) → run (deterministic REST/GraphQL replay, `${var}`/`${secret.NAME}` chaining, vault-sourced auth) → verify (status parity vs golden capture)
+- Security (test-enforced): `capture.json` + `flow.yaml` written 0o600; analyzer redacts secret values from its LLM digest and parameterizes secret-bearing headers + URL-query tokens to `${secret.*}` so emitted specs are secret-free; `${secret.*}` fail-closed without a resolver
+- FLOW v2 (BACKLOG): WebSocket replay, multipart/SSE, query/json chain-injection, HAR reader, no-review analyze, `flow export --go`
+
+---
+
+## Phase 80+ — Future
 
 ### Remaining Work
 
