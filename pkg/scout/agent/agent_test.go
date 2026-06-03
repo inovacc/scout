@@ -8,11 +8,13 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/inovacc/scout/internal/idle"
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/urlpolicy"
 )
 
 // mockPage implements the page interface for testing handler success paths.
@@ -25,9 +27,9 @@ type mockPage struct {
 	evalErr    error
 }
 
-func (m *mockPage) Title() (string, error)          { return m.title, nil }
-func (m *mockPage) URL() (string, error)            { return m.url, nil }
-func (m *mockPage) Screenshot() ([]byte, error)     { return m.screenshot, nil }
+func (m *mockPage) Title() (string, error)                             { return m.title, nil }
+func (m *mockPage) URL() (string, error)                               { return m.url, nil }
+func (m *mockPage) Screenshot() ([]byte, error)                        { return m.screenshot, nil }
 func (m *mockPage) Markdown(_ ...scout.MarkdownOption) (string, error) { return m.markdown, nil }
 func (m *mockPage) Eval(_ string, _ ...any) (*scout.EvalResult, error) {
 	return m.evalResult, m.evalErr
@@ -878,6 +880,32 @@ func TestHandleNavigateMock(t *testing.T) {
 	expected := "Navigated to http://example.com (title: Example Page)"
 	if result.Content != expected {
 		t.Errorf("content = %q, want %q", result.Content, expected)
+	}
+}
+
+func TestHandleNavigateBlocksInternalURL(t *testing.T) {
+	// The policy check runs before getPage, so no browser is needed. The mock
+	// page would succeed if reached, proving the block came from the policy.
+	mp := &mockPage{title: "Should Not Reach"}
+	p := &Provider{
+		policy: urlpolicy.FromEnv(), // no allow-env set → block-by-default
+		getPage: func(_ context.Context, _ string) (page, error) {
+			return mp, nil
+		},
+	}
+	p.registerBuiltinTools()
+
+	result, err := p.Call(context.TODO(), "navigate", map[string]any{"url": "http://127.0.0.1"})
+	if err != nil {
+		t.Fatalf("Call should not return Go error: %v", err)
+	}
+
+	if !result.IsError {
+		t.Fatalf("navigate to http://127.0.0.1 = %q, want IsError result", result.Content)
+	}
+
+	if !strings.HasPrefix(result.Content, "blocked") {
+		t.Errorf("content = %q, want blocked-prefixed error", result.Content)
 	}
 }
 

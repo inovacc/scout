@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/urlpolicy"
 )
 
 // Tool describes a Scout capability as an AI agent tool.
@@ -44,12 +45,13 @@ type pageFunc func(ctx context.Context, url string) (page, error)
 type Provider struct {
 	tools   []Tool
 	browser *scout.Browser
-	getPage pageFunc // defaults to ensurePage; overridable for testing
+	getPage pageFunc          // defaults to ensurePage; overridable for testing
+	policy  *urlpolicy.Policy // SSRF URL-policy for untrusted callers
 }
 
 // NewProvider creates a tool provider with a shared browser instance.
 func NewProvider(browser *scout.Browser) *Provider {
-	p := &Provider{browser: browser}
+	p := &Provider{browser: browser, policy: urlpolicy.FromEnv()}
 	p.getPage = p.ensurePage
 	p.registerBuiltinTools()
 
@@ -207,6 +209,12 @@ func (p *Provider) ensurePage(_ context.Context, url string) (page, error) {
 
 func (p *Provider) handleNavigate(ctx context.Context, args map[string]any) (string, error) {
 	url, _ := args["url"].(string)
+
+	if p.policy != nil {
+		if err := p.policy.Check(ctx, url); err != nil {
+			return "", err
+		}
+	}
 
 	pg, err := p.getPage(ctx, url)
 	if err != nil {
