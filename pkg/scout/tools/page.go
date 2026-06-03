@@ -224,3 +224,114 @@ func Eval(_ context.Context, p *scout.Page, in EvalInput) (*EvalOutput, error) {
 
 	return &EvalOutput{Result: res.String()}, nil
 }
+
+// HTMLInput takes no fields (reads the current page).
+type HTMLInput struct{}
+
+// HTMLOutput holds the page HTML.
+type HTMLOutput struct {
+	HTML string `json:"html"`
+}
+
+// MarkdownInput takes no fields (reads the current page).
+type MarkdownInput struct{}
+
+// MarkdownOutput holds the page rendered as Markdown.
+type MarkdownOutput struct {
+	Markdown string `json:"markdown"`
+}
+
+// CookiesInput takes no fields (reads the current page).
+type CookiesInput struct{}
+
+// CookiesOutput holds the page cookies. The concrete type is the engine
+// cookie slice, carried as any to avoid importing it here.
+type CookiesOutput struct {
+	Cookies any `json:"cookies"`
+}
+
+// URLInput takes no fields (reads the current page).
+type URLInput struct{}
+
+// URLOutput holds the current page URL.
+type URLOutput struct {
+	URL string `json:"url"`
+}
+
+// TitleInput takes no fields (reads the current page).
+type TitleInput struct{}
+
+// TitleOutput holds the current page title.
+type TitleOutput struct {
+	Title string `json:"title"`
+}
+
+// HTML returns the full HTML of the current page.
+func HTML(_ context.Context, p *scout.Page, _ HTMLInput) (*HTMLOutput, error) {
+	if p == nil {
+		return nil, fmt.Errorf("tools: html: nil page")
+	}
+
+	h, err := p.HTML()
+	if err != nil {
+		return nil, fmt.Errorf("tools: html: %w", err)
+	}
+
+	return &HTMLOutput{HTML: h}, nil
+}
+
+// Markdown returns the current page rendered as Markdown.
+func Markdown(_ context.Context, p *scout.Page, _ MarkdownInput) (*MarkdownOutput, error) {
+	if p == nil {
+		return nil, fmt.Errorf("tools: markdown: nil page")
+	}
+
+	m, err := p.Markdown()
+	if err != nil {
+		return nil, fmt.Errorf("tools: markdown: %w", err)
+	}
+
+	return &MarkdownOutput{Markdown: m}, nil
+}
+
+// Cookies returns the cookies visible to the current page.
+func Cookies(_ context.Context, p *scout.Page, _ CookiesInput) (*CookiesOutput, error) {
+	if p == nil {
+		return nil, fmt.Errorf("tools: cookies: nil page")
+	}
+
+	c, err := p.GetCookies()
+	if err != nil {
+		return nil, fmt.Errorf("tools: cookies: %w", err)
+	}
+
+	return &CookiesOutput{Cookies: c}, nil
+}
+
+// URL returns the current page URL.
+func URL(_ context.Context, p *scout.Page, _ URLInput) (*URLOutput, error) {
+	if p == nil {
+		return nil, fmt.Errorf("tools: url: nil page")
+	}
+
+	u, err := p.URL()
+	if err != nil {
+		return nil, fmt.Errorf("tools: url: %w", err)
+	}
+
+	return &URLOutput{URL: u}, nil
+}
+
+// Title returns the current page title.
+func Title(_ context.Context, p *scout.Page, _ TitleInput) (*TitleOutput, error) {
+	if p == nil {
+		return nil, fmt.Errorf("tools: title: nil page")
+	}
+
+	t, err := p.Title()
+	if err != nil {
+		return nil, fmt.Errorf("tools: title: %w", err)
+	}
+
+	return &TitleOutput{Title: t}, nil
+}

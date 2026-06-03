@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -205,5 +206,74 @@ func TestEval(t *testing.T) {
 
 	if _, err := Eval(context.Background(), p, EvalInput{}); err == nil {
 		t.Error("empty expression should error")
+	}
+}
+
+func TestContentReads(t *testing.T) {
+	_, p := newPageTestBrowser(t)
+	srv := newTestServer(t, "<h1>hello</h1>")
+
+	if _, err := Navigate(context.Background(), p, NavigateInput{URL: srv.URL}); err != nil {
+		t.Fatal(err)
+	}
+
+	titleOut, err := Title(context.Background(), p, TitleInput{})
+	if err != nil {
+		t.Fatalf("Title: %v", err)
+	}
+
+	if titleOut.Title != "T" {
+		t.Errorf("Title = %q, want T", titleOut.Title)
+	}
+
+	urlOut, err := URL(context.Background(), p, URLInput{})
+	if err != nil {
+		t.Fatalf("URL: %v", err)
+	}
+
+	if urlOut.URL == "" {
+		t.Errorf("URL empty")
+	}
+
+	htmlOut, err := HTML(context.Background(), p, HTMLInput{})
+	if err != nil {
+		t.Fatalf("HTML: %v", err)
+	}
+
+	if !strings.Contains(htmlOut.HTML, "<body>") {
+		t.Errorf("HTML missing <body>: %q", htmlOut.HTML)
+	}
+
+	mdOut, err := Markdown(context.Background(), p, MarkdownInput{})
+	if err != nil {
+		t.Fatalf("Markdown: %v", err)
+	}
+
+	if mdOut.Markdown == "" {
+		t.Errorf("Markdown empty")
+	}
+
+	if _, err := Cookies(context.Background(), p, CookiesInput{}); err != nil {
+		t.Errorf("Cookies: %v", err)
+	}
+
+	if _, err := HTML(context.Background(), nil, HTMLInput{}); err == nil {
+		t.Error("nil page HTML should error")
+	}
+
+	if _, err := Markdown(context.Background(), nil, MarkdownInput{}); err == nil {
+		t.Error("nil page Markdown should error")
+	}
+
+	if _, err := Cookies(context.Background(), nil, CookiesInput{}); err == nil {
+		t.Error("nil page Cookies should error")
+	}
+
+	if _, err := URL(context.Background(), nil, URLInput{}); err == nil {
+		t.Error("nil page URL should error")
+	}
+
+	if _, err := Title(context.Background(), nil, TitleInput{}); err == nil {
+		t.Error("nil page Title should error")
 	}
 }
