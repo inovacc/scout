@@ -41,7 +41,7 @@ func TestClientTLSCredentials(t *testing.T) {
 		t.Fatalf("GenerateIdentity: %v", err)
 	}
 
-	creds := ClientTLSCredentials(id)
+	creds := ClientTLSCredentials(id, nil)
 	if creds == nil {
 		t.Error("credentials should not be nil")
 	}

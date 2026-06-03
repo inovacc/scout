@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"syscall"
 
@@ -23,9 +24,22 @@ func init() {
 	rootCmd.AddCommand(serverCmd)
 
 	serverCmd.Flags().Int("port", 9551, "gRPC server port")
-	serverCmd.Flags().Bool("reflection", true, "enable gRPC reflection")
+	serverCmd.Flags().String("host", "", "bind host (default: loopback for --insecure, all interfaces for mTLS)")
+	serverCmd.Flags().Bool("reflection", false, "enable gRPC reflection (exposes the service schema)")
 	serverCmd.Flags().Bool("insecure", false, "disable mTLS (no authentication)")
 	// --idle-timeout inherited from root persistent flags
+}
+
+// isLoopbackHost reports whether host refers only to the local machine.
+func isLoopbackHost(host string) bool {
+	switch host {
+	case "127.0.0.1", "::1", "localhost":
+		return true
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+	return false
 }
 
 var serverCmd = &cobra.Command{
@@ -33,10 +47,21 @@ var serverCmd = &cobra.Command{
 	Short: "Start the gRPC browser automation server",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		port, _ := cmd.Flags().GetInt("port")
+		host, _ := cmd.Flags().GetString("host")
 		enableReflection, _ := cmd.Flags().GetBool("reflection")
 		insecureMode, _ := cmd.Flags().GetBool("insecure")
 
-		addr := fmt.Sprintf(":%d", port)
+		// Default the insecure (no-auth) server to loopback so it is never
+		// exposed to the network. The mTLS server keeps binding all interfaces
+		// (it is authenticated and meant for LAN device pairing).
+		if host == "" && insecureMode {
+			host = "127.0.0.1"
+		}
+		if insecureMode && !isLoopbackHost(host) {
+			_, _ = fmt.Fprintln(os.Stderr, "warning: --insecure server is binding a non-loopback address with NO authentication; any host that can reach it can control this browser")
+		}
+
+		addr := net.JoinHostPort(host, strconv.Itoa(port))
 
 		lis, err := net.Listen("tcp", addr)
 		if err != nil {

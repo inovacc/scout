@@ -116,7 +116,9 @@ func ensureDaemon(addr string) error {
 		port = parts[1]
 	}
 
-	cmd := exec.Command(exe, "server", "--port", port, "--insecure")
+	// The auto-spawned daemon is insecure (no mTLS), so pin it to loopback — it
+	// must never be reachable from the network.
+	cmd := exec.Command(exe, "server", "--port", port, "--insecure", "--host", "127.0.0.1")
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 
@@ -162,7 +164,12 @@ func getClientTLS(addr string) (pb.ScoutServiceClient, *grpc.ClientConn, error) 
 		return nil, nil, fmt.Errorf("scout: load identity for TLS: %w", err)
 	}
 
-	creds := grpc.WithTransportCredentials(server.ClientTLSCredentials(id))
+	trust, err := identity.NewTrustStore(filepath.Join(dir, "trusted"))
+	if err != nil {
+		return nil, nil, fmt.Errorf("scout: load trust store for TLS: %w", err)
+	}
+
+	creds := grpc.WithTransportCredentials(server.ClientTLSCredentials(id, trust))
 
 	return dialClient(addr, creds)
 }

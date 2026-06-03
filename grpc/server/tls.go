@@ -58,11 +58,39 @@ func NewTLSServer(id *identity2.Identity, trustStore *identity2.TrustStore, opts
 }
 
 // ClientTLSCredentials creates gRPC transport credentials for a client using mTLS.
-func ClientTLSCredentials(id *identity2.Identity) credentials.TransportCredentials {
+// The self-signed certs cannot be chain-verified, so the SERVER is pinned by its
+// device ID (preventing server impersonation / MITM): it is accepted only if it
+// matches the client's own identity (the local daemon) or is in the client's
+// trust store (a paired remote device). trust may be nil for the local-only case.
+func ClientTLSCredentials(id *identity2.Identity, trust *identity2.TrustStore) credentials.TransportCredentials {
 	tlsCfg := &tls.Config{
 		Certificates:       []tls.Certificate{id.Certificate},
-		InsecureSkipVerify: true, //nolint:gosec // self-signed certs; we verify via device ID
+		InsecureSkipVerify: true, //nolint:gosec // self-signed; server pinned by device ID in VerifyPeerCertificate
 		MinVersion:         tls.VersionTLS13,
+		VerifyPeerCertificate: func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+			if len(rawCerts) == 0 {
+				return fmt.Errorf("no server certificate provided")
+			}
+
+			cert, err := x509.ParseCertificate(rawCerts[0])
+			if err != nil {
+				return fmt.Errorf("parse server cert: %w", err)
+			}
+
+			deviceID, err := identity2.DeviceIDFromCert(cert)
+			if err != nil {
+				return fmt.Errorf("compute server device ID: %w", err)
+			}
+
+			if deviceID == id.DeviceID {
+				return nil // the local machine's own server
+			}
+			if trust != nil && trust.IsTrusted(deviceID) {
+				return nil // a paired remote device
+			}
+
+			return fmt.Errorf("server device %s not trusted", identity2.ShortID(deviceID))
+		},
 	}
 
 	return credentials.NewTLS(tlsCfg)
