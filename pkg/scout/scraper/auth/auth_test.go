@@ -193,8 +193,9 @@ func TestOAuthServer_HandleCallback(t *testing.T) {
 	}
 	defer srv.Close()
 
-	// Simulate an OAuth callback
-	callbackURL := srv.CallbackURL() + "?code=abc123&state=xyz"
+	// Simulate an OAuth callback carrying the server-issued state.
+	st := srv.State()
+	callbackURL := srv.CallbackURL() + "?code=abc123&state=" + st
 	resp, err := http.Get(callbackURL) //nolint:gosec,noctx
 	if err != nil {
 		t.Fatalf("callback request error = %v", err)
@@ -216,11 +217,45 @@ func TestOAuthServer_HandleCallback(t *testing.T) {
 	if result.Code != "abc123" {
 		t.Errorf("Code = %q, want %q", result.Code, "abc123")
 	}
-	if result.State != "xyz" {
-		t.Errorf("State = %q, want %q", result.State, "xyz")
+	if result.State != st {
+		t.Errorf("State = %q, want %q", result.State, st)
 	}
 	if result.Error != "" {
 		t.Errorf("Error = %q, want empty", result.Error)
+	}
+}
+
+func TestOAuthServer_RejectsStateMismatch(t *testing.T) {
+	srv, err := NewOAuthServer()
+	if err != nil {
+		t.Fatalf("NewOAuthServer() error = %v", err)
+	}
+	defer srv.Close()
+
+	// A callback with a forged/absent state must be rejected (CSRF guard).
+	callbackURL := srv.CallbackURL() + "?code=stolen&state=attacker-controlled"
+	resp, err := http.Get(callbackURL) //nolint:gosec,noctx
+	if err != nil {
+		t.Fatalf("callback request error = %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400 for state mismatch", resp.StatusCode)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	result, err := srv.Wait(ctx)
+	if err != nil {
+		t.Fatalf("Wait() error = %v", err)
+	}
+	if result.Code != "" {
+		t.Errorf("Code = %q, want empty (code must not be delivered on mismatch)", result.Code)
+	}
+	if result.Error != "state mismatch" {
+		t.Errorf("Error = %q, want %q", result.Error, "state mismatch")
 	}
 }
 
@@ -231,7 +266,7 @@ func TestOAuthServer_HandleCallbackError(t *testing.T) {
 	}
 	defer srv.Close()
 
-	callbackURL := srv.CallbackURL() + "?error=access_denied"
+	callbackURL := srv.CallbackURL() + "?error=access_denied&state=" + srv.State()
 	resp, err := http.Get(callbackURL) //nolint:gosec,noctx
 	if err != nil {
 		t.Fatalf("callback request error = %v", err)
@@ -395,8 +430,8 @@ func TestOAuthServer_HandleCallbackViaHTTPTest(t *testing.T) {
 	}
 	defer srv.Close()
 
-	// Use httptest to directly test the handler
-	req := httptest.NewRequest(http.MethodGet, "/callback?code=test-code&state=test-state&error=", nil)
+	// Use httptest to directly test the handler, carrying the issued state.
+	req := httptest.NewRequest(http.MethodGet, "/callback?code=test-code&state="+srv.State()+"&error=", nil)
 	w := httptest.NewRecorder()
 
 	srv.handleCallback(w, req)
