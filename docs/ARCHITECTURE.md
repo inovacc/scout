@@ -156,6 +156,10 @@ flowchart TB
 
 The MCP server in `pkg/scout/mcp/` was refactored to use a clean handler pattern, extracting tool registrations from a monolithic function into focused, domain-organized files. The `NewServer()` function (~40 lines) acts as a thin orchestrator that calls specialized register functions, each responsible for a cohesive group of related tools.
 
+### Shared command executor (`pkg/scout/tools/`)
+
+`pkg/scout/tools/` is the shared command executor consumed by both the REPL (`cmd/scout/repl.go`) and the MCP server (`pkg/scout/mcp/`). Each browser capability is a typed verb — `func Verb(ctx, p *scout.Page, in Input) (*Output, error)` for page-level operations and `func Verb(ctx, b *scout.Browser, in Input) (*Output, error)` for browser-level ones — with a `tools:` error prefix and nil guards. REPL cases and MCP `AddTool` handlers are thin adapters that only parse input and format output; they contain no direct rod/CDP calls. Adding a capability means one `tools/` verb plus one REPL case plus one MCP registration. The `tools.TestVerbParity` manifest test guards this mapping so a verb cannot be silently exposed in one surface but not the other.
+
 ### Register Pattern
 
 Each handler file implements a `register*Tools(server *mcp.Server, state *mcpState)` function that:
