@@ -177,10 +177,18 @@ func TestManifest_CommandPath(t *testing.T) {
 		t.Errorf("CommandPath() = %q, want %q", got, want)
 	}
 
+	// An absolute (non-local) command must fail closed: CommandPath returns ""
+	// so an arbitrary system binary is never executed from a manifest.
 	absCmd := filepath.Join(os.TempDir(), "plugin")
 
 	m2 := &Manifest{Command: absCmd, Dir: "/tmp"}
-	if m2.CommandPath() != absCmd {
-		t.Errorf("absolute command should be returned as-is, got %q", m2.CommandPath())
+	if got := m2.CommandPath(); got != "" {
+		t.Errorf("absolute command must be rejected (empty path), got %q", got)
+	}
+
+	// A parent-directory escape is likewise rejected.
+	m3 := &Manifest{Command: "../../../bin/sh", Dir: "/home/user/.scout/plugins/test"}
+	if got := m3.CommandPath(); got != "" {
+		t.Errorf("parent-escape command must be rejected (empty path), got %q", got)
 	}
 }

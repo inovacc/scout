@@ -141,6 +141,13 @@ func (m *Manifest) validate() error {
 		return fmt.Errorf("command is required")
 	}
 
+	// The command must be a local path inside the plugin's own directory. This
+	// blocks a manifest from executing an arbitrary system binary via an
+	// absolute path or a parent-directory ('..') escape.
+	if !filepath.IsLocal(m.Command) {
+		return fmt.Errorf("command must be a local path within the plugin directory, got %q", m.Command)
+	}
+
 	if len(m.Capabilities) == 0 {
 		return fmt.Errorf("at least one capability is required")
 	}
@@ -160,10 +167,13 @@ func (m *Manifest) HasCapability(capability string) bool {
 	return slices.Contains(m.Capabilities, capability)
 }
 
-// CommandPath returns the absolute path to the plugin command.
+// CommandPath returns the absolute path to the plugin command, always inside
+// the plugin's own directory. validate() rejects non-local commands; this guards
+// again in case a Manifest was built without validation, failing closed (empty
+// path, which will not execute) rather than running an arbitrary binary.
 func (m *Manifest) CommandPath() string {
-	if filepath.IsAbs(m.Command) {
-		return m.Command
+	if !filepath.IsLocal(m.Command) {
+		return ""
 	}
 
 	return filepath.Join(m.Dir, m.Command)
