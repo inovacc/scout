@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -268,12 +272,9 @@ var ollamaListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List locally available Ollama models",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		provider, err := newOllamaFromFlags(cmd)
-		if err != nil {
-			return err
-		}
+		host, _ := cmd.Flags().GetString("ollama-host")
 
-		models, err := provider.ListModels(context.Background())
+		models, err := ollamaListModels(cmd.Context(), host)
 		if err != nil {
 			return err
 		}
@@ -296,15 +297,11 @@ var ollamaPullCmd = &cobra.Command{
 	Short: "Download an Ollama model",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		provider, err := newOllamaFromFlags(cmd)
-		if err != nil {
-			return err
-		}
-
+		host, _ := cmd.Flags().GetString("ollama-host")
 		model := args[0]
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Pulling %s...\n", model)
 
-		err = provider.PullModel(context.Background(), model, func(status string, completed, total int64) {
+		err := ollamaPullModel(cmd.Context(), host, model, func(status string, completed, total int64) {
 			if total > 0 {
 				pct := float64(completed) / float64(total) * 100
 				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "\r%s: %.1f%%", status, pct)
@@ -326,12 +323,9 @@ var ollamaStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Check Ollama server connection",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		provider, err := newOllamaFromFlags(cmd)
-		if err != nil {
-			return err
-		}
+		host, _ := cmd.Flags().GetString("ollama-host")
 
-		models, err := provider.ListModels(context.Background())
+		models, err := ollamaListModels(cmd.Context(), host)
 		if err != nil {
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Connection failed: %v\n", err)
 			return nil
@@ -533,16 +527,22 @@ func createProviderFull(name, model, apiKey, apiBase, ollamaHost string) (scout.
 		return scout.NewMCPSamplingProvider(), nil
 
 	case "ollama":
-		var opts []scout.OllamaOption
-		if ollamaHost != "" {
-			opts = append(opts, scout.WithOllamaHost(ollamaHost))
-		}
+		// Ollama exposes an OpenAI-compatible API. The native Ollama SDK
+		// provider was removed (it pulled unfixable CVEs); we now route
+		// "ollama" through the OpenAI-compatible provider against Ollama's
+		// /v1 endpoint. The API key is ignored by Ollama but required by
+		// the OpenAI client, so we pass a placeholder.
+		base := ollamaBaseURL(ollamaHost)
 
+		opts := []scout.OpenAIOption{
+			scout.WithOpenAIKey("ollama"),
+			scout.WithOpenAIBaseURL(base),
+		}
 		if model != "" {
-			opts = append(opts, scout.WithOllamaModel(model))
+			opts = append(opts, scout.WithOpenAIModel(model))
 		}
 
-		return scout.NewOllamaProvider(opts...)
+		return scout.NewOpenAIProvider(opts...)
 
 	case "openai":
 		opts := []scout.OpenAIOption{scout.WithOpenAIKey(apiKey)}
@@ -633,15 +633,100 @@ func resolveAPIKey(provider string) string {
 	return ""
 }
 
-func newOllamaFromFlags(cmd *cobra.Command) (*scout.OllamaProvider, error) {
-	host, _ := cmd.Flags().GetString("ollama-host")
-
-	var opts []scout.OllamaOption
-	if host != "" {
-		opts = append(opts, scout.WithOllamaHost(host))
+// ollamaBaseURL returns the OpenAI-compatible base URL for an Ollama server.
+// Ollama exposes an OpenAI-compatible API at /v1. host may be empty (default
+// localhost), a "host:port", or a full URL.
+func ollamaBaseURL(host string) string {
+	if host == "" {
+		return "http://localhost:11434/v1"
 	}
 
-	return scout.NewOllamaProvider(opts...)
+	h := host
+	if !strings.HasPrefix(h, "http://") && !strings.HasPrefix(h, "https://") {
+		h = "http://" + h
+	}
+
+	h = strings.TrimRight(h, "/")
+	if !strings.HasSuffix(h, "/v1") {
+		h += "/v1"
+	}
+
+	return h
+}
+
+// ollamaAPIBase returns the Ollama NATIVE REST API base (no /v1 suffix).
+func ollamaAPIBase(host string) string {
+	return strings.TrimSuffix(ollamaBaseURL(host), "/v1")
+}
+
+// ollamaListModels lists local models via Ollama's native GET /api/tags
+// (the native Ollama SDK was removed — it pulled unfixable CVEs).
+func ollamaListModels(ctx context.Context, host string) ([]string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ollamaAPIBase(host)+"/api/tags", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("scout: ollama: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var out struct {
+		Models []struct {
+			Name string `json:"name"`
+		} `json:"models"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, fmt.Errorf("scout: ollama: decode tags: %w", err)
+	}
+
+	names := make([]string, 0, len(out.Models))
+	for _, m := range out.Models {
+		names = append(names, m.Name)
+	}
+
+	return names, nil
+}
+
+// ollamaPullModel downloads a model via Ollama's native streaming POST /api/pull.
+func ollamaPullModel(ctx context.Context, host, model string, progress func(status string, completed, total int64)) error {
+	body, _ := json.Marshal(map[string]string{"name": model})
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ollamaAPIBase(host)+"/api/pull", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("scout: ollama: pull: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	sc := bufio.NewScanner(resp.Body)
+	sc.Buffer(make([]byte, 0, 1<<20), 1<<20)
+	for sc.Scan() {
+		var ev struct {
+			Status    string `json:"status"`
+			Completed int64  `json:"completed"`
+			Total     int64  `json:"total"`
+			Error     string `json:"error"`
+		}
+		if err := json.Unmarshal(sc.Bytes(), &ev); err != nil {
+			continue
+		}
+		if ev.Error != "" {
+			return fmt.Errorf("scout: ollama: pull: %s", ev.Error)
+		}
+		if progress != nil {
+			progress(ev.Status, ev.Completed, ev.Total)
+		}
+	}
+
+	return sc.Err()
 }
 
 func workspaceFromFlags(cmd *cobra.Command) (*scout.LLMWorkspace, error) {

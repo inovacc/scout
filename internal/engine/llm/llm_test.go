@@ -437,42 +437,6 @@ func TestOpenAIProvider_DefaultOptions(t *testing.T) {
 	}
 }
 
-func TestNewOllamaProvider_WithHost(t *testing.T) {
-	p, err := NewOllamaProvider(WithOllamaHost("http://localhost:11434"))
-	if err != nil {
-		t.Fatalf("create: %v", err)
-	}
-
-	if p.Name() != "ollama" {
-		t.Errorf("Name() = %q, want %q", p.Name(), "ollama")
-	}
-
-	if p.model != "llama3.2" {
-		t.Errorf("model = %q, want %q", p.model, "llama3.2")
-	}
-}
-
-func TestNewOllamaProvider_InvalidHost(t *testing.T) {
-	_, err := NewOllamaProvider(WithOllamaHost("://invalid"))
-	if err == nil {
-		t.Fatal("expected error for invalid host URL")
-	}
-}
-
-func TestNewOllamaProvider_CustomModel(t *testing.T) {
-	p, err := NewOllamaProvider(
-		WithOllamaHost("http://localhost:11434"),
-		WithOllamaModel("codellama"),
-	)
-	if err != nil {
-		t.Fatalf("create: %v", err)
-	}
-
-	if p.model != "codellama" {
-		t.Errorf("model = %q, want %q", p.model, "codellama")
-	}
-}
-
 func TestOpenAIProvider_CustomAuthHeader(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-API-Key") != "mykey" {

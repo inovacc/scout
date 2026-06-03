@@ -24,8 +24,6 @@ type SessionIndex = llm.SessionIndex
 // AnthropicProvider re-exports llm.AnthropicProvider from sub-package.
 type AnthropicProvider = llm.AnthropicProvider
 type AnthropicOption = llm.AnthropicOption
-type OllamaProvider = llm.OllamaProvider
-type OllamaOption = llm.OllamaOption
 
 type MCPSamplingProvider = llm.MCPSamplingProvider
 type MCPSamplingOption = llm.MCPSamplingOption
@@ -56,12 +54,6 @@ var (
 	WithAnthropicModel   = llm.WithAnthropicModel
 	WithAnthropicHTTPClient = llm.WithAnthropicHTTPClient
 
-	NewOllamaProvider    = llm.NewOllamaProvider
-	WithOllamaHost       = llm.WithOllamaHost
-	WithOllamaModel      = llm.WithOllamaModel
-	WithOllamaAutoPull   = llm.WithOllamaAutoPull
-	WithOllamaHTTPClient = llm.WithOllamaHTTPClient
-
 	NewOpenAIProvider      = llm.NewOpenAIProvider
 	NewOpenRouterProvider  = llm.NewOpenRouterProvider
 	NewDeepSeekProvider    = llm.NewDeepSeekProvider
@@ -77,7 +69,7 @@ var (
 
 	// MCP sampling: routes LLM completions through the connected MCP
 	// host (e.g. Claude Code) via sampling/createMessage reverse-RPC.
-	// No external API keys and no local ollama install — the host does
+	// No external API keys and no local LLM install — the host does
 	// the inference. Used when scout itself is running as an MCP server.
 	NewMCPSamplingProvider   = llm.NewMCPSamplingProvider
 	WithMCPSamplingMaxTokens = llm.WithMCPSamplingMaxTokens

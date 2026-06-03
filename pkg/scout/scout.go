@@ -135,8 +135,6 @@ type MarkdownOption = engine.MarkdownOption
 type MetaData = engine.MetaData
 type MutationEvent = engine.MutationEvent
 type NetworkRecorder = engine.NetworkRecorder
-type OllamaOption = engine.OllamaOption
-type OllamaProvider = engine.OllamaProvider
 type MCPSamplingOption = engine.MCPSamplingOption
 type MCPSamplingProvider = engine.MCPSamplingProvider
 type OpenAIOption = engine.OpenAIOption
@@ -381,7 +379,6 @@ func NewKnowledgeWriter(dir string) *KnowledgeWriter { return engine.NewKnowledg
 func NewLLMWorkspace(path string) (*LLMWorkspace, error) { return engine.NewLLMWorkspace(path) }
 func NewNetworkRecorder(page *Page, opts ...RecorderOption) *NetworkRecorder { return engine.NewNetworkRecorder(page, opts...) }
 func NewManagedPagePool(browser *Browser, size int) (*ManagedPagePool, error) { return engine.NewManagedPagePool(browser, size) }
-func NewOllamaProvider(opts ...OllamaOption) (*OllamaProvider, error) { return engine.NewOllamaProvider(opts...) }
 func NewMCPSamplingProvider(opts ...MCPSamplingOption) *MCPSamplingProvider { return engine.NewMCPSamplingProvider(opts...) }
 func WithMCPSamplingMaxTokens(n int64) MCPSamplingOption { return engine.WithMCPSamplingMaxTokens(n) }
 func IsMCPSamplingAvailable() bool { return engine.IsMCPSamplingAvailable() }
@@ -595,10 +592,6 @@ func WithMaxConcurrent(n int) RateLimitOption { return engine.WithMaxConcurrent(
 func WithMaxRetries(n int) RateLimitOption { return engine.WithMaxRetries(n) }
 func WithMaximized() Option { return engine.WithMaximized() }
 func WithNoSandbox() Option { return engine.WithNoSandbox() }
-func WithOllamaAutoPull() OllamaOption { return engine.WithOllamaAutoPull() }
-func WithOllamaHTTPClient(c *http.Client) OllamaOption { return engine.WithOllamaHTTPClient(c) }
-func WithOllamaHost(host string) OllamaOption { return engine.WithOllamaHost(host) }
-func WithOllamaModel(model string) OllamaOption { return engine.WithOllamaModel(model) }
 func WithOpenAIAuthHeader(header, prefix string) OpenAIOption { return engine.WithOpenAIAuthHeader(header, prefix) }
 func WithOpenAIBaseURL(url string) OpenAIOption { return engine.WithOpenAIBaseURL(url) }
 func WithOpenAIExtraHeaders(headers map[string]string) OpenAIOption { return engine.WithOpenAIExtraHeaders(headers) }
