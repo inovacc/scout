@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"regexp"
 	"time"
@@ -23,7 +24,9 @@ type RunResult struct {
 	Steps []StepResult
 }
 
-// StepResult records one step's response + the vars it bound.
+// StepResult records one step's response + the vars it bound. Body holds the
+// full response body verbatim, which may echo secret values a server returns;
+// callers must not log a RunResult blindly.
 type StepResult struct {
 	ID        string
 	Status    int
@@ -39,13 +42,10 @@ func Run(ctx context.Context, f *FlowSpec, opts RunOptions) (*RunResult, error) 
 	if client == nil {
 		client = &http.Client{Timeout: 30 * time.Second}
 	}
+	// vars: spec.Vars overlaid with opts.Vars (opts wins), then grown by extracts.
 	vars := map[string]string{}
-	for k, v := range f.Vars {
-		vars[k] = v
-	}
-	for k, v := range opts.Vars {
-		vars[k] = v
-	}
+	maps.Copy(vars, f.Vars)
+	maps.Copy(vars, opts.Vars)
 
 	res := &RunResult{}
 	for _, step := range f.Steps {

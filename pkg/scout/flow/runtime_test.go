@@ -12,13 +12,13 @@ import (
 func TestRunRESTExtractInjectChain(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-CSRF-Token", "csrf-9")
+		w.Header().Set("X-Csrf-Token", "csrf-9")
 		_, _ = w.Write([]byte(`{"access_token":"tok-9"}`))
 	})
 	var sawAuth, sawCSRF string
 	mux.HandleFunc("/me", func(w http.ResponseWriter, r *http.Request) {
 		sawAuth = r.Header.Get("Authorization")
-		sawCSRF = r.Header.Get("X-CSRF-Token")
+		sawCSRF = r.Header.Get("X-Csrf-Token")
 		_, _ = w.Write([]byte(`{"id":"u-1"}`))
 	})
 	srv := httptest.NewServer(mux)
@@ -52,7 +52,7 @@ func TestRunRESTExtractInjectChain(t *testing.T) {
 
 func TestRunExpectStatusMismatchFails(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer srv.Close()
 	f := &FlowSpec{Version: "1", Steps: []FlowStep{
