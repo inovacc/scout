@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -34,6 +36,9 @@ func initPluginManager() *plugin.Manager {
 func init() {
 	rootCmd.AddCommand(pluginCmd)
 	pluginCmd.AddCommand(pluginListCmd, pluginInstallCmd, pluginRemoveCmd, pluginRunCmd, pluginSearchCmd, pluginUpdateCmd, pluginCheckUpdatesCmd)
+
+	pluginInstallCmd.Flags().String("checksum", "", "expected SHA256 (hex) of the downloaded archive; install aborts on mismatch")
+	pluginInstallCmd.Flags().Bool("insecure-http", false, "allow plugin download over plaintext HTTP (NOT recommended)")
 }
 
 var pluginCmd = &cobra.Command{
@@ -184,7 +189,15 @@ func installPluginFromDir(cmd *cobra.Command, srcDir string) error {
 	return nil
 }
 
+const maxPluginDownload = 128 << 20 // 128 MB
+
 func installPluginFromURL(cmd *cobra.Command, url string) error {
+	if strings.HasPrefix(url, "http://") {
+		if allow, _ := cmd.Flags().GetBool("insecure-http"); !allow {
+			return fmt.Errorf("scout: plugin install: refusing plaintext HTTP download of %q; use https or pass --insecure-http", url)
+		}
+	}
+
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "downloading %s...\n", url)
 
 	resp, err := http.Get(url) //nolint:gosec,noctx // user-provided URL
@@ -198,9 +211,22 @@ func installPluginFromURL(cmd *cobra.Command, url string) error {
 		return fmt.Errorf("scout: plugin install: download: HTTP %d", resp.StatusCode)
 	}
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxPluginDownload+1))
 	if err != nil {
 		return fmt.Errorf("scout: plugin install: read body: %w", err)
+	}
+	if len(data) > maxPluginDownload {
+		return fmt.Errorf("scout: plugin install: download exceeds %d-byte limit", maxPluginDownload)
+	}
+
+	// A checksum is the only trust anchor for a downloaded binary; without one
+	// the install is trust-on-first-use. Verify when provided, warn otherwise.
+	expected, _ := cmd.Flags().GetString("checksum")
+	if err := verifyPluginChecksum(data, expected); err != nil {
+		return err
+	}
+	if expected == "" {
+		_, _ = fmt.Fprintf(cmd.OutOrStderr(), "warning: installing UNVERIFIED plugin (no --checksum). SHA256=%s\n", sha256Hex(data))
 	}
 
 	// Extract archive to temp dir.
@@ -224,6 +250,24 @@ func installPluginFromURL(cmd *cobra.Command, url string) error {
 	}
 
 	return installPluginFromDir(cmd, manifestDir)
+}
+
+func sha256Hex(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+// verifyPluginChecksum checks data against an expected hex SHA256. An empty
+// expected value is permitted (the caller warns); a non-empty mismatch is fatal.
+func verifyPluginChecksum(data []byte, expected string) error {
+	if expected == "" {
+		return nil
+	}
+	if got := sha256Hex(data); !strings.EqualFold(strings.TrimSpace(expected), got) {
+		return fmt.Errorf("scout: plugin install: checksum mismatch: expected %s, got %s", expected, got)
+	}
+
+	return nil
 }
 
 func findManifestDir(root string) (string, error) {
