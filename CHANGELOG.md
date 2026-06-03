@@ -2,6 +2,17 @@
 
 All notable changes to Scout are documented here. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Security
+- **Pairing now requires an out-of-band token (BREAKING).** `PairingServer.Pair` rejects the RPC with `codes.PermissionDenied` unless the client presents a matching `x-pairing-token` gRPC metadata value, compared in constant time (`crypto/subtle`). A server configured with an empty token rejects *all* pairing (fails closed). Closes the trust-on-first-use auto-enroll where any host able to reach the pairing port enrolled itself in the trust store and gained full remote browser control (including `eval`). `scout server` / `scout daemon` generates and prints a 160-bit base32 token when none is supplied via `--pairing-token` / `SCOUT_PAIRING_TOKEN`; `scout device pair` reads the same flag/env (or prompts) and sends it in metadata.
+
+### Removed
+- **`github.com/ollama/ollama` SDK dependency dropped** — clears 8 unfixable reachable CVEs (GO-2025-3557 / 3558 / 3559 / 3582 / 3689 / 3695 / 3824 / 4251, all "Fixed in: N/A"). `govulncheck` reachable count drops 16 → 7. Also removes transitive `gin`, `mattn/go-sqlite3`, and `charmbracelet/bubbletea` from the build graph. `internal/engine/llm/ollama.go` and its test deleted; `OllamaProvider` / `NewOllamaProvider` / `WithOllama*` facade re-exports removed.
+
+### Changed
+- The `ollama` LLM provider now routes through Ollama's OpenAI-compatible `/v1` endpoint via `NewOpenAIProvider` — no behavior change for chat/completion. `scout ollama list` / `pull` / `status` are reimplemented directly on Ollama's native REST API (`GET /api/tags`, `POST /api/pull`) — identical UX, no SDK dependency.
+
 ## [1.0.4] - 2026-05-20
 
 ### Security
