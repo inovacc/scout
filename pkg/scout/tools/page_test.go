@@ -67,3 +67,75 @@ func TestNavigate(t *testing.T) {
 		t.Error("empty url should error")
 	}
 }
+
+func TestBackForward(t *testing.T) {
+	b, p := newPageTestBrowser(t)
+	if b == nil {
+		t.Fatal("nil browser")
+	}
+
+	srv1 := newTestServer(t, "<p>one</p>")
+	srv2 := newTestServer(t, "<p>two</p>")
+
+	if _, err := Navigate(context.Background(), p, NavigateInput{URL: srv1.URL}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Navigate(context.Background(), p, NavigateInput{URL: srv2.URL}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Back(context.Background(), p, BackInput{}); err != nil {
+		t.Errorf("Back: %v", err)
+	}
+
+	if _, err := Forward(context.Background(), p, ForwardInput{}); err != nil {
+		t.Errorf("Forward: %v", err)
+	}
+
+	if _, err := Back(context.Background(), nil, BackInput{}); err == nil {
+		t.Error("nil page Back should error")
+	}
+
+	if _, err := Forward(context.Background(), nil, ForwardInput{}); err == nil {
+		t.Error("nil page Forward should error")
+	}
+}
+
+func TestReload(t *testing.T) {
+	_, p := newPageTestBrowser(t)
+	srv := newTestServer(t, "<p>x</p>")
+
+	if _, err := Navigate(context.Background(), p, NavigateInput{URL: srv.URL}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Reload(context.Background(), p, ReloadInput{}); err != nil {
+		t.Errorf("Reload: %v", err)
+	}
+
+	if _, err := Reload(context.Background(), nil, ReloadInput{}); err == nil {
+		t.Error("nil page should error")
+	}
+}
+
+func TestWaitForElement(t *testing.T) {
+	_, p := newPageTestBrowser(t)
+	srv := newTestServer(t, `<div id="ready">ok</div>`)
+
+	if _, err := Navigate(context.Background(), p, NavigateInput{URL: srv.URL}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Wait(context.Background(), p, WaitInput{Selector: "#ready"}); err != nil {
+		t.Errorf("Wait selector: %v", err)
+	}
+
+	if _, err := Wait(context.Background(), p, WaitInput{}); err != nil {
+		t.Errorf("Wait load: %v", err)
+	}
+
+	if _, err := Wait(context.Background(), nil, WaitInput{}); err == nil {
+		t.Error("nil page should error")
+	}
+}
