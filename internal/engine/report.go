@@ -332,11 +332,26 @@ func renderCrawlReport(b *strings.Builder, r *Report) {
 	}
 }
 
+// reportPath resolves a report ID to its file path, rejecting any ID that
+// could traverse out of the reports directory. Report IDs are UUIDv7 strings,
+// so a legitimate ID is always a single clean path component.
+func reportPath(id string) (string, error) {
+	if id == "" || strings.ContainsAny(id, `/\`) || strings.Contains(id, "..") ||
+		filepath.IsAbs(id) || id != filepath.Base(id) {
+		return "", fmt.Errorf("scout: report: invalid report id %q", id)
+	}
+
+	return filepath.Join(ReportsDir(), id+".txt"), nil
+}
+
 // ReadReport reads a report by ID from ~/.scout/reports/.
 // Supports both the new structured text format (extracts JSON from code block)
 // and legacy raw JSON format.
 func ReadReport(id string) (*Report, error) {
-	path := filepath.Join(ReportsDir(), id+".txt")
+	path, err := reportPath(id)
+	if err != nil {
+		return nil, err
+	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -363,7 +378,10 @@ func ReadReport(id string) (*Report, error) {
 
 // ReadReportRaw returns the full text content of a report file.
 func ReadReportRaw(id string) (string, error) {
-	path := filepath.Join(ReportsDir(), id+".txt")
+	path, err := reportPath(id)
+	if err != nil {
+		return "", err
+	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -412,7 +430,10 @@ func ListReports() ([]Report, error) {
 
 // DeleteReport removes a report file by ID.
 func DeleteReport(id string) error {
-	path := filepath.Join(ReportsDir(), id+".txt")
+	path, err := reportPath(id)
+	if err != nil {
+		return err
+	}
 	if err := os.Remove(path); err != nil {
 		return fmt.Errorf("scout: report: delete %s: %w", id, err)
 	}
