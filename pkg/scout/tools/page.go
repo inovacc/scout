@@ -113,3 +113,114 @@ func Wait(_ context.Context, p *scout.Page, in WaitInput) (*EmptyOutput, error) 
 
 	return &EmptyOutput{OK: true}, nil
 }
+
+// ClickInput selects an element to click.
+type ClickInput struct {
+	Selector string `json:"selector" jsonschema:"CSS selector to click"`
+}
+
+// TypeInput selects an input element and the text to type into it.
+type TypeInput struct {
+	Selector string `json:"selector" jsonschema:"CSS selector of the input"`
+	Text     string `json:"text"     jsonschema:"text to type"`
+}
+
+// ExtractInput selects an element to read text from.
+type ExtractInput struct {
+	Selector string `json:"selector" jsonschema:"CSS selector to extract text from"`
+}
+
+// ExtractOutput holds the extracted text.
+type ExtractOutput struct {
+	Text string `json:"text"`
+}
+
+// EvalInput carries a JavaScript expression to evaluate.
+type EvalInput struct {
+	Expression string `json:"expression" jsonschema:"JavaScript expression to evaluate"`
+}
+
+// EvalOutput holds the stringified evaluation result.
+type EvalOutput struct {
+	Result string `json:"result"`
+}
+
+// Click clicks the first element matching the selector.
+func Click(_ context.Context, p *scout.Page, in ClickInput) (*EmptyOutput, error) {
+	if p == nil {
+		return nil, fmt.Errorf("tools: click: nil page")
+	}
+
+	if in.Selector == "" {
+		return nil, fmt.Errorf("tools: click: selector required")
+	}
+
+	el, err := p.Element(in.Selector)
+	if err != nil {
+		return nil, fmt.Errorf("tools: click: %w", err)
+	}
+
+	if err := el.Click(); err != nil {
+		return nil, fmt.Errorf("tools: click: %w", err)
+	}
+
+	return &EmptyOutput{OK: true}, nil
+}
+
+// Type inputs text into the first element matching the selector.
+func Type(_ context.Context, p *scout.Page, in TypeInput) (*EmptyOutput, error) {
+	if p == nil {
+		return nil, fmt.Errorf("tools: type: nil page")
+	}
+
+	if in.Selector == "" {
+		return nil, fmt.Errorf("tools: type: selector required")
+	}
+
+	el, err := p.Element(in.Selector)
+	if err != nil {
+		return nil, fmt.Errorf("tools: type: %w", err)
+	}
+
+	if err := el.Input(in.Text); err != nil {
+		return nil, fmt.Errorf("tools: type: %w", err)
+	}
+
+	return &EmptyOutput{OK: true}, nil
+}
+
+// Extract returns the text content of the first matching element.
+func Extract(_ context.Context, p *scout.Page, in ExtractInput) (*ExtractOutput, error) {
+	if p == nil {
+		return nil, fmt.Errorf("tools: extract: nil page")
+	}
+
+	if in.Selector == "" {
+		return nil, fmt.Errorf("tools: extract: selector required")
+	}
+
+	text, err := p.ExtractText(in.Selector)
+	if err != nil {
+		return nil, fmt.Errorf("tools: extract: %w", err)
+	}
+
+	return &ExtractOutput{Text: text}, nil
+}
+
+// Eval evaluates a JavaScript expression and returns its stringified result.
+func Eval(_ context.Context, p *scout.Page, in EvalInput) (*EvalOutput, error) {
+	if p == nil {
+		return nil, fmt.Errorf("tools: eval: nil page")
+	}
+
+	if in.Expression == "" {
+		return nil, fmt.Errorf("tools: eval: expression required")
+	}
+
+	res, err := p.Eval(in.Expression)
+	if err != nil {
+		return nil, fmt.Errorf("tools: eval: %w", err)
+	}
+
+	return &EvalOutput{Result: res.String()}, nil
+}

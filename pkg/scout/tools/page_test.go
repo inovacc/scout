@@ -139,3 +139,71 @@ func TestWaitForElement(t *testing.T) {
 		t.Error("nil page should error")
 	}
 }
+
+func TestClickTypeExtract(t *testing.T) {
+	_, p := newPageTestBrowser(t)
+	srv := newTestServer(t, `<input id="f"><button id="b">go</button>`)
+
+	if _, err := Navigate(context.Background(), p, NavigateInput{URL: srv.URL}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Type(context.Background(), p, TypeInput{Selector: "#f", Text: "hello"}); err != nil {
+		t.Errorf("Type: %v", err)
+	}
+
+	if _, err := Click(context.Background(), p, ClickInput{Selector: "#b"}); err != nil {
+		t.Errorf("Click: %v", err)
+	}
+
+	out, err := Extract(context.Background(), p, ExtractInput{Selector: "#b"})
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+
+	if out.Text != "go" {
+		t.Errorf("Extract Text = %q, want go", out.Text)
+	}
+
+	if _, err := Click(context.Background(), nil, ClickInput{Selector: "#b"}); err == nil {
+		t.Error("nil page Click should error")
+	}
+
+	if _, err := Click(context.Background(), p, ClickInput{}); err == nil {
+		t.Error("empty selector Click should error")
+	}
+
+	if _, err := Type(context.Background(), p, TypeInput{}); err == nil {
+		t.Error("empty selector Type should error")
+	}
+
+	if _, err := Extract(context.Background(), p, ExtractInput{}); err == nil {
+		t.Error("empty selector Extract should error")
+	}
+}
+
+func TestEval(t *testing.T) {
+	_, p := newPageTestBrowser(t)
+	srv := newTestServer(t, "<p>x</p>")
+
+	if _, err := Navigate(context.Background(), p, NavigateInput{URL: srv.URL}); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := Eval(context.Background(), p, EvalInput{Expression: "() => 1+2"})
+	if err != nil {
+		t.Fatalf("Eval: %v", err)
+	}
+
+	if out.Result != "3" {
+		t.Errorf("Eval Result = %q, want 3", out.Result)
+	}
+
+	if _, err := Eval(context.Background(), nil, EvalInput{Expression: "1"}); err == nil {
+		t.Error("nil page should error")
+	}
+
+	if _, err := Eval(context.Background(), p, EvalInput{}); err == nil {
+		t.Error("empty expression should error")
+	}
+}
