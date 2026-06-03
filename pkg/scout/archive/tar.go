@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // TarExtractor extracts .tar archives.
@@ -68,6 +69,13 @@ func extractTar(r io.Reader, destDir string) error {
 			}
 
 		case tar.TypeSymlink:
+			// Guard the symlink TARGET too: pathSlipCheck only validated the link
+			// path. A link whose Linkname escapes destDir enables zip-slip via a
+			// later entry writing through it (or the link being followed at install).
+			if err := symlinkTargetWithinDest(destDir, target, hdr.Linkname); err != nil {
+				return err
+			}
+
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return fmt.Errorf("archive: create parent dir: %w", err)
 			}
@@ -78,6 +86,25 @@ func extractTar(r io.Reader, destDir string) error {
 				return fmt.Errorf("archive: symlink %s: %w", hdr.Name, err)
 			}
 		}
+	}
+
+	return nil
+}
+
+// symlinkTargetWithinDest rejects a symlink whose resolved target would point
+// outside destDir. Linkname is interpreted relative to the link's directory
+// (an absolute target is rejected outright), mirroring pathSlipCheck's
+// prefix-containment semantics.
+func symlinkTargetWithinDest(destDir, linkPath, linkname string) error {
+	if filepath.IsAbs(linkname) {
+		return fmt.Errorf("archive: refusing absolute symlink target: %s", linkname)
+	}
+
+	resolved := filepath.Clean(filepath.Join(filepath.Dir(linkPath), linkname))
+	cleanDest := filepath.Clean(destDir) + string(os.PathSeparator)
+
+	if !strings.HasPrefix(resolved, cleanDest) && resolved != filepath.Clean(destDir) {
+		return fmt.Errorf("archive: symlink target escapes destination: %s -> %s", linkPath, linkname)
 	}
 
 	return nil
