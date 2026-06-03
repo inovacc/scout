@@ -62,3 +62,18 @@ Standardize the open → navigate → interact → extract → close flow across
 - `task check` (lint + vet) passes
 
 **Testing approach:** Unit tests for executor functions using `newTestBrowser` (real Chromium); integration tests for REPL and MCP adapters via subprocess stdin/stdout and MCP JSON-RPC protocol respectively.
+
+---
+
+## 2026-06-03 Amendment (reconciliation with shipped `pkg/scout/tools/`)
+
+After this spec was written (2026-05-16), the `pkg/scout/tools/` unification layer was shipped (commits "pkg/scout/tools/ unification layer; port 8 verbs", "port crawl + form_detect to pkg/scout/tools/ + MCP"). A state-mapping reconciliation (`docs/superpowers/specs/2026-06-03-phase6-state-reconciliation.md`) found that `pkg/scout/tools/` **already implements this spec's shared-executor contract** (one typed `func(ctx, browser/page, Input) (*Output, error)` per capability, transport-free, caller owns the browser) and that MCP already delegates 8 verb families to it. The gap is completion, not creation: **REPL is 0% routed (19 commands with direct rod calls); ~12 MCP tools remain inline.**
+
+**Decisions (user-approved 2026-06-03):**
+1. **Executor home = `pkg/scout/tools/`** (NOT a new `internal/engine/executor/`). Adopt and extend the existing layer; this supersedes the "create `internal/engine/executor/`" instruction above. Rationale: the layer already satisfies the contract and is proven by 8 live MCP delegations; a new package would duplicate it and force just-ported call sites to migrate again.
+2. **Full capability parity:** every executor verb is exposed in BOTH adapters. REPL-only read verbs (html, markdown, cookies, url, title) get matching MCP tools.
+3. **Defaults:** keep the shipped `tools: <verb>:` error prefix (no churn on public API strings); session lifecycle (`open`, `session_*`) stays an adapter-level concern per "session management stays in `internal/engine/session/`".
+
+**Revised success criteria:** REPL & MCP browser handlers route through `pkg/scout/tools/` verbs (no direct rod/CDP in adapters); adding a capability touches exactly 3 places (the `tools/` verb, one REPL registration, one MCP `AddTool`); a parity-guard test asserts every browser verb is registered by both adapters (or explicitly waived).
+
+Implementation plan: `docs/superpowers/plans/2026-06-03-shared-command-executor.md`.
