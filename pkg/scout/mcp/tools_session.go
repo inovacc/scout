@@ -67,6 +67,10 @@ func registerSessionTools(server *mcp.Server, state *mcpState) {
 			return errResult(err.Error())
 		}
 
+		if err := state.checkURL(ctx, args.URL); err != nil {
+			return errResult(err.Error())
+		}
+
 		// Launch a separate headed browser for inspection.
 		opts := []scout.Option{
 			scout.WithHeadless(false),

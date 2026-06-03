@@ -17,6 +17,7 @@ import (
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/aria"
 	"github.com/inovacc/scout/pkg/scout/plugin"
+	"github.com/inovacc/scout/pkg/scout/urlpolicy"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -32,13 +33,14 @@ type ServerConfig struct {
 
 // mcpState holds the lazy-initialized browser and current page.
 type mcpState struct {
-	mu             sync.Mutex
-	browser        *scout.Browser
-	page           *scout.Page
-	config         ServerConfig
-	idle           *idle.Timer
-	ariaStore      *aria.Store
-	hooks          *hookRegistry
+	mu        sync.Mutex
+	browser   *scout.Browser
+	page      *scout.Page
+	config    ServerConfig
+	idle      *idle.Timer
+	ariaStore *aria.Store
+	hooks     *hookRegistry
+	policy    *urlpolicy.Policy
 }
 
 // touch resets the idle timer on activity.
@@ -102,6 +104,15 @@ func (s *mcpState) ensurePage(ctx context.Context) (*scout.Page, error) {
 	metrics.Get().PagesActive.Add(1)
 
 	return p, nil
+}
+
+// checkURL enforces the SSRF URL-policy for untrusted MCP callers. A nil policy
+// (should not happen) allows everything.
+func (s *mcpState) checkURL(ctx context.Context, rawURL string) error {
+	if s.policy == nil {
+		return nil
+	}
+	return s.policy.Check(ctx, rawURL)
 }
 
 func (s *mcpState) reset() {
@@ -188,7 +199,7 @@ func jsonResult(v any) (*mcp.CallToolResult, error) {
 // call cancelOnIdle when the timeout expires.
 // If cfg.PluginManager is set, plugin-provided MCP tools are registered.
 func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
-	state := &mcpState{config: cfg, ariaStore: aria.NewStore(), hooks: newHookRegistry()}
+	state := &mcpState{config: cfg, ariaStore: aria.NewStore(), hooks: newHookRegistry(), policy: urlpolicy.FromEnv()}
 
 	if cfg.IdleTimeout > 0 && len(cancelOnIdle) > 0 && cancelOnIdle[0] != nil {
 		cb := cancelOnIdle[0]

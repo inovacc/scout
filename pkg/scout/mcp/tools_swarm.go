@@ -45,6 +45,9 @@ func registerSwarmTools(server *mcp.Server, state *mcpState) {
 		if args.URL == "" {
 			return errResult("scout-mcp: swarm_crawl: url is required")
 		}
+		if err := state.checkURL(ctx, args.URL); err != nil {
+			return errResult(err.Error())
+		}
 		if args.Workers <= 0 {
 			args.Workers = 2
 		}

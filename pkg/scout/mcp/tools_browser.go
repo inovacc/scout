@@ -24,6 +24,10 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) { //nolint:mainti
 			return errResult(err.Error())
 		}
 
+		if err := state.checkURL(ctx, args.URL); err != nil {
+			return errResult(err.Error())
+		}
+
 		page, err := state.ensurePage(ctx)
 		if err != nil {
 			return errResult(err.Error())
