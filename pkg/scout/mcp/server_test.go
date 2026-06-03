@@ -42,6 +42,12 @@ func newTestHTTPServer() *httptest.Server {
 func connectTestClient(t *testing.T, cfg ServerConfig) *mcp.ClientSession {
 	t.Helper()
 
+	// These integration tests drive a real MCP server (NewServer →
+	// urlpolicy.FromEnv) against loopback httptest servers. Opt into local
+	// targets so the default-deny SSRF policy permits them. Scoped per-test via
+	// t.Setenv; block-by-default behavior is covered in urlpolicy_test.go.
+	t.Setenv("SCOUT_ALLOW_LOCAL_TARGETS", "true")
+
 	server := NewServer(cfg)
 	client := mcp.NewClient(&mcp.Implementation{Name: "test-client", Version: "1.0.0"}, nil)
 

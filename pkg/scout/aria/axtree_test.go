@@ -51,6 +51,14 @@ func loadFixture(t *testing.T, name string) *aria.Snapshot {
 	}
 }
 
+// normalizeEOL strips carriage returns so golden-file comparisons are stable
+// across platforms: RenderYAML always emits LF, but Git may check the testdata
+// goldens out with CRLF on Windows (the repo stores LF and has no
+// .gitattributes), which would otherwise fail the byte-exact comparison.
+func normalizeEOL(b []byte) []byte {
+	return bytes.ReplaceAll(b, []byte("\r\n"), []byte("\n"))
+}
+
 func TestRenderYAML_Iframe(t *testing.T) {
 	t.Parallel()
 	snap := loadFixture(t, "iframe")
@@ -62,7 +70,7 @@ func TestRenderYAML_Iframe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read golden: %v", err)
 	}
-	if !bytes.Equal(buf.Bytes(), want) {
+	if !bytes.Equal(normalizeEOL(buf.Bytes()), normalizeEOL(want)) {
 		t.Errorf("rendering mismatch\n--- got ---\n%s\n--- want ---\n%s", buf.String(), want)
 	}
 }
@@ -78,7 +86,7 @@ func TestRenderYAML_SimpleForm(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read golden: %v", err)
 	}
-	if !bytes.Equal(buf.Bytes(), want) {
+	if !bytes.Equal(normalizeEOL(buf.Bytes()), normalizeEOL(want)) {
 		t.Errorf("rendering mismatch\n--- got ---\n%s\n--- want ---\n%s", buf.String(), want)
 	}
 }
