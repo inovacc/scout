@@ -22,6 +22,7 @@ type ServerInfo struct {
 	DeviceID      string
 	ListenAddr    string
 	PairingAddr   string
+	PairingToken  string
 	Insecure      bool
 	LocalIPs      []string
 	TotalSessions int64
@@ -58,6 +59,10 @@ func PrintServerTable(w io.Writer, info ServerInfo, peers []ConnectedPeer) {
 
 	if info.PairingAddr != "" {
 		printKV(w, width, "Pairing", info.PairingAddr)
+	}
+
+	if info.PairingToken != "" {
+		printKV(w, width, "Pairing token", truncate(info.PairingToken, width-18))
 	}
 
 	printKV(w, width, "Local IPs", truncate(ips, width-18))

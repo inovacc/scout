@@ -27,6 +27,7 @@ func init() {
 	serverCmd.Flags().String("host", "", "bind host (default: loopback for --insecure, all interfaces for mTLS)")
 	serverCmd.Flags().Bool("reflection", false, "enable gRPC reflection (exposes the service schema)")
 	serverCmd.Flags().Bool("insecure", false, "disable mTLS (no authentication)")
+	serverCmd.Flags().String("pairing-token", "", "out-of-band token required to pair a new device (env SCOUT_PAIRING_TOKEN); a random token is generated and printed if unset")
 	// --idle-timeout inherited from root persistent flags
 }
 
@@ -107,6 +108,7 @@ var serverCmd = &cobra.Command{
 		}
 
 		pairingAddr := ""
+		pairingToken := ""
 		info := server.ServerInfo{
 			DeviceID:   deviceID,
 			ListenAddr: addr,
@@ -123,6 +125,7 @@ var serverCmd = &cobra.Command{
 
 			_, _ = fmt.Fprint(os.Stdout, "\033[2J\033[H") // clear screen + cursor home
 			info.PairingAddr = pairingAddr
+			info.PairingToken = pairingToken
 			info.TotalSessions, _ = scoutServer.Stats()
 			info.Events = scoutServer.Events()
 			server.PrintServerTable(os.Stdout, info, scoutServer.Peers())
@@ -153,6 +156,18 @@ var serverCmd = &cobra.Command{
 			id, _ := identity2.LoadOrGenerate(filepath.Join(dir, "identity"))
 			trustStore, _ := identity2.NewTrustStore(filepath.Join(dir, "trusted"))
 
+			// Resolve the out-of-band pairing token: flag > env > random.
+			pairingToken, _ = cmd.Flags().GetString("pairing-token")
+			if pairingToken == "" {
+				pairingToken = os.Getenv("SCOUT_PAIRING_TOKEN")
+			}
+			if pairingToken == "" {
+				pairingToken, err = server.GeneratePairingToken()
+				if err != nil {
+					return fmt.Errorf("scout: generate pairing token: %w", err)
+				}
+			}
+
 			pairingAddr = fmt.Sprintf(":%d", port+1)
 
 			pairingLis, err := net.Listen("tcp", pairingAddr)
@@ -161,7 +176,7 @@ var serverCmd = &cobra.Command{
 			}
 
 			pairingGRPC = grpc.NewServer()
-			pairingSrv := server.NewPairingServer(id, trustStore)
+			pairingSrv := server.NewPairingServer(id, trustStore, pairingToken)
 			pairingSrv.OnPaired = func(deviceID string) {
 				scoutServer.NotifyPeerChange()
 			}

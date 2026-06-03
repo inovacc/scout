@@ -10,11 +10,13 @@ import (
 	"time"
 
 	pb "github.com/inovacc/scout/grpc/scoutpb"
+	"github.com/inovacc/scout/grpc/server"
 	"github.com/inovacc/scout/pkg/scout/discovery"
 	identity2 "github.com/inovacc/scout/pkg/scout/identity"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 func init() {
@@ -23,6 +25,7 @@ func init() {
 
 	devicePairCmd.Flags().String("addr", "", "address of the remote pairing endpoint (host:port)")
 	devicePairCmd.Flags().String("server-id", "", "expected server device ID (skip interactive confirmation)")
+	devicePairCmd.Flags().String("pairing-token", "", "out-of-band pairing token shown by the server (env SCOUT_PAIRING_TOKEN); prompted if unset")
 	_ = devicePairCmd.MarkFlagRequired("addr")
 }
 
@@ -149,6 +152,21 @@ var devicePairCmd = &cobra.Command{
 		addr, _ := cmd.Flags().GetString("addr")
 		expectedID, _ := cmd.Flags().GetString("server-id")
 
+		// Resolve the out-of-band pairing token: flag > env > prompt.
+		pairingToken, _ := cmd.Flags().GetString("pairing-token")
+		if pairingToken == "" {
+			pairingToken = os.Getenv("SCOUT_PAIRING_TOKEN")
+		}
+		if pairingToken == "" {
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), "Pairing token: ")
+			reader := bufio.NewReader(os.Stdin)
+			token, _ := reader.ReadString('\n')
+			pairingToken = strings.TrimSpace(token)
+		}
+		if pairingToken == "" {
+			return fmt.Errorf("scout: pair: pairing token required")
+		}
+
 		dir, err := scoutDir()
 		if err != nil {
 			return err
@@ -178,6 +196,9 @@ var devicePairCmd = &cobra.Command{
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+
+		// Attach the out-of-band pairing token to outgoing metadata.
+		ctx = metadata.AppendToOutgoingContext(ctx, server.PairingTokenMetadataKey, pairingToken)
 
 		resp, err := client.Pair(ctx, &pb.PairRequest{
 			DeviceId: id.DeviceID,
