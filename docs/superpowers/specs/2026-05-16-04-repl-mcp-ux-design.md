@@ -53,3 +53,26 @@ Close capability gaps and fix ergonomics in both the REPL interactive shell and 
 - `truncate()` in `tools_websocket.go` respects `maxLen` in all code paths
 
 **Testing approach:** Real browser + httptest; `newTestBrowser` skips if Chromium unavailable. REPL commands tested via subprocess stdin/stdout simulation.
+
+---
+
+## 2026-06-03 Amendment (reconciliation — ~half already shipped)
+
+Reconciled against current `main` after Phases 5/6 + the security work. Status of each requirement:
+
+| Req | Status |
+|-----|--------|
+| REPL-02 (`html`/`cookies`/`reload`/`tabs` commands) | **DONE** — present in `cmd/scout/repl.go`. |
+| REPL-03 (`markdown` REPL command) | **DONE** — `markdown`/`md` present. |
+| MCP-02 `html`/`cookies`/`markdown` tools | **DONE** — added as Phase 6 parity twins. |
+| **REPL-01** readline (history, completion, line editing) | **NOT STARTED** — REPL is still a raw `bufio.Scanner`. |
+| **MCP-02 remainder** `reload` + `tabs` tools | **NOT DONE** — `tools.Reload`/`tools.Tabs` verbs exist (Phase 6) but no MCP tool registers them. |
+| **MCP-04** `truncate` cap | **OPEN** — `truncateWS` (`pkg/scout/tools/websocket.go`) + `truncate` (`cmd/scout/helpers.go`) must both cap output at `maxLen` and not panic when `maxLen < 3`. |
+| REPL-04 help polish · MCP-03 schema/description polish | **OPEN** (minor). |
+
+**Decisions (user-approved 2026-06-03):**
+1. **Readline library = `github.com/peterh/liner`** (maintained, lightweight; history + tab-completion + line editing). Resolves the spec's deferred "readline library selection".
+2. Scope this phase to the REMAINING work only (above): REPL-01 (liner), MCP-02 remainder (`reload`+`tabs` tools), MCP-04 (truncate cap), and targeted REPL-04/MCP-03 polish. The already-DONE items are not re-implemented.
+3. Adapter stays thin — REPL/MCP keep routing browser logic through `pkg/scout/tools/` (Phase 6). Readline only changes REPL's input loop, not its command handling.
+
+Implementation plan: `docs/superpowers/plans/2026-06-03-phase4-repl-mcp-ux.md`.
