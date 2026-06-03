@@ -179,6 +179,26 @@ cd examples/simple/basic-navigation && go run .
 
 See [`examples/README.md`](examples/README.md) for the full index with descriptions and key APIs.
 
+## Flow capture → replay
+
+Record a browser flow once, then replay its underlying API calls deterministically with **no browser**:
+
+```bash
+# 1. Capture a flow's network traffic (drives a real browser via the session hijacker)
+scout flow capture https://app.example.com/checkout -o capture.json
+
+# 2. Analyze it into a reviewed flow.yaml + report (LLM infers token/CSRF/ID chains)
+scout flow analyze capture.json --llm ollama -o flow.yaml   # review the report on stderr
+
+# 3. Replay the REST/GraphQL calls with no browser (auth pulled from a vault profile)
+scout flow run flow.yaml --profile <vault-profile-id>
+
+# 4. Verify parity: re-run and diff status vs the golden capture
+scout flow verify flow.yaml --golden capture.json
+```
+
+The generated `flow.yaml` is the deterministic contract — the LLM runs only at `analyze` time. Values chain between steps via `${var}` (extracted from a response) and `${secret.NAME}` (resolved from a vault profile at send time, never embedded). Generated specs are **secret-free**: the analyzer parameterizes secret-bearing headers and URL-query tokens to `${secret.*}` and redacts secret values from the LLM digest. v1 supports REST/JSON + GraphQL.
+
 ## Extraction
 
 Extract data into Go structs using struct tags:
