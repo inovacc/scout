@@ -30,15 +30,22 @@ type CaptureEntry struct {
 	MimeType    string            `json:"mime_type,omitempty"`
 }
 
-// SaveCapture writes c as pretty JSON (0o644 — captures are not secret at rest;
-// secret VALUES belong in the vault, never in a flow spec).
+// SaveCapture writes c as pretty JSON with owner-only permissions (0o600). A
+// capture is the RAW recording of a browser flow: its request/response headers
+// and bodies contain live secrets (auth tokens, cookies, CSRF, session IDs), so
+// it must be protected at rest. (Only the derived FlowSpec is secret-free, via
+// ${secret.*} refs.) os.WriteFile does not tighten a pre-existing file, so we
+// also Chmod to defend against a previously world-readable path.
 func SaveCapture(path string, c *Capture) error {
 	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return fmt.Errorf("scout: flow: marshal capture: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("scout: flow: write capture: %w", err)
+	}
+	if err := os.Chmod(path, 0o600); err != nil {
+		return fmt.Errorf("scout: flow: chmod capture: %w", err)
 	}
 	return nil
 }
