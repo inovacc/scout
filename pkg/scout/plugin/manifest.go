@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 )
 
 // Manifest describes a plugin's capabilities and how to launch it.
@@ -27,6 +28,14 @@ type Manifest struct {
 	Sinks             []SinkEntry           `json:"sinks,omitempty"`
 	Middleware        *MiddlewareEntry      `json:"middleware,omitempty"`
 	Events           *EventEntry           `json:"events,omitempty"`
+
+	// Env lists additional environment variable NAMES the plugin subprocess is
+	// permitted to inherit from Scout's environment, on top of the default
+	// allowlist (see pluginEnv). Everything else is dropped — a plugin never
+	// receives the full ambient environment, so secrets like the vault
+	// passphrase or agent API key cannot leak in. Declaring a name here is an
+	// explicit opt-in by whoever installed the plugin.
+	Env []string `json:"env,omitempty"`
 
 	// Dir is the directory containing the manifest (set during loading).
 	Dir string `json:"-"`
@@ -156,6 +165,16 @@ func (m *Manifest) validate() error {
 	for _, c := range m.Capabilities {
 		if !valid[c] {
 			return fmt.Errorf("unknown capability: %s", c)
+		}
+	}
+
+	for _, name := range m.Env {
+		if name == "" {
+			return fmt.Errorf("env entries must be non-empty variable names")
+		}
+
+		if strings.ContainsAny(name, "=") {
+			return fmt.Errorf("env entry %q must be a variable name, not a NAME=VALUE pair", name)
 		}
 	}
 

@@ -42,31 +42,56 @@ func NewClient(manifest *Manifest, logger *slog.Logger) *Client {
 	}
 }
 
-// sensitiveEnvKey reports whether an environment variable name looks like it
-// carries a secret a plugin subprocess must not inherit ambiently.
-func sensitiveEnvKey(key string) bool {
-	up := strings.ToUpper(key)
-	for _, frag := range []string{"PASSPHRASE", "PASSWORD", "SECRET", "TOKEN", "APIKEY", "API_KEY", "PRIVATE_KEY", "CREDENTIAL"} {
-		if strings.Contains(up, frag) {
-			return true
-		}
-	}
-	return false
+// defaultPluginEnvAllowlist is the set of environment variable names every
+// plugin subprocess may inherit. It is deliberately a fail-CLOSED allowlist:
+// anything not named here (and not opted into via the manifest Env field) is
+// dropped, so ambient secrets — vault passphrase, agent API key, pairing
+// token, cloud OAuth secret, and any third-party credential (AWS_ACCESS_KEY_ID,
+// KUBECONFIG, ...) — never reach an untrusted plugin. It carries only what a
+// process needs to start and locate resources, plus the Scout vars plugins
+// legitimately read (SCOUT_HOME, SCOUT_PLUGIN_PATH, SCOUT_CDP_ENDPOINT).
+var defaultPluginEnvAllowlist = []string{
+	// POSIX process basics.
+	"PATH", "HOME", "USER", "LOGNAME", "USERNAME", "SHELL",
+	"LANG", "LC_ALL", "LC_CTYPE", "TZ",
+	"TMPDIR", "TMP", "TEMP",
+	// Windows process basics (required for child processes to start / load DLLs).
+	"SYSTEMROOT", "SYSTEMDRIVE", "WINDIR", "COMSPEC", "PATHEXT",
+	"PROGRAMDATA", "PROGRAMFILES", "PROGRAMFILES(X86)",
+	"LOCALAPPDATA", "APPDATA", "USERPROFILE", "HOMEDRIVE", "HOMEPATH",
+	"NUMBER_OF_PROCESSORS", "PROCESSOR_ARCHITECTURE",
+	// Scout-specific, non-secret vars plugins are expected to read.
+	"SCOUT_HOME", "SCOUT_PLUGIN_PATH", "SCOUT_CDP_ENDPOINT",
 }
 
-// filteredPluginEnv returns the parent environment with secret-bearing
-// variables removed, so a plugin cannot read the vault passphrase, agent API
-// key, or similar ambient secrets. Non-secret vars (PATH, HOME, ...) are kept.
-func filteredPluginEnv() []string {
+// pluginEnv builds the environment for an untrusted plugin subprocess from a
+// fail-closed allowlist (defaultPluginEnvAllowlist) unioned with the names the
+// manifest explicitly opts into (Manifest.Env). Matching is case-insensitive to
+// honor Windows env semantics. Original "KEY=VALUE" entries are preserved.
+func pluginEnv(m *Manifest) []string {
+	allowed := make(map[string]bool, len(defaultPluginEnvAllowlist)+len(m.Env))
+	for _, name := range defaultPluginEnvAllowlist {
+		allowed[strings.ToUpper(name)] = true
+	}
+
+	if m != nil {
+		for _, name := range m.Env {
+			name = strings.TrimSpace(name)
+			if name != "" {
+				allowed[strings.ToUpper(name)] = true
+			}
+		}
+	}
+
 	parent := os.Environ()
-	out := make([]string, 0, len(parent))
+	out := make([]string, 0, len(allowed))
 	for _, kv := range parent {
 		key, _, ok := strings.Cut(kv, "=")
-		if ok && sensitiveEnvKey(key) {
-			continue
+		if ok && allowed[strings.ToUpper(key)] {
+			out = append(out, kv)
 		}
-		out = append(out, kv)
 	}
+
 	return out
 }
 
@@ -81,9 +106,11 @@ func (c *Client) Start(ctx context.Context) error {
 
 	cmd := exec.CommandContext(ctx, c.manifest.CommandPath())
 	cmd.Dir = c.manifest.Dir
-	// Do not leak ambient secrets (vault passphrase, agent API key, etc.) into
-	// untrusted plugin subprocesses; pass a scrubbed copy of the environment.
-	cmd.Env = filteredPluginEnv()
+	// Untrusted plugin subprocesses receive only a fail-closed allowlist of
+	// environment variables (plus manifest-declared opt-ins) — never the full
+	// ambient environment — so secrets like the vault passphrase or agent API
+	// key cannot leak in. See pluginEnv / defaultPluginEnvAllowlist.
+	cmd.Env = pluginEnv(c.manifest)
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
