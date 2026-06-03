@@ -144,6 +144,10 @@ func applyChains(spec *FlowSpec, report *Report, keep []int, chains []Chain) {
 // once the user adds the named secrets to a vault profile. It returns review notes.
 func sanitizeSpec(spec *FlowSpec) []string {
 	var notes []string
+	// Track the secret names sanitization itself introduces, so any OTHER
+	// ${secret.*} reference (smuggled in from raw capture data or an inferred
+	// chain template) can be flagged for human review below.
+	introduced := map[string]bool{}
 	for i := range spec.Steps {
 		st := &spec.Steps[i]
 		for name, val := range st.Request.Headers {
@@ -151,17 +155,71 @@ func sanitizeSpec(spec *FlowSpec) []string {
 				continue
 			}
 			if isSensitiveHeader(name) {
-				ph := "${secret." + secretName(name) + "}"
-				st.Request.Headers[name] = ph
-				notes = append(notes, fmt.Sprintf("step %q: header %q parameterized to %s — add %s to your vault profile", st.ID, name, ph, secretName(name)))
+				sn := secretName(name)
+				st.Request.Headers[name] = "${secret." + sn + "}"
+				introduced[sn] = true
+				notes = append(notes, fmt.Sprintf("step %q: header %q parameterized to ${secret.%s} — add %s to your vault profile", st.ID, name, sn, sn))
 			}
 		}
 		if u, changed := parameterizeURLSecrets(st.Request.URL); len(changed) > 0 {
 			st.Request.URL = u
+			for _, k := range changed {
+				introduced[secretName(k)] = true
+			}
 			notes = append(notes, fmt.Sprintf("step %q: URL query %v parameterized to ${secret.*} — provide via vault/vars", st.ID, changed))
 		}
 	}
+	return append(notes, flagForeignSecretRefs(spec, introduced)...)
+}
+
+// flagForeignSecretRefs surfaces any ${secret.NAME} reference that sanitizeSpec
+// did not itself introduce. Such a reference comes from raw captured data or an
+// LLM-inferred chain template and, at replay, would resolve a vault secret and
+// send it to the step's URL — a potential exfiltration vector. We do not delete
+// it (that could break a legitimate inferred chain) but make it loud in review.
+func flagForeignSecretRefs(spec *FlowSpec, introduced map[string]bool) []string {
+	var notes []string
+	for i := range spec.Steps {
+		st := &spec.Steps[i]
+		seen := map[string]bool{}
+		flag := func(where, sn string) {
+			if introduced[sn] || seen[sn] {
+				return
+			}
+			seen[sn] = true
+			notes = append(notes, fmt.Sprintf("SECURITY step %q: %s references ${secret.%s} not introduced by sanitization (from capture or inferred chain) — verify this is intended before running", st.ID, where, sn))
+		}
+		for name, val := range st.Request.Headers {
+			for _, sn := range secretRefs(val) {
+				flag(fmt.Sprintf("header %q", name), sn)
+			}
+		}
+		for _, sn := range secretRefs(st.Request.URL) {
+			flag("URL", sn)
+		}
+	}
 	return notes
+}
+
+// secretRefs extracts the NAMEs from every ${secret.NAME} reference in s.
+func secretRefs(s string) []string {
+	const open = "${secret."
+	var names []string
+	for rest := s; ; {
+		i := strings.Index(rest, open)
+		if i < 0 {
+			return names
+		}
+		rest = rest[i+len(open):]
+		j := strings.Index(rest, "}")
+		if j < 0 {
+			return names
+		}
+		if name := rest[:j]; name != "" {
+			names = append(names, name)
+		}
+		rest = rest[j+1:]
+	}
 }
 
 func isTemplate(s string) bool { return strings.Contains(s, "${") }
@@ -304,19 +362,34 @@ func isSensitiveHeader(name string) bool {
 	return false
 }
 
-// redactHeaders keeps header NAMES but redacts values that are sensitive by name
-// or long enough to be a credential. Short, non-sensitive values (Accept, etc.)
-// are kept to give the LLM structural context.
+// safeStructuralHeader reports whether a header's VALUE is conventionally
+// non-secret and therefore safe to show the analyzer as structural context.
+func safeStructuralHeader(name string) bool {
+	switch strings.ToLower(name) {
+	case "accept", "accept-encoding", "accept-language", "content-type",
+		"content-length", "content-encoding", "connection", "cache-control",
+		"user-agent", "host", "origin", "referer", "date", "server",
+		"transfer-encoding", "vary", "x-content-type-options", "x-frame-options":
+		return true
+	default:
+		return false
+	}
+}
+
+// redactHeaders keeps header NAMES but only passes through values from an
+// allowlist of known non-secret structural headers. Every other value (custom
+// headers, anything sensitive by name, short tokens) is replaced with a length
+// placeholder — a length-based heuristic would leak short credentials.
 func redactHeaders(in map[string]string) map[string]string {
 	if len(in) == 0 {
 		return nil
 	}
 	out := make(map[string]string, len(in))
 	for k, v := range in {
-		if isSensitiveHeader(k) || len(v) > 8 {
-			out[k] = fmt.Sprintf("<redacted:%d>", len(v))
-		} else {
+		if safeStructuralHeader(k) && !isSensitiveHeader(k) {
 			out[k] = v
+		} else {
+			out[k] = fmt.Sprintf("<redacted:%d>", len(v))
 		}
 	}
 	return out
