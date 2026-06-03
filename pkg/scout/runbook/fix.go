@@ -14,36 +14,36 @@ import (
 // runbook's container and field selectors to extract items without pagination.
 func SampleExtract(browser *scout.Browser, r *Runbook) ([]map[string]any, error) {
 	if r == nil {
-		return nil, fmt.Errorf("runbook: sample: nil runbook")
+		return nil, fmt.Errorf("scout: runbook: sample: nil runbook")
 	}
 
 	if r.URL == "" {
-		return nil, fmt.Errorf("runbook: sample: no URL in runbook")
+		return nil, fmt.Errorf("scout: runbook: sample: no URL in runbook")
 	}
 
 	if r.Items == nil {
-		return nil, fmt.Errorf("runbook: sample: no items spec in runbook")
+		return nil, fmt.Errorf("scout: runbook: sample: no items spec in runbook")
 	}
 
 	page, err := browser.NewPage(r.URL)
 	if err != nil {
-		return nil, fmt.Errorf("runbook: sample: new page: %w", err)
+		return nil, fmt.Errorf("scout: runbook: sample: new page: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		return nil, fmt.Errorf("runbook: sample: wait load: %w", err)
+		return nil, fmt.Errorf("scout: runbook: sample: wait load: %w", err)
 	}
 
 	if r.WaitFor != "" {
 		if _, err := page.Element(r.WaitFor); err != nil {
-			return nil, fmt.Errorf("runbook: sample: wait for %q: %w", r.WaitFor, err)
+			return nil, fmt.Errorf("scout: runbook: sample: wait for %q: %w", r.WaitFor, err)
 		}
 	}
 
 	// Extract from the first page only (no pagination).
 	items, err := extractPage(page, r.Items)
 	if err != nil {
-		return nil, fmt.Errorf("runbook: sample: extract: %w", err)
+		return nil, fmt.Errorf("scout: runbook: sample: extract: %w", err)
 	}
 
 	// Convert []map[string]string to []map[string]any for a more flexible return type.
@@ -64,7 +64,7 @@ func SampleExtract(browser *scout.Browser, r *Runbook) ([]map[string]any, error)
 // It returns the fixed runbook and a list of human-readable changes made.
 func FixRunbook(browser *scout.Browser, r *Runbook) (*Runbook, []string, error) {
 	if r == nil {
-		return nil, nil, fmt.Errorf("runbook: fix: nil runbook")
+		return nil, nil, fmt.Errorf("scout: runbook: fix: nil runbook")
 	}
 
 	url := r.URL
@@ -78,16 +78,16 @@ func FixRunbook(browser *scout.Browser, r *Runbook) (*Runbook, []string, error) 
 	}
 
 	if url == "" {
-		return nil, nil, fmt.Errorf("runbook: fix: no URL to navigate to")
+		return nil, nil, fmt.Errorf("scout: runbook: fix: no URL to navigate to")
 	}
 
 	page, err := browser.NewPage(url)
 	if err != nil {
-		return nil, nil, fmt.Errorf("runbook: fix: new page: %w", err)
+		return nil, nil, fmt.Errorf("scout: runbook: fix: new page: %w", err)
 	}
 
 	if err := page.WaitLoad(); err != nil {
-		return nil, nil, fmt.Errorf("runbook: fix: wait load: %w", err)
+		return nil, nil, fmt.Errorf("scout: runbook: fix: wait load: %w", err)
 	}
 
 	// Collect selectors and check which ones are broken.
@@ -110,7 +110,7 @@ func FixRunbook(browser *scout.Browser, r *Runbook) (*Runbook, []string, error) 
 	// Re-analyze the page to find replacement selectors.
 	analysis, err := AnalyzeSite(context.Background(), browser, url)
 	if err != nil {
-		return nil, nil, fmt.Errorf("runbook: fix: re-analyze: %w", err)
+		return nil, nil, fmt.Errorf("scout: runbook: fix: re-analyze: %w", err)
 	}
 
 	// Build a lookup from field purpose to candidate selectors from analysis.

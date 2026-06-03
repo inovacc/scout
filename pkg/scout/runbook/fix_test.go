@@ -8,7 +8,7 @@ func TestFixRunbook_NilRunbook(t *testing.T) {
 		t.Fatal("expected error for nil runbook")
 	}
 
-	if got := err.Error(); got != "runbook: fix: nil runbook" {
+	if got := err.Error(); got != "scout: runbook: fix: nil runbook" {
 		t.Fatalf("unexpected error: %s", got)
 	}
 }
@@ -26,7 +26,7 @@ func TestFixRunbook_NoURL(t *testing.T) {
 		t.Fatal("expected error for missing URL")
 	}
 
-	if got := err.Error(); got != "runbook: fix: no URL to navigate to" {
+	if got := err.Error(); got != "scout: runbook: fix: no URL to navigate to" {
 		t.Fatalf("unexpected error: %s", got)
 	}
 }
@@ -37,7 +37,7 @@ func TestSampleExtract_NilRunbook(t *testing.T) {
 		t.Fatal("expected error for nil runbook")
 	}
 
-	if got := err.Error(); got != "runbook: sample: nil runbook" {
+	if got := err.Error(); got != "scout: runbook: sample: nil runbook" {
 		t.Fatalf("unexpected error: %s", got)
 	}
 }

@@ -48,7 +48,7 @@ func downloadChromium(ctx context.Context, cacheDir string) (string, error) {
 	if cacheDir == "" {
 		sub, err := scouthome.Sub("browsers")
 		if err != nil {
-			return "", fmt.Errorf("browser: %w", err)
+			return "", fmt.Errorf("scout: browser: %w", err)
 		}
 
 		cacheDir = sub
@@ -58,7 +58,7 @@ func downloadChromium(ctx context.Context, cacheDir string) (string, error) {
 
 	conf, ok := chromiumHostConf[runtime.GOOS+"_"+runtime.GOARCH]
 	if !ok {
-		return "", fmt.Errorf("browser: no Chromium download for %s/%s", runtime.GOOS, runtime.GOARCH)
+		return "", fmt.Errorf("scout: browser: no Chromium download for %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 
 	revStr := fmt.Sprintf("%d", revision)
@@ -84,21 +84,21 @@ func downloadChromium(ctx context.Context, cacheDir string) (string, error) {
 	}
 
 	if dlErr != nil {
-		return "", fmt.Errorf("browser: download chromium: %w", dlErr)
+		return "", fmt.Errorf("scout: browser: download chromium: %w", dlErr)
 	}
 
 	_ = os.RemoveAll(destDir)
 
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		return "", fmt.Errorf("browser: create chromium dir: %w", err)
+		return "", fmt.Errorf("scout: browser: create chromium dir: %w", err)
 	}
 
 	if err := archive.Extract(data, conf.zipName, destDir); err != nil {
-		return "", fmt.Errorf("browser: extract chromium: %w", err)
+		return "", fmt.Errorf("scout: browser: extract chromium: %w", err)
 	}
 
 	if err := stripFirstDir(destDir); err != nil {
-		return "", fmt.Errorf("browser: strip chromium dir: %w", err)
+		return "", fmt.Errorf("scout: browser: strip chromium dir: %w", err)
 	}
 
 	if runtime.GOOS != "windows" {
@@ -106,7 +106,7 @@ func downloadChromium(ctx context.Context, cacheDir string) (string, error) {
 	}
 
 	if !fileExists(binPath) {
-		return "", fmt.Errorf("browser: chromium binary not found at %s", binPath)
+		return "", fmt.Errorf("scout: browser: chromium binary not found at %s", binPath)
 	}
 
 	return binPath, nil
@@ -185,36 +185,36 @@ func DownloadBrave(ctx context.Context, cacheDir string) (string, error) {
 
 	asset := braveAssetName(version)
 	if asset == "" {
-		return "", fmt.Errorf("browser: no Brave release for %s/%s", runtime.GOOS, runtime.GOARCH)
+		return "", fmt.Errorf("scout: browser: no Brave release for %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 
 	url := fmt.Sprintf("https://github.com/brave/brave-browser/releases/download/v%s/%s", version, asset)
 
 	data, err := downloadFile(ctx, url)
 	if err != nil {
-		return "", fmt.Errorf("browser: download brave: %w", err)
+		return "", fmt.Errorf("scout: browser: download brave: %w", err)
 	}
 
 	if err := os.RemoveAll(destDir); err != nil {
-		return "", fmt.Errorf("browser: clean brave dir: %w", err)
+		return "", fmt.Errorf("scout: browser: clean brave dir: %w", err)
 	}
 
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		return "", fmt.Errorf("browser: create brave dir: %w", err)
+		return "", fmt.Errorf("scout: browser: create brave dir: %w", err)
 	}
 
 	if err := archive.Extract(data, asset, destDir); err != nil {
-		return "", fmt.Errorf("browser: extract brave: %w", err)
+		return "", fmt.Errorf("scout: browser: extract brave: %w", err)
 	}
 
 	if runtime.GOOS != "windows" {
 		if err := os.Chmod(binPath, 0o755); err != nil {
-			return "", fmt.Errorf("browser: chmod brave binary: %w", err)
+			return "", fmt.Errorf("scout: browser: chmod brave binary: %w", err)
 		}
 	}
 
 	if !fileExists(binPath) {
-		return "", fmt.Errorf("browser: brave binary not found at %s after extraction", binPath)
+		return "", fmt.Errorf("scout: browser: brave binary not found at %s after extraction", binPath)
 	}
 
 	return binPath, nil
@@ -223,7 +223,7 @@ func DownloadBrave(ctx context.Context, cacheDir string) (string, error) {
 // DownloadEdge is a stub that returns an error with a download URL.
 // Edge does not offer a programmatic download API.
 func DownloadEdge(_ string) (string, error) {
-	return "", fmt.Errorf("browser: %w: edge — download manually from https://www.microsoft.com/edge/download", ErrNotFound)
+	return "", fmt.Errorf("scout: browser: %w: edge — download manually from https://www.microsoft.com/edge/download", ErrNotFound)
 }
 
 // Patch applies common patches to a browser installation to disable
@@ -239,7 +239,7 @@ func latestBraveVersion(ctx context.Context) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 		"https://api.github.com/repos/brave/brave-browser/releases/latest", nil)
 	if err != nil {
-		return "", fmt.Errorf("browser: create request: %w", err)
+		return "", fmt.Errorf("scout: browser: create request: %w", err)
 	}
 
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
@@ -248,13 +248,13 @@ func latestBraveVersion(ctx context.Context) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("browser: fetch brave version: %w", err)
+		return "", fmt.Errorf("scout: browser: fetch brave version: %w", err)
 	}
 
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("browser: github API returned HTTP %d", resp.StatusCode)
+		return "", fmt.Errorf("scout: browser: github API returned HTTP %d", resp.StatusCode)
 	}
 
 	var release struct {
@@ -262,11 +262,11 @@ func latestBraveVersion(ctx context.Context) (string, error) {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return "", fmt.Errorf("browser: decode github response: %w", err)
+		return "", fmt.Errorf("scout: browser: decode github response: %w", err)
 	}
 
 	if release.TagName == "" {
-		return "", fmt.Errorf("browser: empty tag_name in github response")
+		return "", fmt.Errorf("scout: browser: empty tag_name in github response")
 	}
 
 	return strings.TrimPrefix(release.TagName, "v"), nil
@@ -298,7 +298,7 @@ func braveBinPath() string {
 func downloadFile(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("browser: create request: %w", err)
+		return nil, fmt.Errorf("scout: browser: create request: %w", err)
 	}
 
 	client := &http.Client{Timeout: downloadTimeout}
@@ -311,7 +311,7 @@ func downloadFile(ctx context.Context, url string) ([]byte, error) {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("browser: HTTP %d from %s", resp.StatusCode, url)
+		return nil, fmt.Errorf("scout: browser: HTTP %d from %s", resp.StatusCode, url)
 	}
 
 	return io.ReadAll(resp.Body)

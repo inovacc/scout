@@ -71,7 +71,7 @@ func NewManager(opts ...ManagerOption) *Manager {
 func (m *Manager) ensureCacheDir() (string, error) {
 	if m.cacheDir != "" {
 		if err := os.MkdirAll(m.cacheDir, 0o755); err != nil {
-			return "", fmt.Errorf("browser: create cache dir: %w", err)
+			return "", fmt.Errorf("scout: browser: create cache dir: %w", err)
 		}
 
 		return m.cacheDir, nil
@@ -79,11 +79,11 @@ func (m *Manager) ensureCacheDir() (string, error) {
 
 	dir, err := scouthome.Sub("browsers")
 	if err != nil {
-		return "", fmt.Errorf("browser: %w", err)
+		return "", fmt.Errorf("scout: browser: %w", err)
 	}
 
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", fmt.Errorf("browser: create cache dir: %w", err)
+		return "", fmt.Errorf("scout: browser: create cache dir: %w", err)
 	}
 
 	m.cacheDir = dir
@@ -110,7 +110,7 @@ func (m *Manager) Download(browserType string) (string, error) {
 	case TypeEdge:
 		return DownloadEdge(cacheDir)
 	default:
-		return "", fmt.Errorf("browser: download: %w: %q", ErrUnknownType, browserType)
+		return "", fmt.Errorf("scout: browser: download: %w: %q", ErrUnknownType, browserType)
 	}
 }
 
@@ -122,7 +122,7 @@ func (m *Manager) Resolve(browserType string) (string, error) {
 	case TypeChrome, TypeBrave, TypeEdge:
 		// ok
 	default:
-		return "", fmt.Errorf("browser: resolve: %w: %q", ErrUnknownType, browserType)
+		return "", fmt.Errorf("scout: browser: resolve: %w: %q", ErrUnknownType, browserType)
 	}
 
 	// Try local detection first.
@@ -157,7 +157,7 @@ func (m *Manager) List() ([]BrowserInfo, error) {
 			return detected, nil
 		}
 
-		return nil, fmt.Errorf("browser: read cache dir: %w", err)
+		return nil, fmt.Errorf("scout: browser: read cache dir: %w", err)
 	}
 
 	// Build a set of detected paths to avoid duplicates.
@@ -224,7 +224,7 @@ func (m *Manager) Clean() error {
 			return nil
 		}
 
-		return fmt.Errorf("browser: read cache dir: %w", err)
+		return fmt.Errorf("scout: browser: read cache dir: %w", err)
 	}
 
 	for _, entry := range entries {
@@ -234,7 +234,7 @@ func (m *Manager) Clean() error {
 
 		path := filepath.Join(cacheDir, entry.Name())
 		if err := os.RemoveAll(path); err != nil {
-			return fmt.Errorf("browser: remove %s: %w", entry.Name(), err)
+			return fmt.Errorf("scout: browser: remove %s: %w", entry.Name(), err)
 		}
 	}
 

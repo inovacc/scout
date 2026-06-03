@@ -28,14 +28,14 @@ type Identity struct {
 func GenerateIdentity() (*Identity, error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("identity: generate key: %w", err)
+		return nil, fmt.Errorf("scout: identity: generate key: %w", err)
 	}
 
 	serialMax := new(big.Int).Lsh(big.NewInt(1), 128)
 
 	serial, err := rand.Int(rand.Reader, serialMax)
 	if err != nil {
-		return nil, fmt.Errorf("identity: generate serial: %w", err)
+		return nil, fmt.Errorf("scout: identity: generate serial: %w", err)
 	}
 
 	notBefore := time.Now().Truncate(24 * time.Hour)
@@ -57,31 +57,31 @@ func GenerateIdentity() (*Identity, error) {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
 	if err != nil {
-		return nil, fmt.Errorf("identity: create certificate: %w", err)
+		return nil, fmt.Errorf("scout: identity: create certificate: %w", err)
 	}
 
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 
 	keyBytes, err := x509.MarshalECPrivateKey(priv)
 	if err != nil {
-		return nil, fmt.Errorf("identity: marshal key: %w", err)
+		return nil, fmt.Errorf("scout: identity: marshal key: %w", err)
 	}
 
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
 
 	tlsCert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
-		return nil, fmt.Errorf("identity: parse keypair: %w", err)
+		return nil, fmt.Errorf("scout: identity: parse keypair: %w", err)
 	}
 
 	cert, err := x509.ParseCertificate(derBytes)
 	if err != nil {
-		return nil, fmt.Errorf("identity: parse cert: %w", err)
+		return nil, fmt.Errorf("scout: identity: parse cert: %w", err)
 	}
 
 	deviceID, err := DeviceIDFromCert(cert)
 	if err != nil {
-		return nil, fmt.Errorf("identity: compute device ID: %w", err)
+		return nil, fmt.Errorf("scout: identity: compute device ID: %w", err)
 	}
 
 	return &Identity{
@@ -130,7 +130,7 @@ func ShortID(id string) string {
 // SaveIdentity writes the certificate and private key to PEM files in the given directory.
 func SaveIdentity(id *Identity, dir string) error {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("identity: create dir: %w", err)
+		return fmt.Errorf("scout: identity: create dir: %w", err)
 	}
 
 	// Extract cert PEM
@@ -139,18 +139,18 @@ func SaveIdentity(id *Identity, dir string) error {
 		Bytes: id.Certificate.Certificate[0],
 	})
 	if err := os.WriteFile(filepath.Join(dir, "cert.pem"), certPEM, 0o644); err != nil {
-		return fmt.Errorf("identity: write cert: %w", err)
+		return fmt.Errorf("scout: identity: write cert: %w", err)
 	}
 
 	// Extract key PEM
 	keyBytes, err := x509.MarshalECPrivateKey(id.Certificate.PrivateKey.(*ecdsa.PrivateKey))
 	if err != nil {
-		return fmt.Errorf("identity: marshal key: %w", err)
+		return fmt.Errorf("scout: identity: marshal key: %w", err)
 	}
 
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
 	if err := os.WriteFile(filepath.Join(dir, "key.pem"), keyPEM, 0o600); err != nil {
-		return fmt.Errorf("identity: write key: %w", err)
+		return fmt.Errorf("scout: identity: write key: %w", err)
 	}
 
 	return nil
@@ -163,17 +163,17 @@ func LoadIdentity(dir string) (*Identity, error) {
 
 	tlsCert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return nil, fmt.Errorf("identity: load keypair: %w", err)
+		return nil, fmt.Errorf("scout: identity: load keypair: %w", err)
 	}
 
 	cert, err := x509.ParseCertificate(tlsCert.Certificate[0])
 	if err != nil {
-		return nil, fmt.Errorf("identity: parse cert: %w", err)
+		return nil, fmt.Errorf("scout: identity: parse cert: %w", err)
 	}
 
 	deviceID, err := DeviceIDFromCert(cert)
 	if err != nil {
-		return nil, fmt.Errorf("identity: compute device ID: %w", err)
+		return nil, fmt.Errorf("scout: identity: compute device ID: %w", err)
 	}
 
 	return &Identity{

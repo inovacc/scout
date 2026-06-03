@@ -62,7 +62,7 @@ func DetectByType(browserType string) (BrowserInfo, error) {
 		}
 	}
 
-	return BrowserInfo{}, fmt.Errorf("browser: %w: %s", ErrNotFound, browserType)
+	return BrowserInfo{}, fmt.Errorf("scout: browser: %w: %s", ErrNotFound, browserType)
 }
 
 // Best returns the highest-priority detected browser (Chrome > Brave > Edge).
@@ -73,7 +73,7 @@ func Best() (BrowserInfo, error) {
 	}
 
 	if len(browsers) == 0 {
-		return BrowserInfo{}, fmt.Errorf("browser: %w: no browsers detected", ErrNotFound)
+		return BrowserInfo{}, fmt.Errorf("scout: browser: %w: no browsers detected", ErrNotFound)
 	}
 
 	return browsers[0], nil

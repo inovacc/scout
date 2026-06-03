@@ -16,6 +16,7 @@
 | P3 | iOS Safari via ios-webkit-debug-proxy | Extend Phase 73 mobile to iOS |
 | P3 | Claude Code marketplace submission | Submit plugin to official Anthropic marketplace |
 | P2 | **DEPRECATION** (removal after 2026-07-02): remove `UserProfile.Cookies/Storage/Headers` (`internal/engine/profile.go`). Superseded by `pkg/scout/vault`. Migrate callers of `CaptureProfile`/`ApplyProfile` to read browser-bound secrets from the vault, then drop the fields and their capture/apply branches. | Fields marked deprecated 2026-06-02. |
+| P3 | **ERR-01**: finish the `scout:` error-prefix migration across the remaining ~750 non-`scout:` `fmt.Errorf` call sites. STRUCT-03 (2026-06-03) covered the highest-impact paths (`cmd/scout/update.go`, `pkg/scout/browser/`, `pkg/scout/runbook/`, `pkg/scout/identity/identity.go`). The remainder already carry a subsystem prefix (e.g. `pkg/scout/scraper/modes/*` ×292, plus `plugin`/`archive`/`strategy`/`tools`, and `pkg/scout/identity/trust.go`) and are deferred to v2 for the outer `scout:` wrap. | Mechanical prefix-only change; no behavior impact. Convention per CLAUDE.md error-wrapping. |
 
 ## Completed Items (Archive)
 

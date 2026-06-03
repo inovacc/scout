@@ -116,24 +116,24 @@ func fetchLatestRelease() (*githubRelease, error) {
 
 	req, err := http.NewRequest(http.MethodGet, releaseURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("build request: %w", err)
+		return nil, fmt.Errorf("scout: update: build request: %w", err)
 	}
 
 	req.Header.Set("Accept", "application/vnd.github+json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetch release: %w", err)
+		return nil, fmt.Errorf("scout: update: fetch release: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("github api returned %s", resp.Status)
+		return nil, fmt.Errorf("scout: update: github api returned %s", resp.Status)
 	}
 
 	var rel githubRelease
 	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
-		return nil, fmt.Errorf("decode release json: %w", err)
+		return nil, fmt.Errorf("scout: update: decode release json: %w", err)
 	}
 
 	return &rel, nil
@@ -170,22 +170,22 @@ func selfReplace(url string) error {
 
 	resp, err := client.Get(url) //nolint:noctx
 	if err != nil {
-		return fmt.Errorf("download binary: %w", err)
+		return fmt.Errorf("scout: update: download binary: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download returned %s", resp.Status)
+		return fmt.Errorf("scout: update: download returned %s", resp.Status)
 	}
 
 	exe, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("locate current executable: %w", err)
+		return fmt.Errorf("scout: update: locate current executable: %w", err)
 	}
 
 	exe, err = filepath.EvalSymlinks(exe)
 	if err != nil {
-		return fmt.Errorf("resolve executable path: %w", err)
+		return fmt.Errorf("scout: update: resolve executable path: %w", err)
 	}
 
 	// Write to a temp file in the same directory (ensures same filesystem for rename).
@@ -193,7 +193,7 @@ func selfReplace(url string) error {
 
 	tmp, err := os.CreateTemp(dir, "scout-update-*.tmp")
 	if err != nil {
-		return fmt.Errorf("create temp file: %w", err)
+		return fmt.Errorf("scout: update: create temp file: %w", err)
 	}
 
 	tmpPath := tmp.Name()
@@ -202,17 +202,17 @@ func selfReplace(url string) error {
 
 	if _, err := io.Copy(tmp, resp.Body); err != nil {
 		_ = tmp.Close()
-		return fmt.Errorf("write temp file: %w", err)
+		return fmt.Errorf("scout: update: write temp file: %w", err)
 	}
 
 	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("close temp file: %w", err)
+		return fmt.Errorf("scout: update: close temp file: %w", err)
 	}
 
 	// Make executable on Unix.
 	if runtime.GOOS != "windows" {
 		if err := os.Chmod(tmpPath, 0o755); err != nil {
-			return fmt.Errorf("chmod: %w", err)
+			return fmt.Errorf("scout: update: chmod: %w", err)
 		}
 	}
 
@@ -227,7 +227,7 @@ func selfReplace(url string) error {
 // selfReplaceUnix atomically renames the temp file over the current executable.
 func selfReplaceUnix(exe, tmpPath string) error {
 	if err := os.Rename(tmpPath, exe); err != nil {
-		return fmt.Errorf("rename over executable: %w", err)
+		return fmt.Errorf("scout: update: rename over executable: %w", err)
 	}
 
 	return nil
@@ -244,13 +244,13 @@ func selfReplaceWindows(exe, tmpPath string) error {
 	_ = os.Remove(oldPath)
 
 	if err := os.Rename(exe, oldPath); err != nil {
-		return fmt.Errorf("rename current to .old: %w", err)
+		return fmt.Errorf("scout: update: rename current to .old: %w", err)
 	}
 
 	if err := os.Rename(tmpPath, exe); err != nil {
 		// Try to restore the original.
 		_ = os.Rename(oldPath, exe)
-		return fmt.Errorf("rename new binary into place: %w", err)
+		return fmt.Errorf("scout: update: rename new binary into place: %w", err)
 	}
 
 	// Best-effort cleanup; the file may still be locked.

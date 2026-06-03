@@ -69,7 +69,7 @@ type Result struct {
 func LoadFile(path string) (*Runbook, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("runbook: read %s: %w", path, err)
+		return nil, fmt.Errorf("scout: runbook: read %s: %w", path, err)
 	}
 
 	return Parse(data)
@@ -79,7 +79,7 @@ func LoadFile(path string) (*Runbook, error) {
 func Parse(data []byte) (*Runbook, error) {
 	var r Runbook
 	if err := json.Unmarshal(data, &r); err != nil {
-		return nil, fmt.Errorf("runbook: parse: %w", err)
+		return nil, fmt.Errorf("scout: runbook: parse: %w", err)
 	}
 
 	if err := r.Validate(); err != nil {
@@ -101,7 +101,7 @@ func Apply(ctx context.Context, browser *scout.Browser, r *Runbook) (*Result, er
 	case "automate":
 		return runAutomate(ctx, browser, r)
 	default:
-		return nil, fmt.Errorf("runbook: unknown type %q", r.Type)
+		return nil, fmt.Errorf("scout: runbook: unknown type %q", r.Type)
 	}
 }
 
@@ -133,7 +133,7 @@ func resolveSelector(sel string, selectors map[string]string) (string, error) {
 
 		resolved, ok := selectors[name]
 		if !ok {
-			return "", fmt.Errorf("runbook: unknown selector reference $%s", name)
+			return "", fmt.Errorf("scout: runbook: unknown selector reference $%s", name)
 		}
 
 		return prefix + resolved + attrSuffix, nil
@@ -172,7 +172,7 @@ func (r *Runbook) resolveAllSelectors() error {
 		for name, sel := range r.Items.Fields {
 			resolved, err := resolveSelector(sel, r.Selectors)
 			if err != nil {
-				return fmt.Errorf("runbook: field %q: %w", name, err)
+				return fmt.Errorf("scout: runbook: field %q: %w", name, err)
 			}
 
 			r.Items.Fields[name] = resolved
@@ -194,7 +194,7 @@ func (r *Runbook) resolveAllSelectors() error {
 		if r.Steps[i].Selector != "" {
 			resolved, err := resolveSelector(r.Steps[i].Selector, r.Selectors)
 			if err != nil {
-				return fmt.Errorf("runbook: step %d: %w", i, err)
+				return fmt.Errorf("scout: runbook: step %d: %w", i, err)
 			}
 
 			r.Steps[i].Selector = resolved
@@ -207,42 +207,42 @@ func (r *Runbook) resolveAllSelectors() error {
 // Validate checks that a runbook has all required fields.
 func (r *Runbook) Validate() error {
 	if r.Version == "" {
-		return fmt.Errorf("runbook: missing version")
+		return fmt.Errorf("scout: runbook: missing version")
 	}
 
 	if r.Name == "" {
-		return fmt.Errorf("runbook: missing name")
+		return fmt.Errorf("scout: runbook: missing name")
 	}
 
 	switch r.Type {
 	case "extract":
 		if r.URL == "" {
-			return fmt.Errorf("runbook: extract runbook requires url")
+			return fmt.Errorf("scout: runbook: extract runbook requires url")
 		}
 
 		if r.Items == nil {
-			return fmt.Errorf("runbook: extract runbook requires items")
+			return fmt.Errorf("scout: runbook: extract runbook requires items")
 		}
 
 		if r.Items.Container == "" {
-			return fmt.Errorf("runbook: items.container is required")
+			return fmt.Errorf("scout: runbook: items.container is required")
 		}
 
 		if len(r.Items.Fields) == 0 {
-			return fmt.Errorf("runbook: items.fields is required")
+			return fmt.Errorf("scout: runbook: items.fields is required")
 		}
 	case "automate":
 		if len(r.Steps) == 0 {
-			return fmt.Errorf("runbook: automate runbook requires steps")
+			return fmt.Errorf("scout: runbook: automate runbook requires steps")
 		}
 
 		for i, step := range r.Steps {
 			if step.Action == "" {
-				return fmt.Errorf("runbook: step %d missing action", i)
+				return fmt.Errorf("scout: runbook: step %d missing action", i)
 			}
 		}
 	default:
-		return fmt.Errorf("runbook: unknown type %q (must be \"extract\" or \"automate\")", r.Type)
+		return fmt.Errorf("scout: runbook: unknown type %q (must be \"extract\" or \"automate\")", r.Type)
 	}
 
 	return nil
