@@ -109,13 +109,35 @@ func runStep(ctx context.Context, client *http.Client, step FlowStep, vars map[s
 	return sr, nil
 }
 
-// buildBody returns the request body reader + Content-Type. REST uses Request.JSON;
-// GraphQL is added in Task 6.
-func buildBody(r Request, vars map[string]string, secrets SecretResolver) (io.Reader, string, error) {
+// buildBody returns the request body reader + Content-Type. GraphQL uses
+// Request.GraphQL; REST uses Request.JSON.
+func buildBody(r Request, varsMap map[string]string, secrets SecretResolver) (io.Reader, string, error) {
+	if r.GraphQL != nil {
+		vars := map[string]any{}
+		for k, v := range r.GraphQL.Variables {
+			iv, err := interpolateJSON(v, varsMap, secrets)
+			if err != nil {
+				return nil, "", err
+			}
+			vars[k] = iv
+		}
+		payload := map[string]any{"query": r.GraphQL.Query}
+		if r.GraphQL.OperationName != "" {
+			payload["operationName"] = r.GraphQL.OperationName
+		}
+		if len(vars) > 0 {
+			payload["variables"] = vars
+		}
+		data, err := json.Marshal(payload)
+		if err != nil {
+			return nil, "", fmt.Errorf("marshal graphql body: %w", err)
+		}
+		return bytes.NewReader(data), "application/json", nil
+	}
 	if r.JSON == nil {
 		return http.NoBody, "", nil
 	}
-	interp, err := interpolateJSON(r.JSON, vars, secrets)
+	interp, err := interpolateJSON(r.JSON, varsMap, secrets)
 	if err != nil {
 		return nil, "", err
 	}

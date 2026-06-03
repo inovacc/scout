@@ -62,6 +62,39 @@ func TestRunExpectStatusMismatchFails(t *testing.T) {
 	}
 }
 
+func TestRunGraphQL(t *testing.T) {
+	var gotOp, gotVar string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			OperationName string         `json:"operationName"`
+			Variables     map[string]any `json:"variables"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		gotOp = body.OperationName
+		if v, ok := body.Variables["id"].(string); ok {
+			gotVar = v
+		}
+		_, _ = w.Write([]byte(`{"data":{"cart":{"total":7}}}`))
+	}))
+	defer srv.Close()
+
+	f := &FlowSpec{Version: "1", Vars: map[string]string{"cartId": "c-7"}, Steps: []FlowStep{
+		{ID: "cart", Request: Request{Method: "POST", URL: srv.URL, GraphQL: &GraphQL{
+			OperationName: "Cart", Query: "query Cart($id:ID!){cart(id:$id){total}}",
+			Variables: map[string]any{"id": "${cartId}"}}},
+			Extract: []Extract{{Var: "total", From: "response.json", Path: "$.data.cart.total"}}}}}
+	res, err := Run(context.Background(), f, RunOptions{})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if gotOp != "Cart" || gotVar != "c-7" {
+		t.Fatalf("graphql body wrong: op=%q id=%q", gotOp, gotVar)
+	}
+	if res.Steps[0].Extracted["total"] != "7" {
+		t.Fatalf("extract: %+v", res.Steps[0].Extracted)
+	}
+}
+
 // guard for unused imports in some toolchains
 var _ = io.Discard
 var _ = json.Marshal
