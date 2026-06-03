@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"crypto/subtle"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -30,6 +31,11 @@ type ServerConfig struct {
 	IdleTimeout time.Duration // auto-shutdown after inactivity (0 disables)
 	RateLimit   float64       // requests per second (0 = unlimited, default: 100)
 	APIKey      string        // optional API key for authentication (empty = no auth)
+	// AllowedOrigins is the CORS allowlist. When empty, the server sends no
+	// Access-Control-Allow-Origin header, so browsers block cross-origin calls
+	// by default. Server-to-server callers omit Origin and are unaffected.
+	// A single "*" entry opts into allowing any origin.
+	AllowedOrigins []string
 }
 
 // Server wraps a Provider with an HTTP interface for AI agent frameworks.
@@ -200,6 +206,12 @@ func (s *Server) handleOpenAPISpec(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) handleSwaggerUI(w http.ResponseWriter, _ *http.Request) {
 	s.touch()
+	// Constrain where the Swagger UI bundle may be loaded from, so an injected
+	// response cannot pull script from an arbitrary origin.
+	w.Header().Set("Content-Security-Policy",
+		"default-src 'none'; img-src 'self' data: https://cdn.jsdelivr.net; "+
+			"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "+
+			"script-src 'unsafe-inline' https://cdn.jsdelivr.net; connect-src 'self'")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = fmt.Fprint(w, swaggerHTML)
 }
@@ -292,12 +304,16 @@ func escapeJSON(s string) string {
 	return s
 }
 
-// corsMiddleware adds CORS headers and handles preflight OPTIONS requests.
-func corsMiddleware(next http.Handler) http.Handler {
+// corsMiddleware adds CORS headers (only for explicitly allowlisted origins)
+// and handles preflight OPTIONS requests. With no AllowedOrigins configured it
+// emits no Access-Control-Allow-Origin header, so browsers block cross-origin
+// calls by default; non-browser clients omit Origin and are unaffected.
+func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if origin != "" {
+		if origin != "" && s.originAllowed(origin) {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Add("Vary", "Origin")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			w.Header().Set("Access-Control-Max-Age", "86400")
@@ -308,6 +324,29 @@ func corsMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		next.ServeHTTP(w, r)
+	})
+}
+
+// originAllowed reports whether origin is in the configured CORS allowlist.
+// A single "*" entry allows any origin (opt-in, never the default).
+func (s *Server) originAllowed(origin string) bool {
+	for _, o := range s.config.AllowedOrigins {
+		if o == "*" || strings.EqualFold(o, origin) {
+			return true
+		}
+	}
+	return false
+}
+
+// securityHeaders sets conservative response headers on every reply.
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("X-Frame-Options", "DENY")
+		h.Set("Referrer-Policy", "no-referrer")
+		h.Set("Cross-Origin-Opener-Policy", "same-origin")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -334,14 +373,14 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Allow health, metrics, and docs without auth.
-		if r.URL.Path == "/health" || strings.HasPrefix(r.URL.Path, "/metrics") ||
-			r.URL.Path == "/docs" || r.URL.Path == "/openapi.yaml" {
+		// Allow only the liveness probe and the public API description without
+		// auth. Operational metrics stay behind auth so they don't leak state.
+		if r.URL.Path == "/health" || r.URL.Path == "/openapi.yaml" || r.URL.Path == "/docs" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// Check Bearer token.
+		// Check Bearer token using a constant-time comparison.
 		auth := r.Header.Get("Authorization")
 		if auth == "" {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing Authorization header"})
@@ -349,7 +388,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 		}
 
 		token := strings.TrimPrefix(auth, "Bearer ")
-		if token == auth || token != s.config.APIKey {
+		if token == auth || subtle.ConstantTimeCompare([]byte(token), []byte(s.config.APIKey)) != 1 {
 			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid API key"})
 			return
 		}
@@ -375,7 +414,7 @@ func (s *Server) ListenAndServe(ctx context.Context, onIdle ...func()) error {
 	s.logger.Info("agent HTTP server started", "addr", ln.Addr().String())
 
 	srv := &http.Server{
-		Handler:           corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux))),
+		Handler:           securityHeaders(s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))),
 		ReadTimeout:       30 * time.Second,
 		ReadHeaderTimeout: 10 * time.Second,
 		WriteTimeout:      60 * time.Second,

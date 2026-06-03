@@ -248,9 +248,10 @@ func TestServerHealthMultipleTools(t *testing.T) {
 
 func TestCORSHeaders(t *testing.T) {
 	s := newTestServer(Tool{Name: "t", Description: "test"})
-	handler := corsMiddleware(s.rateLimitMiddleware(s.mux))
+	s.config.AllowedOrigins = []string{"https://example.com", "https://app.test"}
+	handler := s.corsMiddleware(s.rateLimitMiddleware(s.mux))
 
-	t.Run("origin echoed", func(t *testing.T) {
+	t.Run("allowlisted origin echoed", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/health", nil)
 		req.Header.Set("Origin", "https://example.com")
 		w := httptest.NewRecorder()
@@ -264,6 +265,17 @@ func TestCORSHeaders(t *testing.T) {
 		}
 		if got := w.Header().Get("Access-Control-Allow-Methods"); got != "GET, POST, OPTIONS" {
 			t.Errorf("Access-Control-Allow-Methods = %q, want 'GET, POST, OPTIONS'", got)
+		}
+	})
+
+	t.Run("non-allowlisted origin not echoed", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/health", nil)
+		req.Header.Set("Origin", "https://evil.example")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if got := w.Header().Get("Access-Control-Allow-Origin"); got != "" {
+			t.Errorf("Access-Control-Allow-Origin must be empty for a non-allowlisted origin, got %q", got)
 		}
 	})
 
@@ -300,7 +312,7 @@ func TestRateLimiting(t *testing.T) {
 		limiter:  rate.NewLimiter(rate.Limit(5), 5), // 5 req/s, burst 5
 	}
 	s.registerRoutes()
-	handler := corsMiddleware(s.rateLimitMiddleware(s.mux))
+	handler := s.corsMiddleware(s.rateLimitMiddleware(s.mux))
 
 	// Use up all burst tokens.
 	for i := 0; i < 5; i++ {
@@ -345,7 +357,7 @@ func newTestServerWithAPIKey(apiKey string, tools ...Tool) *Server {
 
 func TestAuthMiddlewareNoKey(t *testing.T) {
 	s := newTestServer(Tool{Name: "t", Description: "test"})
-	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
 	req := httptest.NewRequest("GET", "/tools", nil)
 	w := httptest.NewRecorder()
@@ -358,7 +370,7 @@ func TestAuthMiddlewareNoKey(t *testing.T) {
 
 func TestAuthMiddlewareValidKey(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test", Parameters: emptyParams()})
-	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
 	req := httptest.NewRequest("GET", "/tools", nil)
 	req.Header.Set("Authorization", "Bearer secret-key-123")
@@ -372,7 +384,7 @@ func TestAuthMiddlewareValidKey(t *testing.T) {
 
 func TestAuthMiddlewareInvalidKey(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
-	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
 	req := httptest.NewRequest("GET", "/tools", nil)
 	req.Header.Set("Authorization", "Bearer wrong-key")
@@ -394,7 +406,7 @@ func TestAuthMiddlewareInvalidKey(t *testing.T) {
 
 func TestAuthMiddlewareMissingHeader(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
-	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
 	req := httptest.NewRequest("GET", "/tools", nil)
 	w := httptest.NewRecorder()
@@ -415,7 +427,7 @@ func TestAuthMiddlewareMissingHeader(t *testing.T) {
 
 func TestAuthMiddlewareHealthBypass(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
-	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
@@ -478,7 +490,7 @@ func TestOpenAPISpecEndpoint(t *testing.T) {
 
 func TestAuthMiddlewareDocsBypass(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
-	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
 	for _, path := range []string{"/docs", "/openapi.yaml"} {
 		req := httptest.NewRequest("GET", path, nil)
@@ -491,17 +503,26 @@ func TestAuthMiddlewareDocsBypass(t *testing.T) {
 	}
 }
 
-func TestAuthMiddlewareMetricsBypass(t *testing.T) {
+func TestAuthMiddlewareMetricsRequiresAuth(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
-	handler := corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
+	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
 	for _, path := range []string{"/metrics", "/metrics/json"} {
+		// Without a token, operational metrics now require auth (no bypass).
 		req := httptest.NewRequest("GET", path, nil)
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
+		if w.Code != http.StatusUnauthorized {
+			t.Errorf("%s without token: status = %d, want 401", path, w.Code)
+		}
 
-		if w.Code != http.StatusOK {
-			t.Errorf("%s bypass: status = %d, want 200", path, w.Code)
+		// With a valid token, metrics remain reachable.
+		req2 := httptest.NewRequest("GET", path, nil)
+		req2.Header.Set("Authorization", "Bearer secret-key-123")
+		w2 := httptest.NewRecorder()
+		handler.ServeHTTP(w2, req2)
+		if w2.Code != http.StatusOK {
+			t.Errorf("%s with token: status = %d, want 200", path, w2.Code)
 		}
 	}
 }
