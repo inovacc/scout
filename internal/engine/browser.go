@@ -54,9 +54,9 @@ type Browser struct {
 	fpRot *fingerprintRotator
 
 	// sessionID tracks this browser's session directory under ~/.scout/sessions/.
-	sessionID    string
-	sessionLock  *SessionLockGuard
-	blockRouter  *rodHijackRouter
+	sessionID   string
+	sessionLock *SessionLockGuard
+	blockRouter *rodHijackRouter
 
 	// cdpURL is the CDP WebSocket URL used to connect to the browser.
 	cdpURL string
@@ -961,6 +961,25 @@ func (b *Browser) CDPURL() string {
 	}
 
 	return b.cdpURL
+}
+
+// WorkerOptions returns the subset of launch options needed to spawn worker
+// browsers (e.g. swarm crawl workers) that match this browser's exec path and
+// stealth configuration. Returns nil for a nil browser or one without options.
+func (b *Browser) WorkerOptions() []Option {
+	if b == nil || b.opts == nil {
+		return nil
+	}
+
+	var opts []Option
+	if b.opts.execPath != "" {
+		opts = append(opts, WithExecPath(b.opts.execPath))
+	}
+	if b.opts.stealth {
+		opts = append(opts, WithStealth())
+	}
+
+	return opts
 }
 
 // startBridgeServer initializes and starts the bridge WebSocket server.
