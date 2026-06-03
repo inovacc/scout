@@ -12,12 +12,12 @@ func TestCaptureSaveLoadRoundTrip(t *testing.T) {
 		Name:    "demo",
 		Entries: []CaptureEntry{{
 			Method: "POST", URL: "https://api.example.com/login",
-			ReqHeaders: map[string]string{"Content-Type": "application/json"},
-			ReqBody:    `{"u":"a"}`,
-			Status:     200,
+			ReqHeaders:  map[string]string{"Content-Type": "application/json"},
+			ReqBody:     `{"u":"a"}`,
+			Status:      200,
 			RespHeaders: map[string]string{"X-CSRF-Token": "csrf-1"},
-			RespBody:   `{"access_token":"tok-1"}`,
-			MimeType:   "application/json",
+			RespBody:    `{"access_token":"tok-1"}`,
+			MimeType:    "application/json",
 		}},
 	}
 	if err := SaveCapture(path, in); err != nil {
