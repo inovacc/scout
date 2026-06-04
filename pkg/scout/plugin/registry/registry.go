@@ -20,9 +20,9 @@ import (
 
 // Index is the plugin registry index (JSON file hosted on GitHub).
 type Index struct {
-	Version  string        `json:"version"`
-	Updated  time.Time     `json:"updated"`
-	Plugins  []PluginInfo  `json:"plugins"`
+	Version string       `json:"version"`
+	Updated time.Time    `json:"updated"`
+	Plugins []PluginInfo `json:"plugins"`
 }
 
 // PluginInfo describes a plugin in the registry.
@@ -30,8 +30,8 @@ type PluginInfo struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Author      string   `json:"author"`
-	Repo        string   `json:"repo"`          // e.g. "inovacc/scout-diag"
-	Latest      string   `json:"latest"`        // latest version tag
+	Repo        string   `json:"repo"`           // e.g. "inovacc/scout-diag"
+	Latest      string   `json:"latest"`         // latest version tag
 	Tags        []string `json:"tags,omitempty"` // search tags
 }
 
@@ -69,8 +69,17 @@ func FetchIndex(url string) (*Index, error) {
 		return nil, fmt.Errorf("registry: fetch index: HTTP %d", resp.StatusCode)
 	}
 
+	const maxIndexBytes = 8 << 20 // 8 MiB — a registry index is small JSON
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxIndexBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("registry: read index: %w", err)
+	}
+	if len(data) > maxIndexBytes {
+		return nil, fmt.Errorf("registry: index exceeds %d bytes", maxIndexBytes)
+	}
+
 	var index Index
-	if err := json.NewDecoder(resp.Body).Decode(&index); err != nil {
+	if err := json.Unmarshal(data, &index); err != nil {
 		return nil, fmt.Errorf("registry: parse index: %w", err)
 	}
 

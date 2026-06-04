@@ -172,6 +172,11 @@ func extensionPathByID(id string) (string, error) {
 	return dir, nil
 }
 
+// maxCRXDownload bounds a Chrome Web Store CRX download. Extensions are small
+// (tens of MiB at most); the cap stops a hostile store response from exhausting
+// memory via an unbounded body.
+const maxCRXDownload = 64 << 20 // 64 MiB
+
 // downloadCRX fetches a CRX file from the Chrome Web Store.
 func downloadCRX(id string) ([]byte, error) {
 	url := fmt.Sprintf(crxUpdateURL, id)
@@ -189,9 +194,13 @@ func downloadCRX(id string) ([]byte, error) {
 		return nil, fmt.Errorf("scout: download extension: HTTP %d", resp.StatusCode)
 	}
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxCRXDownload+1))
 	if err != nil {
 		return nil, fmt.Errorf("scout: read extension data: %w", err)
+	}
+
+	if int64(len(data)) > maxCRXDownload {
+		return nil, fmt.Errorf("scout: extension exceeds %d-byte limit", maxCRXDownload)
 	}
 
 	return data, nil

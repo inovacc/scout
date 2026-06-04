@@ -297,9 +297,13 @@ func callToolViaHTTP(serverURL, toolName string, params map[string]any) (*WebMCP
 
 	defer func() { _ = resp.Body.Close() }()
 
-	respBody, err := io.ReadAll(resp.Body)
+	const maxWebMCPBody = 8 << 20 // 8 MiB
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxWebMCPBody+1))
 	if err != nil {
 		return nil, fmt.Errorf("scout: webmcp: read response: %w", err)
+	}
+	if len(respBody) > maxWebMCPBody {
+		return nil, fmt.Errorf("scout: webmcp: response exceeds %d bytes", maxWebMCPBody)
 	}
 
 	var rpcResp struct {
@@ -390,9 +394,13 @@ func fetchMCPToolsJSON(rawURL string) ([]WebMCPTool, error) {
 		return nil, fmt.Errorf("status %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	const maxWebMCPBody = 8 << 20 // 8 MiB
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxWebMCPBody+1))
 	if err != nil {
 		return nil, err
+	}
+	if len(body) > maxWebMCPBody {
+		return nil, fmt.Errorf("scout: webmcp: tools response exceeds %d bytes", maxWebMCPBody)
 	}
 
 	var tools []WebMCPTool

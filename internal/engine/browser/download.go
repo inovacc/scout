@@ -87,6 +87,11 @@ func copyDir(src, dst string) error {
 	})
 }
 
+// maxBrowserDownload bounds a browser-archive download. Chromium/Brave/Edge
+// builds are well under 1 GiB; the cap stops a hostile or misconfigured mirror
+// from exhausting memory via an unbounded response body.
+const maxBrowserDownload = 1 << 30 // 1 GiB
+
 // DownloadFile fetches a URL and returns the response body.
 func DownloadFile(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -107,7 +112,16 @@ func DownloadFile(ctx context.Context, url string) ([]byte, error) {
 		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, url)
 	}
 
-	return io.ReadAll(resp.Body)
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxBrowserDownload+1))
+	if err != nil {
+		return nil, err
+	}
+
+	if int64(len(data)) > maxBrowserDownload {
+		return nil, fmt.Errorf("scout: download exceeds %d-byte limit: %s", maxBrowserDownload, url)
+	}
+
+	return data, nil
 }
 
 // Resolve tries local (system-installed) lookup first, then falls back to download.

@@ -88,9 +88,13 @@ func runStep(ctx context.Context, client *http.Client, step FlowStep, vars map[s
 		return nil, fmt.Errorf("send: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	raw, err := io.ReadAll(resp.Body)
+	const maxFlowResponse = 16 << 20 // 16 MiB
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxFlowResponse+1))
 	if err != nil {
 		return nil, fmt.Errorf("read response: %w", err)
+	}
+	if len(raw) > maxFlowResponse {
+		return nil, fmt.Errorf("response exceeds %d bytes", maxFlowResponse)
 	}
 
 	if step.Expect != nil && step.Expect.Status != 0 && resp.StatusCode != step.Expect.Status {

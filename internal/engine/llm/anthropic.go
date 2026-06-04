@@ -145,9 +145,13 @@ func (p *AnthropicProvider) Complete(ctx context.Context, systemPrompt, userProm
 
 	defer func() { _ = resp.Body.Close() }()
 
-	respBody, err := io.ReadAll(resp.Body)
+	const maxLLMResponse = 32 << 20 // 32 MiB
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxLLMResponse+1))
 	if err != nil {
 		return "", fmt.Errorf("scout: anthropic: read response: %w", err)
+	}
+	if len(respBody) > maxLLMResponse {
+		return "", fmt.Errorf("scout: anthropic: response exceeds %d bytes", maxLLMResponse)
 	}
 
 	if resp.StatusCode != http.StatusOK {

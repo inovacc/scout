@@ -227,9 +227,13 @@ func (p *OpenAIProvider) Complete(ctx context.Context, systemPrompt, userPrompt 
 
 	defer func() { _ = resp.Body.Close() }()
 
-	respBody, err := io.ReadAll(resp.Body)
+	const maxLLMResponse = 32 << 20 // 32 MiB
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxLLMResponse+1))
 	if err != nil {
 		return "", fmt.Errorf("scout: %s: read response: %w", p.Name(), err)
+	}
+	if len(respBody) > maxLLMResponse {
+		return "", fmt.Errorf("scout: %s: response exceeds %d bytes", p.Name(), maxLLMResponse)
 	}
 
 	if resp.StatusCode != http.StatusOK {
