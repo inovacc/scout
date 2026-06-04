@@ -47,27 +47,41 @@ remain, both **P3** (only relevant against the most advanced anti-bot stacks):
 
 ### HARDENING-V2 — residual findings from the 2026-06-04 adversarial audit
 
-The audit's confirmed CRITICAL (self-update had no integrity verification → RCE) and the
-daemon-env secret leak were FIXED 2026-06-04. The following finder-only (un-verified) items
-remain; fix opportunistically:
-- **DONE 2026-06-04 — flow secret leak** (`pkg/scout/flow/analyze.go`): `Referer`/`Origin` header values bypass
-  LLM-digest redaction (ship OAuth tokens to the remote LLM); `sanitizeSpec` uses a header-name
-  *denylist*, so a secret in a non-standard-named header survives into the shareable `flow.yaml`.
-  Make both **default-deny** (parameterize every non-structural header) + add hygiene tests.
-- **P3 — unbounded `io.ReadAll`/decoder on network bodies** (DoS): `internal/engine/extension.go`
-  (CRX), `internal/engine/browser/download.go` (browser archive), `internal/engine/browser/download_chromium.go:297`
-  (metadata json), `internal/engine/crawl.go` `ParseSitemap` (also unbounded recursion + should apply
-  the SSRF urlpolicy to followed `loc` URLs). Wrap with `io.LimitReader` (mirror `cmd/scout/plugin.go:214`).
-- **P3 — archive bombs / cpio panic** (`pkg/scout/archive/`): zip/tar/rpm extraction has no per-entry,
-  total-size, or entry-count cap (zip bomb); `rpm.go:128` cpio newc parser slices buffers using
-  unvalidated attacker hex fields (panic). Add limits + bounds checks.
+The audit's CRITICAL (self-update integrity → RCE), the daemon-env secret leak, and the flow
+secret leak were fixed first. A follow-up **exhaustive** DoS+injection audit
+(`docs/quality/DOS-AUDIT-2026-06-04.md`, 23 confirmed findings) was then remediated in **9
+package-scoped waves, all merged to `main`** (2026-06-04):
+
+- **DONE — flow secret leak** (`b59312f`): default-deny header redaction + hygiene tests.
+- **DONE Wave 1** (`62821e1`): `internal/engine/crawl.go` `ParseSitemap` — SSRF gate on every index
+  node + 50 MiB body cap + depth/visited/100k-URL recursion caps + `http.Client` timeout.
+- **DONE Wave 2** (`6380434`): MCP `crawl`/`sitemap` tools apply the `state.checkURL` SSRF gate.
+- **DONE Wave 3** (`ada1c0a`): gRPC `CreateSession` `HarOut`/`HijackOut` arbitrary-file-write →
+  bare-filename validation (`sanitizeSessionRel`) + defensive re-validation at destroy.
+- **DONE Wave 4** (`26ce81d`): `pkg/scout/archive` — cpio newc bounds checks (panic fix) +
+  zip/tar/rpm decompression-bomb caps (per-entry/total/count) + deb `ar` size guard.
+- **DONE Wave 5** (`77d9b2e`): swarm `Coordinator.Enqueue` `MaxURLs` frontier cap (fail-closed default).
+- **DONE Wave 6** (`1dbec92`): 8 unbounded remote-response reads bounded via `io.LimitReader`
+  (browser archive ×2, CRX, registry index, flow replay, webmcp ×2, Anthropic/OpenAI).
+- **DONE Wave 8** (`588bc3c`): `isNewer` semver downgrade gate + `SCOUT_ALLOW_DOWNGRADE` opt-in.
+- **DONE Waves 7+9** (`887e89b`): agent SSE `start` event `escapeJSON`; hijack opt-in body 64 MiB cap.
+
+**Remaining / newly-surfaced (fix opportunistically):**
 - **P3 — PowerShell path interpolation** (`internal/engine/browser/detect_version_windows.go`,
-  `pkg/scout/browser/detect_windows.go`): browser path interpolated unescaped into a single-quoted
-  `-Command` string. Apply the existing `escapePowerShell` helper or pass the path as a separate argv.
-- **P3 — SSE event injection** (`pkg/scout/agent/server.go:269`): unescaped `req.Name` in the `start`
-  event. Low priority — `pkg/scout/agent` is already scheduled for removal (see P1 deprecation above).
-- **P3 — `isNewer` permits downgrade** (`cmd/scout/update.go`): tag-inequality only; gate downgrades
-  behind `--allow-downgrade` (semver compare).
+  `pkg/scout/browser/detect_windows.go`): carried from V1; the 2026-06-04 audit did **not** reconfirm
+  it as actionable — re-verify whether `escapePowerShell` is already applied, and if not, apply it
+  (or pass the path as a separate argv).
+- **P3 — verify `internal/engine/browser/download_chromium.go:297`** (metadata JSON read): the V1
+  backlog flagged it but the exhaustive audit did not surface it among the 23 — confirm it is bounded
+  or remote-uninfluenced; cap with `io.LimitReader` if not.
+- **P4 (new, found during Wave 2) — urlpolicy `AllowLocal` disables scheme checks**
+  (`pkg/scout/urlpolicy/policy.go:55`): `Check` returns nil immediately when `AllowLocal` is set, so
+  once `SCOUT_ALLOW_LOCAL_TARGETS=1` a `file://`/`gopher://` URL is also permitted. Move the
+  http(s)-scheme check **above** the AllowLocal short-circuit. Low (explicit operator opt-in).
+- **(non-security) test + hygiene**: `TestWorker_RunLifecycle` fails on clean `main` (environmental
+  "worker did not stop in time" timing flake — needs a more tolerant timeout/sync, not a code fix);
+  `internal/engine/swarm/{queue,worker}.go` carry pre-existing gofmt drift; repo-wide CRLF churn
+  persists (no root `.gitattributes` — a deliberate `* text=auto eol=lf` renormalize would fix it).
 
 ## Completed Items (Archive)
 
