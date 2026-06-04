@@ -1,0 +1,59 @@
+# Normalize line endings. Text files are stored as LF in the repo and checked
+# out as LF on every platform (this repo is developed on Windows but builds on
+# Linux; Go tooling, gofmt, and the aria golden fixtures all expect LF). This
+# kills the CRLF churn that made `gofmt -l` false-flag whole files and made the
+# aria golden comparisons fragile.
+* text=auto eol=lf
+
+# Go sources and module files: always LF.
+*.go    text eol=lf
+go.mod  text eol=lf
+go.sum  text eol=lf
+
+# Common text formats: LF.
+*.md    text eol=lf
+*.json  text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.toml  text eol=lf
+*.sh    text eol=lf
+*.proto text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.txt   text eol=lf
+
+# Windows-only scripts keep CRLF.
+*.bat   text eol=crlf
+*.ps1   text eol=crlf
+*.cmd   text eol=crlf
+
+# Binary assets: never touch line endings (git auto-detects too, but be explicit).
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.bmp   binary
+*.svg   text eol=lf
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.otf   binary
+*.pdf   binary
+*.zip   binary
+*.gz    binary
+*.tgz   binary
+*.br    binary
+*.bz2   binary
+*.xz    binary
+*.7z    binary
+*.wasm  binary
+*.exe   binary
+*.dll   binary
+*.so    binary
+*.dylib binary
+*.crx   binary
+*.har   binary
