@@ -4,6 +4,8 @@ All notable changes to Scout are documented here. Format based on [Keep a Change
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-06-04
+
 ### Security
 - **Self-update now verifies integrity — closes a supply-chain RCE.** `scout update` previously downloaded the release binary and swapped it over the running executable with **no** checksum or signature check. It now fetches the release `checksums.txt`, verifies the download's SHA256 **before any bytes touch the executable path**, enforces HTTPS (rejecting downgrade redirects), bounds the read, and **fails closed** when a release lacks a checksums file. (`cmd/scout/update.go`.)
 - **Auto-spawned daemon no longer inherits ambient secrets.** `scout daemon` self-spawns `scout server` with a curated environment allowlist instead of the full parent env, so the long-lived daemon no longer carries `SCOUT_PASSPHRASE` / `SCOUT_VAULT_PASSPHRASE` / `SCOUT_AGENT_API_KEY` / OAuth tokens it never consumes. (`cmd/scout/daemon.go`.)

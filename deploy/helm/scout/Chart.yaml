@@ -1,8 +1,8 @@
 apiVersion: v2
 name: scout
 description: Scout browser automation service for Kubernetes
-version: 0.2.0
-appVersion: "1.1.0"
+version: 0.2.1
+appVersion: "1.1.1"
 type: application
 keywords:
   - browser
