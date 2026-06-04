@@ -37,6 +37,9 @@ func registerSitemapTool(server *mcp.Server, state *mcpState) {
 		if err := json.Unmarshal(req.Params.Arguments, &in); err != nil {
 			return errResult("sitemap: parse args: " + err.Error())
 		}
+		if err := state.checkURL(ctx, in.URL); err != nil {
+			return errResult(err.Error())
+		}
 		browser, err := state.ensureBrowser(ctx)
 		if err != nil {
 			return errResult(err.Error())
