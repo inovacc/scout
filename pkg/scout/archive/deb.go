@@ -58,6 +58,12 @@ func extractDebDataTar(data []byte) ([]byte, error) {
 			return nil, fmt.Errorf("archive: parse ar entry size %q: %w", sizeStr, err)
 		}
 
+		// Validate the ar size before any allocation/seek: a negative size
+		// would panic make([]byte, size); an absurd one is a memory-DoS.
+		if size < 0 || size > maxDebMemberSize {
+			return nil, fmt.Errorf("archive: invalid ar entry size %d (cap %d)", size, maxDebMemberSize)
+		}
+
 		if isDataTar(name) {
 			payload := make([]byte, size)
 			if _, err := io.ReadFull(r, payload); err != nil {

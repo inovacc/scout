@@ -99,9 +99,13 @@ func extractCPIO(data []byte, destDir string) error {
 
 	defer func() { _ = gr.Close() }()
 
-	cpioData, err := io.ReadAll(gr)
+	cpioData, err := io.ReadAll(io.LimitReader(gr, maxRPMUncompressed+1))
 	if err != nil {
 		return fmt.Errorf("archive: decompress rpm payload: %w", err)
+	}
+
+	if int64(len(cpioData)) > maxRPMUncompressed {
+		return fmt.Errorf("archive: rpm payload exceeds %d-byte limit", maxRPMUncompressed)
 	}
 
 	return parseCPIONewc(cpioData, destDir)
@@ -110,6 +114,11 @@ func extractCPIO(data []byte, destDir string) error {
 // parseCPIONewc parses cpio "newc" (SVR4) format.
 func parseCPIONewc(data []byte, destDir string) error {
 	offset := 0
+
+	var (
+		entries int
+		total   int64
+	)
 
 	for offset+110 <= len(data) {
 		// newc header: "070701" magic + fields in hex ASCII.
@@ -122,10 +131,35 @@ func parseCPIONewc(data []byte, destDir string) error {
 		namesize := parseHex(data[offset+94 : offset+102])
 		mode := parseHex(data[offset+14 : offset+22])
 
+		// Bound the crafted size fields before using them to slice: an
+		// out-of-range namesize/filesize would panic the slice expressions
+		// below, and a giant filesize is a decompression-bomb vector.
+		if namesize <= 0 || namesize > maxCPIOName {
+			return fmt.Errorf("archive: cpio: invalid namesize %d at offset %d", namesize, offset)
+		}
+
+		if filesize < 0 || filesize > maxEntryBytes {
+			return fmt.Errorf("archive: cpio: invalid filesize %d at offset %d", filesize, offset)
+		}
+
+		entries++
+		if entries > maxEntries {
+			return fmt.Errorf("archive: cpio: too many entries (>%d)", maxEntries)
+		}
+
+		total += filesize
+		if total > maxTotalBytes {
+			return fmt.Errorf("archive: cpio: uncompressed total exceeds %d bytes", maxTotalBytes)
+		}
+
 		// Name starts at offset+110, padded to 4 bytes.
 		nameStart := offset + 110
 		nameEnd := nameStart + int(namesize) - 1 // exclude null terminator
-		name := string(data[nameStart : nameEnd])
+		if nameEnd < nameStart || nameEnd > len(data) {
+			return fmt.Errorf("archive: cpio: name out of bounds at offset %d", offset)
+		}
+
+		name := string(data[nameStart:nameEnd])
 
 		if name == "TRAILER!!!" {
 			break
@@ -138,6 +172,9 @@ func parseCPIONewc(data []byte, destDir string) error {
 		}
 
 		dataEnd := dataStart + int(filesize)
+		if dataEnd < dataStart || dataEnd > len(data) {
+			return fmt.Errorf("archive: cpio: data out of bounds at offset %d", offset)
+		}
 
 		// Strip leading "./" or "/" from name.
 		cleanName := name

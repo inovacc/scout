@@ -20,6 +20,12 @@ func (z *ZipExtractor) Extract(data []byte, destDir string) error {
 		return fmt.Errorf("archive: open zip: %w", err)
 	}
 
+	if len(zr.File) > maxEntries {
+		return fmt.Errorf("archive: zip has too many entries (%d > %d)", len(zr.File), maxEntries)
+	}
+
+	var total int64
+
 	for _, f := range zr.File {
 		target, err := pathSlipCheck(destDir, f.Name)
 		if err != nil {
@@ -38,7 +44,7 @@ func (z *ZipExtractor) Extract(data []byte, destDir string) error {
 			return fmt.Errorf("archive: create parent dir: %w", err)
 		}
 
-		if err := extractZipEntry(f, target); err != nil {
+		if err := extractZipEntry(f, target, &total); err != nil {
 			return err
 		}
 	}
@@ -46,7 +52,7 @@ func (z *ZipExtractor) Extract(data []byte, destDir string) error {
 	return nil
 }
 
-func extractZipEntry(f *zip.File, target string) error {
+func extractZipEntry(f *zip.File, target string, total *int64) error {
 	rc, err := f.Open()
 	if err != nil {
 		return fmt.Errorf("archive: open zip entry %s: %w", f.Name, err)
@@ -61,9 +67,23 @@ func extractZipEntry(f *zip.File, target string) error {
 
 	defer func() { _ = out.Close() }()
 
-	if _, err := io.Copy(out, rc); err != nil {
+	// Cap this entry at the smaller of the per-entry limit and the remaining
+	// total budget; the +1 sentinel detects overflow.
+	remaining := maxTotalBytes - *total
+	if remaining > maxEntryBytes {
+		remaining = maxEntryBytes
+	}
+
+	n, err := io.Copy(out, io.LimitReader(rc, remaining+1))
+	if err != nil {
 		return fmt.Errorf("archive: write file %s: %w", f.Name, err)
 	}
+
+	if n > remaining {
+		return fmt.Errorf("archive: zip entry %s exceeds size cap", f.Name)
+	}
+
+	*total += n
 
 	return nil
 }

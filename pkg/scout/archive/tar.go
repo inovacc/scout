@@ -38,6 +38,11 @@ func (tg *TarGzExtractor) Extract(data []byte, destDir string) error {
 func extractTar(r io.Reader, destDir string) error {
 	tr := tar.NewReader(r)
 
+	var (
+		entries int
+		total   int64
+	)
+
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -46,6 +51,11 @@ func extractTar(r io.Reader, destDir string) error {
 
 		if err != nil {
 			return fmt.Errorf("archive: read tar entry: %w", err)
+		}
+
+		entries++
+		if entries > maxEntries {
+			return fmt.Errorf("archive: tar has too many entries (>%d)", maxEntries)
 		}
 
 		target, err := pathSlipCheck(destDir, hdr.Name)
@@ -64,7 +74,7 @@ func extractTar(r io.Reader, destDir string) error {
 				return fmt.Errorf("archive: create parent dir: %w", err)
 			}
 
-			if err := writeFromReader(target, tr, hdr.FileInfo().Mode()); err != nil {
+			if err := writeFromReader(target, tr, hdr.FileInfo().Mode(), &total); err != nil {
 				return fmt.Errorf("archive: write file %s: %w", hdr.Name, err)
 			}
 
@@ -110,7 +120,7 @@ func symlinkTargetWithinDest(destDir, linkPath, linkname string) error {
 	return nil
 }
 
-func writeFromReader(path string, r io.Reader, mode os.FileMode) error {
+func writeFromReader(path string, r io.Reader, mode os.FileMode, total *int64) error {
 	out, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return err
@@ -118,7 +128,24 @@ func writeFromReader(path string, r io.Reader, mode os.FileMode) error {
 
 	defer func() { _ = out.Close() }()
 
-	_, err = io.Copy(out, r)
+	// Cap this entry at the smaller of the per-entry limit and the remaining
+	// total budget; the +1 sentinel detects overflow (tar is streamed, so there
+	// is no entry count or size known up front).
+	remaining := maxTotalBytes - *total
+	if remaining > maxEntryBytes {
+		remaining = maxEntryBytes
+	}
 
-	return err
+	n, err := io.Copy(out, io.LimitReader(r, remaining+1))
+	if err != nil {
+		return err
+	}
+
+	if n > remaining {
+		return fmt.Errorf("archive: tar entry exceeds size cap")
+	}
+
+	*total += n
+
+	return nil
 }
