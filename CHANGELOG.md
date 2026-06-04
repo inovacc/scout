@@ -4,6 +4,9 @@ All notable changes to Scout are documented here. Format based on [Keep a Change
 
 ## [Unreleased]
 
+### Fixed
+- `Browser.HandleAuth` is now nil-safe: on an uninitialized or closed browser it returns an error-reporting function instead of panicking with a nil-pointer dereference (matches the nil-safe contract for key `Browser` methods).
+
 ## [1.1.0] - 2026-06-03
 
 ### Security

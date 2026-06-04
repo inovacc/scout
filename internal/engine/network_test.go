@@ -480,3 +480,29 @@ func TestHandleAuth(t *testing.T) {
 		t.Error("HandleAuth() should return a non-nil function")
 	}
 }
+
+func TestHandleAuth_NilSafe(t *testing.T) {
+	// Nil-safe contract (CLAUDE.md): HandleAuth on a nil/uninitialized browser
+	// must return an error-reporting function, not panic. Regression: a dead
+	// shared browser left b.browser nil and HandleAuth nil-dereferenced inside
+	// rodBrowser.DisableDomain -> key().
+	var nilBrowser *Browser
+
+	fn := nilBrowser.HandleAuth("user", "pass")
+	if fn == nil {
+		t.Fatal("HandleAuth on nil *Browser should return a non-nil func")
+	}
+	if err := fn(); err == nil {
+		t.Error("HandleAuth on nil *Browser: expected error from handler, got nil")
+	}
+
+	uninit := &Browser{}
+
+	fn2 := uninit.HandleAuth("user", "pass")
+	if fn2 == nil {
+		t.Fatal("HandleAuth on uninitialized Browser should return a non-nil func")
+	}
+	if err := fn2(); err == nil {
+		t.Error("HandleAuth on uninitialized Browser: expected error from handler, got nil")
+	}
+}

@@ -219,7 +219,13 @@ func (p *Page) ClearCookies() error {
 
 // HandleAuth sets up HTTP basic authentication for the browser.
 // Returns a function that waits for and handles the next auth challenge.
+// Nil-safe: when the browser is not initialized, the returned function reports
+// an error rather than panicking.
 func (b *Browser) HandleAuth(username, password string) func() error {
+	if b == nil || b.browser == nil {
+		return func() error { return fmt.Errorf("scout: handle auth: browser not initialized") }
+	}
+
 	return b.browser.HandleAuth(username, password)
 }
 
