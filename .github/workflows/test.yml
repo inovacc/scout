@@ -8,6 +8,10 @@ jobs:
   quality-check:
     uses: inovacc/workflows/.github/workflows/reusable-go-check.yml@main
     with:
+      # go.mod requires go >= 1.26.0; the runner's setup-go "stable" currently
+      # resolves to 1.25.10, which (with GOTOOLCHAIN=local) fails package loading
+      # in the lint step. Pin 1.26 so go list / golangci-lint use a compatible Go.
+      go-version: "1.26"
       run-tests: true
       run-lint: true
       run-vulncheck: true
