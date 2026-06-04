@@ -4,6 +4,9 @@ All notable changes to Scout are documented here. Format based on [Keep a Change
 
 ## [Unreleased]
 
+### Fixed
+- **CI: Docker + release publishing repaired (Go 1.26).** `docker/Dockerfile` (+`.slim`) and the standalone release workflow built with Go 1.25 while `go.mod` requires 1.26, so the v1.1.1 *Docker Publish* job and one of two duplicate *Release* workflows failed with `go.mod requires go >= 1.26.0`. Bumped the Docker builder image and release `go-version` to 1.26 and removed the failing duplicate `release.yaml` (the reusable lib-mode release; the self-contained goreleaser `release.yml` is retained). The `Test` quality-check workflow now also runs on `main` (was `branches-ignore: [main]`, so `main` was never gated).
+
 ## [1.1.1] - 2026-06-04
 
 ### Security

@@ -2,9 +2,7 @@ name: Test
 
 on:
   push:
-    branches-ignore: [ "main" ]
   pull_request:
-    branches-ignore: [ "main" ]
 
 jobs:
   quality-check:
