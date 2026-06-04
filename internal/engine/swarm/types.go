@@ -36,6 +36,11 @@ type SwarmConfig struct {
 	HeartbeatTimeout time.Duration
 	// DefaultRateLimit is the per-domain request interval.
 	DefaultRateLimit time.Duration
+	// MaxURLs caps the total unique URLs tracked (the dedup seen-set, which
+	// also bounds the queue) so a hostile or sprawling site cannot grow the
+	// coordinator's memory without limit. A value <= 0 is replaced with a safe
+	// default in NewCoordinator; Enqueue stops admitting new URLs at the cap.
+	MaxURLs int
 }
 
 // DefaultConfig returns a SwarmConfig with sensible defaults.
@@ -46,8 +51,14 @@ func DefaultConfig() SwarmConfig {
 		HeartbeatInterval: 5 * time.Second,
 		HeartbeatTimeout:  15 * time.Second,
 		DefaultRateLimit:  time.Second,
+		MaxURLs:           10000,
 	}
 }
+
+// defaultMaxURLs bounds the coordinator seen-set when a caller leaves MaxURLs
+// unset (e.g. a SwarmConfig literal); it is applied in NewCoordinator so the
+// memory cap is fail-closed even on the gRPC daemon path.
+const defaultMaxURLs = 100_000
 
 // CrawlRequest represents a URL to be crawled.
 type CrawlRequest struct {
@@ -68,10 +79,10 @@ type CrawlResult struct {
 
 // WorkerInfo holds metadata about a registered worker.
 type WorkerInfo struct {
-	ID         string
-	Status     WorkerStatus
-	Proxy      string
-	LastSeen   time.Time
-	Processed  int64
-	InFlight   []string
+	ID        string
+	Status    WorkerStatus
+	Proxy     string
+	LastSeen  time.Time
+	Processed int64
+	InFlight  []string
 }

@@ -27,6 +27,9 @@ func NewCoordinator(cfg SwarmConfig, logger *slog.Logger) *Coordinator {
 	if logger == nil {
 		logger = slog.Default()
 	}
+	if cfg.MaxURLs <= 0 {
+		cfg.MaxURLs = defaultMaxURLs
+	}
 	return &Coordinator{
 		config:  cfg,
 		queue:   NewDomainQueue(cfg.DefaultRateLimit),
@@ -64,6 +67,13 @@ func (c *Coordinator) Enqueue(urls []CrawlRequest) (int, error) {
 
 	var newReqs []*CrawlRequest
 	for i := range urls {
+		// Memory cap: stop admitting new URLs once the seen-set is full so a
+		// sprawling/hostile site cannot grow the coordinator without bound.
+		if len(c.seen) >= c.config.MaxURLs {
+			c.logger.Warn("scout: swarm: MaxURLs cap reached; dropping remaining discovered URLs",
+				"cap", c.config.MaxURLs)
+			break
+		}
 		u := urls[i]
 		if _, ok := c.seen[u.URL]; ok {
 			continue
