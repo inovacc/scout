@@ -69,6 +69,72 @@ func TestSanitizeSpecParameterizesRawSecrets(t *testing.T) {
 	}
 }
 
+// TestSanitizeSpecDefaultDenyHeaders proves the emitted spec parameterizes a
+// secret in a CUSTOM-named header (default-deny, not just a name denylist) and
+// strips a token carried in a structural Referer URL.
+func TestSanitizeSpecDefaultDenyHeaders(t *testing.T) {
+	const rawSecret = "RAW-VENDOR-SECRET-zzz999"
+	const refTok = "REFERER-OAUTH-CODE-abc"
+
+	spec := &FlowSpec{
+		Version: "1", Name: "s",
+		Steps: []FlowStep{{
+			ID: "s1",
+			Request: Request{
+				Method: "GET", URL: "https://api/x",
+				Headers: map[string]string{
+					"X-Vendor-Blob": rawSecret,                       // custom-named secret
+					"Referer":       "https://app/cb?code=" + refTok, // token in a structural header URL
+					"Accept":        "application/json",              // structural, must be preserved
+				},
+			},
+		}},
+	}
+
+	sanitizeSpec(spec)
+	h := spec.Steps[0].Request.Headers
+
+	if strings.Contains(h["X-Vendor-Blob"], rawSecret) {
+		t.Errorf("custom-named header secret survived into spec: %q", h["X-Vendor-Blob"])
+	}
+
+	if !strings.Contains(h["X-Vendor-Blob"], "${secret.") {
+		t.Errorf("custom-named header not parameterized: %q", h["X-Vendor-Blob"])
+	}
+
+	if strings.Contains(h["Referer"], refTok) {
+		t.Errorf("referer URL token survived into spec: %q", h["Referer"])
+	}
+
+	if h["Accept"] != "application/json" {
+		t.Errorf("structural Accept header should be preserved, got %q", h["Accept"])
+	}
+}
+
+// TestRedactHeadersStripsRefererToken proves the LLM digest does not receive a
+// token carried in a Referer/Origin URL.
+func TestRedactHeadersStripsRefererToken(t *testing.T) {
+	const tok = "DIGEST-OAUTH-CODE-xyz"
+
+	out := redactHeaders(map[string]string{
+		"Referer":       "https://app/callback?code=" + tok,
+		"Authorization": "Bearer SECRETJWT",
+		"Accept":        "text/html",
+	})
+
+	if strings.Contains(out["Referer"], tok) {
+		t.Errorf("referer token leaked to LLM digest: %q", out["Referer"])
+	}
+
+	if strings.Contains(out["Authorization"], "SECRETJWT") {
+		t.Errorf("authorization value leaked to digest: %q", out["Authorization"])
+	}
+
+	if out["Accept"] != "text/html" {
+		t.Errorf("structural Accept altered: %q", out["Accept"])
+	}
+}
+
 // TestSanitizeSpecFlagsForeignSecretRef proves a smuggled ${secret.*} reference
 // (one sanitizeSpec did not introduce — e.g. injected via captured data or an
 // inferred chain) is surfaced as a SECURITY review note.

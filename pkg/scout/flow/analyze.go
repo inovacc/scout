@@ -154,11 +154,26 @@ func sanitizeSpec(spec *FlowSpec) []string {
 			if val == "" || isTemplate(val) {
 				continue
 			}
-			if isSensitiveHeader(name) {
+
+			switch {
+			case isSensitiveHeader(name) || !safeStructuralHeader(name):
+				// Default-deny: sensitive-by-name OR any header whose value is not a
+				// known structural one is treated as a secret and parameterized, so a
+				// secret in a custom-named header never lands in the shared spec.
 				sn := secretName(name)
 				st.Request.Headers[name] = "${secret." + sn + "}"
 				introduced[sn] = true
 				notes = append(notes, fmt.Sprintf("step %q: header %q parameterized to ${secret.%s} — add %s to your vault profile", st.ID, name, sn, sn))
+			case strings.EqualFold(name, "referer") || strings.EqualFold(name, "origin"):
+				// Structural, but strip any token carried in the URL query string.
+				if u, changed := parameterizeURLSecrets(val); len(changed) > 0 {
+					st.Request.Headers[name] = u
+					for _, k := range changed {
+						introduced[secretName(k)] = true
+					}
+
+					notes = append(notes, fmt.Sprintf("step %q: header %q query %v parameterized to ${secret.*}", st.ID, name, changed))
+				}
 			}
 		}
 		if u, changed := parameterizeURLSecrets(st.Request.URL); len(changed) > 0 {
@@ -386,9 +401,14 @@ func redactHeaders(in map[string]string) map[string]string {
 	}
 	out := make(map[string]string, len(in))
 	for k, v := range in {
-		if safeStructuralHeader(k) && !isSensitiveHeader(k) {
+		switch {
+		case strings.EqualFold(k, "referer") || strings.EqualFold(k, "origin"):
+			// Structural, but the URL value can carry tokens in its query string
+			// (?code=, ?access_token=) — strip query VALUES before showing the LLM.
+			out[k] = redactURL(v)
+		case safeStructuralHeader(k) && !isSensitiveHeader(k):
 			out[k] = v
-		} else {
+		default:
 			out[k] = fmt.Sprintf("<redacted:%d>", len(v))
 		}
 	}

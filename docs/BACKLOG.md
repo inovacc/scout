@@ -50,7 +50,7 @@ remain, both **P3** (only relevant against the most advanced anti-bot stacks):
 The audit's confirmed CRITICAL (self-update had no integrity verification → RCE) and the
 daemon-env secret leak were FIXED 2026-06-04. The following finder-only (un-verified) items
 remain; fix opportunistically:
-- **P2 — flow secret leak** (`pkg/scout/flow/analyze.go`): `Referer`/`Origin` header values bypass
+- **DONE 2026-06-04 — flow secret leak** (`pkg/scout/flow/analyze.go`): `Referer`/`Origin` header values bypass
   LLM-digest redaction (ship OAuth tokens to the remote LLM); `sanitizeSpec` uses a header-name
   *denylist*, so a secret in a non-standard-named header survives into the shareable `flow.yaml`.
   Make both **default-deny** (parameterize every non-structural header) + add hygiene tests.
