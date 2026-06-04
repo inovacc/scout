@@ -245,9 +245,19 @@ func (h *Hijack) LoadResponse(client *http.Client, loadBody bool) error {
 	}
 
 	if loadBody {
-		b, err := io.ReadAll(res.Body)
+		// Bound the captured body: response size is server-controlled, so an
+		// unbounded read is a memory-DoS even on this opt-in path. Truncate
+		// past the cap and flag it rather than failing the capture.
+		const maxHijackBody = 64 << 20 // 64 MiB
+
+		b, err := io.ReadAll(io.LimitReader(res.Body, maxHijackBody+1))
 		if err != nil {
 			return err
+		}
+
+		if len(b) > maxHijackBody {
+			b = b[:maxHijackBody]
+			h.Response.SetHeader("X-Scout-Body-Truncated", "true")
 		}
 
 		h.Response.payload.Body = b

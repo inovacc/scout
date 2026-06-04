@@ -265,8 +265,10 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
 
-	// Send start event.
-	writeSSE(w, flusher, "start", fmt.Sprintf(`{"tool":"%s","timestamp":"%s"}`, req.Name, time.Now().Format(time.RFC3339)))
+	// Send start event. escapeJSON the caller-controlled tool name so a name
+	// containing quotes/newlines cannot break out of the JSON or inject extra
+	// SSE frames (matches the error/result events below).
+	writeSSE(w, flusher, "start", fmt.Sprintf(`{"tool":"%s","timestamp":"%s"}`, escapeJSON(req.Name), time.Now().Format(time.RFC3339)))
 
 	s.logger.Info("stream tool call", "name", req.Name)
 	metrics.Get().ToolCallsTotal.Add(1)
