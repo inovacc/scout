@@ -66,6 +66,21 @@ package-scoped waves, all merged to `main`** (2026-06-04):
 - **DONE Wave 8** (`588bc3c`): `isNewer` semver downgrade gate + `SCOUT_ALLOW_DOWNGRADE` opt-in.
 - **DONE Waves 7+9** (`887e89b`): agent SSE `start` event `escapeJSON`; hijack opt-in body 64 MiB cap.
 
+**Path-to-GA — CI / Tests (from MATURITY-2026-06-04, surfaced 2026-06-04):**
+- **DONE 2026-06-04 — CI gates `main` + Docker/release repaired.** `test.yml` now runs on `main`
+  (was `branches-ignore: [main]`); `docker/Dockerfile`(+slim) and `release.yml` bumped Go 1.25→1.26;
+  removed the failing duplicate `release.yaml`. `test.yml` is now self-contained with
+  `GOTOOLCHAIN=auto` (the org reusable `golangci-lint` v2.8.0 is Go-1.25-built and can't load a 1.26
+  module under `GOTOOLCHAIN=local`), gating **build** (blocking) + lint/vulncheck (advisory).
+- **OPEN (P2, Large) — make `go test ./...` CI-safe.** Running the suite in CI currently reds out:
+  many browser tests `Fatal` (not `t.Skip`) without Chromium (e.g. `TestBridge*`, `TestChallengeSolver_*`,
+  `TestCrawl`, `TestDetectFrameworks`). Fix: install Chromium in CI (e.g. `browser-actions/setup-chrome`)
+  **and/or** gate every browser-dependent test behind the `newTestBrowser`/`skipIfNoBrowser` t.Skip
+  pattern, then promote the CI test step to blocking + add a coverage threshold. This is the maturity
+  scorecard's #1 path-to-GA limiter (Tests/Coverage = beta cap).
+- **OPEN (P3) — re-enable blocking lint on `main`** once the lint backlog (first run on this code) is
+  triaged; and verify `grpc v1.81.1` is not behind an advisory.
+
 **Remaining / newly-surfaced (fix opportunistically):**
 - **DONE 2026-06-04 (P3) — PowerShell path interpolation** (`internal/engine/browser/detect_version_windows.go`,
   `pkg/scout/browser/detect_windows.go`): confirmed real — the path was interpolated into a single-quoted
