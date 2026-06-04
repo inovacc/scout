@@ -4,15 +4,44 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+# go.mod requires go >= 1.26.0 (toolchain go1.26.4). GitHub's setup-go "stable"
+# currently resolves to 1.25.10, and golangci-lint v2.x is itself built with
+# 1.25.x — under GOTOOLCHAIN=local that fails package loading on a 1.26 module
+# (the org reusable workflow hit exactly this). GOTOOLCHAIN=auto lets every `go`
+# invocation (including golangci-lint's go/packages) auto-fetch the toolchain
+# go.mod pins. This workflow is intentionally self-contained for that control;
+# revert to inovacc/workflows once it sets GOTOOLCHAIN=auto / a 1.26-built linter.
+env:
+  GOTOOLCHAIN: auto
+
 jobs:
   quality-check:
-    uses: inovacc/workflows/.github/workflows/reusable-go-check.yml@main
-    with:
-      # go.mod requires go >= 1.26.0; the runner's setup-go "stable" currently
-      # resolves to 1.25.10, which (with GOTOOLCHAIN=local) fails package loading
-      # in the lint step. Pin 1.26 so go list / golangci-lint use a compatible Go.
-      go-version: "1.26"
-      run-tests: true
-      run-lint: true
-      run-vulncheck: true
-      vulncheck-skip-stdlib: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: Build
+        run: go build ./cmd/... ./pkg/... ./internal/... ./grpc/...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+
+      - name: Vulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
