@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/mod/semver"
 )
 
 func init() {
@@ -170,18 +171,36 @@ func buildAssetName() string {
 	return name
 }
 
-// isNewer returns true when the remote tag is different from the local version
-// and the local version looks like a dev build or is strictly older.
+// isNewer reports whether the remote release tag is strictly newer than the
+// local version. Dev/empty builds are always updatable. Comparison is
+// semver-aware so `scout update` refuses to "update" to an older or equal
+// release — a downgrade attack (a rolled-back or spoofed older tag served by a
+// hostile/compromised release endpoint) would otherwise re-introduce patched
+// vulnerabilities. Set SCOUT_ALLOW_DOWNGRADE=1 (or =true) to permit a
+// deliberate rollback to any different tag.
 func isNewer(current, remote string) bool {
-	remote = strings.TrimPrefix(remote, "v")
-	current = strings.TrimPrefix(current, "v")
+	cv := strings.TrimPrefix(current, "v")
+	rv := strings.TrimPrefix(remote, "v")
 
 	// Dev builds are always "updatable".
-	if current == "dev" || current == "" {
+	if cv == "dev" || cv == "" {
 		return true
 	}
 
-	return current != remote
+	// Explicit operator opt-in: allow rollback to any different tag.
+	if v := os.Getenv("SCOUT_ALLOW_DOWNGRADE"); v == "1" || strings.EqualFold(v, "true") {
+		return cv != rv
+	}
+
+	c, r := "v"+cv, "v"+rv
+	if !semver.IsValid(c) || !semver.IsValid(r) {
+		// Conservative fallback for non-semver tags: update only on a
+		// difference (preserves prior behavior for odd version strings).
+		return cv != rv
+	}
+
+	// Strictly newer only — refuse equal or older.
+	return semver.Compare(r, c) > 0
 }
 
 // maxBinaryDownload caps the self-update download to defend against an oversized
