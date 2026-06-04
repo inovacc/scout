@@ -427,6 +427,14 @@ func TestPageBlock(t *testing.T) {
 }
 
 func TestWithRemoteCDP(t *testing.T) {
+	// Browser CDP integration test: launches a real browser as the remote
+	// endpoint and connects to it. Skip under -short (matches newTestBrowser) so
+	// the no-Chromium CI cycle stays green and the launcher→connect race can't
+	// flake the default suite.
+	if testing.Short() {
+		t.Skip("skipping browser CDP integration test in short mode")
+	}
+
 	// Launch a browser via the launcher to get a WebSocket CDP endpoint
 	l := launcher.New().Headless(true).NoSandbox(true)
 

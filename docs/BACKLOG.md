@@ -72,12 +72,16 @@ package-scoped waves, all merged to `main`** (2026-06-04):
   removed the failing duplicate `release.yaml`. `test.yml` is now self-contained with
   `GOTOOLCHAIN=auto` (the org reusable `golangci-lint` v2.8.0 is Go-1.25-built and can't load a 1.26
   module under `GOTOOLCHAIN=local`), gating **build** (blocking) + lint/vulncheck (advisory).
-- **OPEN (P2, Large) — make `go test ./...` CI-safe.** Running the suite in CI currently reds out:
-  many browser tests `Fatal` (not `t.Skip`) without Chromium (e.g. `TestBridge*`, `TestChallengeSolver_*`,
-  `TestCrawl`, `TestDetectFrameworks`). Fix: install Chromium in CI (e.g. `browser-actions/setup-chrome`)
-  **and/or** gate every browser-dependent test behind the `newTestBrowser`/`skipIfNoBrowser` t.Skip
-  pattern, then promote the CI test step to blocking + add a coverage threshold. This is the maturity
-  scorecard's #1 path-to-GA limiter (Tests/Coverage = beta cap).
+- **IN PROGRESS (P2, Large) — make `go test -short ./...` reliably green so the CI test gate can block.**
+  CI now **runs `go test -short` advisory** (continue-on-error) + emits a coverage number; `-short`
+  already skips most Chromium tests (`newTestBrowser`/`newOwnedTestBrowser`, and now `TestWithRemoteCDP`
+  after gating it 2026-06-04). Two things still break `-short` headless: (1) a handful of browser E2E
+  tests aren't `-short`-gated — confirmed `TestE2ETouchGestures` (`e2e_test.go`), `TestSessionHijackerWithAutoAttach`
+  (`hijack_session_test.go`); audit for more; (2) the **shared-browser fixture isolation bug** — when one
+  test closes/breaks `sharedBrowser`, later tests get `create page: read tcp ...`. Fix both (gate the
+  remaining browser tests; make the shared fixture re-create on a dead connection or give owning tests
+  their own browser), then flip the CI Test step to **blocking** + add a coverage threshold + (optionally)
+  a separate Chromium-in-CI job for the full non-`-short` suite. Maturity scorecard's #1 GA limiter.
 - **OPEN (P3) — re-enable blocking lint on `main`** once the lint backlog (first run on this code) is
   triaged; and verify `grpc v1.81.1` is not behind an advisory.
 
