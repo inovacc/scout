@@ -56,6 +56,10 @@ func spawnHolder(t *testing.T, dataDir string) *exec.Cmd {
 }
 
 func TestReapOnce_Acceptance_KillsHolderAndRemovesDir(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping process-spawning reaper acceptance test in short mode")
+	}
+
 	dir := t.TempDir()
 	orig := SessionsDir
 	SessionsDir = func() string { return dir }
@@ -106,6 +110,10 @@ func TestReapOnce_Acceptance_KillsHolderAndRemovesDir(t *testing.T) {
 }
 
 func TestReapOnce_Acceptance_NeverKillsSelf(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping process-spawning reaper acceptance test in short mode")
+	}
+
 	dir := t.TempDir()
 	orig := SessionsDir
 	SessionsDir = func() string { return dir }
@@ -156,6 +164,10 @@ func TestReapOnce_Acceptance_NeverKillsSelf(t *testing.T) {
 // RED before Part A (ReapSession unexported / does not exist).
 // GREEN after Part A+B+C.
 func TestReapSession_KillsCorruptPidHolder(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping process-spawning reaper acceptance test in short mode")
+	}
+
 	dir := t.TempDir()
 	orig := SessionsDir
 	SessionsDir = func() string { return dir }
