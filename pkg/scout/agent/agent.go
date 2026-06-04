@@ -248,7 +248,7 @@ func (p *Provider) handleExtractText(ctx context.Context, args map[string]any) (
 		return "", err
 	}
 
-	result, err := pg.Eval(fmt.Sprintf(`document.querySelector(%q)?.textContent?.trim() || ''`, selector))
+	result, err := pg.Eval(fmt.Sprintf(`() => document.querySelector(%q)?.textContent?.trim() || ''`, selector))
 	if err != nil {
 		return "", err
 	}
@@ -264,7 +264,7 @@ func (p *Provider) handleClick(ctx context.Context, args map[string]any) (string
 		return "", err
 	}
 
-	_, err = pg.Eval(fmt.Sprintf(`document.querySelector(%q)?.click()`, selector))
+	_, err = pg.Eval(fmt.Sprintf(`() => document.querySelector(%q)?.click()`, selector))
 	if err != nil {
 		return "", err
 	}
@@ -281,13 +281,13 @@ func (p *Provider) handleType(ctx context.Context, args map[string]any) (string,
 		return "", err
 	}
 
-	js := fmt.Sprintf(`(() => {
+	js := fmt.Sprintf(`() => {
 		const el = document.querySelector(%q);
 		if (!el) return 'element not found';
 		el.value = %q;
 		el.dispatchEvent(new Event('input', {bubbles: true}));
 		return 'typed';
-	})()`, selector, text)
+	}`, selector, text)
 
 	result, err := pg.Eval(js)
 	if err != nil {

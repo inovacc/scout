@@ -16,6 +16,9 @@ All notable changes to Scout are documented here. Format based on [Keep a Change
 ### Changed
 - The `ollama` LLM provider now routes through Ollama's OpenAI-compatible `/v1` endpoint via `NewOpenAIProvider` — no behavior change for chat/completion. `scout ollama list` / `pull` / `status` are reimplemented directly on Ollama's native REST API (`GET /api/tags`, `POST /api/pull`) — identical UX, no SDK dependency.
 
+### Fixed
+- **AI-agent REST tools `click` / `type` / `extract_text` no longer error.** They passed bare JS expressions to `page.Eval`, which expects function form (`() => …`) and `.apply`s the value — producing `TypeError: (...).apply is not a function`. The handlers now emit proper arrow functions. (`pkg/scout/agent/agent.go`.)
+
 ## [1.0.4] - 2026-05-20
 
 ### Security
