@@ -27,6 +27,24 @@ at MCP + agent ingress. Out of scope, tracked here:
 - Crawler-discovered links: apply the policy to each URL swarm_crawl/gather fetches, not just the seed.
 - DNS rebinding: pin the resolved IP through to navigation, or intercept at CDP.
 
+### STEALTH-V2 — behavioral evasion + network fingerprint (static fingerprints shipped)
+
+Live probe 2026-06-04 (`docs/quality/STEALTH-MATURITY-2026-06-04.md`) confirmed Scout's stealth
+defeats the **static-fingerprint** detectors that block most scrapers — scrapfly's automation
+detector returned "Not Automated, 0 detected signals", and `navigator.webdriver` / plugins /
+WebGL vendor (Intel, not SwiftShader) / UA / languages all read human-like. Two frontier gaps
+remain, both **P3** (only relevant against the most advanced anti-bot stacks):
+- **Humanize input layer** — synthesize human-like mouse paths (bezier / variable speed), typing
+  cadence, and scroll jitter so *behavioral* classifiers (bot.incolumitas `behavioralClassificationScore`,
+  reCAPTCHA v3, DataDome) don't flag no-interaction runs. Scout masks *what the browser is*, not
+  *how a human drives it*. Suggest an optional `WithHumanize()` wired through `Element.Click`/`Input`
+  and page scroll.
+- **UA + network-fingerprint currency** — keep the spoofed UA's Chrome major version current (the
+  probe showed `Chrome/114`, dated) and document/close the **TLS JA3/JA4 + HTTP/2** vector: the real
+  Chrome-for-Testing build + host OS still show through at the network layer, which JS-only evasion
+  doesn't address. Also consider `WithoutBridge()` as the stealth-mode default (content-script
+  injection is itself a signal).
+
 ## Completed Items (Archive)
 
 <details>
