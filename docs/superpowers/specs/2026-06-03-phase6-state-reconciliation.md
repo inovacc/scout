@@ -2,8 +2,28 @@
 
 **Date:** 2026-06-03
 **Reconciles:** `docs/superpowers/specs/2026-05-16-06-shared-command-executor-design.md` (dated 2026-05-16)
-**Status:** Analysis — supersedes the literal package location in the original design
-**Verified against:** real code at repo HEAD (`feat/aria-phase-a`)
+**Status:** ✅ **RESOLVED 2026-06-04** — the recommendation was implemented; see "## Resolution" below.
+**Verified against:** real code at repo HEAD (`feat/aria-phase-a` when written; re-verified on `main` 2026-06-04)
+
+---
+
+## Resolution (2026-06-04, verified on `main`)
+
+The recommendation (ADOPT + EXTEND `pkg/scout/tools/`, route the REPL, port the inline primitives)
+**has been fully implemented** since this analysis was written:
+
+- `pkg/scout/tools/` now has **13 verb files** (was 8): `page.go` (navigate/click/type/extract/eval/
+  back/forward/reload/wait/url/title/markdown/html/cookies), `capture.go` (screenshot/pdf/snapshot),
+  `tabs.go`, `crawl.go`, `sitemap.go`, `form.go`, `gather.go`, `websocket.go`, `swarm.go`,
+  `report.go`, `runbook.go`, `testsite.go`.
+- **REPL is routed**: `cmd/scout/repl.go` imports `pkg/scout/tools` and dispatches **23 command sites**
+  through `tools.*` verbs (Navigate, Eval, Click, Type, Extract, Screenshot, Markdown, HTML, Cookies,
+  URL, Title, Wait, Back/Forward/Reload, Tabs/NewTab, TestSite). The spec's "0 of 19 routed" gap is closed.
+- **Parity guard green**: `pkg/scout/tools/parity_test.go` `TestVerbParity` passes — the "exactly 3 places
+  to add a capability (tools verb + REPL case + MCP AddTool)" success criterion is now enforced by test.
+
+No further action: Phase 6 is at "verified, merged". This document is retained as the historical
+analysis that redirected the deliverable from `internal/engine/executor/` to `pkg/scout/tools/`.
 
 ---
 
