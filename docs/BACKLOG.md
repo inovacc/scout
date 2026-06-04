@@ -74,10 +74,11 @@ package-scoped waves, all merged to `main`** (2026-06-04):
 - **P3 — verify `internal/engine/browser/download_chromium.go:297`** (metadata JSON read): the V1
   backlog flagged it but the exhaustive audit did not surface it among the 23 — confirm it is bounded
   or remote-uninfluenced; cap with `io.LimitReader` if not.
-- **P4 (new, found during Wave 2) — urlpolicy `AllowLocal` disables scheme checks**
-  (`pkg/scout/urlpolicy/policy.go:55`): `Check` returns nil immediately when `AllowLocal` is set, so
-  once `SCOUT_ALLOW_LOCAL_TARGETS=1` a `file://`/`gopher://` URL is also permitted. Move the
-  http(s)-scheme check **above** the AllowLocal short-circuit. Low (explicit operator opt-in).
+- **DONE 2026-06-04 (P4, found during Wave 2) — urlpolicy `AllowLocal` disabled scheme checks**
+  (`pkg/scout/urlpolicy/policy.go`): `Check` short-circuited to allow the instant `AllowLocal` was
+  set, so `file://`/`gopher://`/`data:` were permitted once `SCOUT_ALLOW_LOCAL_TARGETS=1`. The
+  http(s) scheme gate now runs **before** the AllowLocal short-circuit; `TestCheckAllowLocalBypass`
+  updated to assert non-http schemes stay blocked even under AllowLocal.
 - **(non-security) test + hygiene**: `TestWorker_RunLifecycle` fails on clean `main` (environmental
   "worker did not stop in time" timing flake — needs a more tolerant timeout/sync, not a code fix);
   `internal/engine/swarm/{queue,worker}.go` carry pre-existing gofmt drift; repo-wide CRLF churn

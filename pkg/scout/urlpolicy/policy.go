@@ -52,18 +52,25 @@ func (e *BlockedError) Error() string {
 
 // Check reports whether rawURL may be navigated to. nil means allowed.
 func (p Policy) Check(ctx context.Context, rawURL string) error {
-	if p.AllowLocal {
-		return nil
-	}
-
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return &BlockedError{Reason: "parse", Detail: err.Error(), URL: rawURL}
 	}
 
+	// The scheme gate applies UNCONDITIONALLY — only http(s) is ever a fetchable
+	// target. Enforced before the AllowLocal short-circuit so file://, gopher://,
+	// data://, etc. can never slip through once an operator opts into local
+	// targets (AllowLocal is meant for internal *HTTP* services, not arbitrary
+	// schemes / local-file reads).
 	scheme := strings.ToLower(u.Scheme)
 	if scheme != "http" && scheme != "https" {
 		return &BlockedError{Reason: "scheme", Detail: schemeOrEmpty(scheme), URL: rawURL}
+	}
+
+	// AllowLocal: operator explicitly opted into internal/loopback HTTP(S)
+	// targets (e.g. local testing). Scheme is already enforced above.
+	if p.AllowLocal {
+		return nil
 	}
 
 	host := u.Hostname()

@@ -62,9 +62,19 @@ func TestCheck(t *testing.T) {
 
 func TestCheckAllowLocalBypass(t *testing.T) {
 	p := Policy{AllowLocal: true}
-	for _, u := range []string{"file:///etc/passwd", "http://127.0.0.1", "http://169.254.169.254"} {
+
+	// AllowLocal permits internal/loopback HTTP(S) targets...
+	for _, u := range []string{"http://127.0.0.1", "http://169.254.169.254", "https://10.0.0.1"} {
 		if err := p.Check(context.Background(), u); err != nil {
 			t.Errorf("AllowLocal Check(%q) = %v, want allowed", u, err)
+		}
+	}
+
+	// ...but the scheme gate still applies — non-http(s) schemes are blocked
+	// even under AllowLocal (file:// is a local-file read, not an HTTP target).
+	for _, u := range []string{"file:///etc/passwd", "gopher://127.0.0.1", "data:text/html,x"} {
+		if err := p.Check(context.Background(), u); err == nil {
+			t.Errorf("AllowLocal Check(%q) = nil, want blocked by the scheme gate", u)
 		}
 	}
 }
