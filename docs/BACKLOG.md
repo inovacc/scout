@@ -80,10 +80,13 @@ package-scoped waves, all merged to `main`** (2026-06-04):
   set, so `file://`/`gopher://`/`data:` were permitted once `SCOUT_ALLOW_LOCAL_TARGETS=1`. The
   http(s) scheme gate now runs **before** the AllowLocal short-circuit; `TestCheckAllowLocalBypass`
   updated to assert non-http schemes stay blocked even under AllowLocal.
-- **(non-security) test + hygiene**: `TestWorker_RunLifecycle` fails on clean `main` (environmental
-  "worker did not stop in time" timing flake — needs a more tolerant timeout/sync, not a code fix);
-  `internal/engine/swarm/{queue,worker}.go` carry pre-existing gofmt drift; repo-wide CRLF churn
-  persists (no root `.gitattributes` — a deliberate `* text=auto eol=lf` renormalize would fix it).
+- **DONE 2026-06-04 — `TestWorker_RunLifecycle` flake**: was a real-browser integration test with a
+  2s timeout (< browser launch) against external `example.com`. Now skips when no browser is available,
+  serves targets from a loopback httptest server, and polls-for-results-then-cancels instead of waiting
+  out a fixed timeout. Passes 3/3 (was 5/5 failing on clean `main`).
+- **(non-security) hygiene, still open**: `internal/engine/swarm/{queue,worker}.go` carry pre-existing
+  gofmt drift; repo-wide CRLF churn persists (no root `.gitattributes` — a deliberate `* text=auto
+  eol=lf` renormalize would fix it, and would stop `gofmt -l` from false-flagging whole files).
 
 ## Completed Items (Archive)
 

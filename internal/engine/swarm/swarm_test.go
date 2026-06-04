@@ -2,11 +2,16 @@ package swarm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/inovacc/scout/internal/engine"
 )
 
 func testLogger() *slog.Logger {
@@ -310,6 +315,23 @@ func TestWorker_ConnectDisconnect(t *testing.T) {
 }
 
 func TestWorker_RunLifecycle(t *testing.T) {
+	// Real-browser integration test: the worker launches a headless browser and
+	// navigates the seeded URLs. Skip when no browser is available (e.g. CI
+	// without Chromium). Targets are served from a loopback httptest server so
+	// the test never depends on external network/DNS — the old example.com
+	// targets plus a 2s timeout (shorter than a browser launch) made it flaky.
+	probe, err := engine.New(engine.WithHeadless(true))
+	if err != nil {
+		t.Skipf("swarm worker lifecycle test needs a browser: %v", err)
+	}
+	_ = probe.Close()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// No <a> links → no discovered URLs → exactly 3 results, no cascade.
+		_, _ = fmt.Fprintf(w, "<!DOCTYPE html><html><head><title>page %s</title></head><body>ok</body></html>", r.URL.Path)
+	}))
+	defer srv.Close()
+
 	logger := testLogger()
 	cfg := DefaultConfig()
 	cfg.DefaultRateLimit = 0
@@ -322,11 +344,10 @@ func TestWorker_RunLifecycle(t *testing.T) {
 		c.Stop()
 	}()
 
-	// Seed some URLs.
 	_, _ = c.Enqueue([]CrawlRequest{
-		{URL: "https://example.com/1"},
-		{URL: "https://example.com/2"},
-		{URL: "https://example.com/3"},
+		{URL: srv.URL + "/1"},
+		{URL: srv.URL + "/2"},
+		{URL: srv.URL + "/3"},
 	})
 
 	w := NewWorker("w1", "", 10, logger)
@@ -334,29 +355,38 @@ func TestWorker_RunLifecycle(t *testing.T) {
 		t.Fatalf("connect: %v", err)
 	}
 
-	// Run worker with a timeout context.
-	wctx, wcancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// Hard cap covers headless browser launch + 3 loopback navigations.
+	wctx, wcancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer wcancel()
 
 	errCh := make(chan error, 1)
-	go func() {
-		errCh <- w.Run(wctx)
-	}()
+	go func() { errCh <- w.Run(wctx) }()
 
-	// Wait for worker to finish (should process all URLs quickly then idle until timeout).
-	select {
-	case err := <-errCh:
-		if err != nil {
-			t.Fatalf("worker run: %v", err)
+	// Poll until all 3 results are in (fast — the worker submits as soon as the
+	// batch is crawled), then cancel the idling worker rather than waiting out a
+	// fixed timeout.
+	deadline := time.After(30 * time.Second)
+	for len(c.Results()) < 3 {
+		select {
+		case <-deadline:
+			t.Fatalf("expected 3 results, got %d", len(c.Results()))
+		case <-time.After(100 * time.Millisecond):
 		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("worker did not stop in time")
 	}
 
-	// Check results were submitted.
-	results := c.Results()
-	if len(results) != 3 {
-		t.Fatalf("expected 3 results, got %d", len(results))
+	wcancel()
+
+	select {
+	case err := <-errCh:
+		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("worker run: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("worker did not stop after cancel")
+	}
+
+	if got := len(c.Results()); got != 3 {
+		t.Fatalf("expected 3 results, got %d", got)
 	}
 
 	if err := w.Disconnect(); err != nil {
