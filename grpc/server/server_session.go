@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,10 +17,54 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// sanitizeSessionRel validates a caller-supplied artifact output path
+// (HarOut/HijackOut on CreateSession). These are joined under the per-session
+// directory at flush time, so only a bare filename is acceptable — an absolute
+// path or a `..` segment would let a gRPC client write the HAR/hijack artifact
+// to an arbitrary location on the daemon host. Empty is allowed (the caller
+// falls back to the default name). Returns InvalidArgument for anything that is
+// not a single, non-traversing filename. Cross-platform: rejects both `/` and
+// `\` separators regardless of the daemon's OS.
+func sanitizeSessionRel(p string) (string, error) {
+	if p == "" {
+		return "", nil
+	}
+
+	if p == "." || p == ".." ||
+		filepath.IsAbs(p) ||
+		strings.ContainsAny(p, `/\`) ||
+		strings.Contains(p, "..") {
+		return "", status.Errorf(codes.InvalidArgument,
+			"scout: invalid output path %q: a bare filename is required (no path separators, no '..', not absolute)", p)
+	}
+
+	return p, nil
+}
+
 // ════════════════════════ Session Lifecycle ════════════════════════
 
 func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.CreateSessionResponse, error) {
 	s.touchIdle()
+
+	// Validate caller-supplied artifact output paths up front — before any
+	// browser is launched or session stored — so a path-traversal request is
+	// rejected cleanly with no side effects. These names are joined under the
+	// session dir at HAR/hijack flush time.
+	harPath, perr := sanitizeSessionRel(req.GetHarOut())
+	if perr != nil {
+		return nil, perr
+	}
+	if harPath == "" {
+		harPath = "har.json"
+	}
+
+	hijackPath, perr := sanitizeSessionRel(req.GetHijackOut())
+	if perr != nil {
+		return nil, perr
+	}
+	if hijackPath == "" {
+		hijackPath = "hijack.jsonl"
+	}
 
 	opts := platformSessionDefaults()
 	// Disable per-page timeout for server sessions. Rod's Page.Timeout() creates
@@ -162,14 +207,8 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 	// tooling know which artifacts to finalize even if the daemon restarts
 	// between create and destroy.
 	if engineID := browser.SessionID(); engineID != "" {
-		harPath := "har.json"
-		if p := req.GetHarOut(); p != "" {
-			harPath = p
-		}
-		hijackPath := "hijack.jsonl"
-		if p := req.GetHijackOut(); p != "" {
-			hijackPath = p
-		}
+		// harPath / hijackPath were validated + defaulted at the top of
+		// CreateSession (path-traversal rejected there).
 		cfg := &scout.SessionMonitorConfig{
 			HAR: scout.MonitorSink{
 				Enabled:    req.GetRecord() || req.GetRecordHar(),
@@ -231,8 +270,13 @@ func (s *ScoutServer) DestroySession(ctx context.Context, req *pb.SessionRequest
 			if data, _, err := sess.recorder.ExportHAR(); err == nil && len(data) > 0 {
 				cfg, _ := scout.ReadSessionMonitors(engineID)
 				outPath := scout.DefaultHARPath(engineID)
-				if cfg != nil && cfg.HAR.Path != "" {
-					outPath = filepath.Join(scout.SessionDir(engineID), cfg.HAR.Path)
+				// Re-validate the persisted path defensively: monitors.json lives
+				// on disk and could be tampered. Fall back to the default name on
+				// anything that is not a bare filename.
+				if cfg != nil {
+					if rel, perr := sanitizeSessionRel(cfg.HAR.Path); perr == nil && rel != "" {
+						outPath = filepath.Join(scout.SessionDir(engineID), rel)
+					}
 				}
 				if werr := os.WriteFile(outPath, data, 0o600); werr != nil {
 					slog.Warn("scout: HAR flush on destroy failed", "path", outPath, "err", werr)
@@ -291,8 +335,11 @@ func (s *ScoutServer) DestroyAllSessions() {
 						if data, _, err := sess.recorder.ExportHAR(); err == nil && len(data) > 0 {
 							cfg, _ := scout.ReadSessionMonitors(engineID)
 							outPath := scout.DefaultHARPath(engineID)
-							if cfg != nil && cfg.HAR.Path != "" {
-								outPath = filepath.Join(scout.SessionDir(engineID), cfg.HAR.Path)
+							// Defensive re-validation (see DestroySession).
+							if cfg != nil {
+								if rel, perr := sanitizeSessionRel(cfg.HAR.Path); perr == nil && rel != "" {
+									outPath = filepath.Join(scout.SessionDir(engineID), rel)
+								}
 							}
 							if werr := os.WriteFile(outPath, data, 0o600); werr != nil {
 								slog.Warn("scout: HAR flush on destroy-all failed", "path", outPath, "err", werr)
