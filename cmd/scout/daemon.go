@@ -122,6 +122,30 @@ func ensureDaemon(addr string) error {
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 
+	// Do not leak ambient secrets (vault/scraper passphrase, agent API key,
+	// OAuth tokens) into the long-lived daemon's environment; the `server`
+	// subcommand does not consume them. Pass only a curated allowlist.
+	{
+		allow := map[string]bool{
+			"PATH": true, "HOME": true, "USERPROFILE": true, "USERNAME": true, "USER": true,
+			"LOGNAME": true, "SYSTEMROOT": true, "SYSTEMDRIVE": true, "WINDIR": true,
+			"COMSPEC": true, "PATHEXT": true, "TEMP": true, "TMP": true, "TMPDIR": true,
+			"LOCALAPPDATA": true, "APPDATA": true, "PROGRAMDATA": true, "PROGRAMFILES": true,
+			"LANG": true, "LC_ALL": true, "TZ": true,
+			"SCOUT_HOME": true, "CHROME_BIN": true, "SCOUT_HEADLESS": true, "SCOUT_NO_SANDBOX": true,
+			"SCOUT_BRIDGE": true, "SCOUT_STEALTH": true, "SCOUT_TRACE": true, "OTEL_EXPORTER_OTLP_ENDPOINT": true,
+		}
+
+		env := make([]string, 0, len(allow))
+		for _, kv := range os.Environ() {
+			if k, _, ok := strings.Cut(kv, "="); ok && allow[strings.ToUpper(k)] {
+				env = append(env, kv)
+			}
+		}
+
+		cmd.Env = env
+	}
+
 	if runtime.GOOS != "windows" {
 		// Detach from parent process group on Unix
 		setSysProcAttr(cmd)

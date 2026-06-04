@@ -45,6 +45,30 @@ remain, both **P3** (only relevant against the most advanced anti-bot stacks):
   doesn't address. Also consider `WithoutBridge()` as the stealth-mode default (content-script
   injection is itself a signal).
 
+### HARDENING-V2 — residual findings from the 2026-06-04 adversarial audit
+
+The audit's confirmed CRITICAL (self-update had no integrity verification → RCE) and the
+daemon-env secret leak were FIXED 2026-06-04. The following finder-only (un-verified) items
+remain; fix opportunistically:
+- **P2 — flow secret leak** (`pkg/scout/flow/analyze.go`): `Referer`/`Origin` header values bypass
+  LLM-digest redaction (ship OAuth tokens to the remote LLM); `sanitizeSpec` uses a header-name
+  *denylist*, so a secret in a non-standard-named header survives into the shareable `flow.yaml`.
+  Make both **default-deny** (parameterize every non-structural header) + add hygiene tests.
+- **P3 — unbounded `io.ReadAll`/decoder on network bodies** (DoS): `internal/engine/extension.go`
+  (CRX), `internal/engine/browser/download.go` (browser archive), `internal/engine/browser/download_chromium.go:297`
+  (metadata json), `internal/engine/crawl.go` `ParseSitemap` (also unbounded recursion + should apply
+  the SSRF urlpolicy to followed `loc` URLs). Wrap with `io.LimitReader` (mirror `cmd/scout/plugin.go:214`).
+- **P3 — archive bombs / cpio panic** (`pkg/scout/archive/`): zip/tar/rpm extraction has no per-entry,
+  total-size, or entry-count cap (zip bomb); `rpm.go:128` cpio newc parser slices buffers using
+  unvalidated attacker hex fields (panic). Add limits + bounds checks.
+- **P3 — PowerShell path interpolation** (`internal/engine/browser/detect_version_windows.go`,
+  `pkg/scout/browser/detect_windows.go`): browser path interpolated unescaped into a single-quoted
+  `-Command` string. Apply the existing `escapePowerShell` helper or pass the path as a separate argv.
+- **P3 — SSE event injection** (`pkg/scout/agent/server.go:269`): unescaped `req.Name` in the `start`
+  event. Low priority — `pkg/scout/agent` is already scheduled for removal (see P1 deprecation above).
+- **P3 — `isNewer` permits downgrade** (`cmd/scout/update.go`): tag-inequality only; gate downgrades
+  behind `--allow-downgrade` (semver compare).
+
 ## Completed Items (Archive)
 
 <details>

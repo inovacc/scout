@@ -60,9 +60,29 @@ binary if a newer version is available.`,
 			return fmt.Errorf("scout: update: no release asset %q found for %s", assetName, release.TagName)
 		}
 
+		// Resolve the expected checksum from the release's checksums.txt and
+		// refuse to install a binary we cannot verify (supply-chain integrity).
+		checksumsURL := ""
+
+		for _, a := range release.Assets {
+			if a.Name == "checksums.txt" {
+				checksumsURL = a.BrowserDownloadURL
+				break
+			}
+		}
+
+		if checksumsURL == "" {
+			return fmt.Errorf("scout: update: release %s has no checksums.txt; refusing to install an unverified binary", release.TagName)
+		}
+
+		expectedSHA, err := fetchChecksum(checksumsURL, assetName)
+		if err != nil {
+			return fmt.Errorf("scout: update: %w", err)
+		}
+
 		_, _ = fmt.Fprintf(out, "Downloading %s ...\n", assetURL)
 
-		if err := selfReplace(assetURL); err != nil {
+		if err := selfReplace(assetURL, expectedSHA); err != nil {
 			return fmt.Errorf("scout: update: %w", err)
 		}
 
@@ -164,11 +184,71 @@ func isNewer(current, remote string) bool {
 	return current != remote
 }
 
-// selfReplace downloads the binary from url and replaces the running executable.
-func selfReplace(url string) error {
-	client := &http.Client{Timeout: 5 * time.Minute}
+// maxBinaryDownload caps the self-update download to defend against an oversized
+// (memory/disk-exhausting) response.
+const maxBinaryDownload = 256 << 20 // 256 MB
 
-	resp, err := client.Get(url) //nolint:noctx
+// secureHTTPClient refuses any redirect to a non-https target, preventing a
+// TLS-downgrade on the update download path.
+func secureHTTPClient(timeout time.Duration) *http.Client {
+	return &http.Client{
+		Timeout: timeout,
+		CheckRedirect: func(req *http.Request, _ []*http.Request) error {
+			if req.URL.Scheme != "https" {
+				return fmt.Errorf("scout: update: refusing non-https redirect to %q", req.URL.Scheme)
+			}
+
+			return nil
+		},
+	}
+}
+
+// fetchChecksum downloads the release checksums.txt and returns the expected hex
+// SHA256 for assetName (goreleaser format: "<hex>  <name>" per line).
+func fetchChecksum(checksumsURL, assetName string) (string, error) {
+	if !strings.HasPrefix(checksumsURL, "https://") {
+		return "", fmt.Errorf("scout: update: checksums url is not https")
+	}
+
+	resp, err := secureHTTPClient(30 * time.Second).Get(checksumsURL) //nolint:noctx
+	if err != nil {
+		return "", fmt.Errorf("scout: update: fetch checksums: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("scout: update: checksums returned %s", resp.Status)
+	}
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // 1 MB is ample for checksums.txt
+	if err != nil {
+		return "", fmt.Errorf("scout: update: read checksums: %w", err)
+	}
+
+	for _, line := range strings.Split(string(data), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 2 && fields[1] == assetName {
+			return fields[0], nil
+		}
+	}
+
+	return "", fmt.Errorf("scout: update: no checksum entry for %q in checksums.txt", assetName)
+}
+
+// selfReplace downloads the binary from url, verifies it against expectedSHA, and
+// atomically replaces the running executable. It FAILS CLOSED: a non-https url, a
+// missing/incorrect checksum, or an oversized body aborts the update before any
+// bytes are written over the live binary.
+func selfReplace(url, expectedSHA string) error {
+	if !strings.HasPrefix(url, "https://") {
+		return fmt.Errorf("scout: update: refusing non-https download url")
+	}
+
+	if strings.TrimSpace(expectedSHA) == "" {
+		return fmt.Errorf("scout: update: missing expected checksum; refusing unverified update")
+	}
+
+	resp, err := secureHTTPClient(5 * time.Minute).Get(url) //nolint:noctx
 	if err != nil {
 		return fmt.Errorf("scout: update: download binary: %w", err)
 	}
@@ -176,6 +256,20 @@ func selfReplace(url string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("scout: update: download returned %s", resp.Status)
+	}
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxBinaryDownload+1))
+	if err != nil {
+		return fmt.Errorf("scout: update: download binary: %w", err)
+	}
+
+	if len(data) > maxBinaryDownload {
+		return fmt.Errorf("scout: update: download exceeds %d-byte limit", maxBinaryDownload)
+	}
+
+	// Integrity gate: verify BEFORE the bytes ever touch the executable path.
+	if got := sha256Hex(data); !strings.EqualFold(got, strings.TrimSpace(expectedSHA)) {
+		return fmt.Errorf("scout: update: checksum mismatch: expected %s, got %s", expectedSHA, got)
 	}
 
 	exe, err := os.Executable()
@@ -200,7 +294,7 @@ func selfReplace(url string) error {
 
 	defer func() { _ = os.Remove(tmpPath) }() // clean up on failure
 
-	if _, err := io.Copy(tmp, resp.Body); err != nil {
+	if _, err := tmp.Write(data); err != nil {
 		_ = tmp.Close()
 		return fmt.Errorf("scout: update: write temp file: %w", err)
 	}
