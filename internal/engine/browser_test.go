@@ -51,6 +51,10 @@ func TestBrowserPages(t *testing.T) {
 }
 
 func TestBrowserCloseIdempotent(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	b, err := New(WithHeadless(true), WithNoSandbox())
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
@@ -73,6 +77,10 @@ func TestBrowserNilSafe(t *testing.T) {
 }
 
 func TestNewPageStealth(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -110,6 +118,10 @@ func TestNewPageStealth(t *testing.T) {
 }
 
 func TestNewBrowserIncognito(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	b, err := New(WithHeadless(true), WithNoSandbox(), WithIncognito())
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)
@@ -126,6 +138,10 @@ func TestNewBrowserIncognito(t *testing.T) {
 }
 
 func TestNewBrowserWithUserAgent(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -159,6 +175,10 @@ func TestNewBrowserWithUserAgent(t *testing.T) {
 }
 
 func TestNewBrowserWithIgnoreCerts(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	b, err := New(WithHeadless(true), WithNoSandbox(), WithIgnoreCerts())
 	if err != nil {
 		t.Skipf("skipping: browser unavailable: %v", err)

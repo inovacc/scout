@@ -179,6 +179,10 @@ func TestWithSmartWait(t *testing.T) {
 }
 
 func TestWithSmartWait_NewPage(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	srv := newTestServer()
 	defer srv.Close()
 

@@ -809,6 +809,10 @@ func TestBridgeDOMSelector(t *testing.T) {
 }
 
 func TestBridgeWithoutExtension(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	// Create a browser WITHOUT bridge to verify graceful behavior.
 	t.Helper()
 

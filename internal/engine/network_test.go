@@ -343,6 +343,10 @@ func TestHijackResponseFail(t *testing.T) {
 }
 
 func TestWithBlockPatterns(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	srv := newTestServer()
 	defer srv.Close()
 

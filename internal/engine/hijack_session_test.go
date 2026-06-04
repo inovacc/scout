@@ -495,6 +495,10 @@ done:
 }
 
 func TestSessionHijackerWithAutoAttach(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser session-hijack test in short mode")
+	}
+
 	srv := newTestServer()
 	defer srv.Close()
 

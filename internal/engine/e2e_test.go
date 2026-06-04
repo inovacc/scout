@@ -360,6 +360,10 @@ func TestE2EMarkdown(t *testing.T) {
 
 // TestE2ETouchGestures creates a page with touch emulation and verifies Touch/Swipe don't error.
 func TestE2ETouchGestures(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser E2E test in short mode")
+	}
+
 	b, err := New(
 		WithHeadless(true),
 		WithNoSandbox(),

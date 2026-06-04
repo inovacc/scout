@@ -36,6 +36,10 @@ if (window.__dir2 !== undefined) {
 }
 
 func TestWithInjectCode(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -75,6 +79,10 @@ func TestWithInjectCode(t *testing.T) {
 }
 
 func TestWithInjectJS(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -121,6 +129,10 @@ func TestWithInjectJS(t *testing.T) {
 }
 
 func TestWithInjectDir(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	ts := newTestServer()
 	defer ts.Close()
 
@@ -169,6 +181,10 @@ func TestWithInjectDir(t *testing.T) {
 }
 
 func TestWithInjectJS_NotFound(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	_, err := New(
 		WithHeadless(true),
 		WithNoSandbox(),
@@ -180,6 +196,10 @@ func TestWithInjectJS_NotFound(t *testing.T) {
 }
 
 func TestWithInjectCode_Empty(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	ts := newTestServer()
 	defer ts.Close()
 

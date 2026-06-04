@@ -315,6 +315,10 @@ func TestWorker_ConnectDisconnect(t *testing.T) {
 }
 
 func TestWorker_RunLifecycle(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser worker-lifecycle test in short mode")
+	}
+
 	// Real-browser integration test: the worker launches a headless browser and
 	// navigates the seeded URLs. Skip when no browser is available (e.g. CI
 	// without Chromium). Targets are served from a loopback httptest server so
