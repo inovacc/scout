@@ -36,4 +36,3 @@ const (
 	FingerprintRotatePerDomain  = fingerprint.FingerprintRotatePerDomain
 	FingerprintRotateInterval   = fingerprint.FingerprintRotateInterval
 )
-

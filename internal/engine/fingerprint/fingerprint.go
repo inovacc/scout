@@ -265,7 +265,6 @@ func (fp *Fingerprint) ToJS() string {
 	)
 }
 
-
 // JSON returns the fingerprint as a JSON string.
 func (fp *Fingerprint) JSON() (string, error) {
 	data, err := json.MarshalIndent(fp, "", "  ")

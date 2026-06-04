@@ -73,14 +73,14 @@ type options struct {
 	proxyChain         *ProxyChain
 	hijack             bool
 	hijackFilter       *HijackFilter
-	electronApp        string // path to Electron app dir or packaged binary
-	electronVersion    string // Electron version to download (e.g. "v33.2.0")
-	electronCDP        string // CDP endpoint of running Electron app
+	electronApp        string        // path to Electron app dir or packaged binary
+	electronVersion    string        // Electron version to download (e.g. "v33.2.0")
+	electronCDP        string        // CDP endpoint of running Electron app
 	reusableSession    bool          // enable session reuse via scout.pid
 	reusableLifetime   time.Duration // expiration window for reusable sessions; 0 → default 7d
 	sessionID          string        // explicit session ID to reuse from scout.pid
-	targetURL          string // URL for domain-based session routing
-	systemBrowser      bool   // allow system-installed browsers (not just cache)
+	targetURL          string        // URL for domain-based session routing
+	systemBrowser      bool          // allow system-installed browsers (not just cache)
 	mobile             *MobileConfig // mobile device automation via ADB
 	touchEmulation     bool          // enable touch simulation on desktop
 	blockRules         []BlockRule   // network requests to abort at the browser (recon: capture payload without server hit)

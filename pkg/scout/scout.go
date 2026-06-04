@@ -243,173 +243,241 @@ type WizardStep = engine.WizardStep
 
 //nolint:gochecknoglobals // facade re-exports
 var (
-	AnthropicAPIVersion = engine.AnthropicAPIVersion
-	AnthropicBaseURL = engine.AnthropicBaseURL
-	AsyncJobCancelled = engine.AsyncJobCancelled
-	AsyncJobCompleted = engine.AsyncJobCompleted
-	AsyncJobFailed = engine.AsyncJobFailed
-	AsyncJobPending = engine.AsyncJobPending
-	AsyncJobRunning = engine.AsyncJobRunning
-	Bing = engine.Bing
-	BlockAds = engine.BlockAds
-	BlockFonts = engine.BlockFonts
-	BlockImages = engine.BlockImages
-	BlockTrackers = engine.BlockTrackers
-	BridgeEventConsoleLog = engine.BridgeEventConsoleLog
-	BridgeEventDOMMutation = engine.BridgeEventDOMMutation
-	BridgeEventNavigation = engine.BridgeEventNavigation
-	BridgeEventUserClick = engine.BridgeEventUserClick
-	BridgeEventUserInput = engine.BridgeEventUserInput
-	BrowserBrave = engine.BrowserBrave
-	BrowserChrome = engine.BrowserChrome
-	BrowserChromium = engine.BrowserChromium
-	BrowserEdge = engine.BrowserEdge
-	BrowserElectron = engine.BrowserElectron
-	BuiltinTemplates = engine.BuiltinTemplates
-	ChallengeAWSWAF = engine.ChallengeAWSWAF
-	ChallengeAkamai = engine.ChallengeAkamai
-	ChallengeCloudflare = engine.ChallengeCloudflare
-	ChallengeDataDome = engine.ChallengeDataDome
-	ChallengeHCaptcha = engine.ChallengeHCaptcha
-	ChallengeNone = engine.ChallengeNone
-	ChallengePerimeterX = engine.ChallengePerimeterX
-	ChallengeRecaptchaV2 = engine.ChallengeRecaptchaV2
-	ChallengeRecaptchaV3 = engine.ChallengeRecaptchaV3
-	ChallengeTurnstile = engine.ChallengeTurnstile
-	ChromiumRevisionDefault = browser.ChromiumRevisionDefault
-	DeepSeekBaseURL = engine.DeepSeekBaseURL
-	DefaultOrphanCheckInterval = engine.DefaultOrphanCheckInterval
-	DuckDuckGo = engine.DuckDuckGo
-	ErrBrowserNotFound = browser.ErrNotFound
-	FingerprintRotateInterval = engine.FingerprintRotateInterval
-	FingerprintRotatePerDomain = engine.FingerprintRotatePerDomain
-	FingerprintRotatePerPage = engine.FingerprintRotatePerPage
+	AnthropicAPIVersion         = engine.AnthropicAPIVersion
+	AnthropicBaseURL            = engine.AnthropicBaseURL
+	AsyncJobCancelled           = engine.AsyncJobCancelled
+	AsyncJobCompleted           = engine.AsyncJobCompleted
+	AsyncJobFailed              = engine.AsyncJobFailed
+	AsyncJobPending             = engine.AsyncJobPending
+	AsyncJobRunning             = engine.AsyncJobRunning
+	Bing                        = engine.Bing
+	BlockAds                    = engine.BlockAds
+	BlockFonts                  = engine.BlockFonts
+	BlockImages                 = engine.BlockImages
+	BlockTrackers               = engine.BlockTrackers
+	BridgeEventConsoleLog       = engine.BridgeEventConsoleLog
+	BridgeEventDOMMutation      = engine.BridgeEventDOMMutation
+	BridgeEventNavigation       = engine.BridgeEventNavigation
+	BridgeEventUserClick        = engine.BridgeEventUserClick
+	BridgeEventUserInput        = engine.BridgeEventUserInput
+	BrowserBrave                = engine.BrowserBrave
+	BrowserChrome               = engine.BrowserChrome
+	BrowserChromium             = engine.BrowserChromium
+	BrowserEdge                 = engine.BrowserEdge
+	BrowserElectron             = engine.BrowserElectron
+	BuiltinTemplates            = engine.BuiltinTemplates
+	ChallengeAWSWAF             = engine.ChallengeAWSWAF
+	ChallengeAkamai             = engine.ChallengeAkamai
+	ChallengeCloudflare         = engine.ChallengeCloudflare
+	ChallengeDataDome           = engine.ChallengeDataDome
+	ChallengeHCaptcha           = engine.ChallengeHCaptcha
+	ChallengeNone               = engine.ChallengeNone
+	ChallengePerimeterX         = engine.ChallengePerimeterX
+	ChallengeRecaptchaV2        = engine.ChallengeRecaptchaV2
+	ChallengeRecaptchaV3        = engine.ChallengeRecaptchaV3
+	ChallengeTurnstile          = engine.ChallengeTurnstile
+	ChromiumRevisionDefault     = browser.ChromiumRevisionDefault
+	DeepSeekBaseURL             = engine.DeepSeekBaseURL
+	DefaultOrphanCheckInterval  = engine.DefaultOrphanCheckInterval
+	DuckDuckGo                  = engine.DuckDuckGo
+	ErrBrowserNotFound          = browser.ErrNotFound
+	FingerprintRotateInterval   = engine.FingerprintRotateInterval
+	FingerprintRotatePerDomain  = engine.FingerprintRotatePerDomain
+	FingerprintRotatePerPage    = engine.FingerprintRotatePerPage
 	FingerprintRotatePerSession = engine.FingerprintRotatePerSession
-	GeminiBaseURL = engine.GeminiBaseURL
-	Google = engine.Google
-	HelperClickAll = engine.HelperClickAll
-	HelperInfiniteScroll = engine.HelperInfiniteScroll
-	HelperShadowQuery = engine.HelperShadowQuery
-	HelperTableExtract = engine.HelperTableExtract
-	HelperWaitForSelector = engine.HelperWaitForSelector
-	HijackEventRequest = engine.HijackEventRequest
-	HijackEventResponse = engine.HijackEventResponse
-	HijackWSClosed = engine.HijackWSClosed
-	HijackWSOpened = engine.HijackWSOpened
-	HijackWSReceived = engine.HijackWSReceived
-	HijackWSSent = engine.HijackWSSent
-	JobStatusCompleted = engine.JobStatusCompleted
-	JobStatusExtracting = engine.JobStatusExtracting
-	JobStatusFailed = engine.JobStatusFailed
-	JobStatusPending = engine.JobStatusPending
-	JobStatusReviewing = engine.JobStatusReviewing
-	OpenAIBaseURL = engine.OpenAIBaseURL
-	OpenRouterBaseURL = engine.OpenRouterBaseURL
-	RenderCSR = engine.RenderCSR
-	RenderISR = engine.RenderISR
-	RenderSSG = engine.RenderSSG
-	RenderSSR = engine.RenderSSR
-	RenderUnknown = engine.RenderUnknown
-	ResearchDeep = engine.ResearchDeep
-	ResearchMedium = engine.ResearchMedium
-	ResearchShallow = engine.ResearchShallow
-	SelectorCSS = engine.SelectorTypeCSSSector
-	SelectorRegex = engine.SelectorTypeRegex
-	SelectorText = engine.SelectorTypeText
-	SinkGoogleDrive = engine.SinkGoogleDrive
-	SinkOneDrive = engine.SinkOneDrive
-	Wikipedia = engine.Wikipedia
-	WindowStateFullscreen = engine.WindowStateFullscreen
-	WindowStateMaximized = engine.WindowStateMaximized
-	WindowStateMinimized = engine.WindowStateMinimized
-	WindowStateNormal = engine.WindowStateNormal
+	GeminiBaseURL               = engine.GeminiBaseURL
+	Google                      = engine.Google
+	HelperClickAll              = engine.HelperClickAll
+	HelperInfiniteScroll        = engine.HelperInfiniteScroll
+	HelperShadowQuery           = engine.HelperShadowQuery
+	HelperTableExtract          = engine.HelperTableExtract
+	HelperWaitForSelector       = engine.HelperWaitForSelector
+	HijackEventRequest          = engine.HijackEventRequest
+	HijackEventResponse         = engine.HijackEventResponse
+	HijackWSClosed              = engine.HijackWSClosed
+	HijackWSOpened              = engine.HijackWSOpened
+	HijackWSReceived            = engine.HijackWSReceived
+	HijackWSSent                = engine.HijackWSSent
+	JobStatusCompleted          = engine.JobStatusCompleted
+	JobStatusExtracting         = engine.JobStatusExtracting
+	JobStatusFailed             = engine.JobStatusFailed
+	JobStatusPending            = engine.JobStatusPending
+	JobStatusReviewing          = engine.JobStatusReviewing
+	OpenAIBaseURL               = engine.OpenAIBaseURL
+	OpenRouterBaseURL           = engine.OpenRouterBaseURL
+	RenderCSR                   = engine.RenderCSR
+	RenderISR                   = engine.RenderISR
+	RenderSSG                   = engine.RenderSSG
+	RenderSSR                   = engine.RenderSSR
+	RenderUnknown               = engine.RenderUnknown
+	ResearchDeep                = engine.ResearchDeep
+	ResearchMedium              = engine.ResearchMedium
+	ResearchShallow             = engine.ResearchShallow
+	SelectorCSS                 = engine.SelectorTypeCSSSector
+	SelectorRegex               = engine.SelectorTypeRegex
+	SelectorText                = engine.SelectorTypeText
+	SinkGoogleDrive             = engine.SinkGoogleDrive
+	SinkOneDrive                = engine.SinkOneDrive
+	Wikipedia                   = engine.Wikipedia
+	WindowStateFullscreen       = engine.WindowStateFullscreen
+	WindowStateMaximized        = engine.WindowStateMaximized
+	WindowStateMinimized        = engine.WindowStateMinimized
+	WindowStateNormal           = engine.WindowStateNormal
 )
 
 func BrowserCacheDir() (string, error) { return browser.CacheDir() }
-func CaptureCredentials(ctx context.Context, url string, opts ...Option) (*CapturedCredentials, error) { return engine.CaptureCredentials(ctx, url, opts...) }
-func CaptureOnClose(ctx context.Context, url string, browserOpts []Option, opts ...CaptureOption) (*CapturedCredentials, error) { return engine.CaptureOnClose(ctx, url, browserOpts, opts...) }
-func CaptureProfile(page *Page, opts ...ProfileOption) (*UserProfile, error) { return engine.CaptureProfile(page, opts...) }
+func CaptureCredentials(ctx context.Context, url string, opts ...Option) (*CapturedCredentials, error) {
+	return engine.CaptureCredentials(ctx, url, opts...)
+}
+func CaptureOnClose(ctx context.Context, url string, browserOpts []Option, opts ...CaptureOption) (*CapturedCredentials, error) {
+	return engine.CaptureOnClose(ctx, url, browserOpts, opts...)
+}
+func CaptureProfile(page *Page, opts ...ProfileOption) (*UserProfile, error) {
+	return engine.CaptureProfile(page, opts...)
+}
 func ChromiumDownloadURLs(revision int) []string { return browser.ChromiumDownloadURLs(revision) }
-func CleanOrphans() (int, error) { return engine.CleanOrphans() }
-func CleanStaleSessions() (int, error) { return engine.CleanStaleSessions() }
-func ConvertHTMLToMarkdown(rawHTML string, opts ...MarkdownOption) (string, error) { return engine.ConvertHTMLToMarkdown(rawHTML, opts...) }
-func DetectBrowsers() []DetectedBrowser { return browser.DetectBrowsers() }
-func DiffProfiles(a, b *UserProfile) ProfileDiff { return engine.DiffProfiles(a, b) }
-func DomainHash(rawURL string) string { return engine.DomainHash(rawURL) }
+func CleanOrphans() (int, error)                 { return engine.CleanOrphans() }
+func CleanStaleSessions() (int, error)           { return engine.CleanStaleSessions() }
+func ConvertHTMLToMarkdown(rawHTML string, opts ...MarkdownOption) (string, error) {
+	return engine.ConvertHTMLToMarkdown(rawHTML, opts...)
+}
+func DetectBrowsers() []DetectedBrowser                 { return browser.DetectBrowsers() }
+func DiffProfiles(a, b *UserProfile) ProfileDiff        { return engine.DiffProfiles(a, b) }
+func DomainHash(rawURL string) string                   { return engine.DomainHash(rawURL) }
 func DownloadBrave(ctx context.Context) (string, error) { return browser.DownloadBrave(ctx) }
-func DownloadChromium(ctx context.Context, revision int) (string, error) { return browser.DownloadChromium(ctx, revision) }
+func DownloadChromium(ctx context.Context, revision int) (string, error) {
+	return browser.DownloadChromium(ctx, revision)
+}
 func DownloadEdge(ctx context.Context) (string, error) { return browser.DownloadEdge(ctx) }
-func DownloadElectron(ctx context.Context, version string) (string, error) { return engine.DownloadElectron(ctx, version) }
+func DownloadElectron(ctx context.Context, version string) (string, error) {
+	return engine.DownloadElectron(ctx, version)
+}
 func DownloadExtension(id string) (*ExtensionInfo, error) { return engine.DownloadExtension(id) }
-func DownloadLatestElectron(ctx context.Context) (string, error) { return engine.DownloadLatestElectron(ctx) }
+func DownloadLatestElectron(ctx context.Context) (string, error) {
+	return engine.DownloadLatestElectron(ctx)
+}
 func ElectronCacheDir() (string, error) { return engine.ElectronCacheDir() }
-func ExtensionDir() (string, error) { return engine.ExtensionDir() }
-func FilterServersByCountry(servers []VPNServer, country string) []VPNServer { return engine.FilterServersByCountry(servers, country) }
-func FindReusableSession(browser string, headless bool) *SessionListing { return engine.FindReusableSession(browser, headless) }
+func ExtensionDir() (string, error)     { return engine.ExtensionDir() }
+func FilterServersByCountry(servers []VPNServer, country string) []VPNServer {
+	return engine.FilterServersByCountry(servers, country)
+}
+func FindReusableSession(browser string, headless bool) *SessionListing {
+	return engine.FindReusableSession(browser, headless)
+}
 func FindSessionByDomain(rawURL string) *SessionListing { return engine.FindSessionByDomain(rawURL) }
-func GenerateFingerprint(opts ...FingerprintOption) *Fingerprint { return engine.GenerateFingerprint(opts...) }
-func InjectAllHelpers(page *Page) error { return engine.InjectAllHelpers(page) }
+func GenerateFingerprint(opts ...FingerprintOption) *Fingerprint {
+	return engine.GenerateFingerprint(opts...)
+}
+func InjectAllHelpers(page *Page) error            { return engine.InjectAllHelpers(page) }
 func InjectHelper(page *Page, helper string) error { return engine.InjectHelper(page, helper) }
-func InjectTemplate(page *Page, tmplName string, data map[string]any) (*EvalResult, error) { return engine.InjectTemplate(page, tmplName, data) }
-func ListDownloadedBrowsers() ([]DownloadedBrowser, error) { return browser.ListDownloaded() }
-func ListLocalExtensions() ([]ExtensionInfo, error) { return engine.ListLocalExtensions() }
-func ListSessions() ([]SessionListing, error) { return engine.ListSessions() }
+func InjectTemplate(page *Page, tmplName string, data map[string]any) (*EvalResult, error) {
+	return engine.InjectTemplate(page, tmplName, data)
+}
+func ListDownloadedBrowsers() ([]DownloadedBrowser, error)      { return browser.ListDownloaded() }
+func ListLocalExtensions() ([]ExtensionInfo, error)             { return engine.ListLocalExtensions() }
+func ListSessions() ([]SessionListing, error)                   { return engine.ListSessions() }
 func LoadCredentials(path string) (*CapturedCredentials, error) { return engine.LoadCredentials(path) }
-func LoadProfile(path string) (*UserProfile, error) { return engine.LoadProfile(path) }
-func LoadProfileEncrypted(path, passphrase string) (*UserProfile, error) { return engine.LoadProfileEncrypted(path, passphrase) }
+func LoadProfile(path string) (*UserProfile, error)             { return engine.LoadProfile(path) }
+func LoadProfileEncrypted(path, passphrase string) (*UserProfile, error) {
+	return engine.LoadProfileEncrypted(path, passphrase)
+}
 func LoadSessionFromFile(path string) (*SessionState, error) { return engine.LoadSessionFromFile(path) }
-func LoadUploadConfig() (*UploadConfig, error) { return engine.LoadUploadConfig() }
-func LookupBrowserPublic(bt BrowserType) (string, error) { return browser.LookupBrowser(bt) }
-func MergeProfiles(base, overlay *UserProfile) *UserProfile { return engine.MergeProfiles(base, overlay) }
-func NavigateWithBypass(page *Page, url string, solver *ChallengeSolver) error { return engine.NavigateWithBypass(page, url, solver) }
+func LoadUploadConfig() (*UploadConfig, error)               { return engine.LoadUploadConfig() }
+func LookupBrowserPublic(bt BrowserType) (string, error)     { return browser.LookupBrowser(bt) }
+func MergeProfiles(base, overlay *UserProfile) *UserProfile {
+	return engine.MergeProfiles(base, overlay)
+}
+func NavigateWithBypass(page *Page, url string, solver *ChallengeSolver) error {
+	return engine.NavigateWithBypass(page, url, solver)
+}
 func New(opts ...Option) (*Browser, error) { return engine.New(opts...) }
-func NewAnthropicProvider(opts ...AnthropicOption) (*AnthropicProvider, error) { return engine.NewAnthropicProvider(opts...) }
+func NewAnthropicProvider(opts ...AnthropicOption) (*AnthropicProvider, error) {
+	return engine.NewAnthropicProvider(opts...)
+}
 func NewAsyncJobManager(dir string) (*AsyncJobManager, error) { return engine.NewAsyncJobManager(dir) }
-func NewBridgeFallback(page *Page) *BridgeFallback { return engine.NewBridgeFallback(page) }
-func NewBridgeRecorder(server *BridgeServer) *BridgeRecorder { return engine.NewBridgeRecorder(server) }
-func NewBridgeServer(addr string) *BridgeServer { return engine.NewBridgeServer(addr) }
-func NewCapSolverService(apiKey string) *CapSolverService { return engine.NewCapSolverService(apiKey) }
-func NewChallengeSolver(browser *Browser, opts ...SolverOption) *ChallengeSolver { return engine.NewChallengeSolver(browser, opts...) }
-func NewDeepSeekProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIProvider, error) { return engine.NewDeepSeekProvider(apiKey, model, opts...) }
-func NewDirectProxy(host string, port int, opts ...DirectProxyOption) *DirectProxy { return engine.NewDirectProxy(host, port, opts...) }
-func NewFingerprintStore(dir string) (*FingerprintStore, error) { return engine.NewFingerprintStore(dir) }
-func NewGeminiProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIProvider, error) { return engine.NewGeminiProvider(apiKey, model, opts...) }
-func NewHijackRecorder() *HijackRecorder { return engine.NewHijackRecorder() }
-func NewKnowledgeWriter(dir string) *KnowledgeWriter { return engine.NewKnowledgeWriter(dir) }
+func NewBridgeFallback(page *Page) *BridgeFallback            { return engine.NewBridgeFallback(page) }
+func NewBridgeRecorder(server *BridgeServer) *BridgeRecorder  { return engine.NewBridgeRecorder(server) }
+func NewBridgeServer(addr string) *BridgeServer               { return engine.NewBridgeServer(addr) }
+func NewCapSolverService(apiKey string) *CapSolverService     { return engine.NewCapSolverService(apiKey) }
+func NewChallengeSolver(browser *Browser, opts ...SolverOption) *ChallengeSolver {
+	return engine.NewChallengeSolver(browser, opts...)
+}
+func NewDeepSeekProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIProvider, error) {
+	return engine.NewDeepSeekProvider(apiKey, model, opts...)
+}
+func NewDirectProxy(host string, port int, opts ...DirectProxyOption) *DirectProxy {
+	return engine.NewDirectProxy(host, port, opts...)
+}
+func NewFingerprintStore(dir string) (*FingerprintStore, error) {
+	return engine.NewFingerprintStore(dir)
+}
+func NewGeminiProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIProvider, error) {
+	return engine.NewGeminiProvider(apiKey, model, opts...)
+}
+func NewHijackRecorder() *HijackRecorder                 { return engine.NewHijackRecorder() }
+func NewKnowledgeWriter(dir string) *KnowledgeWriter     { return engine.NewKnowledgeWriter(dir) }
 func NewLLMWorkspace(path string) (*LLMWorkspace, error) { return engine.NewLLMWorkspace(path) }
-func NewNetworkRecorder(page *Page, opts ...RecorderOption) *NetworkRecorder { return engine.NewNetworkRecorder(page, opts...) }
-func NewManagedPagePool(browser *Browser, size int) (*ManagedPagePool, error) { return engine.NewManagedPagePool(browser, size) }
-func NewMCPSamplingProvider(opts ...MCPSamplingOption) *MCPSamplingProvider { return engine.NewMCPSamplingProvider(opts...) }
+func NewNetworkRecorder(page *Page, opts ...RecorderOption) *NetworkRecorder {
+	return engine.NewNetworkRecorder(page, opts...)
+}
+func NewManagedPagePool(browser *Browser, size int) (*ManagedPagePool, error) {
+	return engine.NewManagedPagePool(browser, size)
+}
+func NewMCPSamplingProvider(opts ...MCPSamplingOption) *MCPSamplingProvider {
+	return engine.NewMCPSamplingProvider(opts...)
+}
 func WithMCPSamplingMaxTokens(n int64) MCPSamplingOption { return engine.WithMCPSamplingMaxTokens(n) }
-func IsMCPSamplingAvailable() bool { return engine.IsMCPSamplingAvailable() }
-func WithReusableLifetime(d time.Duration) Option { return engine.WithReusableLifetime(d) }
+func IsMCPSamplingAvailable() bool                       { return engine.IsMCPSamplingAvailable() }
+func WithReusableLifetime(d time.Duration) Option        { return engine.WithReusableLifetime(d) }
+
 type BlockRule = engine.BlockRule
+
 func WithBlockRules(rules ...BlockRule) Option { return engine.WithBlockRules(rules...) }
+
 type ConsoleMessage = engine.ConsoleMessage
 type SessionMonitorConfig = engine.SessionMonitorConfig
 type MonitorSink = engine.MonitorSink
 type SessionMonitorRule = engine.SessionMonitorRule
-func WriteSessionMonitors(id string, cfg *SessionMonitorConfig) error { return engine.WriteSessionMonitors(id, cfg) }
-func ReadSessionMonitors(id string) (*SessionMonitorConfig, error) { return engine.ReadSessionMonitors(id) }
-func DefaultHARPath(id string) string { return engine.DefaultHARPath(id) }
+
+func WriteSessionMonitors(id string, cfg *SessionMonitorConfig) error {
+	return engine.WriteSessionMonitors(id, cfg)
+}
+func ReadSessionMonitors(id string) (*SessionMonitorConfig, error) {
+	return engine.ReadSessionMonitors(id)
+}
+func DefaultHARPath(id string) string    { return engine.DefaultHARPath(id) }
 func DefaultHijackPath(id string) string { return engine.DefaultHijackPath(id) }
+
 type SessionAttrs = engine.SessionAttrs
-func NewSessionID(a SessionAttrs) (string, error) { return engine.NewSessionID(a) }
+
+func NewSessionID(a SessionAttrs) (string, error)    { return engine.NewSessionID(a) }
 func ParseSessionID(id string) (SessionAttrs, error) { return engine.ParseSessionID(id) }
-func IsValidSessionID(id string) bool { return engine.IsValidSessionID(id) }
-func ProcessAlive(pid int) bool { return engine.ProcessAlive(pid) }
-func IsScoutProcess(pid int) bool { return engine.IsScoutProcess(pid) }
-func ProcessParentPID(pid int) (int, bool) { return engine.ProcessParentPID(pid) }
-func NewOpenAIProvider(opts ...OpenAIOption) (*OpenAIProvider, error) { return engine.NewOpenAIProvider(opts...) }
-func NewOpenRouterProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIProvider, error) { return engine.NewOpenRouterProvider(apiKey, model, opts...) }
+func IsValidSessionID(id string) bool                { return engine.IsValidSessionID(id) }
+func ProcessAlive(pid int) bool                      { return engine.ProcessAlive(pid) }
+func IsScoutProcess(pid int) bool                    { return engine.IsScoutProcess(pid) }
+func ProcessParentPID(pid int) (int, bool)           { return engine.ProcessParentPID(pid) }
+func NewOpenAIProvider(opts ...OpenAIOption) (*OpenAIProvider, error) {
+	return engine.NewOpenAIProvider(opts...)
+}
+func NewOpenRouterProvider(apiKey, model string, opts ...OpenAIOption) (*OpenAIProvider, error) {
+	return engine.NewOpenRouterProvider(apiKey, model, opts...)
+}
 func NewRateLimiter(opts ...RateLimitOption) *RateLimiter { return engine.NewRateLimiter(opts...) }
-func NewResearchAgent(browser *Browser, provider LLMProvider, opts ...ResearchOption) *ResearchAgent { return engine.NewResearchAgent(browser, provider, opts...) }
+func NewResearchAgent(browser *Browser, provider LLMProvider, opts ...ResearchOption) *ResearchAgent {
+	return engine.NewResearchAgent(browser, provider, opts...)
+}
 func NewResearchCache(ttl time.Duration) *ResearchCache { return engine.NewResearchCache(ttl) }
-func NewScreenRecorder(page *Page, opts ...ScreenRecordOption) *ScreenRecorder { return engine.NewScreenRecorder(page, opts...) }
-func NewSurfsharkProvider(email, password string) *SurfsharkProvider { return engine.NewSurfsharkProvider(email, password) }
-func NewTwoCaptchaService(apiKey string) *TwoCaptchaService { return engine.NewTwoCaptchaService(apiKey) }
+func NewScreenRecorder(page *Page, opts ...ScreenRecordOption) *ScreenRecorder {
+	return engine.NewScreenRecorder(page, opts...)
+}
+func NewSurfsharkProvider(email, password string) *SurfsharkProvider {
+	return engine.NewSurfsharkProvider(email, password)
+}
+func NewTwoCaptchaService(apiKey string) *TwoCaptchaService {
+	return engine.NewTwoCaptchaService(apiKey)
+}
 func NewUploader(cfg *UploadConfig) *Uploader { return engine.NewUploader(cfg) }
-func NewWebMCPRegistry() *WebMCPRegistry { return engine.NewWebMCPRegistry() }
+func NewWebMCPRegistry() *WebMCPRegistry      { return engine.NewWebMCPRegistry() }
 func PaginateByClick[T any](p *Page, nextSelector string, opts ...PaginateOption) ([]T, error) {
 	return engine.PaginateByClick[T](p, nextSelector, opts...)
 }
@@ -423,265 +491,337 @@ func PaginateByURL[T any](b *Browser, urlFunc func(page int) string, opts ...Pag
 	return engine.PaginateByURL[T](b, urlFunc, opts...)
 }
 func ParseAttrSpec(spec string) (selector, attr string, ok bool) { return engine.ParseAttrSpec(spec) }
-func ParseBrowserVersion(output string) string { return browser.ParseBrowserVersion(output) }
-func ParseSurfsharkClusters(data []byte) ([]VPNServer, error) { return engine.ParseSurfsharkClusters(data) }
-func ProxyChainDescription(chain *ProxyChain) string { return engine.ProxyChainDescription(chain) }
-func ReadSessionInfo(id string) (*SessionInfo, error) { return engine.ReadSessionInfo(id) }
+func ParseBrowserVersion(output string) string                   { return browser.ParseBrowserVersion(output) }
+func ParseSurfsharkClusters(data []byte) ([]VPNServer, error) {
+	return engine.ParseSurfsharkClusters(data)
+}
+func ProxyChainDescription(chain *ProxyChain) string       { return engine.ProxyChainDescription(chain) }
+func ReadSessionInfo(id string) (*SessionInfo, error)      { return engine.ReadSessionInfo(id) }
 func ReadSessionJob(sessionID string) (*SessionJob, error) { return engine.ReadSessionJob(sessionID) }
-func RemoveExtension(id string) error { return engine.RemoveExtension(id) }
-func RemoveSessionInfo(id string) { engine.RemoveSessionInfo(id) }
-func RemoveSessionJob(sessionID string) error { return engine.RemoveSessionJob(sessionID) }
-func RenderTemplate(tmpl ScriptTemplate, data map[string]any) (string, error) { return engine.RenderTemplate(tmpl, data) }
+func RemoveExtension(id string) error                      { return engine.RemoveExtension(id) }
+func RemoveSessionInfo(id string)                          { engine.RemoveSessionInfo(id) }
+func RemoveSessionJob(sessionID string) error              { return engine.RemoveSessionJob(sessionID) }
+func RenderTemplate(tmpl ScriptTemplate, data map[string]any) (string, error) {
+	return engine.RenderTemplate(tmpl, data)
+}
 func ResetAllSessions() (int, error) { return engine.ResetAllSessions() }
-func ResetSession(id string) error { return engine.ResetSession(id) }
-func AddSessionJobStep(sessionID string, step SessionJobStep) error { return engine.AddSessionJobStep(sessionID, step) }
-func CompleteSessionJob(sessionID string, output string) error { return engine.CompleteSessionJob(sessionID, output) }
-func FailSessionJob(sessionID string, errMsg string) error { return engine.FailSessionJob(sessionID, errMsg) }
-func NewSessionJob(jobType string, targetURLs []string, command string) *SessionJob { return engine.NewSessionJob(jobType, targetURLs, command) }
+func ResetSession(id string) error   { return engine.ResetSession(id) }
+func AddSessionJobStep(sessionID string, step SessionJobStep) error {
+	return engine.AddSessionJobStep(sessionID, step)
+}
+func CompleteSessionJob(sessionID string, output string) error {
+	return engine.CompleteSessionJob(sessionID, output)
+}
+func FailSessionJob(sessionID string, errMsg string) error {
+	return engine.FailSessionJob(sessionID, errMsg)
+}
+func NewSessionJob(jobType string, targetURLs []string, command string) *SessionJob {
+	return engine.NewSessionJob(jobType, targetURLs, command)
+}
 func StartSessionJob(sessionID string) error { return engine.StartSessionJob(sessionID) }
-func UpdateSessionJobProgress(sessionID string, current, total int, message string) error { return engine.UpdateSessionJobProgress(sessionID, current, total, message) }
-func WriteSessionJob(sessionID string, job *SessionJob) error { return engine.WriteSessionJob(sessionID, job) }
+func UpdateSessionJobProgress(sessionID string, current, total int, message string) error {
+	return engine.UpdateSessionJobProgress(sessionID, current, total, message)
+}
+func WriteSessionJob(sessionID string, job *SessionJob) error {
+	return engine.WriteSessionJob(sessionID, job)
+}
 func ResolveExtensions(p *UserProfile) []string { return engine.ResolveExtensions(p) }
-func ResolveExtensionsWithBase(p *UserProfile, baseDir string) []string { return engine.ResolveExtensionsWithBase(p, baseDir) }
-func RootDomain(rawURL string) string { return engine.RootDomain(rawURL) }
-func SaveReport(r *Report) (string, error) { return engine.SaveReport(r) }
-func ReadReport(id string) (*Report, error) { return engine.ReadReport(id) }
+func ResolveExtensionsWithBase(p *UserProfile, baseDir string) []string {
+	return engine.ResolveExtensionsWithBase(p, baseDir)
+}
+func RootDomain(rawURL string) string         { return engine.RootDomain(rawURL) }
+func SaveReport(r *Report) (string, error)    { return engine.SaveReport(r) }
+func ReadReport(id string) (*Report, error)   { return engine.ReadReport(id) }
 func ReadReportRaw(id string) (string, error) { return engine.ReadReportRaw(id) }
-func ListReports() ([]Report, error) { return engine.ListReports() }
-func DeleteReport(id string) error { return engine.DeleteReport(id) }
-func ReportsDir() string { return engine.ReportsDir() }
-func SaveCredentials(creds *CapturedCredentials, path string) error { return engine.SaveCredentials(creds, path) }
+func ListReports() ([]Report, error)          { return engine.ListReports() }
+func DeleteReport(id string) error            { return engine.DeleteReport(id) }
+func ReportsDir() string                      { return engine.ReportsDir() }
+func SaveCredentials(creds *CapturedCredentials, path string) error {
+	return engine.SaveCredentials(creds, path)
+}
 func SaveProfile(p *UserProfile, path string) error { return engine.SaveProfile(p, path) }
-func SaveProfileEncrypted(p *UserProfile, path, passphrase string) error { return engine.SaveProfileEncrypted(p, path, passphrase) }
-func SaveSessionToFile(state *SessionState, path string) error { return engine.SaveSessionToFile(state, path) }
+func SaveProfileEncrypted(p *UserProfile, path, passphrase string) error {
+	return engine.SaveProfileEncrypted(p, path, passphrase)
+}
+func SaveSessionToFile(state *SessionState, path string) error {
+	return engine.SaveSessionToFile(state, path)
+}
 func SaveUploadConfig(cfg *UploadConfig) error { return engine.SaveUploadConfig(cfg) }
-func SessionDataDir(id string) string { return engine.SessionDataDir(id) }
-func SessionDir(id string) string { return engine.SessionDir(id) }
-func SessionHash(rawURL, label string) string { return engine.SessionHash(rawURL, label) }
-func SessionsDir() string { return engine.SessionsDir() }
-func SnapshotWithLLM(page *Page, provider LLMProvider, prompt string, opts ...SnapshotOption) (string, error) { return engine.SnapshotWithLLM(page, provider, prompt, opts...) }
-func StartOrphanWatchdog(interval time.Duration, done <-chan struct{}) { engine.StartOrphanWatchdog(interval, done) }
-func TabGroupCollect[T any](tg *TabGroup, fn func(*Page) (T, error)) ([]T, []error) { return engine.TabGroupCollect(tg, fn) }
-func UploadOAuthConfig(sink UploadSink, clientID, clientSecret, redirectURL string) *oauth2.Config { return engine.UploadOAuthConfig(sink, clientID, clientSecret, redirectURL) }
+func SessionDataDir(id string) string          { return engine.SessionDataDir(id) }
+func SessionDir(id string) string              { return engine.SessionDir(id) }
+func SessionHash(rawURL, label string) string  { return engine.SessionHash(rawURL, label) }
+func SessionsDir() string                      { return engine.SessionsDir() }
+func SnapshotWithLLM(page *Page, provider LLMProvider, prompt string, opts ...SnapshotOption) (string, error) {
+	return engine.SnapshotWithLLM(page, provider, prompt, opts...)
+}
+func StartOrphanWatchdog(interval time.Duration, done <-chan struct{}) {
+	engine.StartOrphanWatchdog(interval, done)
+}
+func TabGroupCollect[T any](tg *TabGroup, fn func(*Page) (T, error)) ([]T, []error) {
+	return engine.TabGroupCollect(tg, fn)
+}
+func UploadOAuthConfig(sink UploadSink, clientID, clientSecret, redirectURL string) *oauth2.Config {
+	return engine.UploadOAuthConfig(sink, clientID, clientSecret, redirectURL)
+}
 func ValidateProxyChain(chain *ProxyChain) error { return engine.ValidateProxyChain(chain) }
-func VisualDiff(baseline, current []byte, opts ...VisualDiffOption) (*VisualDiffResult, error) { return engine.VisualDiff(baseline, current, opts...) }
+func VisualDiff(baseline, current []byte, opts ...VisualDiffOption) (*VisualDiffResult, error) {
+	return engine.VisualDiff(baseline, current, opts...)
+}
 func WithAnthropicBaseURL(url string) AnthropicOption { return engine.WithAnthropicBaseURL(url) }
-func WithAnthropicHTTPClient(c *http.Client) AnthropicOption { return engine.WithAnthropicHTTPClient(c) }
-func WithAnthropicKey(key string) AnthropicOption { return engine.WithAnthropicKey(key) }
-func WithAnthropicModel(model string) AnthropicOption { return engine.WithAnthropicModel(model) }
-func WithAutoBypass(solver *ChallengeSolver) Option { return engine.WithAutoBypass(solver) }
-func WithCaptureSavePath(path string) CaptureOption { return engine.WithCaptureSavePath(path) }
-func WithCapturePersist() CaptureOption { return engine.WithCapturePersist() }
-func WithAutoDetect() Option { return engine.WithAutoDetect() }
-func WithAutoFree(interval time.Duration) Option { return engine.WithAutoFree(interval) }
-func WithAutoFreeCallback(fn func()) Option { return engine.WithAutoFreeCallback(fn) }
-func WithBackoff(d time.Duration) RateLimitOption { return engine.WithBackoff(d) }
-func WithBaseURL(u string) MarkdownOption { return engine.WithBaseURL(u) }
-func WithBatchConcurrency(n int) BatchOption { return engine.WithBatchConcurrency(n) }
-func WithBatchJobManager(m *AsyncJobManager) BatchOption { return engine.WithBatchJobManager(m) }
+func WithAnthropicHTTPClient(c *http.Client) AnthropicOption {
+	return engine.WithAnthropicHTTPClient(c)
+}
+func WithAnthropicKey(key string) AnthropicOption            { return engine.WithAnthropicKey(key) }
+func WithAnthropicModel(model string) AnthropicOption        { return engine.WithAnthropicModel(model) }
+func WithAutoBypass(solver *ChallengeSolver) Option          { return engine.WithAutoBypass(solver) }
+func WithCaptureSavePath(path string) CaptureOption          { return engine.WithCaptureSavePath(path) }
+func WithCapturePersist() CaptureOption                      { return engine.WithCapturePersist() }
+func WithAutoDetect() Option                                 { return engine.WithAutoDetect() }
+func WithAutoFree(interval time.Duration) Option             { return engine.WithAutoFree(interval) }
+func WithAutoFreeCallback(fn func()) Option                  { return engine.WithAutoFreeCallback(fn) }
+func WithBackoff(d time.Duration) RateLimitOption            { return engine.WithBackoff(d) }
+func WithBaseURL(u string) MarkdownOption                    { return engine.WithBaseURL(u) }
+func WithBatchConcurrency(n int) BatchOption                 { return engine.WithBatchConcurrency(n) }
+func WithBatchJobManager(m *AsyncJobManager) BatchOption     { return engine.WithBatchJobManager(m) }
 func WithBatchProgress(fn func(done, total int)) BatchOption { return engine.WithBatchProgress(fn) }
-func WithBatchRateLimit(rl *RateLimiter) BatchOption { return engine.WithBatchRateLimit(rl) }
-func WithBlockPatterns(patterns ...string) Option { return engine.WithBlockPatterns(patterns...) }
-func WithBridge() Option { return engine.WithBridge() }
-func WithBridgePort(port int) Option { return engine.WithBridgePort(port) }
-func WithBrowser(bt BrowserType) Option { return engine.WithBrowser(bt) }
-func WithBurstSize(n int) RateLimitOption { return engine.WithBurstSize(n) }
-func WithCaptureBody(v bool) RecorderOption { return engine.WithCaptureBody(v) }
-func WithColorThreshold(tolerance int) VisualDiffOption { return engine.WithColorThreshold(tolerance) }
-func WithCrawlAllowedDomains(domains ...string) CrawlOption { return engine.WithCrawlAllowedDomains(domains...) }
-func WithCrawlConcurrent(n int) CrawlOption { return engine.WithCrawlConcurrent(n) }
-func WithCrawlDelay(d time.Duration) CrawlOption { return engine.WithCrawlDelay(d) }
+func WithBatchRateLimit(rl *RateLimiter) BatchOption         { return engine.WithBatchRateLimit(rl) }
+func WithBlockPatterns(patterns ...string) Option            { return engine.WithBlockPatterns(patterns...) }
+func WithBridge() Option                                     { return engine.WithBridge() }
+func WithBridgePort(port int) Option                         { return engine.WithBridgePort(port) }
+func WithBrowser(bt BrowserType) Option                      { return engine.WithBrowser(bt) }
+func WithBurstSize(n int) RateLimitOption                    { return engine.WithBurstSize(n) }
+func WithCaptureBody(v bool) RecorderOption                  { return engine.WithCaptureBody(v) }
+func WithColorThreshold(tolerance int) VisualDiffOption      { return engine.WithColorThreshold(tolerance) }
+func WithCrawlAllowedDomains(domains ...string) CrawlOption {
+	return engine.WithCrawlAllowedDomains(domains...)
+}
+func WithCrawlConcurrent(n int) CrawlOption              { return engine.WithCrawlConcurrent(n) }
+func WithCrawlDelay(d time.Duration) CrawlOption         { return engine.WithCrawlDelay(d) }
 func WithCrawlJobManager(m *AsyncJobManager) CrawlOption { return engine.WithCrawlJobManager(m) }
-func WithCrawlMaxDepth(n int) CrawlOption { return engine.WithCrawlMaxDepth(n) }
-func WithCrawlMaxPages(n int) CrawlOption { return engine.WithCrawlMaxPages(n) }
-func WithCreatorName(name, version string) RecorderOption { return engine.WithCreatorName(name, version) }
-func WithDDGSearchType(t string) SearchOption { return engine.WithDDGSearchType(t) }
-func WithDOMDepth(n int) DOMOption { return engine.WithDOMDepth(n) }
-func WithDOMMainOnly() DOMOption { return engine.WithDOMMainOnly() }
-func WithDOMSelector(s string) DOMOption { return engine.WithDOMSelector(s) }
-func WithDevTools() Option { return engine.WithDevTools() }
-func WithDiffImage() VisualDiffOption { return engine.WithDiffImage() }
+func WithCrawlMaxDepth(n int) CrawlOption                { return engine.WithCrawlMaxDepth(n) }
+func WithCrawlMaxPages(n int) CrawlOption                { return engine.WithCrawlMaxPages(n) }
+func WithCreatorName(name, version string) RecorderOption {
+	return engine.WithCreatorName(name, version)
+}
+func WithDDGSearchType(t string) SearchOption            { return engine.WithDDGSearchType(t) }
+func WithDOMDepth(n int) DOMOption                       { return engine.WithDOMDepth(n) }
+func WithDOMMainOnly() DOMOption                         { return engine.WithDOMMainOnly() }
+func WithDOMSelector(s string) DOMOption                 { return engine.WithDOMSelector(s) }
+func WithDevTools() Option                               { return engine.WithDevTools() }
+func WithDiffImage() VisualDiffOption                    { return engine.WithDiffImage() }
 func WithDiffThreshold(percent float64) VisualDiffOption { return engine.WithDiffThreshold(percent) }
-func WithDirectProxyAuth(user, pass string) DirectProxyOption { return engine.WithDirectProxyAuth(user, pass) }
-func WithDirectProxyScheme(scheme string) DirectProxyOption { return engine.WithDirectProxyScheme(scheme) }
-func WithElectronApp(path string) Option { return engine.WithElectronApp(path) }
-func WithElectronCDP(endpoint string) Option { return engine.WithElectronCDP(endpoint) }
-func WithElectronVersion(version string) Option { return engine.WithElectronVersion(version) }
-func WithEnv(env ...string) Option { return engine.WithEnv(env...) }
-func WithExecPath(path string) Option { return engine.WithExecPath(path) }
-func WithExtension(paths ...string) Option { return engine.WithExtension(paths...) }
-func WithExtensionByID(ids ...string) Option { return engine.WithExtensionByID(ids...) }
-func WithFetchCache(ttl time.Duration) WebFetchOption { return engine.WithFetchCache(ttl) }
-func WithFetchHTML() WebFetchOption { return engine.WithFetchHTML() }
-func WithFetchMainContent() WebFetchOption { return engine.WithFetchMainContent() }
-func WithFetchMode(mode string) WebFetchOption { return engine.WithFetchMode(mode) }
-func WithFetchRetries(n int) WebFetchOption { return engine.WithFetchRetries(n) }
+func WithDirectProxyAuth(user, pass string) DirectProxyOption {
+	return engine.WithDirectProxyAuth(user, pass)
+}
+func WithDirectProxyScheme(scheme string) DirectProxyOption {
+	return engine.WithDirectProxyScheme(scheme)
+}
+func WithElectronApp(path string) Option                 { return engine.WithElectronApp(path) }
+func WithElectronCDP(endpoint string) Option             { return engine.WithElectronCDP(endpoint) }
+func WithElectronVersion(version string) Option          { return engine.WithElectronVersion(version) }
+func WithEnv(env ...string) Option                       { return engine.WithEnv(env...) }
+func WithExecPath(path string) Option                    { return engine.WithExecPath(path) }
+func WithExtension(paths ...string) Option               { return engine.WithExtension(paths...) }
+func WithExtensionByID(ids ...string) Option             { return engine.WithExtensionByID(ids...) }
+func WithFetchCache(ttl time.Duration) WebFetchOption    { return engine.WithFetchCache(ttl) }
+func WithFetchHTML() WebFetchOption                      { return engine.WithFetchHTML() }
+func WithFetchMainContent() WebFetchOption               { return engine.WithFetchMainContent() }
+func WithFetchMode(mode string) WebFetchOption           { return engine.WithFetchMode(mode) }
+func WithFetchRetries(n int) WebFetchOption              { return engine.WithFetchRetries(n) }
 func WithFetchRetryDelay(d time.Duration) WebFetchOption { return engine.WithFetchRetryDelay(d) }
-func WithFingerprint(fp *Fingerprint) Option { return engine.WithFingerprint(fp) }
-func WithFingerprintLocale(locale string) FingerprintOption { return engine.WithFingerprintLocale(locale) }
-func WithFingerprintMobile(mobile bool) FingerprintOption { return engine.WithFingerprintMobile(mobile) }
+func WithFingerprint(fp *Fingerprint) Option             { return engine.WithFingerprint(fp) }
+func WithFingerprintLocale(locale string) FingerprintOption {
+	return engine.WithFingerprintLocale(locale)
+}
+func WithFingerprintMobile(mobile bool) FingerprintOption {
+	return engine.WithFingerprintMobile(mobile)
+}
 func WithFingerprintOS(os string) FingerprintOption { return engine.WithFingerprintOS(os) }
-func WithFingerprintRotation(cfg FingerprintRotationConfig) Option { return engine.WithFingerprintRotation(cfg) }
-func WithGatherConsole() GatherOption { return engine.WithGatherConsole() }
-func WithGatherCookies() GatherOption { return engine.WithGatherCookies() }
-func WithGatherFrameworks() GatherOption { return engine.WithGatherFrameworks() }
-func WithGatherHAR() GatherOption { return engine.WithGatherHAR() }
-func WithGatherHTML() GatherOption { return engine.WithGatherHTML() }
-func WithGatherLinks() GatherOption { return engine.WithGatherLinks() }
-func WithGatherMarkdown() GatherOption { return engine.WithGatherMarkdown() }
-func WithGatherMeta() GatherOption { return engine.WithGatherMeta() }
-func WithGatherScreenshot() GatherOption { return engine.WithGatherScreenshot() }
-func WithGatherSnapshot() GatherOption { return engine.WithGatherSnapshot() }
-func WithGatherTimeout(d time.Duration) GatherOption { return engine.WithGatherTimeout(d) }
-func WithGitHubBody() GitHubOption { return engine.WithGitHubBody() }
-func WithGitHubExtractBody() GitHubExtractOption { return engine.WithGitHubExtractBody() }
+func WithFingerprintRotation(cfg FingerprintRotationConfig) Option {
+	return engine.WithFingerprintRotation(cfg)
+}
+func WithGatherConsole() GatherOption                     { return engine.WithGatherConsole() }
+func WithGatherCookies() GatherOption                     { return engine.WithGatherCookies() }
+func WithGatherFrameworks() GatherOption                  { return engine.WithGatherFrameworks() }
+func WithGatherHAR() GatherOption                         { return engine.WithGatherHAR() }
+func WithGatherHTML() GatherOption                        { return engine.WithGatherHTML() }
+func WithGatherLinks() GatherOption                       { return engine.WithGatherLinks() }
+func WithGatherMarkdown() GatherOption                    { return engine.WithGatherMarkdown() }
+func WithGatherMeta() GatherOption                        { return engine.WithGatherMeta() }
+func WithGatherScreenshot() GatherOption                  { return engine.WithGatherScreenshot() }
+func WithGatherSnapshot() GatherOption                    { return engine.WithGatherSnapshot() }
+func WithGatherTimeout(d time.Duration) GatherOption      { return engine.WithGatherTimeout(d) }
+func WithGitHubBody() GitHubOption                        { return engine.WithGitHubBody() }
+func WithGitHubExtractBody() GitHubExtractOption          { return engine.WithGitHubExtractBody() }
 func WithGitHubExtractMaxItems(n int) GitHubExtractOption { return engine.WithGitHubExtractMaxItems(n) }
-func WithGitHubExtractState(state string) GitHubExtractOption { return engine.WithGitHubExtractState(state) }
-func WithGitHubMaxItems(n int) GitHubOption { return engine.WithGitHubMaxItems(n) }
-func WithGitHubMaxPages(n int) GitHubOption { return engine.WithGitHubMaxPages(n) }
-func WithGitHubReadme() GitHubExtractOption { return engine.WithGitHubReadme() }
-func WithGitHubRepo(owner, repo string) GitHubOption { return engine.WithGitHubRepo(owner, repo) }
-func WithGitHubState(state string) GitHubOption { return engine.WithGitHubState(state) }
-func WithHeadless(v bool) Option { return engine.WithHeadless(v) }
-func WithHealthClickElements() HealthCheckOption { return engine.WithHealthClickElements() }
-func WithHealthConcurrency(n int) HealthCheckOption { return engine.WithHealthConcurrency(n) }
-func WithHealthDepth(n int) HealthCheckOption { return engine.WithHealthDepth(n) }
+func WithGitHubExtractState(state string) GitHubExtractOption {
+	return engine.WithGitHubExtractState(state)
+}
+func WithGitHubMaxItems(n int) GitHubOption               { return engine.WithGitHubMaxItems(n) }
+func WithGitHubMaxPages(n int) GitHubOption               { return engine.WithGitHubMaxPages(n) }
+func WithGitHubReadme() GitHubExtractOption               { return engine.WithGitHubReadme() }
+func WithGitHubRepo(owner, repo string) GitHubOption      { return engine.WithGitHubRepo(owner, repo) }
+func WithGitHubState(state string) GitHubOption           { return engine.WithGitHubState(state) }
+func WithHeadless(v bool) Option                          { return engine.WithHeadless(v) }
+func WithHealthClickElements() HealthCheckOption          { return engine.WithHealthClickElements() }
+func WithHealthConcurrency(n int) HealthCheckOption       { return engine.WithHealthConcurrency(n) }
+func WithHealthDepth(n int) HealthCheckOption             { return engine.WithHealthDepth(n) }
 func WithHealthTimeout(d time.Duration) HealthCheckOption { return engine.WithHealthTimeout(d) }
-func WithHijackBodyCapture() HijackOption { return engine.WithHijackBodyCapture() }
-func WithHijackChannelSize(n int) HijackOption { return engine.WithHijackChannelSize(n) }
-func WithHijackFilter(f HijackFilter) Option { return engine.WithHijackFilter(f) }
-func WithHijackURLFilter(patterns ...string) HijackOption { return engine.WithHijackURLFilter(patterns...) }
-func WithIgnoreCerts() Option { return engine.WithIgnoreCerts() }
-func WithIncludeImages(v bool) MarkdownOption { return engine.WithIncludeImages(v) }
-func WithIncludeLinks(v bool) MarkdownOption { return engine.WithIncludeLinks(v) }
-func WithIncognito() Option { return engine.WithIncognito() }
-func WithInjectCode(code ...string) Option { return engine.WithInjectCode(code...) }
-func WithInjectDir(dir string) Option { return engine.WithInjectDir(dir) }
-func WithInjectJS(paths ...string) Option { return engine.WithInjectJS(paths...) }
-func WithKnowledgeConcurrency(n int) KnowledgeOption { return engine.WithKnowledgeConcurrency(n) }
-func WithKnowledgeDepth(n int) KnowledgeOption { return engine.WithKnowledgeDepth(n) }
-func WithKnowledgeMaxPages(n int) KnowledgeOption { return engine.WithKnowledgeMaxPages(n) }
-func WithKnowledgeOutput(dir string) KnowledgeOption { return engine.WithKnowledgeOutput(dir) }
+func WithHijackBodyCapture() HijackOption                 { return engine.WithHijackBodyCapture() }
+func WithHijackChannelSize(n int) HijackOption            { return engine.WithHijackChannelSize(n) }
+func WithHijackFilter(f HijackFilter) Option              { return engine.WithHijackFilter(f) }
+func WithHijackURLFilter(patterns ...string) HijackOption {
+	return engine.WithHijackURLFilter(patterns...)
+}
+func WithIgnoreCerts() Option                              { return engine.WithIgnoreCerts() }
+func WithIncludeImages(v bool) MarkdownOption              { return engine.WithIncludeImages(v) }
+func WithIncludeLinks(v bool) MarkdownOption               { return engine.WithIncludeLinks(v) }
+func WithIncognito() Option                                { return engine.WithIncognito() }
+func WithInjectCode(code ...string) Option                 { return engine.WithInjectCode(code...) }
+func WithInjectDir(dir string) Option                      { return engine.WithInjectDir(dir) }
+func WithInjectJS(paths ...string) Option                  { return engine.WithInjectJS(paths...) }
+func WithKnowledgeConcurrency(n int) KnowledgeOption       { return engine.WithKnowledgeConcurrency(n) }
+func WithKnowledgeDepth(n int) KnowledgeOption             { return engine.WithKnowledgeDepth(n) }
+func WithKnowledgeMaxPages(n int) KnowledgeOption          { return engine.WithKnowledgeMaxPages(n) }
+func WithKnowledgeOutput(dir string) KnowledgeOption       { return engine.WithKnowledgeOutput(dir) }
 func WithKnowledgeTimeout(d time.Duration) KnowledgeOption { return engine.WithKnowledgeTimeout(d) }
-func WithLLMMainContent() LLMOption { return engine.WithLLMMainContent() }
-func WithLLMMaxTokens(n int) LLMOption { return engine.WithLLMMaxTokens(n) }
-func WithLLMMetadata(key, value string) LLMOption { return engine.WithLLMMetadata(key, value) }
-func WithLLMModel(model string) LLMOption { return engine.WithLLMModel(model) }
-func WithLLMProvider(p LLMProvider) LLMOption { return engine.WithLLMProvider(p) }
-func WithLLMReview(provider LLMProvider) LLMOption { return engine.WithLLMReview(provider) }
-func WithLLMReviewModel(model string) LLMOption { return engine.WithLLMReviewModel(model) }
-func WithLLMReviewPrompt(prompt string) LLMOption { return engine.WithLLMReviewPrompt(prompt) }
-func WithLLMSchema(schema json.RawMessage) LLMOption { return engine.WithLLMSchema(schema) }
-func WithLLMSessionID(id string) LLMOption { return engine.WithLLMSessionID(id) }
-func WithLLMSystemPrompt(s string) LLMOption { return engine.WithLLMSystemPrompt(s) }
-func WithLLMTemperature(t float64) LLMOption { return engine.WithLLMTemperature(t) }
-func WithLLMTimeout(d time.Duration) LLMOption { return engine.WithLLMTimeout(d) }
-func WithLLMWorkspace(ws *LLMWorkspace) LLMOption { return engine.WithLLMWorkspace(ws) }
-func WithLaunchFlag(name string, values ...string) Option { return engine.WithLaunchFlag(name, values...) }
-func WithMainContentOnly() MarkdownOption { return engine.WithMainContentOnly() }
-func WithMapDelay(d time.Duration) MapOption { return engine.WithMapDelay(d) }
-func WithMapExcludePaths(paths ...string) MapOption { return engine.WithMapExcludePaths(paths...) }
-func WithMapIncludePaths(paths ...string) MapOption { return engine.WithMapIncludePaths(paths...) }
-func WithMapLimit(n int) MapOption { return engine.WithMapLimit(n) }
-func WithMapMaxDepth(n int) MapOption { return engine.WithMapMaxDepth(n) }
-func WithMapSearch(term string) MapOption { return engine.WithMapSearch(term) }
-func WithMapSitemap(v bool) MapOption { return engine.WithMapSitemap(v) }
-func WithMapSubdomains() MapOption { return engine.WithMapSubdomains() }
+func WithLLMMainContent() LLMOption                        { return engine.WithLLMMainContent() }
+func WithLLMMaxTokens(n int) LLMOption                     { return engine.WithLLMMaxTokens(n) }
+func WithLLMMetadata(key, value string) LLMOption          { return engine.WithLLMMetadata(key, value) }
+func WithLLMModel(model string) LLMOption                  { return engine.WithLLMModel(model) }
+func WithLLMProvider(p LLMProvider) LLMOption              { return engine.WithLLMProvider(p) }
+func WithLLMReview(provider LLMProvider) LLMOption         { return engine.WithLLMReview(provider) }
+func WithLLMReviewModel(model string) LLMOption            { return engine.WithLLMReviewModel(model) }
+func WithLLMReviewPrompt(prompt string) LLMOption          { return engine.WithLLMReviewPrompt(prompt) }
+func WithLLMSchema(schema json.RawMessage) LLMOption       { return engine.WithLLMSchema(schema) }
+func WithLLMSessionID(id string) LLMOption                 { return engine.WithLLMSessionID(id) }
+func WithLLMSystemPrompt(s string) LLMOption               { return engine.WithLLMSystemPrompt(s) }
+func WithLLMTemperature(t float64) LLMOption               { return engine.WithLLMTemperature(t) }
+func WithLLMTimeout(d time.Duration) LLMOption             { return engine.WithLLMTimeout(d) }
+func WithLLMWorkspace(ws *LLMWorkspace) LLMOption          { return engine.WithLLMWorkspace(ws) }
+func WithLaunchFlag(name string, values ...string) Option {
+	return engine.WithLaunchFlag(name, values...)
+}
+func WithMainContentOnly() MarkdownOption            { return engine.WithMainContentOnly() }
+func WithMapDelay(d time.Duration) MapOption         { return engine.WithMapDelay(d) }
+func WithMapExcludePaths(paths ...string) MapOption  { return engine.WithMapExcludePaths(paths...) }
+func WithMapIncludePaths(paths ...string) MapOption  { return engine.WithMapIncludePaths(paths...) }
+func WithMapLimit(n int) MapOption                   { return engine.WithMapLimit(n) }
+func WithMapMaxDepth(n int) MapOption                { return engine.WithMapMaxDepth(n) }
+func WithMapSearch(term string) MapOption            { return engine.WithMapSearch(term) }
+func WithMapSitemap(v bool) MapOption                { return engine.WithMapSitemap(v) }
+func WithMapSubdomains() MapOption                   { return engine.WithMapSubdomains() }
 func WithMaxBackoff(d time.Duration) RateLimitOption { return engine.WithMaxBackoff(d) }
-func WithMaxConcurrent(n int) RateLimitOption { return engine.WithMaxConcurrent(n) }
-func WithMaxRetries(n int) RateLimitOption { return engine.WithMaxRetries(n) }
-func WithMaximized() Option { return engine.WithMaximized() }
-func WithNoSandbox() Option { return engine.WithNoSandbox() }
-func WithOpenAIAuthHeader(header, prefix string) OpenAIOption { return engine.WithOpenAIAuthHeader(header, prefix) }
+func WithMaxConcurrent(n int) RateLimitOption        { return engine.WithMaxConcurrent(n) }
+func WithMaxRetries(n int) RateLimitOption           { return engine.WithMaxRetries(n) }
+func WithMaximized() Option                          { return engine.WithMaximized() }
+func WithNoSandbox() Option                          { return engine.WithNoSandbox() }
+func WithOpenAIAuthHeader(header, prefix string) OpenAIOption {
+	return engine.WithOpenAIAuthHeader(header, prefix)
+}
 func WithOpenAIBaseURL(url string) OpenAIOption { return engine.WithOpenAIBaseURL(url) }
-func WithOpenAIExtraHeaders(headers map[string]string) OpenAIOption { return engine.WithOpenAIExtraHeaders(headers) }
-func WithOpenAIHTTPClient(c *http.Client) OpenAIOption { return engine.WithOpenAIHTTPClient(c) }
-func WithOpenAIKey(key string) OpenAIOption { return engine.WithOpenAIKey(key) }
-func WithOpenAIModel(model string) OpenAIOption { return engine.WithOpenAIModel(model) }
+func WithOpenAIExtraHeaders(headers map[string]string) OpenAIOption {
+	return engine.WithOpenAIExtraHeaders(headers)
+}
+func WithOpenAIHTTPClient(c *http.Client) OpenAIOption  { return engine.WithOpenAIHTTPClient(c) }
+func WithOpenAIKey(key string) OpenAIOption             { return engine.WithOpenAIKey(key) }
+func WithOpenAIModel(model string) OpenAIOption         { return engine.WithOpenAIModel(model) }
 func WithPaginateDedup(fieldName string) PaginateOption { return engine.WithPaginateDedup(fieldName) }
-func WithPaginateDelay(d time.Duration) PaginateOption { return engine.WithPaginateDelay(d) }
-func WithPaginateMaxPages(n int) PaginateOption { return engine.WithPaginateMaxPages(n) }
-func WithPaginateStopOnEmpty() PaginateOption { return engine.WithPaginateStopOnEmpty() }
-func WithProfile(path string) Option { return engine.WithProfile(path) }
-func WithProfileData(p *UserProfile) Option { return engine.WithProfileData(p) }
-func WithProfileName(name string) ProfileOption { return engine.WithProfileName(name) }
-func WithProxy(proxy string) Option { return engine.WithProxy(proxy) }
-func WithProxyAuth(username, password string) Option { return engine.WithProxyAuth(username, password) }
-func WithProxyChain(hops ...ProxyHop) Option { return engine.WithProxyChain(hops...) }
-func WithQueryTimeout(d time.Duration) BridgeOption { return engine.WithQueryTimeout(d) }
-func WithRandomFingerprint(opts ...FingerprintOption) Option { return engine.WithRandomFingerprint(opts...) }
-func WithRateLimit(rps float64) RateLimitOption { return engine.WithRateLimit(rps) }
-func WithRecordQuality(q int) ScreenRecordOption { return engine.WithRecordQuality(q) }
-func WithRecordSize(w, h int) ScreenRecordOption { return engine.WithRecordSize(w, h) }
-func WithRemoteCDP(endpoint string) Option { return engine.WithRemoteCDP(endpoint) }
-func WithResearchCache(cache *ResearchCache) ResearchOption { return engine.WithResearchCache(cache) }
-func WithResearchConcurrency(n int) ResearchOption { return engine.WithResearchConcurrency(n) }
-func WithResearchDepth(d int) ResearchOption { return engine.WithResearchDepth(d) }
-func WithResearchEngine(e SearchEngine) ResearchOption { return engine.WithResearchEngine(e) }
-func WithResearchFetchMode(mode string) ResearchOption { return engine.WithResearchFetchMode(mode) }
-func WithResearchMainContent(b bool) ResearchOption { return engine.WithResearchMainContent(b) }
-func WithResearchMaxSources(n int) ResearchOption { return engine.WithResearchMaxSources(n) }
-func WithResearchPreset(depth ResearchDepth) ResearchOption { return engine.WithResearchPreset(depth) }
+func WithPaginateDelay(d time.Duration) PaginateOption  { return engine.WithPaginateDelay(d) }
+func WithPaginateMaxPages(n int) PaginateOption         { return engine.WithPaginateMaxPages(n) }
+func WithPaginateStopOnEmpty() PaginateOption           { return engine.WithPaginateStopOnEmpty() }
+func WithProfile(path string) Option                    { return engine.WithProfile(path) }
+func WithProfileData(p *UserProfile) Option             { return engine.WithProfileData(p) }
+func WithProfileName(name string) ProfileOption         { return engine.WithProfileName(name) }
+func WithProxy(proxy string) Option                     { return engine.WithProxy(proxy) }
+func WithProxyAuth(username, password string) Option    { return engine.WithProxyAuth(username, password) }
+func WithProxyChain(hops ...ProxyHop) Option            { return engine.WithProxyChain(hops...) }
+func WithQueryTimeout(d time.Duration) BridgeOption     { return engine.WithQueryTimeout(d) }
+func WithRandomFingerprint(opts ...FingerprintOption) Option {
+	return engine.WithRandomFingerprint(opts...)
+}
+func WithRateLimit(rps float64) RateLimitOption              { return engine.WithRateLimit(rps) }
+func WithRecordQuality(q int) ScreenRecordOption             { return engine.WithRecordQuality(q) }
+func WithRecordSize(w, h int) ScreenRecordOption             { return engine.WithRecordSize(w, h) }
+func WithRemoteCDP(endpoint string) Option                   { return engine.WithRemoteCDP(endpoint) }
+func WithResearchCache(cache *ResearchCache) ResearchOption  { return engine.WithResearchCache(cache) }
+func WithResearchConcurrency(n int) ResearchOption           { return engine.WithResearchConcurrency(n) }
+func WithResearchDepth(d int) ResearchOption                 { return engine.WithResearchDepth(d) }
+func WithResearchEngine(e SearchEngine) ResearchOption       { return engine.WithResearchEngine(e) }
+func WithResearchFetchMode(mode string) ResearchOption       { return engine.WithResearchFetchMode(mode) }
+func WithResearchMainContent(b bool) ResearchOption          { return engine.WithResearchMainContent(b) }
+func WithResearchMaxSources(n int) ResearchOption            { return engine.WithResearchMaxSources(n) }
+func WithResearchPreset(depth ResearchDepth) ResearchOption  { return engine.WithResearchPreset(depth) }
 func WithResearchPrior(prior *ResearchResult) ResearchOption { return engine.WithResearchPrior(prior) }
-func WithResearchTimeout(d time.Duration) ResearchOption { return engine.WithResearchTimeout(d) }
-func WithReusableSession() Option { return engine.WithReusableSession() }
-func WithSearchDomain(domain string) WebSearchOption { return engine.WithSearchDomain(domain) }
-func WithSearchEngine(e SearchEngine) SearchOption { return engine.WithSearchEngine(e) }
-func WithSearchEngines(engines ...string) WebSearchOption { return engine.WithSearchEngines(engines...) }
-func WithSearchExcludeDomain(domains ...string) WebSearchOption { return engine.WithSearchExcludeDomain(domains...) }
-func WithSearchLanguage(lang string) SearchOption { return engine.WithSearchLanguage(lang) }
-func WithSearchMaxPages(n int) SearchOption { return engine.WithSearchMaxPages(n) }
+func WithResearchTimeout(d time.Duration) ResearchOption     { return engine.WithResearchTimeout(d) }
+func WithReusableSession() Option                            { return engine.WithReusableSession() }
+func WithSearchDomain(domain string) WebSearchOption         { return engine.WithSearchDomain(domain) }
+func WithSearchEngine(e SearchEngine) SearchOption           { return engine.WithSearchEngine(e) }
+func WithSearchEngines(engines ...string) WebSearchOption {
+	return engine.WithSearchEngines(engines...)
+}
+func WithSearchExcludeDomain(domains ...string) WebSearchOption {
+	return engine.WithSearchExcludeDomain(domains...)
+}
+func WithSearchLanguage(lang string) SearchOption      { return engine.WithSearchLanguage(lang) }
+func WithSearchMaxPages(n int) SearchOption            { return engine.WithSearchMaxPages(n) }
 func WithSearchRecent(d time.Duration) WebSearchOption { return engine.WithSearchRecent(d) }
-func WithSearchRecentDuration(d time.Duration) SearchOption { return engine.WithSearchRecentDuration(d) }
+func WithSearchRecentDuration(d time.Duration) SearchOption {
+	return engine.WithSearchRecentDuration(d)
+}
 func WithSearchRegion(region string) SearchOption { return engine.WithSearchRegion(region) }
-func WithSessionHijack() Option { return engine.WithSessionHijack() }
-func WithSessionID(id string) Option { return engine.WithSessionID(id) }
-func WithSitemapAllowedDomains(domains ...string) SitemapOption { return engine.WithSitemapAllowedDomains(domains...) }
-func WithSitemapDOMDepth(n int) SitemapOption { return engine.WithSitemapDOMDepth(n) }
-func WithSitemapDelay(d time.Duration) SitemapOption { return engine.WithSitemapDelay(d) }
-func WithSitemapMainOnly() SitemapOption { return engine.WithSitemapMainOnly() }
-func WithSitemapMaxDepth(n int) SitemapOption { return engine.WithSitemapMaxDepth(n) }
-func WithSitemapMaxPages(n int) SitemapOption { return engine.WithSitemapMaxPages(n) }
-func WithSitemapOutputDir(dir string) SitemapOption { return engine.WithSitemapOutputDir(dir) }
-func WithSitemapSelector(s string) SitemapOption { return engine.WithSitemapSelector(s) }
-func WithSitemapSkipJSON() SitemapOption { return engine.WithSitemapSkipJSON() }
-func WithSitemapSkipMarkdown() SitemapOption { return engine.WithSitemapSkipMarkdown() }
-func WithSlowMotion(d time.Duration) Option { return engine.WithSlowMotion(d) }
-func WithSmartWait() Option { return engine.WithSmartWait() }
-func WithSnapshotFilter(roles ...string) SnapshotOption { return engine.WithSnapshotFilter(roles...) }
-func WithSnapshotIframes() SnapshotOption { return engine.WithSnapshotIframes() }
-func WithSnapshotInteractableOnly() SnapshotOption { return engine.WithSnapshotInteractableOnly() }
-func WithSnapshotMaxDepth(n int) SnapshotOption { return engine.WithSnapshotMaxDepth(n) }
-func WithSolverLLM(provider LLMProvider) SolverOption { return engine.WithSolverLLM(provider) }
+func WithSessionHijack() Option                   { return engine.WithSessionHijack() }
+func WithSessionID(id string) Option              { return engine.WithSessionID(id) }
+func WithSitemapAllowedDomains(domains ...string) SitemapOption {
+	return engine.WithSitemapAllowedDomains(domains...)
+}
+func WithSitemapDOMDepth(n int) SitemapOption                 { return engine.WithSitemapDOMDepth(n) }
+func WithSitemapDelay(d time.Duration) SitemapOption          { return engine.WithSitemapDelay(d) }
+func WithSitemapMainOnly() SitemapOption                      { return engine.WithSitemapMainOnly() }
+func WithSitemapMaxDepth(n int) SitemapOption                 { return engine.WithSitemapMaxDepth(n) }
+func WithSitemapMaxPages(n int) SitemapOption                 { return engine.WithSitemapMaxPages(n) }
+func WithSitemapOutputDir(dir string) SitemapOption           { return engine.WithSitemapOutputDir(dir) }
+func WithSitemapSelector(s string) SitemapOption              { return engine.WithSitemapSelector(s) }
+func WithSitemapSkipJSON() SitemapOption                      { return engine.WithSitemapSkipJSON() }
+func WithSitemapSkipMarkdown() SitemapOption                  { return engine.WithSitemapSkipMarkdown() }
+func WithSlowMotion(d time.Duration) Option                   { return engine.WithSlowMotion(d) }
+func WithSmartWait() Option                                   { return engine.WithSmartWait() }
+func WithSnapshotFilter(roles ...string) SnapshotOption       { return engine.WithSnapshotFilter(roles...) }
+func WithSnapshotIframes() SnapshotOption                     { return engine.WithSnapshotIframes() }
+func WithSnapshotInteractableOnly() SnapshotOption            { return engine.WithSnapshotInteractableOnly() }
+func WithSnapshotMaxDepth(n int) SnapshotOption               { return engine.WithSnapshotMaxDepth(n) }
+func WithSolverLLM(provider LLMProvider) SolverOption         { return engine.WithSolverLLM(provider) }
 func WithSolverService(svc CaptchaSolverService) SolverOption { return engine.WithSolverService(svc) }
-func WithSolverTimeout(d time.Duration) SolverOption { return engine.WithSolverTimeout(d) }
-func WithStealth() Option { return engine.WithStealth() }
-func WithSystemBrowser() Option { return engine.WithSystemBrowser() }
-func WithSwaggerEndpointsOnly(v bool) SwaggerOption { return engine.WithSwaggerEndpointsOnly(v) }
-func WithSwaggerRaw(v bool) SwaggerOption { return engine.WithSwaggerRaw(v) }
-func WithTLSProfile(profile string) Option { return engine.WithTLSProfile(profile) }
-func WithTabGroupRateLimit(rps float64) TabGroupOption { return engine.WithTabGroupRateLimit(rps) }
-func WithTabGroupTimeout(d time.Duration) TabGroupOption { return engine.WithTabGroupTimeout(d) }
-func WithTargetURL(url string) Option { return engine.WithTargetURL(url) }
-func WithTimeout(d time.Duration) Option { return engine.WithTimeout(d) }
-func WithUserAgent(ua string) Option { return engine.WithUserAgent(ua) }
-func WithUserAgentMetadata(meta *proto.EmulationUserAgentMetadata) Option { return engine.WithUserAgentMetadata(meta) }
-func WithUserDataDir(dir string) Option { return engine.WithUserDataDir(dir) }
-func WithVPN(provider VPNProvider) Option { return engine.WithVPN(provider) }
-func WithVPNRotation(cfg VPNRotationConfig) Option { return engine.WithVPNRotation(cfg) }
-func WithWebMCPAutoDiscover() Option { return engine.WithWebMCPAutoDiscover() }
+func WithSolverTimeout(d time.Duration) SolverOption          { return engine.WithSolverTimeout(d) }
+func WithStealth() Option                                     { return engine.WithStealth() }
+func WithSystemBrowser() Option                               { return engine.WithSystemBrowser() }
+func WithSwaggerEndpointsOnly(v bool) SwaggerOption           { return engine.WithSwaggerEndpointsOnly(v) }
+func WithSwaggerRaw(v bool) SwaggerOption                     { return engine.WithSwaggerRaw(v) }
+func WithTLSProfile(profile string) Option                    { return engine.WithTLSProfile(profile) }
+func WithTabGroupRateLimit(rps float64) TabGroupOption        { return engine.WithTabGroupRateLimit(rps) }
+func WithTabGroupTimeout(d time.Duration) TabGroupOption      { return engine.WithTabGroupTimeout(d) }
+func WithTargetURL(url string) Option                         { return engine.WithTargetURL(url) }
+func WithTimeout(d time.Duration) Option                      { return engine.WithTimeout(d) }
+func WithUserAgent(ua string) Option                          { return engine.WithUserAgent(ua) }
+func WithUserAgentMetadata(meta *proto.EmulationUserAgentMetadata) Option {
+	return engine.WithUserAgentMetadata(meta)
+}
+func WithUserDataDir(dir string) Option                    { return engine.WithUserDataDir(dir) }
+func WithVPN(provider VPNProvider) Option                  { return engine.WithVPN(provider) }
+func WithVPNRotation(cfg VPNRotationConfig) Option         { return engine.WithVPNRotation(cfg) }
+func WithWebMCPAutoDiscover() Option                       { return engine.WithWebMCPAutoDiscover() }
 func WithWebSearchCache(ttl time.Duration) WebSearchOption { return engine.WithWebSearchCache(ttl) }
-func WithWebSearchConcurrency(n int) WebSearchOption { return engine.WithWebSearchConcurrency(n) }
-func WithWebSearchEngine(e SearchEngine) WebSearchOption { return engine.WithWebSearchEngine(e) }
-func WithWebSearchFetch(mode string) WebSearchOption { return engine.WithWebSearchFetch(mode) }
-func WithWebSearchLanguage(lang string) WebSearchOption { return engine.WithWebSearchLanguage(lang) }
-func WithWebSearchMainContent() WebSearchOption { return engine.WithWebSearchMainContent() }
-func WithWebSearchMaxFetch(n int) WebSearchOption { return engine.WithWebSearchMaxFetch(n) }
-func WithWebSearchMaxPages(n int) WebSearchOption { return engine.WithWebSearchMaxPages(n) }
-func WithWebSearchRegion(region string) WebSearchOption { return engine.WithWebSearchRegion(region) }
-func WithWSCaptureAll() WebSocketOption { return engine.WithWSCaptureAll() }
-func WithWSURLFilter(pattern string) WebSocketOption { return engine.WithWSURLFilter(pattern) }
-func WithWindowSize(w, h int) Option { return engine.WithWindowSize(w, h) }
-func WithWindowState(state WindowState) Option { return engine.WithWindowState(state) }
-func WithoutBridge() Option { return engine.WithoutBridge() }
-func WriteSessionInfo(id string, info *SessionInfo) error { return engine.WriteSessionInfo(id, info) }
+func WithWebSearchConcurrency(n int) WebSearchOption       { return engine.WithWebSearchConcurrency(n) }
+func WithWebSearchEngine(e SearchEngine) WebSearchOption   { return engine.WithWebSearchEngine(e) }
+func WithWebSearchFetch(mode string) WebSearchOption       { return engine.WithWebSearchFetch(mode) }
+func WithWebSearchLanguage(lang string) WebSearchOption    { return engine.WithWebSearchLanguage(lang) }
+func WithWebSearchMainContent() WebSearchOption            { return engine.WithWebSearchMainContent() }
+func WithWebSearchMaxFetch(n int) WebSearchOption          { return engine.WithWebSearchMaxFetch(n) }
+func WithWebSearchMaxPages(n int) WebSearchOption          { return engine.WithWebSearchMaxPages(n) }
+func WithWebSearchRegion(region string) WebSearchOption    { return engine.WithWebSearchRegion(region) }
+func WithWSCaptureAll() WebSocketOption                    { return engine.WithWSCaptureAll() }
+func WithWSURLFilter(pattern string) WebSocketOption       { return engine.WithWSURLFilter(pattern) }
+func WithWindowSize(w, h int) Option                       { return engine.WithWindowSize(w, h) }
+func WithWindowState(state WindowState) Option             { return engine.WithWindowState(state) }
+func WithoutBridge() Option                                { return engine.WithoutBridge() }
+func WriteSessionInfo(id string, info *SessionInfo) error  { return engine.WriteSessionInfo(id, info) }

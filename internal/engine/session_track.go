@@ -22,6 +22,7 @@ func ParseSessionID(s string) (SessionAttrs, error) { return id.Parse(s) }
 
 // IsValidSessionID reports whether s parses without error.
 func IsValidSessionID(s string) bool { return id.Valid(s) }
+
 type SessionListing = session.SessionListing
 type SessionJob = session.Job
 type SessionJobStep = session.JobStep

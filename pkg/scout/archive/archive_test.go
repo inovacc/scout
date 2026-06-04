@@ -165,8 +165,8 @@ func TestZipExtractor(t *testing.T) {
 
 	t.Run("multiple files", func(t *testing.T) {
 		data := createTestZip(t, map[string]string{
-			"one.txt":     "1",
-			"two.txt":     "2",
+			"one.txt":       "1",
+			"two.txt":       "2",
 			"sub/three.txt": "3",
 		})
 		dest := t.TempDir()
@@ -350,7 +350,7 @@ func TestDebExtractor(t *testing.T) {
 	t.Run("truncated ar header", func(t *testing.T) {
 		e := &DebExtractor{}
 		// Valid ar magic but truncated header.
-		if err := e.Extract([]byte("!<arch>\n" + "short"), t.TempDir()); err == nil {
+		if err := e.Extract([]byte("!<arch>\n"+"short"), t.TempDir()); err == nil {
 			t.Fatal("expected error for truncated header")
 		}
 	})
@@ -408,9 +408,9 @@ func TestRPMExtractor(t *testing.T) {
 
 func TestPathSlipCheck(t *testing.T) {
 	tests := []struct {
-		name      string
-		entry     string
-		wantErr   bool
+		name    string
+		entry   string
+		wantErr bool
 	}{
 		{"normal file", "file.txt", false},
 		{"nested file", "a/b/c.txt", false},

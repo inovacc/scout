@@ -79,7 +79,7 @@ func (p *AuthProxy) ValidateSession(ctx context.Context, session *auth.Session) 
 	}
 
 	var result struct {
-		Valid   bool   `json:"valid"`
+		Valid  bool   `json:"valid"`
 		Reason string `json:"reason,omitempty"`
 	}
 

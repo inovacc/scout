@@ -84,9 +84,13 @@ package-scoped waves, all merged to `main`** (2026-06-04):
   2s timeout (< browser launch) against external `example.com`. Now skips when no browser is available,
   serves targets from a loopback httptest server, and polls-for-results-then-cancels instead of waiting
   out a fixed timeout. Passes 3/3 (was 5/5 failing on clean `main`).
-- **(non-security) hygiene, still open**: `internal/engine/swarm/{queue,worker}.go` carry pre-existing
-  gofmt drift; repo-wide CRLF churn persists (no root `.gitattributes` — a deliberate `* text=auto
-  eol=lf` renormalize would fix it, and would stop `gofmt -l` from false-flagging whole files).
+- **DONE 2026-06-04 — CRLF + gofmt hygiene**: added a root `.gitattributes` (`* text=auto eol=lf`
+  plus per-type rules; `.bat`/`.ps1`/`.cmd` keep CRLF; binary markers) and refreshed the working tree
+  to LF. The git blobs were already LF — the churn came from Windows checkouts converting to CRLF,
+  which made `gofmt -l`/`-d` false-flag whole files. Refreshing to LF exposed **51 files** with *real*
+  gofmt drift the CRLF noise had masked (incl. `swarm/queue.go`, `agent/server.go`); all fixed with
+  `gofmt -w` — `gofmt -l` now reports zero. Future checkouts stay LF (no more false-flags / aria
+  golden fragility).
 
 ## Completed Items (Archive)
 

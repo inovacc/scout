@@ -16,10 +16,10 @@ type SurfsharkProvider = vpn.SurfsharkProvider
 
 // Re-exported functions.
 var (
-	NewDirectProxy        = vpn.NewDirectProxy
-	WithDirectProxyScheme = vpn.WithDirectProxyScheme
-	WithDirectProxyAuth   = vpn.WithDirectProxyAuth
-	NewSurfsharkProvider  = vpn.NewSurfsharkProvider
+	NewDirectProxy         = vpn.NewDirectProxy
+	WithDirectProxyScheme  = vpn.WithDirectProxyScheme
+	WithDirectProxyAuth    = vpn.WithDirectProxyAuth
+	NewSurfsharkProvider   = vpn.NewSurfsharkProvider
 	FilterServersByCountry = vpn.FilterServersByCountry
 	ParseSurfsharkClusters = vpn.ParseSurfsharkClusters
 )

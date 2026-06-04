@@ -14,11 +14,11 @@ import (
 type DomainQueue struct {
 	mu         sync.Mutex
 	partitions map[string][]*CrawlRequest // domain -> requests sorted by depth desc
-	domains    []string                    // ordered domain list for round-robin
-	robin      int                         // current round-robin index
-	rateLimits map[string]time.Duration    // per-domain rate limit
-	lastAccess map[string]time.Time        // per-domain last dequeue time
-	defaultRL  time.Duration               // default rate limit
+	domains    []string                   // ordered domain list for round-robin
+	robin      int                        // current round-robin index
+	rateLimits map[string]time.Duration   // per-domain rate limit
+	lastAccess map[string]time.Time       // per-domain last dequeue time
+	defaultRL  time.Duration              // default rate limit
 }
 
 // NewDomainQueue creates a new domain-partitioned queue.

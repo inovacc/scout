@@ -14,13 +14,13 @@ import "github.com/inovacc/scout/pkg/scout/aihost"
 
 var generatedAssets = []aihost.Asset{
 	{
-		Path:        "agents/browser-automation.md",
+		Path: "agents/browser-automation.md",
 		Frontmatter: `name: browser-automation
 description: General-purpose browser automation agent for multi-step web tasks. Invoke for login flows, form filling, multi-page workflows, or any task requiring sequential browser interaction.
 model: sonnet
 maxTurns: 30
 `,
-		Body:        `You are a browser automation specialist with access to Scout's full toolkit. Your job is to execute complex multi-step browser workflows reliably.
+		Body: `You are a browser automation specialist with access to Scout's full toolkit. Your job is to execute complex multi-step browser workflows reliably.
 
 ## Approach
 
@@ -51,13 +51,13 @@ maxTurns: 30
 `,
 	},
 	{
-		Path:        "agents/site-tester.md",
+		Path: "agents/site-tester.md",
 		Frontmatter: `name: site-tester
 description: Specialized agent for website health checks, QA testing, and accessibility auditing. Invoke when the task involves testing a site, finding broken links, or checking for errors.
 model: sonnet
 maxTurns: 30
 `,
-		Body:        `You are a QA testing specialist with access to Scout browser automation tools. Your job is to systematically test websites and report issues.
+		Body: `You are a QA testing specialist with access to Scout browser automation tools. Your job is to systematically test websites and report issues.
 
 ## Approach
 
@@ -95,13 +95,13 @@ For each issue:
 `,
 	},
 	{
-		Path:        "agents/web-scraper.md",
+		Path: "agents/web-scraper.md",
 		Frontmatter: `name: web-scraper
 description: Specialized agent for extracting structured data from websites. Invoke when the task involves scraping, data extraction, or collecting information from web pages.
 model: sonnet
 maxTurns: 30
 `,
-		Body:        `You are a web scraping specialist with access to Scout browser automation tools. Your job is to extract structured data from websites accurately and efficiently.
+		Body: `You are a web scraping specialist with access to Scout browser automation tools. Your job is to extract structured data from websites accurately and efficiently.
 
 ## Approach
 
@@ -134,11 +134,11 @@ Always return extracted data as structured JSON. Include metadata:
 `,
 	},
 	{
-		Path:        "skills/crawl/SKILL.md",
+		Path: "skills/crawl/SKILL.md",
 		Frontmatter: `name: crawl
 description: Crawl a website to discover pages and map its structure. Use when the user wants to explore, map, or discover all pages on a site.
 `,
-		Body:        `# Crawl
+		Body: `# Crawl
 
 Crawl a website to discover pages, map link structure, and build a sitemap.
 
@@ -167,11 +167,11 @@ Crawl a website to discover pages, map link structure, and build a sitemap.
 `,
 	},
 	{
-		Path:        "skills/gather/SKILL.md",
+		Path: "skills/gather/SKILL.md",
 		Frontmatter: `name: gather
 description: Collect comprehensive intelligence about a web page in one shot. Use when the user wants a full analysis, overview, or reconnaissance of a URL.
 `,
-		Body:        `# Gather
+		Body: `# Gather
 
 One-shot page intelligence collection. Gathers everything about a URL in a single pass.
 
@@ -203,11 +203,11 @@ One-shot page intelligence collection. Gathers everything about a URL in a singl
 `,
 	},
 	{
-		Path:        "skills/monitor/SKILL.md",
+		Path: "skills/monitor/SKILL.md",
 		Frontmatter: `name: monitor
 description: Perform visual regression monitoring on a web page. Use when the user wants to check for visual changes, compare page states, or detect regressions.
 `,
-		Body:        `# Monitor
+		Body: `# Monitor
 
 Check a web page for visual changes by capturing and comparing screenshots.
 
@@ -240,11 +240,11 @@ Check a web page for visual changes by capturing and comparing screenshots.
 `,
 	},
 	{
-		Path:        "skills/scrape/SKILL.md",
+		Path: "skills/scrape/SKILL.md",
 		Frontmatter: `name: scrape
 description: Extract structured data from a web page. Use when the user wants to scrape, extract, or collect data from a URL.
 `,
-		Body:        `# Scrape
+		Body: `# Scrape
 
 Extract structured data from a web page using Scout's browser automation.
 
@@ -270,11 +270,11 @@ Extract structured data from a web page using Scout's browser automation.
 `,
 	},
 	{
-		Path:        "skills/screenshot/SKILL.md",
+		Path: "skills/screenshot/SKILL.md",
 		Frontmatter: `name: screenshot
 description: Capture a screenshot of a web page. Use when the user wants a visual capture, page preview, or screenshot of a URL.
 `,
-		Body:        `# Screenshot
+		Body: `# Screenshot
 
 Capture a screenshot of any web page using Scout's headless browser.
 
@@ -295,11 +295,11 @@ Capture a screenshot of any web page using Scout's headless browser.
 `,
 	},
 	{
-		Path:        "skills/test-site/SKILL.md",
+		Path: "skills/test-site/SKILL.md",
 		Frontmatter: `name: test-site
 description: Health-check a website for broken links, errors, and issues. Use when the user wants to test, audit, or validate a site.
 `,
-		Body:        `# Test Site
+		Body: `# Test Site
 
 Run a health check on a website to find broken links, JavaScript errors, and other issues.
 
@@ -329,78 +329,78 @@ Run a health check on a website to find broken links, JavaScript errors, and oth
 `,
 	},
 	{
-		Path:        "commands/scout-scrape.md",
+		Path: "commands/scout-scrape.md",
 		Frontmatter: `description: Extract structured data from a URL via Scout.
 argument-hint: <url> [options]
 `,
-		Body:        `Scrape ` + "`" + `$ARGUMENTS` + "`" + ` — extract data from the URL.
+		Body: `Scrape ` + "`" + `$ARGUMENTS` + "`" + ` — extract data from the URL.
 
 Use the ` + "`" + `scrape` + "`" + ` skill to drive the workflow: navigate, snapshot, extract via CSS selectors, paginate if needed.
 Return structured JSON. If extraction is ambiguous, ask the user for the target fields before scraping.
 `,
 	},
 	{
-		Path:        "commands/scout-screenshot.md",
+		Path: "commands/scout-screenshot.md",
 		Frontmatter: `description: Capture a screenshot of any URL.
 argument-hint: <url> [options]
 `,
-		Body:        `Screenshot ` + "`" + `$ARGUMENTS` + "`" + ` — capture the page.
+		Body: `Screenshot ` + "`" + `$ARGUMENTS` + "`" + ` — capture the page.
 
 Use the ` + "`" + `screenshot` + "`" + ` skill: navigate, wait for ready, then ` + "`" + `mcp__scout__screenshot` + "`" + `. Default to full-page.
 If the user passes ` + "`" + `viewport:` + "`" + ` or ` + "`" + `full:` + "`" + ` in arguments, honour it.
 `,
 	},
 	{
-		Path:        "commands/scout-test-site.md",
+		Path: "commands/scout-test-site.md",
 		Frontmatter: `description: Run a health check on a website (broken links, JS errors, etc.).
 argument-hint: <url> [options]
 `,
-		Body:        `Test site ` + "`" + `$ARGUMENTS` + "`" + ` — health-check the URL.
+		Body: `Test site ` + "`" + `$ARGUMENTS` + "`" + ` — health-check the URL.
 
 Use the ` + "`" + `test-site` + "`" + ` skill: crawl with ` + "`" + `mcp__scout__swarm_crawl` + "`" + `, check console errors via ` + "`" + `mcp__scout__eval` + "`" + `, then produce a pass/warn/fail report grouped by severity.
 `,
 	},
 	{
-		Path:        "commands/scout-gather.md",
+		Path: "commands/scout-gather.md",
 		Frontmatter: `description: One-shot intelligence collection on a URL.
 argument-hint: <url> [options]
 `,
-		Body:        `Gather ` + "`" + `$ARGUMENTS` + "`" + ` — full reconnaissance on the URL.
+		Body: `Gather ` + "`" + `$ARGUMENTS` + "`" + ` — full reconnaissance on the URL.
 
 Use the ` + "`" + `gather` + "`" + ` skill: navigate, snapshot, screenshot, read ` + "`" + `scout://page/*` + "`" + ` resources, evaluate framework hints.
 Return a single consolidated report (title, description, content summary, technologies, links).
 `,
 	},
 	{
-		Path:        "commands/scout-crawl.md",
+		Path: "commands/scout-crawl.md",
 		Frontmatter: `description: Crawl a site to discover pages and map structure.
 argument-hint: <url> [options]
 `,
-		Body:        `Crawl ` + "`" + `$ARGUMENTS` + "`" + ` — discover pages on the URL.
+		Body: `Crawl ` + "`" + `$ARGUMENTS` + "`" + ` — discover pages on the URL.
 
 Use the ` + "`" + `crawl` + "`" + ` skill via ` + "`" + `mcp__scout__swarm_crawl` + "`" + `. Defaults: 2 workers, depth 2, 50 pages.
 Honour ` + "`" + `workers:N depth:N max:N` + "`" + ` overrides in arguments. Report site structure + broken links.
 `,
 	},
 	{
-		Path:        "commands/scout-monitor.md",
+		Path: "commands/scout-monitor.md",
 		Frontmatter: `description: Visual regression monitoring against a baseline.
 argument-hint: <url> [options]
 `,
-		Body:        `Monitor ` + "`" + `$ARGUMENTS` + "`" + ` — visual-regression check the URL.
+		Body: `Monitor ` + "`" + `$ARGUMENTS` + "`" + ` — visual-regression check the URL.
 
 Use the ` + "`" + `monitor` + "`" + ` skill: screenshot + snapshot, compare against any provided baseline, describe differences.
 If no baseline exists, save the current state as the baseline and tell the user.
 `,
 	},
 	{
-		Path:        "agents/site-mapper.md",
+		Path: "agents/site-mapper.md",
 		Frontmatter: `name: site-mapper
 description: Build a structural map of a website — link graph, page hierarchy, sitemap, and route discovery. Invoke when the user wants to understand a site's shape, generate a sitemap.xml, or discover all reachable URLs.
 model: sonnet
 maxTurns: 30
 `,
-		Body:        `You are a site cartography specialist with access to Scout's crawl + browser tools. Your job is to produce an accurate, structured map of a website.
+		Body: `You are a site cartography specialist with access to Scout's crawl + browser tools. Your job is to produce an accurate, structured map of a website.
 
 ## Approach
 
@@ -443,13 +443,13 @@ Also emit a markdown summary: top-level sections, page counts per section, and a
 `,
 	},
 	{
-		Path:        "agents/session-capture.md",
+		Path: "agents/session-capture.md",
 		Frontmatter: `name: session-capture
 description: Capture an authenticated browser session (cookies, localStorage, sessionStorage, auth headers) for reuse in headless automation, OR audit how a site exposes credential state in the browser. Invoke when the user needs to replay an authenticated flow without re-logging-in, or to assess where a site stores auth material client-side.
 model: sonnet
 maxTurns: 30
 `,
-		Body:        `You are a session-state specialist. You help the user (a) capture their **own** authenticated browser session so it can be replayed in headless automation, and (b) audit where a site exposes auth material in the browser (security review).
+		Body: `You are a session-state specialist. You help the user (a) capture their **own** authenticated browser session so it can be replayed in headless automation, and (b) audit where a site exposes auth material in the browser (security review).
 
 ## Scope and consent
 
@@ -493,13 +493,13 @@ After capture, tell the user how to replay:
 `,
 	},
 	{
-		Path:        "agents/flow-porter.md",
+		Path: "agents/flow-porter.md",
 		Frontmatter: `name: flow-porter
 description: Port an interactive browser flow (manual or recorded) into an executable script — Scout runbook YAML, Playwright/Puppeteer script, or a Scout strategy file. Invoke when the user wants to turn "click here, type there, navigate, submit" into a reusable, headless-runnable artifact.
 model: sonnet
 maxTurns: 30
 `,
-		Body:        `You are a flow-porting specialist. You turn one-off manual browser interactions into stable, repeatable scripts.
+		Body: `You are a flow-porting specialist. You turn one-off manual browser interactions into stable, repeatable scripts.
 
 ## Inputs you may get
 

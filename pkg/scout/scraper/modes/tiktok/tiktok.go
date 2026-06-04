@@ -97,8 +97,10 @@ func (p *tiktokProvider) ValidateSession(_ context.Context, session *auth.Sessio
 // TikTokMode implements scraper.Mode for TikTok.
 type TikTokMode struct{}
 
-func (m *TikTokMode) Name() string        { return "tiktok" }
-func (m *TikTokMode) Description() string  { return "TikTok video metadata, comments, profiles, and trending content" }
+func (m *TikTokMode) Name() string { return "tiktok" }
+func (m *TikTokMode) Description() string {
+	return "TikTok video metadata, comments, profiles, and trending content"
+}
 func (m *TikTokMode) AuthProvider() scraper.AuthProvider { return &tiktokProvider{} }
 
 // ResultTypes for TikTok content.

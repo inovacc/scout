@@ -209,8 +209,8 @@ func TestParseChats_Valid(t *testing.T) {
 		"value": []any{
 			map[string]any{
 				"id":                  "chat1",
-				"topic":              "Team Chat",
-				"chatType":           "group",
+				"topic":               "Team Chat",
+				"chatType":            "group",
 				"lastUpdatedDateTime": "2024-01-15T10:30:00Z",
 			},
 		},
@@ -254,9 +254,9 @@ func TestParseMessages_WithValueKey(t *testing.T) {
 			map[string]any{
 				"id":              "msg1",
 				"createdDateTime": "2024-01-15T10:30:00Z",
-				"messageType":    "message",
-				"importance":     "normal",
-				"body":           map[string]any{"content": "Hello Teams"},
+				"messageType":     "message",
+				"importance":      "normal",
+				"body":            map[string]any{"content": "Hello Teams"},
 				"from": map[string]any{
 					"user": map[string]any{"displayName": "Alice"},
 				},
@@ -338,10 +338,10 @@ func TestParseChannels_Valid(t *testing.T) {
 		"value": []any{
 			map[string]any{
 				"id":              "ch1",
-				"displayName":    "General",
-				"description":    "Main channel",
-				"membershipType": "standard",
-				"webUrl":         "https://teams.microsoft.com/channel/ch1",
+				"displayName":     "General",
+				"description":     "Main channel",
+				"membershipType":  "standard",
+				"webUrl":          "https://teams.microsoft.com/channel/ch1",
 				"createdDateTime": "2024-01-01T00:00:00Z",
 			},
 		},
@@ -371,8 +371,8 @@ func TestParseFiles_Array(t *testing.T) {
 			map[string]any{
 				"id":                   "f1",
 				"name":                 "report.docx",
-				"webUrl":              "https://example.com/files/f1",
-				"size":                float64(1024),
+				"webUrl":               "https://example.com/files/f1",
+				"size":                 float64(1024),
 				"lastModifiedDateTime": "2024-01-15T10:30:00Z",
 			},
 		},
@@ -398,7 +398,7 @@ func TestParseFiles_SingleFile(t *testing.T) {
 	data := map[string]any{
 		"id":                   "f2",
 		"name":                 "single.pdf",
-		"webUrl":              "https://example.com/files/f2",
+		"webUrl":               "https://example.com/files/f2",
 		"lastModifiedDateTime": "2024-01-15T10:30:00Z",
 	}
 	results := make(chan scraper.Result, 10)

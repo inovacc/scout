@@ -218,8 +218,8 @@ func TestIsIP(t *testing.T) {
 		{"example.com", false},
 		{"", false},
 		{"abc", false},
-		{"192.168.1", true},  // technically valid per function's simple heuristic
-		{"1234", false},      // no dot
+		{"192.168.1", true}, // technically valid per function's simple heuristic
+		{"1234", false},     // no dot
 		{"12.ab.34.cd", false},
 	}
 

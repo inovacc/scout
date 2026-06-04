@@ -12,12 +12,12 @@ import (
 type EventType string
 
 const (
-	EventDOMMutation    EventType = "dom.mutation"
-	EventNavigation     EventType = "navigation"
-	EventConsoleLog     EventType = "console.log"
-	EventNetworkRequest EventType = "network.request"
+	EventDOMMutation     EventType = "dom.mutation"
+	EventNavigation      EventType = "navigation"
+	EventConsoleLog      EventType = "console.log"
+	EventNetworkRequest  EventType = "network.request"
 	EventNetworkResponse EventType = "network.response"
-	EventWSReceived     EventType = "ws.received"
+	EventWSReceived      EventType = "ws.received"
 )
 
 // Event is a browser event forwarded to plugins.

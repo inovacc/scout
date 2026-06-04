@@ -48,10 +48,10 @@ const (
 
 // Re-export constructors and option functions.
 var (
-	NewAnthropicProvider = llm.NewAnthropicProvider
-	WithAnthropicBaseURL = llm.WithAnthropicBaseURL
-	WithAnthropicKey     = llm.WithAnthropicKey
-	WithAnthropicModel   = llm.WithAnthropicModel
+	NewAnthropicProvider    = llm.NewAnthropicProvider
+	WithAnthropicBaseURL    = llm.WithAnthropicBaseURL
+	WithAnthropicKey        = llm.WithAnthropicKey
+	WithAnthropicModel      = llm.WithAnthropicModel
 	WithAnthropicHTTPClient = llm.WithAnthropicHTTPClient
 
 	NewOpenAIProvider      = llm.NewOpenAIProvider

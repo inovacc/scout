@@ -99,8 +99,8 @@ func TestIsASIN(t *testing.T) {
 	}{
 		{"B08N5WRWNW", true},
 		{"0123456789", true},
-		{"B08N5wrwnw", false}, // lowercase
-		{"B08N5WRWN", false},  // too short
+		{"B08N5wrwnw", false},  // lowercase
+		{"B08N5WRWN", false},   // too short
 		{"B08N5WRWNWX", false}, // too long
 		{"", false},
 		{"  B08N5WRWNW  ", true}, // isASIN trims spaces first

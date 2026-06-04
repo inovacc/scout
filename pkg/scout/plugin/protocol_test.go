@@ -67,8 +67,8 @@ func TestMessage_Classification(t *testing.T) {
 	id := int64(1)
 
 	tests := []struct {
-		name           string
-		msg            message
+		name                   string
+		msg                    message
 		isReq, isResp, isNotif bool
 	}{
 		{"request", message{ID: &id, Method: "initialize"}, true, false, false},

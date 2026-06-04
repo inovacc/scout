@@ -8,7 +8,9 @@ import (
 
 func TestLoadManifest(t *testing.T) {
 	m, err := LoadManifest()
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if m == nil {
 		t.Fatal("LoadManifest() returned nil")
 	}

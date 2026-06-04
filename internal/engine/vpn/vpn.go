@@ -58,11 +58,11 @@ type DirectProxyOption func(*DirectProxy)
 
 // DirectProxy implements Provider for a single static proxy endpoint.
 type DirectProxy struct {
-	Host     string
+	Host      string
 	ProxyPort int
-	Scheme   string // "https" or "socks5"
-	Username string
-	Password string
+	Scheme    string // "https" or "socks5"
+	Username  string
+	Password  string
 }
 
 // NewDirectProxy creates a DirectProxy for the given host and port.

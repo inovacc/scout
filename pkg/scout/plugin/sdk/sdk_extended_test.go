@@ -59,7 +59,7 @@ type mockSink struct {
 	closeErr error
 }
 
-func (m *mockSink) Init(_ context.Context, _ map[string]any) error  { return m.initErr }
+func (m *mockSink) Init(_ context.Context, _ map[string]any) error    { return m.initErr }
 func (m *mockSink) Write(_ context.Context, _ []map[string]any) error { return m.writeErr }
 func (m *mockSink) Flush(_ context.Context) error                     { return m.flushErr }
 func (m *mockSink) Close(_ context.Context) error                     { return m.closeErr }

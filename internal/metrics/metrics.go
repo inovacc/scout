@@ -10,15 +10,15 @@ import (
 
 // Metrics holds runtime metrics for Scout.
 type Metrics struct {
-	PagesCreated     atomic.Int64 `json:"pages_created"`
-	PagesActive      atomic.Int64 `json:"pages_active"`
-	NavigationsTotal atomic.Int64 `json:"navigations_total"`
-	ScreenshotsTotal atomic.Int64 `json:"screenshots_total"`
-	ExtractionsTotal atomic.Int64 `json:"extractions_total"`
-	ErrorsTotal      atomic.Int64 `json:"errors_total"`
-	ToolCallsTotal   atomic.Int64 `json:"tool_calls_total"`
+	PagesCreated      atomic.Int64 `json:"pages_created"`
+	PagesActive       atomic.Int64 `json:"pages_active"`
+	NavigationsTotal  atomic.Int64 `json:"navigations_total"`
+	ScreenshotsTotal  atomic.Int64 `json:"screenshots_total"`
+	ExtractionsTotal  atomic.Int64 `json:"extractions_total"`
+	ErrorsTotal       atomic.Int64 `json:"errors_total"`
+	ToolCallsTotal    atomic.Int64 `json:"tool_calls_total"`
 	WebSocketOpsTotal atomic.Int64 `json:"websocket_ops_total"`
-	StartTime        time.Time    `json:"start_time"`
+	StartTime         time.Time    `json:"start_time"`
 }
 
 // Global instance.
@@ -38,12 +38,12 @@ func Handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		m := Get()
 		data := map[string]any{
-			"pages_created":    m.PagesCreated.Load(),
-			"pages_active":     m.PagesActive.Load(),
-			"navigations_total": m.NavigationsTotal.Load(),
-			"screenshots_total": m.ScreenshotsTotal.Load(),
-			"extractions_total": m.ExtractionsTotal.Load(),
-			"errors_total":     m.ErrorsTotal.Load(),
+			"pages_created":       m.PagesCreated.Load(),
+			"pages_active":        m.PagesActive.Load(),
+			"navigations_total":   m.NavigationsTotal.Load(),
+			"screenshots_total":   m.ScreenshotsTotal.Load(),
+			"extractions_total":   m.ExtractionsTotal.Load(),
+			"errors_total":        m.ErrorsTotal.Load(),
 			"tool_calls_total":    m.ToolCallsTotal.Load(),
 			"websocket_ops_total": m.WebSocketOpsTotal.Load(),
 			"uptime_seconds":      time.Since(m.StartTime).Seconds(),

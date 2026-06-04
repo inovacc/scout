@@ -247,4 +247,3 @@ func main() {
 
 	return binPath
 }
-

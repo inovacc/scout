@@ -11,23 +11,23 @@ import (
 
 // Manifest describes a plugin's capabilities and how to launch it.
 type Manifest struct {
-	Name         string           `json:"name"`
-	Version      string           `json:"version"`
-	Description  string           `json:"description"`
-	Author       string           `json:"author,omitempty"`
-	Command      string           `json:"command"`
-	Capabilities []string         `json:"capabilities"`
-	Modes        []ModeEntry      `json:"modes,omitempty"`
-	Extractors   []ExtractorEntry `json:"extractors,omitempty"`
-	Tools        []ToolEntry      `json:"tools,omitempty"`
-	Commands     []CommandEntry   `json:"commands,omitempty"`
-	Auth              *AuthEntry            `json:"auth,omitempty"`
-	Resources         []ResourceEntry       `json:"resources,omitempty"`
-	ResourceTemplates []ResourceTplEntry    `json:"resource_templates,omitempty"`
-	Prompts           []PromptEntry         `json:"prompts,omitempty"`
-	Sinks             []SinkEntry           `json:"sinks,omitempty"`
-	Middleware        *MiddlewareEntry      `json:"middleware,omitempty"`
-	Events           *EventEntry           `json:"events,omitempty"`
+	Name              string             `json:"name"`
+	Version           string             `json:"version"`
+	Description       string             `json:"description"`
+	Author            string             `json:"author,omitempty"`
+	Command           string             `json:"command"`
+	Capabilities      []string           `json:"capabilities"`
+	Modes             []ModeEntry        `json:"modes,omitempty"`
+	Extractors        []ExtractorEntry   `json:"extractors,omitempty"`
+	Tools             []ToolEntry        `json:"tools,omitempty"`
+	Commands          []CommandEntry     `json:"commands,omitempty"`
+	Auth              *AuthEntry         `json:"auth,omitempty"`
+	Resources         []ResourceEntry    `json:"resources,omitempty"`
+	ResourceTemplates []ResourceTplEntry `json:"resource_templates,omitempty"`
+	Prompts           []PromptEntry      `json:"prompts,omitempty"`
+	Sinks             []SinkEntry        `json:"sinks,omitempty"`
+	Middleware        *MiddlewareEntry   `json:"middleware,omitempty"`
+	Events            *EventEntry        `json:"events,omitempty"`
 
 	// Env lists additional environment variable NAMES the plugin subprocess is
 	// permitted to inherit from Scout's environment, on top of the default
@@ -75,9 +75,9 @@ type ResourceTplEntry struct {
 
 // PromptEntry declares an MCP prompt in the manifest.
 type PromptEntry struct {
-	Name        string               `json:"name"`
-	Description string               `json:"description"`
-	Arguments   []PromptArgEntry     `json:"arguments,omitempty"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Arguments   []PromptArgEntry `json:"arguments,omitempty"`
 }
 
 // PromptArgEntry declares a prompt argument.

@@ -34,7 +34,7 @@ type WebSocketHandler func(msg WebSocketMessage)
 type WebSocketOption func(*wsOptions)
 
 type wsOptions struct {
-	urlFilter string
+	urlFilter  string
 	captureAll bool
 }
 

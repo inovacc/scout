@@ -22,9 +22,9 @@ type MonitorConfig struct {
 
 // MonitorSink describes one monitor's enabled state + on-disk artifact path.
 type MonitorSink struct {
-	Enabled     bool   `json:"enabled"`
-	Path        string `json:"path,omitempty"` // relative to session dir, e.g. "har.json"
-	WithBodies  bool   `json:"with_bodies,omitempty"`
+	Enabled    bool   `json:"enabled"`
+	Path       string `json:"path,omitempty"` // relative to session dir, e.g. "har.json"
+	WithBodies bool   `json:"with_bodies,omitempty"`
 }
 
 // MonitorRule mirrors engine.BlockRule for on-disk persistence.

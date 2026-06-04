@@ -11,7 +11,7 @@ import (
 // hookRegistry tracks which pageIDs have already had invalidation hooks installed,
 // so we never double-install goroutines on a single page.
 type hookRegistry struct {
-	mu      sync.Mutex
+	mu        sync.Mutex
 	installed map[string]struct{}
 }
 

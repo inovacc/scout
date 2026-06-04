@@ -43,8 +43,8 @@ type BrowserConfig struct {
 // AuthConfig defines how to authenticate before scraping.
 type AuthConfig struct {
 	Provider       string `yaml:"provider" json:"provider"`                                     // auth provider name (slack, linkedin, etc.)
-	Session        string `yaml:"session,omitempty" json:"session,omitempty"`                    // path to session file
-	Passphrase     string `yaml:"passphrase,omitempty" json:"passphrase,omitempty"`              // session passphrase (supports ${ENV})
+	Session        string `yaml:"session,omitempty" json:"session,omitempty"`                   // path to session file
+	Passphrase     string `yaml:"passphrase,omitempty" json:"passphrase,omitempty"`             // session passphrase (supports ${ENV})
 	CaptureOnClose bool   `yaml:"capture_on_close,omitempty" json:"capture_on_close,omitempty"` // capture session on close
 	Timeout        string `yaml:"timeout,omitempty" json:"timeout,omitempty"`                   // e.g. "5m"
 }
@@ -68,8 +68,8 @@ type OutputConfig struct {
 
 // SinkConfig defines a single output destination.
 type SinkConfig struct {
-	Type   string         `yaml:"type" json:"type"`                       // json-file, csv, ndjson
-	Path   string         `yaml:"path,omitempty" json:"path,omitempty"`   // output path (supports templates)
+	Type   string         `yaml:"type" json:"type"`                         // json-file, csv, ndjson
+	Path   string         `yaml:"path,omitempty" json:"path,omitempty"`     // output path (supports templates)
 	Config map[string]any `yaml:"config,omitempty" json:"config,omitempty"` // sink-specific config
 }
 

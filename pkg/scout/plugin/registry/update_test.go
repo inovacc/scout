@@ -23,9 +23,9 @@ func TestCheckUpdatesWithLock(t *testing.T) {
 		Version: "1",
 		Plugins: []PluginInfo{
 			{Name: "scout-diag", Latest: "v0.2.0", Repo: "inovacc/scout-diag"},       // update available
-			{Name: "scout-search", Latest: "v0.2.0", Repo: "inovacc/scout-search"},    // up to date
-			{Name: "scout-forms", Latest: "v0.4.0", Repo: "inovacc/scout-forms"},      // update available
-			{Name: "scout-unknown", Latest: "v1.0.0", Repo: "inovacc/scout-unknown"},  // not installed
+			{Name: "scout-search", Latest: "v0.2.0", Repo: "inovacc/scout-search"},   // up to date
+			{Name: "scout-forms", Latest: "v0.4.0", Repo: "inovacc/scout-forms"},     // update available
+			{Name: "scout-unknown", Latest: "v1.0.0", Repo: "inovacc/scout-unknown"}, // not installed
 		},
 	}
 

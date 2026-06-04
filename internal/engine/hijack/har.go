@@ -15,11 +15,11 @@ type HARCreator struct {
 
 // HAREntry represents a single HTTP transaction.
 type HAREntry struct {
-	StartedDateTime string      `json:"startedDateTime"`
-	Time            float64     `json:"time"`
-	Request         HARRequest  `json:"request"`
-	Response        HARResponse `json:"response"`
-	Timings         HARTimings  `json:"timings"`
+	StartedDateTime string        `json:"startedDateTime"`
+	Time            float64       `json:"time"`
+	Request         HARRequest    `json:"request"`
+	Response        HARResponse   `json:"response"`
+	Timings         HARTimings    `json:"timings"`
 	ServerIPAddress string        `json:"serverIPAddress,omitempty"`
 	Connection      string        `json:"connection,omitempty"`
 	WebSocket       *HARWebSocket `json:"_webSocketMessages,omitempty"`

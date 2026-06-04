@@ -59,10 +59,10 @@ func (Host) PrintStatus(w *os.File) error { return PrintStatus(w) }
 
 // geminiManifest mirrors Gemini CLI's gemini-extension.json schema.
 type geminiManifest struct {
-	Name        string                       `json:"name"`
-	Version     string                       `json:"version"`
-	Description string                       `json:"description"`
-	MCPServers  map[string]geminiMCPServer   `json:"mcpServers,omitempty"`
+	Name        string                     `json:"name"`
+	Version     string                     `json:"version"`
+	Description string                     `json:"description"`
+	MCPServers  map[string]geminiMCPServer `json:"mcpServers,omitempty"`
 }
 
 type geminiMCPServer struct {

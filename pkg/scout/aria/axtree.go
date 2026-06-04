@@ -39,8 +39,8 @@ type Snapshot struct {
 // RenderYAML writes a YAML-like representation of the snapshot. The format
 // matches the playwright-mcp ARIA dialect:
 //
-//	- role "accessible name" [ref=eN]
-//	  - child role "name" [ref=eN+1]
+//   - role "accessible name" [ref=eN]
+//   - child role "name" [ref=eN+1]
 //
 // Roots are nodes referenced by no other node. Values are appended in the
 // form: textbox "Label" [ref=eN] value="current text".

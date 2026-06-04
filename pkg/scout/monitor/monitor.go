@@ -20,22 +20,22 @@ import (
 
 // Config configures a monitoring session.
 type Config struct {
-	URL      string        `json:"url"`
-	Interval time.Duration `json:"interval"`
-	Timeout  time.Duration `json:"timeout"`
-	Baseline string        `json:"baseline,omitempty"` // path to baseline screenshot
-	OutputDir string       `json:"output_dir,omitempty"`
-	Threshold float64      `json:"threshold,omitempty"` // 0.0-1.0, diff tolerance
+	URL       string        `json:"url"`
+	Interval  time.Duration `json:"interval"`
+	Timeout   time.Duration `json:"timeout"`
+	Baseline  string        `json:"baseline,omitempty"` // path to baseline screenshot
+	OutputDir string        `json:"output_dir,omitempty"`
+	Threshold float64       `json:"threshold,omitempty"` // 0.0-1.0, diff tolerance
 }
 
 // Result is the outcome of a single monitoring check.
 type Result struct {
 	URL        string    `json:"url"`
 	Timestamp  time.Time `json:"timestamp"`
-	Checksum   string    `json:"checksum"`     // SHA256 of screenshot
-	DiffScore  float64   `json:"diff_score"`   // 0.0 = identical, 1.0 = completely different
+	Checksum   string    `json:"checksum"`   // SHA256 of screenshot
+	DiffScore  float64   `json:"diff_score"` // 0.0 = identical, 1.0 = completely different
 	Changed    bool      `json:"changed"`
-	Screenshot string    `json:"screenshot"`   // path to saved screenshot
+	Screenshot string    `json:"screenshot"` // path to saved screenshot
 	Error      string    `json:"error,omitempty"`
 }
 
@@ -44,12 +44,12 @@ type ChangeHandler func(result Result)
 
 // Baseline holds the reference screenshot and metadata.
 type Baseline struct {
-	URL       string    `json:"url"`
-	Checksum  string    `json:"checksum"`
+	URL        string    `json:"url"`
+	Checksum   string    `json:"checksum"`
 	CapturedAt time.Time `json:"captured_at"`
-	Path      string    `json:"path"`
-	Width     int       `json:"width"`
-	Height    int       `json:"height"`
+	Path       string    `json:"path"`
+	Width      int       `json:"width"`
+	Height     int       `json:"height"`
 }
 
 // BaselineManager manages reference screenshots for visual comparison.
@@ -224,8 +224,8 @@ type Monitor struct {
 	baselines *BaselineManager
 	logger    *slog.Logger
 	onChange  ChangeHandler
-	stopCh   chan struct{}
-	stopOnce sync.Once
+	stopCh    chan struct{}
+	stopOnce  sync.Once
 }
 
 // New creates a new monitor.
@@ -235,7 +235,7 @@ func New(cfg Config, baselines *BaselineManager, onChange ChangeHandler) *Monito
 		baselines: baselines,
 		logger:    slog.New(slog.NewTextHandler(os.Stderr, nil)),
 		onChange:  onChange,
-		stopCh:   make(chan struct{}),
+		stopCh:    make(chan struct{}),
 	}
 }
 

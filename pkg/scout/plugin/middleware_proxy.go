@@ -37,10 +37,10 @@ type HookContext struct {
 
 // HookResult is the response from a middleware plugin.
 type HookResult struct {
-	Action     HookAction     `json:"action"`
-	ModifiedURL string        `json:"modified_url,omitempty"`
-	InjectJS   string         `json:"inject_js,omitempty"`
-	Data       map[string]any `json:"data,omitempty"`
+	Action      HookAction     `json:"action"`
+	ModifiedURL string         `json:"modified_url,omitempty"`
+	InjectJS    string         `json:"inject_js,omitempty"`
+	Data        map[string]any `json:"data,omitempty"`
 }
 
 // MiddlewareProxy bridges a plugin's browser_middleware capability.

@@ -13,34 +13,34 @@ import (
 
 // session classifications.
 const (
-	statusHealthy   = "HEALTHY"   // scout alive + browser alive
-	statusReusable  = "REUSABLE"  // reusable flag set; respected per H6 (within ExpiresAt window)
-	statusExpired   = "EXPIRED"   // reusable session past ExpiresAt — cleanable
-	statusZombie    = "ZOMBIE"    // scout dead + browser alive (orphan browser)
-	statusStale     = "STALE"     // scout dead + browser dead
-	statusCorrupt   = "CORRUPT"   // scout.pid missing / unreadable
-	statusForeign   = "FOREIGN"   // dir owned by different user (H4)
-	statusUnknown   = "UNKNOWN"   // partial state
+	statusHealthy  = "HEALTHY"  // scout alive + browser alive
+	statusReusable = "REUSABLE" // reusable flag set; respected per H6 (within ExpiresAt window)
+	statusExpired  = "EXPIRED"  // reusable session past ExpiresAt — cleanable
+	statusZombie   = "ZOMBIE"   // scout dead + browser alive (orphan browser)
+	statusStale    = "STALE"    // scout dead + browser dead
+	statusCorrupt  = "CORRUPT"  // scout.pid missing / unreadable
+	statusForeign  = "FOREIGN"  // dir owned by different user (H4)
+	statusUnknown  = "UNKNOWN"  // partial state
 )
 
 type auditEntry struct {
-	ID               string    `json:"id"`
-	Status           string    `json:"status"`
-	Monitors         string    `json:"monitors,omitempty"`
-	Reusable         bool      `json:"reusable"`
-	ScoutPID         int       `json:"scout_pid"`
-	ScoutAlive       bool      `json:"scout_alive"`
-	BrowserPID       int       `json:"browser_pid"`
-	BrowserAlive     bool      `json:"browser_alive"`
-	BrowserParentPID int       `json:"browser_parent_pid,omitempty"`
-	ParentMatchesScout bool    `json:"parent_matches_scout"`
-	Browser          string    `json:"browser,omitempty"`
-	Exec             string    `json:"exec,omitempty"`
-	CreatedAt        time.Time `json:"created_at,omitempty"`
-	ExpiresAt        time.Time `json:"expires_at,omitempty"`
-	Age              string    `json:"age,omitempty"`
-	TTL              string    `json:"ttl,omitempty"`
-	Err              string    `json:"err,omitempty"`
+	ID                 string    `json:"id"`
+	Status             string    `json:"status"`
+	Monitors           string    `json:"monitors,omitempty"`
+	Reusable           bool      `json:"reusable"`
+	ScoutPID           int       `json:"scout_pid"`
+	ScoutAlive         bool      `json:"scout_alive"`
+	BrowserPID         int       `json:"browser_pid"`
+	BrowserAlive       bool      `json:"browser_alive"`
+	BrowserParentPID   int       `json:"browser_parent_pid,omitempty"`
+	ParentMatchesScout bool      `json:"parent_matches_scout"`
+	Browser            string    `json:"browser,omitempty"`
+	Exec               string    `json:"exec,omitempty"`
+	CreatedAt          time.Time `json:"created_at,omitempty"`
+	ExpiresAt          time.Time `json:"expires_at,omitempty"`
+	Age                string    `json:"age,omitempty"`
+	TTL                string    `json:"ttl,omitempty"`
+	Err                string    `json:"err,omitempty"`
 }
 
 func init() {

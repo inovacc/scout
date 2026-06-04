@@ -400,10 +400,10 @@ func TestCopyDir_PreservesContent(t *testing.T) {
 	}
 
 	files := map[string]string{
-		"root.txt":                     "root",
-		filepath.Join("a", "a.txt"):    "afile",
+		"root.txt":                       "root",
+		filepath.Join("a", "a.txt"):      "afile",
 		filepath.Join("a", "b", "b.txt"): "bfile",
-		filepath.Join("c", "c.txt"):    "cfile",
+		filepath.Join("c", "c.txt"):      "cfile",
 	}
 
 	for name, content := range files {

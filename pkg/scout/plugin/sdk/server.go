@@ -11,19 +11,19 @@ import (
 
 // Server is the plugin-side framework for handling JSON-RPC 2.0 requests from Scout.
 type Server struct {
-	modes       map[string]ModeHandler
-	extractors  map[string]ExtractorHandler
-	tools       map[string]ToolHandler
-	commands    map[string]CommandHandler
-	completions map[string]CompletionHandler
-	auth        AuthHandler
-	resources   map[string]ResourceHandler
-	prompts     map[string]PromptHandler
-	sinks       map[string]SinkHandler
-	middleware  MiddlewareHandler
+	modes        map[string]ModeHandler
+	extractors   map[string]ExtractorHandler
+	tools        map[string]ToolHandler
+	commands     map[string]CommandHandler
+	completions  map[string]CompletionHandler
+	auth         AuthHandler
+	resources    map[string]ResourceHandler
+	prompts      map[string]PromptHandler
+	sinks        map[string]SinkHandler
+	middleware   MiddlewareHandler
 	eventHandler EventHandler
-	encoder     *json.Encoder
-	mu          sync.Mutex
+	encoder      *json.Encoder
+	mu           sync.Mutex
 }
 
 // ModeHandler handles scrape requests.

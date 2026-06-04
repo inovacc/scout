@@ -67,4 +67,3 @@ func TestMatchDataDirCmdline(t *testing.T) {
 		})
 	}
 }
-

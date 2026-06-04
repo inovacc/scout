@@ -123,8 +123,8 @@ func TestJS_ContainsCoreEvasions(t *testing.T) {
 func TestJS_NoSyntaxErrorMarkers(t *testing.T) {
 	// Check for obvious syntax issues
 	tests := []struct {
-		name    string
-		bad     string
+		name string
+		bad  string
 	}{
 		{"double_semicolons_in_row", ";;;;\n;;;;"},
 		{"undefined_literal_leak", "= undefined;undefined;"},

@@ -16,9 +16,9 @@ func (f CommandHandlerFunc) Execute(ctx context.Context, params CommandParams) (
 
 // CommandParams are the parameters for a command/execute request.
 type CommandParams struct {
-	Command        string         `json:"command"`
-	Args           []string       `json:"args"`
-	Flags          map[string]any `json:"flags,omitempty"`
+	Command        string          `json:"command"`
+	Args           []string        `json:"args"`
+	Flags          map[string]any  `json:"flags,omitempty"`
 	BrowserContext *BrowserContext `json:"browser_context,omitempty"`
 }
 

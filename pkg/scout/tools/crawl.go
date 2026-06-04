@@ -21,9 +21,9 @@ type CrawlInput struct {
 
 // CrawlOutput is the per-page crawl result list.
 type CrawlOutput struct {
-	StartURL string               `json:"start_url"`
-	Pages    []scout.CrawlResult  `json:"pages"`
-	Total    int                  `json:"total"`
+	StartURL string              `json:"start_url"`
+	Pages    []scout.CrawlResult `json:"pages"`
+	Total    int                 `json:"total"`
 }
 
 // Crawl drives Browser.Crawl with a nil handler (collect results, no

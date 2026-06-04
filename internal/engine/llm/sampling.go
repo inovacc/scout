@@ -92,6 +92,6 @@ var ErrNoMCPSession = scoutmcp.ErrNoSession
 
 // Compile-time assertions.
 var (
-	_ Provider           = (*MCPSamplingProvider)(nil)
-	_ = errors.Is
+	_ Provider = (*MCPSamplingProvider)(nil)
+	_          = errors.Is
 )

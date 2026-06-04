@@ -23,7 +23,7 @@ var openapiSpec []byte
 
 // ServerConfig holds configuration for the agent HTTP server.
 type ServerConfig struct {
-	Addr        string        // listen address (default: "localhost:9000")
+	Addr        string // listen address (default: "localhost:9000")
 	Headless    bool
 	Stealth     bool
 	BrowserBin  string

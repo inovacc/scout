@@ -39,19 +39,19 @@ type RouteDefaults struct {
 
 // Route defines a single API endpoint backed by browser scraping.
 type Route struct {
-	Path     string         `yaml:"path" json:"path"`
-	Method   string         `yaml:"method,omitempty" json:"method,omitempty"` // GET (default)
-	Target   string         `yaml:"target" json:"target"`                     // URL template, supports {{.param}}
-	Params   []string       `yaml:"params,omitempty" json:"params,omitempty"` // query params to inject into target
-	Extract  ExtractConfig  `yaml:"extract" json:"extract"`
-	CacheTTL string         `yaml:"cache_ttl,omitempty" json:"cache_ttl,omitempty"`
-	Timeout  string         `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	Path     string        `yaml:"path" json:"path"`
+	Method   string        `yaml:"method,omitempty" json:"method,omitempty"` // GET (default)
+	Target   string        `yaml:"target" json:"target"`                     // URL template, supports {{.param}}
+	Params   []string      `yaml:"params,omitempty" json:"params,omitempty"` // query params to inject into target
+	Extract  ExtractConfig `yaml:"extract" json:"extract"`
+	CacheTTL string        `yaml:"cache_ttl,omitempty" json:"cache_ttl,omitempty"`
+	Timeout  string        `yaml:"timeout,omitempty" json:"timeout,omitempty"`
 }
 
 // ExtractConfig defines what to extract from the target page.
 type ExtractConfig struct {
-	Selector string            `yaml:"selector" json:"selector"`             // CSS selector for item container
-	Fields   map[string]string `yaml:"fields" json:"fields"`                 // field → CSS selector or selector@attr
+	Selector string            `yaml:"selector" json:"selector"`                 // CSS selector for item container
+	Fields   map[string]string `yaml:"fields" json:"fields"`                     // field → CSS selector or selector@attr
 	Single   bool              `yaml:"single,omitempty" json:"single,omitempty"` // extract single item vs list
 }
 

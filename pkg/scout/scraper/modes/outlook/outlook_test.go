@@ -189,7 +189,7 @@ func TestParseFolders_Valid(t *testing.T) {
 	data := map[string]any{
 		"value": []any{
 			map[string]any{
-				"id":               "f1",
+				"id":              "f1",
 				"displayName":     "Inbox",
 				"unreadItemCount": float64(5),
 				"totalItemCount":  float64(100),
@@ -384,10 +384,10 @@ func TestParseGraphEmails_Valid(t *testing.T) {
 				"from": map[string]any{
 					"emailAddress": map[string]any{"address": "sender@example.com"},
 				},
-				"bodyPreview":     "Preview text",
+				"bodyPreview":      "Preview text",
 				"receivedDateTime": "2024-01-15T10:30:00Z",
-				"hasAttachments":  false,
-				"isRead":          true,
+				"hasAttachments":   false,
+				"isRead":           true,
 			},
 		},
 	}
@@ -417,10 +417,10 @@ func TestParseGraphEvents_Valid(t *testing.T) {
 	data := map[string]any{
 		"value": []any{
 			map[string]any{
-				"id":            "ev1",
-				"subject":       "Standup",
-				"webLink":       "https://outlook/event/ev1",
-				"isReminderOn":  true,
+				"id":           "ev1",
+				"subject":      "Standup",
+				"webLink":      "https://outlook/event/ev1",
+				"isReminderOn": true,
 			},
 		},
 	}
@@ -444,12 +444,12 @@ func TestParseGraphContacts_Valid(t *testing.T) {
 	data := map[string]any{
 		"value": []any{
 			map[string]any{
-				"id":          "gc1",
-				"displayName": "Graph Contact",
-				"givenName":   "Test",
-				"surname":     "User",
-				"mobilePhone": "+1234567890",
-				"companyName": "Corp",
+				"id":              "gc1",
+				"displayName":     "Graph Contact",
+				"givenName":       "Test",
+				"surname":         "User",
+				"mobilePhone":     "+1234567890",
+				"companyName":     "Corp",
 				"createdDateTime": "2024-01-01T00:00:00Z",
 			},
 		},

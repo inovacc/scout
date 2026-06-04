@@ -14,7 +14,6 @@ import (
 	"github.com/inovacc/scout/pkg/scout/aria"
 )
 
-
 func newTestBrowser(t *testing.T) *engine.Browser {
 	t.Helper()
 	br, err := engine.New(engine.WithHeadless(true))

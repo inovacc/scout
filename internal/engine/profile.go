@@ -20,22 +20,22 @@ import (
 // loaded, and applied to browser sessions. It captures browser configuration,
 // identity fingerprint data, cookies, storage, and custom headers.
 type UserProfile struct {
-	Version    int                             `json:"version"`
-	Name       string                          `json:"name"`
-	CreatedAt  time.Time                       `json:"created_at"`
-	UpdatedAt  time.Time                       `json:"updated_at"`
-	Browser    ProfileBrowser                  `json:"browser"`
-	Identity   ProfileIdentity                 `json:"identity"`
+	Version   int             `json:"version"`
+	Name      string          `json:"name"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
+	Browser   ProfileBrowser  `json:"browser"`
+	Identity  ProfileIdentity `json:"identity"`
 	// Deprecated: secret-bearing. Migrate to pkg/scout/vault via `scout vault set
 	// --from-profile`. Retained for read compatibility; removal after 2026-07-02.
 	Cookies []Cookie `json:"cookies"`
 	// Deprecated: secret-bearing. Migrate to pkg/scout/vault. Removal after 2026-07-02.
 	Storage map[string]ProfileOriginStorage `json:"storage,omitempty"`
 	// Deprecated: secret-bearing. Migrate to pkg/scout/vault. Removal after 2026-07-02.
-	Headers map[string]string `json:"headers,omitempty"`
-	Extensions []string                        `json:"extensions,omitempty"`
-	Proxy      string                          `json:"proxy,omitempty"`
-	Notes      string                          `json:"notes,omitempty"`
+	Headers    map[string]string `json:"headers,omitempty"`
+	Extensions []string          `json:"extensions,omitempty"`
+	Proxy      string            `json:"proxy,omitempty"`
+	Notes      string            `json:"notes,omitempty"`
 }
 
 // ProfileBrowser holds browser type and launch configuration.

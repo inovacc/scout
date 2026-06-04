@@ -171,4 +171,3 @@ func evalStorage(page *engine.Page, storageName string) (map[string]string, erro
 
 	return data, nil
 }
-

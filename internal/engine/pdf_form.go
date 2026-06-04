@@ -8,7 +8,7 @@ import (
 // PDFFormField represents a fillable field in a PDF form rendered by Chrome's PDF viewer.
 type PDFFormField struct {
 	Name     string `json:"name"`
-	Type     string `json:"type"`      // text, checkbox, radio, select, button
+	Type     string `json:"type"` // text, checkbox, radio, select, button
 	Value    string `json:"value"`
 	Required bool   `json:"required"`
 	ReadOnly bool   `json:"read_only"`
