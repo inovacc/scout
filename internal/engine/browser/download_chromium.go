@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -294,7 +295,20 @@ func latestChromeForTesting(ctx context.Context) (version, downloadURL string, e
 		} `json:"channels"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	// Bound the metadata read: the version API response is small JSON, but it
+	// is a remote body — an unbounded decode is a memory-DoS.
+	const maxChromeMetadata = 8 << 20 // 8 MiB
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxChromeMetadata+1))
+	if err != nil {
+		return "", "", fmt.Errorf("scout: read chrome response: %w", err)
+	}
+
+	if len(data) > maxChromeMetadata {
+		return "", "", fmt.Errorf("scout: chrome response exceeds %d bytes", maxChromeMetadata)
+	}
+
+	if err := json.Unmarshal(data, &result); err != nil {
 		return "", "", fmt.Errorf("scout: decode chrome response: %w", err)
 	}
 

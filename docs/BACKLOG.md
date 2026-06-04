@@ -67,13 +67,14 @@ package-scoped waves, all merged to `main`** (2026-06-04):
 - **DONE Waves 7+9** (`887e89b`): agent SSE `start` event `escapeJSON`; hijack opt-in body 64 MiB cap.
 
 **Remaining / newly-surfaced (fix opportunistically):**
-- **P3 — PowerShell path interpolation** (`internal/engine/browser/detect_version_windows.go`,
-  `pkg/scout/browser/detect_windows.go`): carried from V1; the 2026-06-04 audit did **not** reconfirm
-  it as actionable — re-verify whether `escapePowerShell` is already applied, and if not, apply it
-  (or pass the path as a separate argv).
-- **P3 — verify `internal/engine/browser/download_chromium.go:297`** (metadata JSON read): the V1
-  backlog flagged it but the exhaustive audit did not surface it among the 23 — confirm it is bounded
-  or remote-uninfluenced; cap with `io.LimitReader` if not.
+- **DONE 2026-06-04 (P3) — PowerShell path interpolation** (`internal/engine/browser/detect_version_windows.go`,
+  `pkg/scout/browser/detect_windows.go`): confirmed real — the path was interpolated into a single-quoted
+  `-Command` literal unescaped (a `'` breaks out → PowerShell injection). Fixed with a local `psQuote`
+  (doubles single quotes — the correct escape for a single-quoted PS literal; the session-package
+  `escapePowerShell` doubles backslashes and is wrong for this context). Added `TestPSQuote`.
+- **DONE 2026-06-04 (P3) — `download_chromium.go:297`** (metadata JSON read): confirmed unbounded
+  (`json.NewDecoder(resp.Body)`); now reads through an 8 MiB `io.LimitReader` + `json.Unmarshal`.
+  (The line-171 revision probe reads into a fixed 20-byte buffer — already bounded.)
 - **DONE 2026-06-04 (P4, found during Wave 2) — urlpolicy `AllowLocal` disabled scheme checks**
   (`pkg/scout/urlpolicy/policy.go`): `Check` short-circuited to allow the instant `AllowLocal` was
   set, so `file://`/`gopher://`/`data:` were permitted once `SCOUT_ALLOW_LOCAL_TARGETS=1`. The
