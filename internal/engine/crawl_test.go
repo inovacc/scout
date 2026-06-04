@@ -3,7 +3,10 @@ package engine
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -177,6 +180,8 @@ func TestCrawlHandlerStop(t *testing.T) {
 }
 
 func TestParseSitemap(t *testing.T) {
+	t.Setenv("SCOUT_ALLOW_LOCAL_TARGETS", "1") // httptest serves on loopback; allow it past the SSRF gate
+
 	srv := newTestServer()
 	defer srv.Close()
 
@@ -205,6 +210,114 @@ func TestParseSitemap(t *testing.T) {
 
 	if urls[0].Priority != "1.0" {
 		t.Errorf("urls[0].Priority = %q", urls[0].Priority)
+	}
+}
+
+// TestParseSitemapBlocksInternalByDefault proves the SSRF gate rejects an
+// internal/metadata target before any fetch, with no allow-local env set.
+// ParseSitemap touches no browser internals, so a zero-value Browser suffices
+// (no Chromium needed).
+func TestParseSitemapBlocksInternalByDefault(t *testing.T) {
+	b := &Browser{}
+
+	for _, target := range []string{
+		"http://169.254.169.254/latest/meta-data/", // cloud metadata
+		"http://127.0.0.1/sitemap.xml",             // loopback
+	} {
+		_, err := b.ParseSitemap(target)
+		if err == nil {
+			t.Errorf("ParseSitemap(%q) = nil error, want blocked", target)
+		}
+	}
+}
+
+// TestParseSitemapRecursionTerminates proves a self-referential sitemap index
+// (amplification bomb) terminates via the seen-set + depth cap instead of
+// recursing forever, and still returns the reachable leaf URLs exactly once.
+func TestParseSitemapRecursionTerminates(t *testing.T) {
+	t.Setenv("SCOUT_ALLOW_LOCAL_TARGETS", "1") // loopback httptest server
+
+	var base string
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+
+		switch r.URL.Path {
+		case "/index.xml":
+			// Self-reference (cycle) + a real leaf.
+			_, _ = fmt.Fprintf(w, `<?xml version="1.0"?>
+<sitemapindex>
+  <sitemap><loc>%s/index.xml</loc></sitemap>
+  <sitemap><loc>%s/leaf.xml</loc></sitemap>
+</sitemapindex>`, base, base)
+		case "/leaf.xml":
+			_, _ = fmt.Fprint(w, `<?xml version="1.0"?>
+<urlset>
+  <url><loc>https://example.com/a</loc></url>
+  <url><loc>https://example.com/b</loc></url>
+</urlset>`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	base = srv.URL
+
+	b := &Browser{}
+
+	done := make(chan struct{})
+
+	var (
+		urls []SitemapURL
+		err  error
+	)
+
+	go func() {
+		urls, err = b.ParseSitemap(base + "/index.xml")
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("ParseSitemap did not terminate on a self-referential index (recursion bomb)")
+	}
+
+	if err != nil {
+		t.Fatalf("ParseSitemap() error: %v", err)
+	}
+
+	if len(urls) != 2 {
+		t.Fatalf("ParseSitemap() returned %d URLs, want 2 (leaf visited once)", len(urls))
+	}
+
+	if urls[0].Loc != "https://example.com/a" || urls[1].Loc != "https://example.com/b" {
+		t.Errorf("unexpected leaf URLs: %+v", urls)
+	}
+}
+
+// TestParseSitemapBodyCap proves an oversized sitemap body is rejected rather
+// than read into memory unbounded.
+func TestParseSitemapBodyCap(t *testing.T) {
+	t.Setenv("SCOUT_ALLOW_LOCAL_TARGETS", "1")
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/xml")
+		// Stream just past the cap without buffering it all server-side.
+		_, _ = io.WriteString(w, `<?xml version="1.0"?><urlset>`)
+		chunk := strings.Repeat("<url><loc>https://example.com/x</loc></url>", 1024)
+		for written := 0; written <= maxSitemapBytes; written += len(chunk) {
+			_, _ = io.WriteString(w, chunk)
+		}
+	}))
+	defer srv.Close()
+
+	b := &Browser{}
+
+	_, err := b.ParseSitemap(srv.URL + "/big.xml")
+	if err == nil || !strings.Contains(err.Error(), "exceeds") {
+		t.Fatalf("ParseSitemap() on oversized body = %v, want 'exceeds' error", err)
 	}
 }
 

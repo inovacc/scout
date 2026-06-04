@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -9,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/inovacc/scout/pkg/scout/urlpolicy"
 )
 
 // CrawlResult holds information about a crawled page.
@@ -302,19 +305,68 @@ type sitemapIndex struct {
 	} `xml:"sitemap"`
 }
 
+// Sitemap parsing safety limits. A sitemap index can fan out into nested
+// sitemaps; without caps a hostile (or buggy) server can exhaust memory via a
+// huge body, an unbounded URL set, or a self-referential index amplification
+// bomb. These bound each axis. See sitemaps.org for the 50 MiB convention.
+const (
+	maxSitemapBytes = 50 << 20 // per-document uncompressed body cap
+	maxSitemapDepth = 5        // sitemap-index nesting depth cap
+	maxSitemapURLs  = 100_000  // total URL ceiling across the whole tree
+)
+
 // ParseSitemap fetches and parses a sitemap.xml, returning all URLs found.
 // Supports both sitemap index files and regular sitemaps.
+//
+// Fetches are gated by the SSRF url policy (urlpolicy.FromEnv) — by default
+// loopback, link-local, and metadata targets are blocked; set
+// SCOUT_ALLOW_LOCAL_TARGETS to permit them. The body read, recursion depth, and
+// total URL count are all bounded (see the maxSitemap* limits).
 func (b *Browser) ParseSitemap(sitemapURL string) ([]SitemapURL, error) {
-	resp, err := http.Get(sitemapURL) //nolint:gosec // user-provided URL is intentional
+	total := 0
+	return b.parseSitemap(context.Background(), urlpolicy.FromEnv(), sitemapURL, 0, map[string]bool{}, &total)
+}
+
+func (b *Browser) parseSitemap(
+	ctx context.Context,
+	policy *urlpolicy.Policy,
+	sitemapURL string,
+	depth int,
+	seen map[string]bool,
+	total *int,
+) ([]SitemapURL, error) {
+	if depth > maxSitemapDepth || *total >= maxSitemapURLs || seen[sitemapURL] {
+		return nil, nil
+	}
+
+	seen[sitemapURL] = true
+
+	// SSRF gate: block internal/metadata targets before fetching. Applied to
+	// every node in the tree so a hostile index cannot redirect a child <loc>
+	// at an internal address.
+	if policy != nil {
+		if err := policy.Check(ctx, sitemapURL); err != nil {
+			return nil, fmt.Errorf("scout: parse sitemap: %w", err)
+		}
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	resp, err := client.Get(sitemapURL) //nolint:gosec // policy-checked URL
 	if err != nil {
 		return nil, fmt.Errorf("scout: parse sitemap: %w", err)
 	}
 
 	defer func() { _ = resp.Body.Close() }()
 
-	body, err := io.ReadAll(resp.Body)
+	// Bound the body read (canonical +1 sentinel pattern).
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxSitemapBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("scout: parse sitemap read: %w", err)
+	}
+
+	if len(body) > maxSitemapBytes {
+		return nil, fmt.Errorf("scout: parse sitemap: response exceeds %d bytes", maxSitemapBytes)
 	}
 
 	// Try as sitemap index first
@@ -323,12 +375,16 @@ func (b *Browser) ParseSitemap(sitemapURL string) ([]SitemapURL, error) {
 		var allURLs []SitemapURL
 
 		for _, sm := range index.Sitemaps {
-			urls, err := b.ParseSitemap(sm.Loc)
+			urls, err := b.parseSitemap(ctx, policy, sm.Loc, depth+1, seen, total)
 			if err != nil {
 				continue
 			}
 
 			allURLs = append(allURLs, urls...)
+
+			if *total >= maxSitemapURLs {
+				break
+			}
 		}
 
 		return allURLs, nil
@@ -340,7 +396,17 @@ func (b *Browser) ParseSitemap(sitemapURL string) ([]SitemapURL, error) {
 		return nil, fmt.Errorf("scout: parse sitemap xml: %w", err)
 	}
 
-	return urlSet.URLs, nil
+	out := make([]SitemapURL, 0, len(urlSet.URLs))
+	for _, u := range urlSet.URLs {
+		out = append(out, u)
+
+		*total++
+		if *total >= maxSitemapURLs {
+			break
+		}
+	}
+
+	return out, nil
 }
 
 // --- internal helpers ---
