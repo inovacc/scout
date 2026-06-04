@@ -30,14 +30,11 @@ jobs:
       - name: Build
         run: go build ./cmd/... ./pkg/... ./internal/... ./grpc/...
 
-      # Unit-test run (advisory for now): -short skips most Chromium-dependent
-      # tests (newTestBrowser / newOwnedTestBrowser / TestWithRemoteCDP skip under
-      # testing.Short()), but a few browser E2E tests still aren't gated and the
-      # shared-browser fixture has an isolation bug (closing it breaks later
-      # tests), so the suite isn't reliably green headless yet. Advisory until
-      # that's fixed (see the Tests/Coverage GA item); still emits coverage.
-      - name: Test (-short, advisory)
-        continue-on-error: true
+      # Unit-test gate (blocking): -short skips every Chromium-dependent test —
+      # gated via newTestBrowser / newOwnedTestBrowser / newPageTestBrowser /
+      # connectTestClient and per-test testing.Short() guards — leaving the pure
+      # unit suite, which is reliably green headless, and emits a coverage number.
+      - name: Test (-short)
         run: |
           go test -short -covermode=atomic -coverprofile=coverage.out ./cmd/... ./pkg/... ./internal/... ./grpc/...
           {

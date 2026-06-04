@@ -42,6 +42,10 @@ func newTestHTTPServer() *httptest.Server {
 func connectTestClient(t *testing.T, cfg ServerConfig) *mcp.ClientSession {
 	t.Helper()
 
+	if testing.Short() {
+		t.Skip("skipping MCP browser integration test in short mode")
+	}
+
 	// These integration tests drive a real MCP server (NewServer →
 	// urlpolicy.FromEnv) against loopback httptest servers. Opt into local
 	// targets so the default-deny SSRF policy permits them. Scoped per-test via

@@ -15,6 +15,10 @@ import (
 func newPageTestBrowser(t *testing.T) (*scout.Browser, *scout.Page) {
 	t.Helper()
 
+	if testing.Short() {
+		t.Skip("skipping browser test in short mode")
+	}
+
 	b, err := scout.New(scout.WithHeadless(true), scout.WithNoSandbox())
 	if err != nil {
 		t.Skipf("browser unavailable: %v", err)

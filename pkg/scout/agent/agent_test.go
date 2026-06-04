@@ -884,6 +884,11 @@ func TestHandleNavigateMock(t *testing.T) {
 }
 
 func TestHandleNavigateBlocksInternalURL(t *testing.T) {
+	// Force block-by-default: the package TestMain sets SCOUT_ALLOW_LOCAL_TARGETS
+	// for the integration tests, but this unit test asserts the SSRF policy
+	// blocks an internal target, so it must run with allow-local OFF.
+	t.Setenv("SCOUT_ALLOW_LOCAL_TARGETS", "")
+
 	// The policy check runs before getPage, so no browser is needed. The mock
 	// page would succeed if reached, proving the block came from the policy.
 	mp := &mockPage{title: "Should Not Reach"}

@@ -72,8 +72,7 @@ package-scoped waves, all merged to `main`** (2026-06-04):
   removed the failing duplicate `release.yaml`. `test.yml` is now self-contained with
   `GOTOOLCHAIN=auto` (the org reusable `golangci-lint` v2.8.0 is Go-1.25-built and can't load a 1.26
   module under `GOTOOLCHAIN=local`), gating **build** (blocking) + lint/vulncheck (advisory).
-- **IN PROGRESS (P2, Large) — make `go test -short ./...` reliably green so the CI test gate can block.**
-  CI **runs `go test -short` advisory** (continue-on-error) + emits coverage. Progress 2026-06-04:
+- **DONE 2026-06-04 — `go test -short ./...` is reliably green; the CI test gate is now BLOCKING** (build + `-short` test both gate `main`, + coverage report). Steps taken:
   - **`internal/engine` DONE** — 16 un-gated browser tests now skip under `-short` (`TestWithRemoteCDP`,
     `TestE2ETouchGestures`, `TestSessionHijackerWithAutoAttach`, the 5 `TestNew*`/`TestBrowserCloseIdempotent`,
     the 5 `TestWithInject*`, `TestWithBlockPatterns`, `TestWithSmartWait_NewPage`). A reusable finder
@@ -81,12 +80,13 @@ package-scoped waves, all merged to `main`** (2026-06-04):
     `testing.Short()`/`newTestBrowser`/`newOwnedTestBrowser`) reports **0 remaining** in `internal/engine`.
     `internal/engine -short` = 569 pass / 0 fail / 354 skip.
   - **`internal/engine/swarm` DONE** — `TestWorker_RunLifecycle` gated.
-  - **STILL OPEN** — `pkg/scout/tools` and `pkg/scout/mcp` **time out (~600s) under `-short`**: their
-    browser tests (`connectTestClient` / direct `ensureBrowser`) aren't `-short`-gated, so they launch real
-    browsers and hang the headless run. Gate them (and audit other `pkg/scout/*`), watch for the
-    shared-browser-fixture isolation bug (`create page: read tcp …` when a prior test closes the shared
-    browser). Then flip the CI Test step to **blocking** + add a coverage threshold + (optionally) a
-    separate Chromium-in-CI job for the full non-`-short` suite. Maturity scorecard's #1 GA limiter.
+  - **`pkg/scout/tools` + `pkg/scout/mcp` DONE** — gated the central helpers `newPageTestBrowser` (tools)
+    and `connectTestClient` (mcp) under `-short`; both ran in seconds instead of timing out (~600s).
+  - **`pkg/scout/agent` DONE** — `TestHandleNavigateBlocksInternalURL` (a block-by-default unit test)
+    forces `SCOUT_ALLOW_LOCAL_TARGETS=""` so the package `TestMain`'s global allow-local no longer flips it.
+  - **Result**: full `go test -short ./...` = 0 failures, no timeouts; CI Test step flipped to **blocking**.
+  - **Remaining (future, P3)**: a separate Chromium-in-CI job for the full non-`-short` browser suite +
+    a coverage threshold; triage the advisory lint. (Was the maturity scorecard's #1 GA limiter.)
 - **OPEN (P3) — re-enable blocking lint on `main`** once the lint backlog (first run on this code) is
   triaged; and verify `grpc v1.81.1` is not behind an advisory.
 
