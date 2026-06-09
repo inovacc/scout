@@ -92,3 +92,58 @@ func TestHandleSecret(t *testing.T) {
 		t.Fatal("Secret succeeded for missing key")
 	}
 }
+
+func TestHandleApplyStorageToPageSeedsWebStorage(t *testing.T) {
+	b, cleanup := newInjectTestBrowser(t)
+	defer cleanup()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte("<html><body>ok</body></html>"))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	origin := originFrom(srv.URL)
+	p := &SecretProfile{
+		ID: "p",
+		Storage: map[string]OriginStore{
+			origin: {
+				LocalStorage:   map[string]string{"lk": "seeded-lv"},
+				SessionStorage: map[string]string{"sk": "seeded-sv"},
+			},
+		},
+	}
+	defer p.Close()
+	h := &Handle{profile: p}
+	defer func() { _ = h.Close() }()
+
+	page, err := b.NewPage(srv.URL + "/")
+	if err != nil {
+		t.Fatalf("NewPage: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad: %v", err)
+	}
+
+	if err := h.ApplyStorageToPage(page); err != nil {
+		t.Fatalf("ApplyStorageToPage: %v", err)
+	}
+
+	ls, err := page.LocalStorageGetAll()
+	if err != nil {
+		t.Fatalf("LocalStorageGetAll: %v", err)
+	}
+	if ls["lk"] != "seeded-lv" {
+		t.Errorf("localStorage lk = %q, want seeded-lv", ls["lk"])
+	}
+	ss, err := page.SessionStorageGetAll()
+	if err != nil {
+		t.Fatalf("SessionStorageGetAll: %v", err)
+	}
+	if ss["sk"] != "seeded-sv" {
+		t.Errorf("sessionStorage sk = %q, want seeded-sv", ss["sk"])
+	}
+}

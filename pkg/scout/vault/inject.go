@@ -51,3 +51,33 @@ func (h *Handle) Close() error {
 	h.profile.Close()
 	return nil
 }
+
+// ApplyStorageToPage seeds the current origin's localStorage and sessionStorage
+// from the profile. Call AFTER navigating to the target origin (cookies and
+// headers are applied pre-navigation via ApplyToPage). Storage for origins other
+// than the page's current origin is ignored. No-op when the profile has no storage.
+func (h *Handle) ApplyStorageToPage(page *scout.Page) error {
+	if len(h.profile.Storage) == 0 {
+		return nil
+	}
+	pageURL, _ := page.URL()
+	origin := originFrom(pageURL)
+	if origin == "" {
+		return nil
+	}
+	store, ok := h.profile.Storage[origin]
+	if !ok {
+		return nil
+	}
+	for k, v := range store.LocalStorage {
+		if err := page.LocalStorageSet(k, v); err != nil {
+			return fmt.Errorf("scout: vault: inject localStorage %q: %w", k, err)
+		}
+	}
+	for k, v := range store.SessionStorage {
+		if err := page.SessionStorageSet(k, v); err != nil {
+			return fmt.Errorf("scout: vault: inject sessionStorage %q: %w", k, err)
+		}
+	}
+	return nil
+}
