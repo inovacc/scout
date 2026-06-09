@@ -30,12 +30,12 @@ jobs:
       - name: Build
         run: go build ./cmd/... ./pkg/... ./internal/... ./grpc/...
 
-      # Unit-test run (advisory): -short skips Chromium-dependent tests (browser
-      # suite is fully gated), but a few process-spawning acceptance tests
-      # (reaper / session-doctor) fail on the CI Linux container's process-kill
-      # model — advisory until those are -short-gated too; still emits coverage.
-      - name: Test (-short, advisory)
-        continue-on-error: true
+      # Unit-test gate (blocking): -short skips Chromium-dependent tests (browser
+      # suite is fully gated) plus the process-spawning reaper / session-doctor
+      # acceptance tests (which fail on the CI Linux container's process-kill
+      # model). The -short suite is green on Linux, so this gate now blocks; it
+      # still emits coverage to the step summary.
+      - name: Test (-short, blocking)
         run: |
           go test -short -covermode=atomic -coverprofile=coverage.out ./cmd/... ./pkg/... ./internal/... ./grpc/...
           {
