@@ -70,6 +70,8 @@ func init() {
 	rootCmd.PersistentFlags().String("electron-cdp", "", "CDP endpoint of running Electron app")
 	rootCmd.PersistentFlags().Duration("idle-timeout", 5*time.Minute, "auto-shutdown after inactivity (0 to disable)")
 	rootCmd.PersistentFlags().Bool("system-browser", false, "allow system-installed browsers instead of cache-only")
+	rootCmd.PersistentFlags().String("user-data-dir", "", "path to browser user data directory (e.g. Chrome profile)")
+	rootCmd.PersistentFlags().String("profile-directory", "Default", "Chrome profile directory name")
 }
 
 func Execute() {

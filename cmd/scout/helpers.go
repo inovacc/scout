@@ -115,6 +115,14 @@ func baseOpts(cmd *cobra.Command) []scout.Option {
 	}
 	opts = append(opts, stealthOpts(cmd)...)
 
+	if v, _ := cmd.Flags().GetString("user-data-dir"); v != "" {
+		opts = append(opts, scout.WithUserDataDir(v))
+	}
+
+	if v, _ := cmd.Flags().GetString("profile-directory"); v != "" {
+		opts = append(opts, scout.WithLaunchFlag("profile-directory", v))
+	}
+
 	if v, _ := cmd.Flags().GetBool("system-browser"); v {
 		opts = append(opts, scout.WithSystemBrowser())
 	}
