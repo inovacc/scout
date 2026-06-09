@@ -72,7 +72,7 @@ package-scoped waves, all merged to `main`** (2026-06-04):
   removed the failing duplicate `release.yaml`. `test.yml` is now self-contained with
   `GOTOOLCHAIN=auto` (the org reusable `golangci-lint` v2.8.0 is Go-1.25-built and can't load a 1.26
   module under `GOTOOLCHAIN=local`), gating **build** (blocking) + lint/vulncheck (advisory).
-- **MOSTLY DONE 2026-06-04 — full `go test -short ./...` is green locally (Windows); CI test gate runs ADVISORY** (build blocks; `-short` test + coverage advisory). Browser suite is fully `-short`-gated. A blocking flip was attempted and reverted: it surfaced **CI-Linux-only failures** — process-spawning reaper / session-doctor acceptance tests (`holder PID still alive after reap`) fail on the GitHub Actions container's process-kill model. Steps taken:
+- **DONE 2026-06-09 — the `-short` test gate is BLOCKING on `main`** (`c93fe63`; build + `-short` tests block, lint/vulncheck stay advisory). Was advisory through 2026-06-04. Browser suite is fully `-short`-gated. A blocking flip was attempted and reverted: it surfaced **CI-Linux-only failures** — process-spawning reaper / session-doctor acceptance tests (`holder PID still alive after reap`) fail on the GitHub Actions container's process-kill model. Steps taken:
   - **`internal/engine` DONE** — 16 un-gated browser tests now skip under `-short` (`TestWithRemoteCDP`,
     `TestE2ETouchGestures`, `TestSessionHijackerWithAutoAttach`, the 5 `TestNew*`/`TestBrowserCloseIdempotent`,
     the 5 `TestWithInject*`, `TestWithBlockPatterns`, `TestWithSmartWait_NewPage`). A reusable finder
@@ -84,12 +84,13 @@ package-scoped waves, all merged to `main`** (2026-06-04):
     and `connectTestClient` (mcp) under `-short`; both ran in seconds instead of timing out (~600s).
   - **`pkg/scout/agent` DONE** — `TestHandleNavigateBlocksInternalURL` (a block-by-default unit test)
     forces `SCOUT_ALLOW_LOCAL_TARGETS=""` so the package `TestMain`'s global allow-local no longer flips it.
-  - **Result**: full `go test -short ./...` = 0 failures / no timeouts **locally**; CI Test step runs **advisory**.
-  - **Remaining for a BLOCKING gate**: `-short`-gate the process-spawning acceptance tests that fail on
-    the CI Linux container — `internal/engine/session/reaper_acceptance_test.go` (3 tests, gated 2026-06-04)
-    + `TestSessionDoctorAcceptance_*` (find the build-tagged file; not yet gated) — then re-attempt the
-    blocking flip after a green advisory run on Linux. Also (P3): a separate Chromium-in-CI job for the
-    full non-`-short` browser suite + a coverage threshold; triage the advisory lint.
+  - **Result**: full `go test -short ./...` = 0 failures / no timeouts locally AND on the CI Linux runner.
+  - **DONE 2026-06-09 — BLOCKING gate landed** (`c93fe63`): the three `TestSessionDoctorAcceptance_*`
+    tests (`cmd/scout/session_doctor_acceptance_test.go`) are now `-short`-gated, matching
+    `reaper_acceptance_test.go` (gated 2026-06-04). Linux run `27239035810` was green with the Test
+    step blocking, so `continue-on-error` was dropped from `test.yml`; `-short` regressions now block `main`.
+  - **Remaining (P3)**: a separate Chromium-in-CI job for the full non-`-short` browser suite + a coverage
+    threshold; triage the advisory lint.
 - **OPEN (P3) — re-enable blocking lint on `main`** once the lint backlog (first run on this code) is
   triaged; and verify `grpc v1.81.1` is not behind an advisory.
 
