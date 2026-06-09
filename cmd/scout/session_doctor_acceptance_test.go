@@ -168,6 +168,10 @@ func pollUntilDead(pid int, timeout time.Duration) bool {
 //  5. Assert the session folder is gone.
 //  6. Assert doctor now reports CLEAN (invariant restored).
 func TestSessionDoctorAcceptance_ViolationToClean(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping process-spawning session-doctor acceptance test in short mode")
+	}
+
 	dir := withTempSessionsAcceptance(t)
 
 	shim := buildChromeShim(t)
@@ -272,6 +276,10 @@ func TestSessionDoctorAcceptance_ViolationToClean(t *testing.T) {
 // reusable, not-yet-expired session is NOT reaped and doctor classifies it as
 // REUSABLE (not a violation).
 func TestSessionDoctorAcceptance_NegativeControl_ReusablePreserved(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping process-spawning session-doctor acceptance test in short mode")
+	}
+
 	withTempSessionsAcceptance(t)
 
 	now := time.Now()
@@ -328,6 +336,10 @@ func TestSessionDoctorAcceptance_NegativeControl_ReusablePreserved(t *testing.T)
 // GetSessionsDir(); a holder in an unrelated temp dir is outside that scope
 // and must survive the ReapOnce pass.
 func TestSessionDoctorAcceptance_NegativeControl_OutsideSessionsUntouched(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping process-spawning session-doctor acceptance test in short mode")
+	}
+
 	withTempSessionsAcceptance(t)
 
 	shim := buildChromeShim(t)
