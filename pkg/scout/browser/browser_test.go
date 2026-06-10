@@ -57,6 +57,10 @@ func TestBrowserInfo(t *testing.T) {
 }
 
 func TestManagerList(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser detection test in -short mode")
+	}
+
 	dir := t.TempDir()
 	m := NewManager(WithCacheDir(dir))
 
@@ -102,6 +106,10 @@ func TestManagerClean_WithContent(t *testing.T) {
 }
 
 func TestDetect(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser detection test in -short mode")
+	}
+
 	browsers, err := Detect()
 	if err != nil {
 		t.Fatalf("Detect() error: %v", err)
@@ -158,6 +166,10 @@ func TestParseVersion(t *testing.T) {
 }
 
 func TestDetectByType_NotFound(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser detection test in -short mode")
+	}
+
 	// This may or may not find a browser depending on the system.
 	// We just verify no panic and correct error type if not found.
 	_, err := DetectByType("edge")
@@ -167,6 +179,10 @@ func TestDetectByType_NotFound(t *testing.T) {
 }
 
 func TestBest(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser detection test in -short mode")
+	}
+
 	// May return error on CI with no browsers. Just verify no panic.
 	info, err := Best()
 	if err != nil {

@@ -404,6 +404,10 @@ func TestNewProviderNilBrowser(t *testing.T) {
 }
 
 func TestNewServerDefaultConfig(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
+
 	// NewServer will fail because no browser is available, but we test the
 	// config defaulting and option setup paths.
 	s, err := NewServer(ServerConfig{})
@@ -424,6 +428,10 @@ func TestNewServerDefaultConfig(t *testing.T) {
 }
 
 func TestNewServerWithOptions(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
+
 	// Test with stealth + browser bin options to cover those branches.
 	_, err := NewServer(ServerConfig{
 		Stealth:    true,
@@ -437,6 +445,10 @@ func TestNewServerWithOptions(t *testing.T) {
 }
 
 func TestNewServerWithLogger(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
+
 	logger := slog.Default()
 	_, err := NewServer(ServerConfig{
 		Addr:   "localhost:0",
