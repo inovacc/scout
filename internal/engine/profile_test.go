@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -894,5 +895,42 @@ func TestProfileCaptureAndSaveLoadRoundTrip(t *testing.T) {
 
 	if loaded.Identity.UserAgent == "" {
 		t.Error("UserAgent lost through save/load")
+	}
+}
+
+func TestCaptureProfile_OmitsSecrets(t *testing.T) {
+	b := newOwnedTestBrowser(t)
+	defer func() { _ = b.Close() }()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "sid", Value: "should-not-capture", Path: "/"})
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(`<html><body><script>localStorage.setItem('k','v')</script>ok</body></html>`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	page, err := b.NewPage(srv.URL + "/")
+	if err != nil {
+		t.Fatalf("NewPage: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad: %v", err)
+	}
+
+	prof, err := CaptureProfile(page)
+	if err != nil {
+		t.Fatalf("CaptureProfile: %v", err)
+	}
+	if len(prof.Cookies) != 0 {
+		t.Errorf("CaptureProfile captured %d cookies; secrets must go to vault, not the profile", len(prof.Cookies))
+	}
+	if len(prof.Storage) != 0 {
+		t.Errorf("CaptureProfile captured %d storage origins; secrets must go to vault", len(prof.Storage))
+	}
+	if prof.Identity.UserAgent == "" {
+		t.Error("expected non-secret identity (UserAgent) to still be captured")
 	}
 }

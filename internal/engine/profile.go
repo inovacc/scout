@@ -130,32 +130,6 @@ func CaptureProfile(page *Page, opts ...ProfileOption) (*UserProfile, error) {
 		p.Identity.Locale = res.String()
 	}
 
-	// Cookies.
-	if cookies, err := page.GetCookies(); err == nil {
-		p.Cookies = cookies
-	}
-
-	// Storage for current origin.
-	pageURL, _ := page.URL()
-	if pageURL != "" {
-		origin := originFromURL(pageURL)
-		if origin != "" {
-			os := ProfileOriginStorage{}
-
-			if ls, err := page.LocalStorageGetAll(); err == nil && len(ls) > 0 {
-				os.LocalStorage = ls
-			}
-
-			if ss, err := page.SessionStorageGetAll(); err == nil && len(ss) > 0 {
-				os.SessionStorage = ss
-			}
-
-			if len(os.LocalStorage) > 0 || len(os.SessionStorage) > 0 {
-				p.Storage = map[string]ProfileOriginStorage{origin: os}
-			}
-		}
-	}
-
 	// Headers from browser options.
 	if page.browser != nil && page.browser.opts != nil {
 		if page.browser.opts.proxy != "" {
