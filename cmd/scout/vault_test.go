@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/inovacc/scout/pkg/scout/vault"
+	"github.com/spf13/cobra"
 )
 
 func TestVaultCLIInitSetListRoundTrip(t *testing.T) {
@@ -58,5 +59,23 @@ func TestParseSecretArgsMalformedDoesNotLeakValue(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), "Secret") {
 		t.Fatalf("error leaked part of the secret value: %v", err)
+	}
+}
+
+func TestVaultCaptureCmdRegistered(t *testing.T) {
+	var found *cobra.Command
+	for _, c := range vaultCmd.Commands() {
+		if c.Name() == "capture" {
+			found = c
+		}
+	}
+	if found == nil {
+		t.Fatal("vault capture command not registered under vaultCmd")
+	}
+	if err := found.Args(found, []string{"only-one"}); err == nil {
+		t.Error("vault capture should reject a single argument")
+	}
+	if err := found.Args(found, []string{"name", "https://x"}); err != nil {
+		t.Errorf("vault capture should accept <name> <url>: %v", err)
 	}
 }
