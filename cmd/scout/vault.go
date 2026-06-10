@@ -154,7 +154,56 @@ var vaultUseCmd = &cobra.Command{
 		if err := page.WaitLoad(); err != nil {
 			return err
 		}
+		if err := h.ApplyStorageToPage(page); err != nil {
+			return err
+		}
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "injected profile %s into %s\n", args[0], url)
+		return nil
+	},
+}
+
+var vaultCaptureCmd = &cobra.Command{
+	Use:   "capture <name> <url>",
+	Short: "Capture a live local session's cookies + web storage into a vault profile",
+	Long: `Launches a local browser, navigates to <url>, and stores the session's
+cookies and the current origin's localStorage/sessionStorage into a vault profile
+named <name>. Prints the profile's opaque ID.
+
+For an authenticated capture, pair with --user-data-dir (an existing Chrome
+profile) or a headed interactive login so the session is logged in before capture.`,
+	Args: cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		name, url := args[0], args[1]
+
+		v, err := openVaultCLI(cmd)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = v.Close() }()
+
+		b, err := scout.New(baseOpts(cmd)...)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = b.Close() }()
+
+		page, err := b.NewPage(url)
+		if err != nil {
+			return err
+		}
+		if err := page.WaitLoad(); err != nil {
+			return err
+		}
+
+		in, err := vault.CaptureFromPage(page, name)
+		if err != nil {
+			return err
+		}
+		id, err := v.Set(in)
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), id)
 		return nil
 	},
 }
@@ -254,9 +303,9 @@ func init() {
 	vaultSetCmd.Flags().String("id", "", "update an existing profile by ID")
 	vaultUseCmd.Flags().String("url", "", "URL to open and inject into")
 
-	for _, c := range []*cobra.Command{vaultInitCmd, vaultSetCmd, vaultListCmd, vaultGetCmd, vaultUseCmd, vaultRotateCmd, vaultRmCmd} {
+	for _, c := range []*cobra.Command{vaultInitCmd, vaultSetCmd, vaultListCmd, vaultGetCmd, vaultUseCmd, vaultCaptureCmd, vaultRotateCmd, vaultRmCmd} {
 		c.Flags().String("vault-file", "", "override vault file path (default <scouthome>/profiles/vault.bin)")
 	}
-	vaultCmd.AddCommand(vaultInitCmd, vaultSetCmd, vaultListCmd, vaultGetCmd, vaultUseCmd, vaultRotateCmd, vaultRmCmd)
+	vaultCmd.AddCommand(vaultInitCmd, vaultSetCmd, vaultListCmd, vaultGetCmd, vaultUseCmd, vaultCaptureCmd, vaultRotateCmd, vaultRmCmd)
 	rootCmd.AddCommand(vaultCmd)
 }
