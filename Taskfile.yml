@@ -3,6 +3,10 @@ version: 3
 vars:
   MAIN_PACKAGE: ./cmd/scout
   COVERAGE_FILE: coverage.out
+  # Standard Go bin dir ($GOPATH/bin, on PATH) — where `install` puts `scout`
+  # and where service:start launches the daemon from. Mirrors weaver's pattern.
+  GOPATHBIN:
+    sh: go env GOPATH
 
 tasks:
   # === INFORMATION ===
@@ -12,7 +16,7 @@ tasks:
       - task --list
 
   install:
-    desc: Install omni to $GOPATH/bin
+    desc: Install the scout CLI to $GOPATH/bin (on PATH)
     cmds:
       - go install -ldflags="-s -w" {{.MAIN_PACKAGE}}
 
@@ -49,6 +53,37 @@ tasks:
     desc: Build the scout CLI binary
     cmds:
       - go build -o bin/scout ./cmd/scout
+
+  # === SERVICE (local daemon redeploy lifecycle) ===
+  # Ported from weaver's service:* pattern: stop the daemon, reinstall the binary
+  # to $GOPATH/bin, restart it detached, then health-check. The scout daemon is
+  # `scout server` (gRPC, default port 9551). weaver's web:build step is omitted —
+  # scout has no separate web bundle (embeds compile directly into the binary).
+  service:stop:
+    desc: Stop the running scout daemon (kills all scout processes)
+    ignore_error: true
+    cmds:
+      - cmd: powershell -NoProfile -Command "Get-Process scout -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 2"
+        platforms: [ windows ]
+      - cmd: pkill -x scout || true
+        platforms: [ linux, darwin ]
+
+  service:start:
+    desc: Start the installed scout daemon ($GOPATH/bin), detached
+    cmds:
+      - cmd: powershell -NoProfile -Command "Start-Process -FilePath (Join-Path '{{.GOPATHBIN}}' 'bin\scout.exe') -ArgumentList 'server' -WindowStyle Hidden"
+        platforms: [ windows ]
+      - cmd: nohup "{{.GOPATHBIN}}/bin/scout" server >/dev/null 2>&1 &
+        platforms: [ linux, darwin ]
+
+  service:deploy:
+    desc: Stop daemon, reinstall scout to $GOPATH/bin, and restart (local redeploy)
+    cmds:
+      - task: service:stop
+      - task: install
+      - task: service:start
+      - cmd: powershell -NoProfile -Command "Start-Sleep -Seconds 5; Get-Process scout -ErrorAction SilentlyContinue | Select-Object Id,StartTime | Format-Table"
+        platforms: [ windows ]
 
   # === TEST TASKS ===
   test:
