@@ -167,30 +167,8 @@ var captureHostCmd = &cobra.Command{
 	Use:    "capture-host",
 	Short:  "Native-messaging host for the Scout Capture extension (launched by the browser)",
 	Hidden: true, // not a day-to-day command; the browser launches it
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		extID, _ := cmd.Flags().GetString("ext-id")
-		pubPath, err := capturePubPath()
-		if err != nil {
-			return err
-		}
-		pub, err := capture.LoadPub(pubPath)
-		if err != nil {
-			return err
-		}
-		spoolDir, err := capture.SpoolDir()
-		if err != nil {
-			return err
-		}
-		nonceP, err := captureNoncePath()
-		if err != nil {
-			return err
-		}
-		return capture.RunHost(cmd.InOrStdin(), cmd.OutOrStdout(), capture.HostConfig{
-			Pub:          pub,
-			SpoolDir:     spoolDir,
-			AllowedExtID: extID,
-			NoncePath:    nonceP,
-		})
+	RunE: func(_ *cobra.Command, _ []string) error {
+		return fmt.Errorf("scout: capture: the capture host is launched automatically by the browser via native messaging; run `scout capture-host install <extension-id>` to register it")
 	},
 }
 
@@ -239,6 +217,9 @@ var captureHostInstallCmd = &cobra.Command{
 	Short: "Register the native-messaging host manifest for the given extension ID",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if _, ok := capture.OriginToExtID("chrome-extension://" + args[0] + "/"); !ok {
+			return fmt.Errorf("scout: capture: %q is not a valid extension id (expect 32 chars a-p)", args[0])
+		}
 		path, err := installNativeManifest(args[0])
 		if err != nil {
 			return err
@@ -270,7 +251,6 @@ func init() {
 	vaultCaptureKeyInitCmd.Flags().Bool("rotate", false, "replace any existing capture keypair")
 	vaultCaptureKeyInitCmd.Flags().String("vault-file", "", "override vault file path")
 	vaultImportCapturesCmd.Flags().String("vault-file", "", "override vault file path")
-	captureHostCmd.Flags().String("ext-id", "", "the extension ID permitted to connect")
 
 	vaultCaptureKeyCmd.AddCommand(vaultCaptureKeyInitCmd)
 	vaultCmd.AddCommand(vaultCaptureKeyCmd, vaultImportCapturesCmd)

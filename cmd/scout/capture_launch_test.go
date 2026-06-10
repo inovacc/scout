@@ -63,6 +63,65 @@ func TestRunCaptureHostStreams_EndToEnd(t *testing.T) {
 	}
 }
 
+func TestRunCaptureHostStreams_OriginMismatch(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SCOUT_HOME", home)
+
+	pass := []byte("correct horse battery staple")
+	v, err := vault.Create(pass, vaultFileFor(home))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pubPath := filepath.Join(home, "captures", "capture.pub")
+	if _, err := capture.InitKeypair(v, pubPath, false); err != nil {
+		t.Fatal(err)
+	}
+	_ = v.Close()
+
+	if _, err := capture.EnsureNonce(filepath.Join(home, "captures", "pairing.nonce")); err != nil {
+		t.Fatal(err)
+	}
+
+	const installed = "abcdefghijklmnopabcdefghijklmnop"
+	if err := saveExtID(installed); err != nil {
+		t.Fatal(err)
+	}
+
+	spool, err := capture.SpoolDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name   string
+		origin string
+	}{
+		{
+			name:   "different valid ext id",
+			origin: "chrome-extension://pabcdefghijklmnopabcdefghijklmno/",
+		},
+		{
+			name:   "malformed origin",
+			origin: "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var in, out bytes.Buffer
+			err := runCaptureHostStreams(&in, &out, tc.origin)
+			if err == nil {
+				t.Fatalf("origin %q: expected error, got nil", tc.origin)
+			}
+			// No spool file must have been written.
+			files, _ := capture.ListSpool(spool)
+			if len(files) != 0 {
+				t.Fatalf("origin %q: spool has %d file(s), want 0", tc.origin, len(files))
+			}
+		})
+	}
+}
+
 func mustFrame(t *testing.T, w *bytes.Buffer, m capture.Msg) {
 	t.Helper()
 	if err := capture.WriteFrame(w, m); err != nil {

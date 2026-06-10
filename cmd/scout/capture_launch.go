@@ -28,8 +28,9 @@ func runCaptureHostStreams(r io.Reader, w io.Writer, origin string) error {
 	if err != nil {
 		return err
 	}
-	if id, ok := capture.OriginToExtID(origin); ok && id != allowed {
-		return fmt.Errorf("scout: capture: launching origin %q does not match installed ext id", origin)
+	id, ok := capture.OriginToExtID(origin)
+	if !ok || id != allowed {
+		return fmt.Errorf("scout: capture: origin %q is not the installed extension", origin)
 	}
 	pubPath, err := capturePubPath()
 	if err != nil {
