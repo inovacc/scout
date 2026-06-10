@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font: 13px system-ui, sans-serif; width: 320px; margin: 0; padding: 12px; }
+    h1 { font-size: 14px; margin: 0 0 8px; }
+    input { width: 100%; box-sizing: border-box; margin: 4px 0 8px; padding: 6px; }
+    button { width: 100%; padding: 8px; cursor: pointer; }
+    #status { margin-top: 8px; min-height: 16px; }
+    .ok { color: #137333; } .err { color: #c5221f; }
+    ul { margin: 8px 0 0; padding-left: 16px; max-height: 120px; overflow:auto; }
+    li { color: #555; }
+    .muted { color: #777; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <h1>Scout Capture</h1>
+  <label for="nonce">Pairing nonce</label>
+  <input id="nonce" type="password" placeholder="from `scout vault capture-key init`" autocomplete="off" />
+  <button id="save">Save nonce</button>
+  <button id="capture">Capture session for this tab</button>
+  <div id="status"></div>
+  <div class="muted">Captured (metadata only):</div>
+  <ul id="audit"></ul>
+  <script src="popup.js"></script>
+</body>
+</html>
