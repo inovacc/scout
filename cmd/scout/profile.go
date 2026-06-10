@@ -23,7 +23,7 @@ var profileCaptureCmd = &cobra.Command{
 	Short: "Open browser, capture browser identity to a .scoutprofile file on Ctrl+C",
 	Long: `Opens a visible browser to the given URL. Browse freely to establish your session.
 Press Ctrl+C when done — all browser identity state is captured:
-cookies, localStorage, sessionStorage, user agent, language, timezone, window size.
+user agent, language, timezone, locale, window size, extensions, and proxy. Secrets (cookies, web storage) are NOT captured — use ` + "`scout vault capture`" + `.
 
 The output file can be used with 'scout profile load' to restore the identity.`,
 	Args: cobra.ExactArgs(1),
@@ -84,14 +84,6 @@ The output file can be used with 'scout profile load' to restore the identity.`,
 		_, _ = fmt.Fprintf(w, "  User Agent:     %s\n", truncate(prof.Identity.UserAgent, 60))
 		_, _ = fmt.Fprintf(w, "  Language:       %s\n", prof.Identity.Language)
 		_, _ = fmt.Fprintf(w, "  Timezone:       %s\n", prof.Identity.Timezone)
-		_, _ = fmt.Fprintf(w, "  Cookies:        %d\n", len(prof.Cookies))
-
-		storageKeys := 0
-		for _, s := range prof.Storage {
-			storageKeys += len(s.LocalStorage) + len(s.SessionStorage)
-		}
-
-		_, _ = fmt.Fprintf(w, "  Storage keys:   %d\n", storageKeys)
 		_, _ = fmt.Fprintf(w, "  Captured at:    %s\n", prof.CreatedAt.Format(time.RFC3339))
 
 		return nil
@@ -102,7 +94,7 @@ var profileLoadCmd = &cobra.Command{
 	Use:   "load <file.scoutprofile> [url]",
 	Short: "Restore a browser identity from a profile and navigate to a URL",
 	Long: `Loads a profile from a .scoutprofile file and applies it to a new browser session.
-Restores user agent, cookies, localStorage, sessionStorage, window size, and headers.
+Restores user agent, window size, and proxy. Secrets are applied separately via ` + "`scout vault use`" + `.
 Optionally navigates to a URL after restoring.`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -148,7 +140,6 @@ Optionally navigates to a URL after restoring.`,
 		_, _ = fmt.Fprintf(w, "Profile loaded: %s (%s)\n", url, title)
 		_, _ = fmt.Fprintf(w, "  Profile:        %s\n", prof.Name)
 		_, _ = fmt.Fprintf(w, "  User Agent:     %s\n", truncate(prof.Identity.UserAgent, 60))
-		_, _ = fmt.Fprintf(w, "  Cookies:        %d\n", len(prof.Cookies))
 
 		return nil
 	},
@@ -197,23 +188,22 @@ var profileShowCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(w, "Proxy:          %s\n", prof.Proxy)
 		}
 
-		_, _ = fmt.Fprintf(w, "Cookies:        %d\n", len(prof.Cookies))
-		for _, c := range prof.Cookies {
-			_, _ = fmt.Fprintf(w, "  %-30s  domain=%-20s  secure=%v  httpOnly=%v\n",
-				truncate(c.Name, 30), c.Domain, c.Secure, c.HTTPOnly)
-		}
+		if len(prof.Cookies) > 0 || len(prof.Storage) > 0 || len(prof.Headers) > 0 {
+			_, _ = fmt.Fprintln(w, "[deprecated] This profile carries secret fields. Migrate them with")
+			_, _ = fmt.Fprintln(w, "  scout vault set --from-profile <file>   (removal after 2026-07-02)")
 
-		for origin, s := range prof.Storage {
-			_, _ = fmt.Fprintf(w, "Storage [%s]:\n", origin)
-			_, _ = fmt.Fprintf(w, "  localStorage:   %d keys\n", len(s.LocalStorage))
-
-			for k := range s.LocalStorage {
-				_, _ = fmt.Fprintf(w, "    %s\n", truncate(k, 60))
+			if len(prof.Cookies) > 0 {
+				_, _ = fmt.Fprintf(w, "Cookies:        %d\n", len(prof.Cookies))
+				for _, c := range prof.Cookies {
+					_, _ = fmt.Fprintf(w, "  %-30s  domain=%-20s  value=***\n", truncate(c.Name, 30), c.Domain)
+				}
 			}
-
-			_, _ = fmt.Fprintf(w, "  sessionStorage: %d keys\n", len(s.SessionStorage))
-			for k := range s.SessionStorage {
-				_, _ = fmt.Fprintf(w, "    %s\n", truncate(k, 60))
+			for origin, s := range prof.Storage {
+				_, _ = fmt.Fprintf(w, "Storage [%s]: localStorage=%d sessionStorage=%d\n",
+					origin, len(s.LocalStorage), len(s.SessionStorage))
+			}
+			if len(prof.Headers) > 0 {
+				_, _ = fmt.Fprintf(w, "Headers:        %d (values hidden)\n", len(prof.Headers))
 			}
 		}
 
@@ -221,13 +211,6 @@ var profileShowCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(w, "Extensions:     %d\n", len(prof.Extensions))
 			for _, e := range prof.Extensions {
 				_, _ = fmt.Fprintf(w, "  %s\n", e)
-			}
-		}
-
-		if len(prof.Headers) > 0 {
-			_, _ = fmt.Fprintf(w, "Headers:        %d\n", len(prof.Headers))
-			for k, v := range prof.Headers {
-				_, _ = fmt.Fprintf(w, "  %s: %s\n", k, truncate(v, 60))
 			}
 		}
 
@@ -459,8 +442,6 @@ var profileSessionLoadCmd = &cobra.Command{
 		w := cmd.OutOrStdout()
 		_, _ = fmt.Fprintf(w, "Profile loaded into session %s\n", sessionID)
 		_, _ = fmt.Fprintf(w, "  Name:    %s\n", prof.Name)
-		_, _ = fmt.Fprintf(w, "  Cookies: %d\n", len(prof.Cookies))
-		_, _ = fmt.Fprintf(w, "  Storage: %d origin(s)\n", len(prof.Storage))
 
 		return nil
 	},
