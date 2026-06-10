@@ -138,6 +138,32 @@ var vaultImportCapturesCmd = &cobra.Command{
 	},
 }
 
+var captureHostInstallCmd = &cobra.Command{
+	Use:   "install <extension-id>",
+	Short: "Register the native-messaging host manifest for the given extension ID",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		path, err := installNativeManifest(args[0])
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "installed native-messaging manifest: %s\n", path)
+		return nil
+	},
+}
+
+var captureHostUninstallCmd = &cobra.Command{
+	Use:   "uninstall",
+	Short: "Remove the native-messaging host manifest",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		if err := uninstallNativeManifest(); err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "removed native-messaging manifest")
+		return nil
+	},
+}
+
 func init() {
 	vaultCaptureKeyInitCmd.Flags().Bool("rotate", false, "replace any existing capture keypair")
 	vaultCaptureKeyInitCmd.Flags().String("vault-file", "", "override vault file path")
@@ -147,4 +173,5 @@ func init() {
 	vaultCaptureKeyCmd.AddCommand(vaultCaptureKeyInitCmd)
 	vaultCmd.AddCommand(vaultCaptureKeyCmd, vaultImportCapturesCmd)
 	rootCmd.AddCommand(captureHostCmd)
+	captureHostCmd.AddCommand(captureHostInstallCmd, captureHostUninstallCmd)
 }
