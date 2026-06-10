@@ -1,7 +1,12 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -25,6 +30,51 @@ func captureNoncePath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(base, "pairing.nonce"), nil
+}
+
+// generateExtensionKey creates an RSA-2048 keypair for the extension, writes the
+// PKCS#8 private key PEM (0600) into dir, and returns the manifest.json "key"
+// value (base64 DER SPKI) plus the derived stable extension ID.
+func generateExtensionKey(dir string) (keyValue, extID string, err error) {
+	k, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return "", "", fmt.Errorf("scout: capture: generate extension key: %w", err)
+	}
+	der, err := x509.MarshalPKIXPublicKey(&k.PublicKey)
+	if err != nil {
+		return "", "", fmt.Errorf("scout: capture: marshal public key: %w", err)
+	}
+	priv, err := x509.MarshalPKCS8PrivateKey(k)
+	if err != nil {
+		return "", "", fmt.Errorf("scout: capture: marshal private key: %w", err)
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", "", fmt.Errorf("scout: capture: mkdir key dir: %w", err)
+	}
+	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: priv})
+	if err := os.WriteFile(filepath.Join(dir, "extension_key.pem"), pemBytes, 0o600); err != nil {
+		return "", "", fmt.Errorf("scout: capture: write extension key: %w", err)
+	}
+	return capture.ManifestKey(der), capture.ExtensionID(der), nil
+}
+
+var captureHostKeygenCmd = &cobra.Command{
+	Use:   "keygen",
+	Short: "Generate a pinned extension keypair; print the manifest key + stable extension ID",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		base, err := scouthome.Sub("captures")
+		if err != nil {
+			return err
+		}
+		keyValue, extID, err := generateExtensionKey(base)
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(),
+			"extension id: %s\n\nAdd this to extensions/scout-capture/manifest.json:\n  \"key\": \"%s\"\n\nThen run: scout capture-host install %s\n",
+			extID, keyValue, extID)
+		return nil
+	},
 }
 
 var vaultCaptureKeyCmd = &cobra.Command{
@@ -173,5 +223,5 @@ func init() {
 	vaultCaptureKeyCmd.AddCommand(vaultCaptureKeyInitCmd)
 	vaultCmd.AddCommand(vaultCaptureKeyCmd, vaultImportCapturesCmd)
 	rootCmd.AddCommand(captureHostCmd)
-	captureHostCmd.AddCommand(captureHostInstallCmd, captureHostUninstallCmd)
+	captureHostCmd.AddCommand(captureHostInstallCmd, captureHostUninstallCmd, captureHostKeygenCmd)
 }
