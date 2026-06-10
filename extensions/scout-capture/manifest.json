@@ -3,7 +3,7 @@
   "name": "Scout Capture",
   "version": "0.1.0",
   "description": "Capture THIS browser's own session (cookies + web storage) for the active tab into your local Scout vault, on an explicit click. Local-only; no network.",
-  "permissions": ["nativeMessaging", "activeTab", "scripting", "cookies"],
+  "permissions": ["nativeMessaging", "activeTab", "scripting", "cookies", "storage"],
   "action": { "default_popup": "popup.html", "default_title": "Scout Capture" },
   "background": { "service_worker": "background.js" }
 }
