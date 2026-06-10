@@ -27,9 +27,12 @@ document.getElementById("save").addEventListener("click", () => {
   });
 });
 
-document.getElementById("capture").addEventListener("click", () => {
+const btn = document.getElementById("capture");
+btn.addEventListener("click", () => {
+  btn.disabled = true;
   setStatus("Capturing…", true);
   chrome.runtime.sendMessage({ cmd: "capture" }, (resp) => {
+    btn.disabled = false;
     if (chrome.runtime.lastError) { setStatus(chrome.runtime.lastError.message, false); return; }
     if (resp && resp.ok) { setStatus("Captured ✓ (spool id " + resp.id + ")", true); renderAudit(); }
     else { setStatus((resp && resp.error) || "capture failed", false); }

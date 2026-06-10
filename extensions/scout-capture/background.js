@@ -25,7 +25,13 @@ function captureSession(tab) {
         return;
       }
       let helloAcked = false;
-      const fail = (msg) => { try { port.disconnect(); } catch (e) {} resolve({ ok: false, error: msg }); };
+      let done = false;
+      const fail = (msg) => {
+        if (done) return;
+        done = true;
+        try { port.disconnect(); } catch (e) {}
+        resolve({ ok: false, error: msg });
+      };
 
       port.onDisconnect.addListener(() => {
         const le = chrome.runtime.lastError;
@@ -41,6 +47,8 @@ function captureSession(tab) {
           return;
         }
         if (msg.type === "ack") {
+          if (done) return;
+          done = true;
           recordAudit(tab, msg.id);
           try { port.disconnect(); } catch (e) {}
           resolve({ ok: true, id: msg.id });
@@ -70,35 +78,32 @@ function buildAndSend(tab, port, resolve, fail) {
     }));
 
     // Web storage via an injected snapshot (top frame of the active tab only).
-    chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["snapshot.js"] }, () => {
-      chrome.scripting.executeScript({ target: { tabId: tab.id }, func: scoutCaptureSnapshotCaller }, (res) => {
-        const snap = (res && res[0] && res[0].result) || { origin: url, store: { local: {}, session: {} } };
-        const storage = {};
-        storage[snap.origin] = { local: snap.store.local || {}, session: snap.store.session || {} };
+    chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["snapshot.js"] }, (res) => {
+      if (chrome.runtime.lastError) {
+        // Restricted page (chrome://, file://, etc.) — proceed with empty storage rather than failing the whole capture.
+      }
+      const snap = (res && res[0] && res[0].result) || { origin: url, store: { local: {}, session: {} } };
+      const storage = {};
+      storage[snap.origin] = { local: snap.store.local || {}, session: snap.store.session || {} };
 
-        const payload = {
-          v: 1,
-          type: "capture_session",
-          site: site,
-          cookies: wireCookies,
-          storage: storage,
-          at: new Date().toISOString(),
-        };
-        // Size guard mirrors the host's 1 MiB frame cap (no chunking in v1).
-        if (JSON.stringify(payload).length > 1000000) {
-          fail("session too large to capture in one message (>1 MiB)");
-          return;
-        }
-        port.postMessage(payload);
-      });
+      const payload = {
+        v: 1,
+        type: "capture_session",
+        site: site,
+        cookies: wireCookies,
+        storage: storage,
+        at: new Date().toISOString(),
+      };
+      // Size guard mirrors the host's 1 MiB frame cap. NOTE: .length counts UTF-16
+      // code units, not bytes, so multibyte content is slightly undercounted — fine
+      // as a conservative guard for v1 (no chunking).
+      if (JSON.stringify(payload).length > 1000000) {
+        fail("session too large to capture in one message (>1 MiB)");
+        return;
+      }
+      port.postMessage(payload);
     });
   });
-}
-
-// scoutCaptureSnapshotCaller is injected to invoke the function defined in
-// snapshot.js (already injected via files:[...]) and return its result.
-function scoutCaptureSnapshotCaller() {
-  return scoutCaptureSnapshot();
 }
 
 function recordAudit(tab, id) {

@@ -18,3 +18,8 @@ function scoutCaptureSnapshot() {
     store: { local: dump(window.localStorage), session: dump(window.sessionStorage) },
   };
 }
+
+// Final statement: when this file is injected via executeScript({files:[...]}),
+// executeScript returns the value of the last evaluated expression, so calling
+// the function here makes a single injection return the snapshot directly.
+scoutCaptureSnapshot();
