@@ -10,6 +10,33 @@ import (
 	"github.com/inovacc/scout/pkg/scout/capture"
 )
 
+func TestExtIDPersistence(t *testing.T) {
+	t.Setenv("SCOUT_HOME", t.TempDir())
+	const id = "abcdefghijklmnopabcdefghijklmnop"
+	if err := saveExtID(id); err != nil {
+		t.Fatal(err)
+	}
+	got, err := loadExtID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != id {
+		t.Fatalf("loadExtID = %q, want %q", got, id)
+	}
+	// The file must be 0600.
+	p, _ := extIDPath()
+	fi, _ := os.Stat(p)
+	if runtime.GOOS != "windows" && fi.Mode().Perm() != 0o600 {
+		t.Fatalf("ext_id mode = %v, want 0600", fi.Mode().Perm())
+	}
+	if err := removeExtID(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := loadExtID(); err == nil {
+		t.Fatal("loadExtID should fail after removeExtID")
+	}
+}
+
 func TestGenerateExtensionKey(t *testing.T) {
 	dir := t.TempDir()
 	keyValue, extID, err := generateExtensionKey(dir)

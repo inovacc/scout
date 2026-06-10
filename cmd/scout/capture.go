@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -30,6 +31,51 @@ func captureNoncePath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(base, "pairing.nonce"), nil
+}
+
+func extIDPath() (string, error) {
+	base, err := scouthome.Sub("captures")
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(base, "ext_id"), nil
+}
+
+func saveExtID(id string) error {
+	p, err := extIDPath()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return fmt.Errorf("scout: capture: mkdir for ext_id: %w", err)
+	}
+	if err := os.WriteFile(p, []byte(id), 0o600); err != nil {
+		return fmt.Errorf("scout: capture: write ext_id: %w", err)
+	}
+	return nil
+}
+
+func loadExtID() (string, error) {
+	p, err := extIDPath()
+	if err != nil {
+		return "", err
+	}
+	b, err := os.ReadFile(p) //nolint:gosec
+	if err != nil {
+		return "", fmt.Errorf("scout: capture: read ext_id (run `scout capture-host install <id>`): %w", err)
+	}
+	return strings.TrimSpace(string(b)), nil
+}
+
+func removeExtID() error {
+	p, err := extIDPath()
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("scout: capture: remove ext_id: %w", err)
+	}
+	return nil
 }
 
 // generateExtensionKey creates an RSA-2048 keypair for the extension, writes the
@@ -197,6 +243,9 @@ var captureHostInstallCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		if err := saveExtID(args[0]); err != nil {
+			return err
+		}
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "installed native-messaging manifest: %s\n", path)
 		return nil
 	},
@@ -207,6 +256,9 @@ var captureHostUninstallCmd = &cobra.Command{
 	Short: "Remove the native-messaging host manifest",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		if err := uninstallNativeManifest(); err != nil {
+			return err
+		}
+		if err := removeExtID(); err != nil {
 			return err
 		}
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "removed native-messaging manifest")
