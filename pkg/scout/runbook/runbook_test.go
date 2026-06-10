@@ -17,6 +17,10 @@ import (
 func newTestBrowser(t *testing.T) *scout.Browser {
 	t.Helper()
 
+	if testing.Short() {
+		t.Skip("skipping browser test in -short mode")
+	}
+
 	b, err := scout.New(scout.WithHeadless(true), scout.WithNoSandbox(), scout.WithoutBridge())
 	if err != nil {
 		t.Skipf("browser unavailable: %v", err)
