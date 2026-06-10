@@ -208,6 +208,10 @@ func (s *ScoutServer) CaptureProfile(ctx context.Context, req *pb.CaptureProfile
 	return &pb.CaptureProfileResponse{ProfileJson: string(data)}, nil
 }
 
+// NOTE: post secret-migration, UserProfile carries no secrets and Page.ApplyProfile
+// is a no-op, so this RPC no longer applies cookies/headers/storage to the session.
+// It is retained as a compatibility stub; flag for deprecation/removal in Phase 2
+// (after 2026-07-02). Local secret apply is done via `scout vault use`.
 func (s *ScoutServer) LoadProfile(ctx context.Context, req *pb.LoadProfileRequest) (*pb.LoadProfileResponse, error) {
 	sess, err := s.getSession(ctx, req.GetSessionId())
 	if err != nil {

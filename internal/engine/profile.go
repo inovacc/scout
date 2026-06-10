@@ -300,6 +300,9 @@ func (p *Page) ApplyProfile(prof *UserProfile) error {
 	return nil
 }
 
+// Deprecated: the profile no longer carries secrets, so encryption protects
+// nothing of value. Store secrets in pkg/scout/vault instead. Removal after 2026-07-02.
+//
 // SaveProfileEncrypted writes an encrypted profile using AES-256-GCM + Argon2id.
 func SaveProfileEncrypted(p *UserProfile, path, passphrase string) error {
 	if p == nil {
@@ -325,6 +328,9 @@ func SaveProfileEncrypted(p *UserProfile, path, passphrase string) error {
 	return nil
 }
 
+// Deprecated: the profile no longer carries secrets, so encryption protects
+// nothing of value. Store secrets in pkg/scout/vault instead. Removal after 2026-07-02.
+//
 // LoadProfileEncrypted reads and decrypts a profile.
 func LoadProfileEncrypted(path, passphrase string) (*UserProfile, error) {
 	data, err := os.ReadFile(path) //nolint:gosec
