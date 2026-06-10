@@ -282,8 +282,12 @@ func ResolveExtensionsWithBase(p *UserProfile, baseDir string) []string {
 	return resolved
 }
 
-// ApplyProfile restores page-level state from a UserProfile: cookies, storage,
-// and headers. Call this after page creation and navigation to the target origin.
+// ApplyProfile previously restored cookies, headers, and web storage from a
+// UserProfile. Those secret-bearing operations have moved to pkg/scout/vault
+// (Handle.ApplyToPage for cookies+headers, Handle.ApplyStorageToPage for web
+// storage). This method is now a no-op kept for source compatibility.
+//
+// Deprecated: applies nothing; use pkg/scout/vault. Removal after 2026-07-02.
 func (p *Page) ApplyProfile(prof *UserProfile) error {
 	if p == nil || p.page == nil {
 		return fmt.Errorf("scout: profile: apply: nil page")
@@ -291,40 +295,6 @@ func (p *Page) ApplyProfile(prof *UserProfile) error {
 
 	if prof == nil {
 		return fmt.Errorf("scout: profile: apply: nil profile")
-	}
-
-	// Set cookies.
-	if len(prof.Cookies) > 0 {
-		if err := p.SetCookies(prof.Cookies...); err != nil {
-			return fmt.Errorf("scout: profile: apply cookies: %w", err)
-		}
-	}
-
-	// Set headers.
-	if len(prof.Headers) > 0 {
-		if _, err := p.SetHeaders(prof.Headers); err != nil {
-			return fmt.Errorf("scout: profile: apply headers: %w", err)
-		}
-	}
-
-	// Inject storage for the current origin.
-	pageURL, _ := p.URL()
-	origin := originFromURL(pageURL)
-
-	if origin != "" {
-		if storage, ok := prof.Storage[origin]; ok {
-			for k, v := range storage.LocalStorage {
-				if err := p.LocalStorageSet(k, v); err != nil {
-					return fmt.Errorf("scout: profile: apply localStorage %q: %w", k, err)
-				}
-			}
-
-			for k, v := range storage.SessionStorage {
-				if err := p.SessionStorageSet(k, v); err != nil {
-					return fmt.Errorf("scout: profile: apply sessionStorage %q: %w", k, err)
-				}
-			}
-		}
 	}
 
 	return nil

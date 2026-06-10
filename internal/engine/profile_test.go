@@ -584,24 +584,28 @@ func init() {
 	})
 }
 
+// TestProfileCookieRoundTrip asserts the post-migration contract: cookies are
+// secrets and no longer flow through the profile. CaptureProfile must not snapshot
+// a live cookie, and ApplyProfile must not restore a profile-carried one (use
+// pkg/scout/vault instead). Uses an owned (isolated) browser so the shared
+// cookie jar is not polluted for sibling tests.
 func TestProfileCookieRoundTrip(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
 
-	// Browser 1: navigate, set cookies, capture profile.
-	b1 := newTestBrowser(t)
+	b := newOwnedTestBrowser(t)
 
-	page1, err := b1.NewPage(ts.URL + "/profile-test")
+	page, err := b.NewPage(ts.URL + "/profile-test")
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
 
-	if err := page1.WaitLoad(); err != nil {
+	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad: %v", err)
 	}
 
-	// Set an extra cookie manually.
-	if err := page1.SetCookies(Cookie{
+	// Set a live cookie, then confirm CaptureProfile does NOT snapshot it.
+	if err := page.SetCookies(Cookie{
 		Name:   "manual_cookie",
 		Value:  "manual_value",
 		Domain: "127.0.0.1",
@@ -610,17 +614,18 @@ func TestProfileCookieRoundTrip(t *testing.T) {
 		t.Fatalf("SetCookies: %v", err)
 	}
 
-	prof, err := CaptureProfile(page1, WithProfileName("cookie-test"))
+	prof, err := CaptureProfile(page, WithProfileName("cookie-test"))
 	if err != nil {
 		t.Fatalf("CaptureProfile: %v", err)
 	}
 
-	if len(prof.Cookies) == 0 {
-		t.Fatal("expected at least one cookie in profile")
+	if len(prof.Cookies) != 0 {
+		t.Fatalf("CaptureProfile must not capture cookies (vault owns secrets); got %d", len(prof.Cookies))
 	}
 
-	// Browser 2: load profile, verify cookies are present.
-	b2 := newTestBrowser(t)
+	// A fresh isolated browser proves ApplyProfile is a no-op: a profile carrying
+	// a legacy cookie must not restore it into the new page.
+	b2 := newOwnedTestBrowser(t)
 
 	page2, err := b2.NewPage(ts.URL + "/profile-test")
 	if err != nil {
@@ -631,7 +636,11 @@ func TestProfileCookieRoundTrip(t *testing.T) {
 		t.Fatalf("WaitLoad b2: %v", err)
 	}
 
-	if err := page2.ApplyProfile(prof); err != nil {
+	legacy := &UserProfile{
+		Version: 1, Name: "legacy",
+		Cookies: []Cookie{{Name: "manual_cookie", Value: "manual_value", Domain: "127.0.0.1", Path: "/"}},
+	}
+	if err := page2.ApplyProfile(legacy); err != nil {
 		t.Fatalf("ApplyProfile: %v", err)
 	}
 
@@ -640,60 +649,46 @@ func TestProfileCookieRoundTrip(t *testing.T) {
 		t.Fatalf("GetCookies b2: %v", err)
 	}
 
-	found := false
-
 	for _, c := range cookies {
-		if c.Name == "manual_cookie" && c.Value == "manual_value" {
-			found = true
-			break
+		if c.Name == "manual_cookie" {
+			t.Errorf("ApplyProfile restored a cookie; it must be a no-op (secrets go through vault)")
 		}
-	}
-
-	if !found {
-		t.Errorf("manual_cookie not found after round-trip; got cookies: %v", cookies)
 	}
 }
 
+// TestProfileStorageRoundTrip asserts that web storage (a secret-bearing surface)
+// is no longer captured into the profile nor restored by ApplyProfile. Uses an
+// owned (isolated) browser so storage is not shared with sibling tests.
 func TestProfileStorageRoundTrip(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
 
-	// Browser 1: set localStorage items, capture profile.
-	b1 := newTestBrowser(t)
+	b := newOwnedTestBrowser(t)
 
-	page1, err := b1.NewPage(ts.URL + "/profile-test")
+	page, err := b.NewPage(ts.URL + "/profile-test")
 	if err != nil {
 		t.Fatalf("NewPage: %v", err)
 	}
 
-	if err := page1.WaitLoad(); err != nil {
+	if err := page.WaitLoad(); err != nil {
 		t.Fatalf("WaitLoad: %v", err)
 	}
 
-	if err := page1.LocalStorageSet("profile_key", "profile_value"); err != nil {
+	if err := page.LocalStorageSet("profile_key", "profile_value"); err != nil {
 		t.Fatalf("LocalStorageSet: %v", err)
 	}
 
-	if err := page1.LocalStorageSet("another_key", "another_value"); err != nil {
-		t.Fatalf("LocalStorageSet: %v", err)
-	}
-
-	prof, err := CaptureProfile(page1, WithProfileName("storage-test"))
+	prof, err := CaptureProfile(page, WithProfileName("storage-test"))
 	if err != nil {
 		t.Fatalf("CaptureProfile: %v", err)
 	}
 
-	origin := originFromURL(ts.URL)
-	if _, ok := prof.Storage[origin]; !ok {
-		t.Fatalf("expected storage for origin %q, got keys: %v", origin, prof.Storage)
+	if len(prof.Storage) != 0 {
+		t.Fatalf("CaptureProfile must not capture web storage (vault owns secrets); got %d origins", len(prof.Storage))
 	}
 
-	if prof.Storage[origin].LocalStorage["profile_key"] != "profile_value" {
-		t.Errorf("storage profile_key = %q, want %q", prof.Storage[origin].LocalStorage["profile_key"], "profile_value")
-	}
-
-	// Browser 2: load profile, verify storage values.
-	b2 := newTestBrowser(t)
+	// A fresh isolated browser proves ApplyProfile is a no-op for storage.
+	b2 := newOwnedTestBrowser(t)
 
 	page2, err := b2.NewPage(ts.URL + "/profile-test")
 	if err != nil {
@@ -704,7 +699,14 @@ func TestProfileStorageRoundTrip(t *testing.T) {
 		t.Fatalf("WaitLoad b2: %v", err)
 	}
 
-	if err := page2.ApplyProfile(prof); err != nil {
+	origin := originFromURL(ts.URL)
+	legacy := &UserProfile{
+		Version: 1, Name: "legacy",
+		Storage: map[string]ProfileOriginStorage{
+			origin: {LocalStorage: map[string]string{"profile_key": "profile_value"}},
+		},
+	}
+	if err := page2.ApplyProfile(legacy); err != nil {
 		t.Fatalf("ApplyProfile: %v", err)
 	}
 
@@ -713,17 +715,8 @@ func TestProfileStorageRoundTrip(t *testing.T) {
 		t.Fatalf("LocalStorageGet: %v", err)
 	}
 
-	if val != "profile_value" {
-		t.Errorf("profile_key = %q, want %q", val, "profile_value")
-	}
-
-	val2, err := page2.LocalStorageGet("another_key")
-	if err != nil {
-		t.Fatalf("LocalStorageGet: %v", err)
-	}
-
-	if val2 != "another_value" {
-		t.Errorf("another_key = %q, want %q", val2, "another_value")
+	if val != "" {
+		t.Errorf("ApplyProfile restored localStorage %q; it must be a no-op (secrets go through vault)", val)
 	}
 }
 
@@ -851,7 +844,7 @@ func TestProfileCaptureAndSaveLoadRoundTrip(t *testing.T) {
 	ts := newTestServer()
 	defer ts.Close()
 
-	b := newTestBrowser(t)
+	b := newOwnedTestBrowser(t)
 
 	page, err := b.NewPage(ts.URL + "/profile-test")
 	if err != nil {
@@ -871,7 +864,12 @@ func TestProfileCaptureAndSaveLoadRoundTrip(t *testing.T) {
 		t.Fatalf("CaptureProfile: %v", err)
 	}
 
-	// Save to disk and reload.
+	// Secrets (web storage) are no longer captured into the profile.
+	if len(prof.Storage) != 0 {
+		t.Errorf("CaptureProfile must not capture web storage; got %d origins", len(prof.Storage))
+	}
+
+	// Save to disk and reload — non-secret identity must survive.
 	dir := t.TempDir()
 	path := filepath.Join(dir, "roundtrip.scoutprofile")
 
@@ -886,11 +884,6 @@ func TestProfileCaptureAndSaveLoadRoundTrip(t *testing.T) {
 
 	if loaded.Name != "persist-test" {
 		t.Errorf("Name = %q, want %q", loaded.Name, "persist-test")
-	}
-
-	origin := originFromURL(ts.URL)
-	if loaded.Storage[origin].LocalStorage["persist_key"] != "persist_val" {
-		t.Errorf("persist_key not preserved through save/load")
 	}
 
 	if loaded.Identity.UserAgent == "" {
@@ -932,5 +925,45 @@ func TestCaptureProfile_OmitsSecrets(t *testing.T) {
 	}
 	if prof.Identity.UserAgent == "" {
 		t.Error("expected non-secret identity (UserAgent) to still be captured")
+	}
+}
+
+func TestApplyProfile_NoOpDoesNotApplySecrets(t *testing.T) {
+	b := newOwnedTestBrowser(t)
+	defer func() { _ = b.Close() }()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte("<html><body>ok</body></html>"))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	page, err := b.NewPage(srv.URL + "/")
+	if err != nil {
+		t.Fatalf("NewPage: %v", err)
+	}
+	defer func() { _ = page.Close() }()
+	if err := page.WaitLoad(); err != nil {
+		t.Fatalf("WaitLoad: %v", err)
+	}
+
+	prof := &UserProfile{
+		Version: 1, Name: "legacy",
+		Cookies: []Cookie{{Name: "legacy", Value: "x", Domain: "127.0.0.1", Path: "/"}},
+	}
+	if err := page.ApplyProfile(prof); err != nil {
+		t.Fatalf("ApplyProfile (no-op) returned error: %v", err)
+	}
+
+	got, err := page.GetCookies()
+	if err != nil {
+		t.Fatalf("GetCookies: %v", err)
+	}
+	for _, c := range got {
+		if c.Name == "legacy" {
+			t.Errorf("ApplyProfile applied a cookie; it must be a no-op (secrets go through vault)")
+		}
 	}
 }
