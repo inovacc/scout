@@ -9,6 +9,13 @@ import (
 // pkg/scout/hardening_exports.go is reachable from the scout package and
 // delegates to the underlying engine primitives without panicking.
 func TestHardeningExportsSurface(t *testing.T) {
+	// Isolate session state. These re-exports (ReapOnce, PendingCleanup,
+	// RecordCleanupFailure) operate on GetSessionsDir(); without this the test
+	// reaps the developer's REAL ~/.scout sessions and pays retryRemoveAll's
+	// ~11s AV-hardening budget (~17s total). t.Setenv redirects scouthome to an
+	// empty temp dir, making the test both hermetic and fast.
+	t.Setenv("SCOUT_HOME", t.TempDir())
+
 	// CloseAllLive on an empty registry returns 0.
 	if n := CloseAllLive(time.Second); n != 0 {
 		t.Fatalf("CloseAllLive on empty registry = %d, want 0", n)
