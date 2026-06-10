@@ -144,6 +144,8 @@ func provisionBrowserForPlugin(cmd *cobra.Command) (*plugin.BrowserContext, erro
 }
 
 func main() {
+	maybeRunCaptureHost() // native-messaging host mode: returns immediately for normal CLI use
+
 	if err := agent.Listen(agent.Options{ShutdownCleanup: true}); err != nil {
 		slog.Warn("scout: gops agent", "error", err)
 	}

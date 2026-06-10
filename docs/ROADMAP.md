@@ -712,6 +712,16 @@ Shipped as v1.0.3 under the Superpowers workflow (brainstorm → spec → execut
 
 ---
 
+### Scout Capture Phase 2 — MV3 session-capture extension [DONE]
+- `extensions/scout-capture/` MV3 extension: popup-driven, consent-first capture of the
+  active tab's cookies + web storage to `scout capture-host` over native messaging.
+- Go glue: native-messaging launch routing in `main()` (Chrome passes the origin as argv);
+  `scout capture-host keygen` (pinned ID); allowed ext-id persisted at install.
+- Zero password handling (Phase 3). Acceptance: manual E2E checklist
+  `docs/superpowers/specs/2026-06-10-scout-capture-phase2-e2e-checklist.md`.
+
+---
+
 ## Phase 80+ — Future
 
 ### Remaining Work

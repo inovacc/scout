@@ -34,3 +34,7 @@ nul
 # Generated code-quality analysis reports (regenerable; not source of truth)
 /docs/quality/
 /CODE-SWEEP.md
+
+# Scout Capture local artifacts (per-machine; never commit)
+extensions/scout-capture/key.pem
+**/captures/extension_key.pem

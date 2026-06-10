@@ -1,8 +1,14 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -25,6 +31,96 @@ func captureNoncePath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(base, "pairing.nonce"), nil
+}
+
+func extIDPath() (string, error) {
+	base, err := scouthome.Sub("captures")
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(base, "ext_id"), nil
+}
+
+func saveExtID(id string) error {
+	p, err := extIDPath()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return fmt.Errorf("scout: capture: mkdir for ext_id: %w", err)
+	}
+	if err := os.WriteFile(p, []byte(id), 0o600); err != nil {
+		return fmt.Errorf("scout: capture: write ext_id: %w", err)
+	}
+	return nil
+}
+
+func loadExtID() (string, error) {
+	p, err := extIDPath()
+	if err != nil {
+		return "", err
+	}
+	b, err := os.ReadFile(p) //nolint:gosec
+	if err != nil {
+		return "", fmt.Errorf("scout: capture: read ext_id (run `scout capture-host install <id>`): %w", err)
+	}
+	return strings.TrimSpace(string(b)), nil
+}
+
+func removeExtID() error {
+	p, err := extIDPath()
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("scout: capture: remove ext_id: %w", err)
+	}
+	return nil
+}
+
+// generateExtensionKey creates an RSA-2048 keypair for the extension, writes the
+// PKCS#8 private key PEM (0600) into dir, and returns the manifest.json "key"
+// value (base64 DER SPKI) plus the derived stable extension ID.
+func generateExtensionKey(dir string) (keyValue, extID string, err error) {
+	k, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return "", "", fmt.Errorf("scout: capture: generate extension key: %w", err)
+	}
+	der, err := x509.MarshalPKIXPublicKey(&k.PublicKey)
+	if err != nil {
+		return "", "", fmt.Errorf("scout: capture: marshal public key: %w", err)
+	}
+	priv, err := x509.MarshalPKCS8PrivateKey(k)
+	if err != nil {
+		return "", "", fmt.Errorf("scout: capture: marshal private key: %w", err)
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", "", fmt.Errorf("scout: capture: mkdir key dir: %w", err)
+	}
+	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: priv})
+	if err := os.WriteFile(filepath.Join(dir, "extension_key.pem"), pemBytes, 0o600); err != nil {
+		return "", "", fmt.Errorf("scout: capture: write extension key: %w", err)
+	}
+	return capture.ManifestKey(der), capture.ExtensionID(der), nil
+}
+
+var captureHostKeygenCmd = &cobra.Command{
+	Use:   "keygen",
+	Short: "Generate a pinned extension keypair; print the manifest key + stable extension ID",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		base, err := scouthome.Sub("captures")
+		if err != nil {
+			return err
+		}
+		keyValue, extID, err := generateExtensionKey(base)
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(),
+			"extension id: %s\n\nAdd this to extensions/scout-capture/manifest.json:\n  \"key\": \"%s\"\n\nThen run: scout capture-host install %s\n",
+			extID, keyValue, extID)
+		return nil
+	},
 }
 
 var vaultCaptureKeyCmd = &cobra.Command{
@@ -71,30 +167,8 @@ var captureHostCmd = &cobra.Command{
 	Use:    "capture-host",
 	Short:  "Native-messaging host for the Scout Capture extension (launched by the browser)",
 	Hidden: true, // not a day-to-day command; the browser launches it
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		extID, _ := cmd.Flags().GetString("ext-id")
-		pubPath, err := capturePubPath()
-		if err != nil {
-			return err
-		}
-		pub, err := capture.LoadPub(pubPath)
-		if err != nil {
-			return err
-		}
-		spoolDir, err := capture.SpoolDir()
-		if err != nil {
-			return err
-		}
-		nonceP, err := captureNoncePath()
-		if err != nil {
-			return err
-		}
-		return capture.RunHost(cmd.InOrStdin(), cmd.OutOrStdout(), capture.HostConfig{
-			Pub:          pub,
-			SpoolDir:     spoolDir,
-			AllowedExtID: extID,
-			NoncePath:    nonceP,
-		})
+	RunE: func(_ *cobra.Command, _ []string) error {
+		return fmt.Errorf("scout: capture: the capture host is launched automatically by the browser via native messaging; run `scout capture-host install <extension-id>` to register it")
 	},
 }
 
@@ -143,8 +217,14 @@ var captureHostInstallCmd = &cobra.Command{
 	Short: "Register the native-messaging host manifest for the given extension ID",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if _, ok := capture.OriginToExtID("chrome-extension://" + args[0] + "/"); !ok {
+			return fmt.Errorf("scout: capture: %q is not a valid extension id (expect 32 chars a-p)", args[0])
+		}
 		path, err := installNativeManifest(args[0])
 		if err != nil {
+			return err
+		}
+		if err := saveExtID(args[0]); err != nil {
 			return err
 		}
 		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "installed native-messaging manifest: %s\n", path)
@@ -159,6 +239,9 @@ var captureHostUninstallCmd = &cobra.Command{
 		if err := uninstallNativeManifest(); err != nil {
 			return err
 		}
+		if err := removeExtID(); err != nil {
+			return err
+		}
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "removed native-messaging manifest")
 		return nil
 	},
@@ -168,10 +251,9 @@ func init() {
 	vaultCaptureKeyInitCmd.Flags().Bool("rotate", false, "replace any existing capture keypair")
 	vaultCaptureKeyInitCmd.Flags().String("vault-file", "", "override vault file path")
 	vaultImportCapturesCmd.Flags().String("vault-file", "", "override vault file path")
-	captureHostCmd.Flags().String("ext-id", "", "the extension ID permitted to connect")
 
 	vaultCaptureKeyCmd.AddCommand(vaultCaptureKeyInitCmd)
 	vaultCmd.AddCommand(vaultCaptureKeyCmd, vaultImportCapturesCmd)
 	rootCmd.AddCommand(captureHostCmd)
-	captureHostCmd.AddCommand(captureHostInstallCmd, captureHostUninstallCmd)
+	captureHostCmd.AddCommand(captureHostInstallCmd, captureHostUninstallCmd, captureHostKeygenCmd)
 }
