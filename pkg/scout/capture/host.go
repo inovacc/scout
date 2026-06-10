@@ -9,6 +9,10 @@ import (
 // hostVersion is reported in hello_ack.
 const hostVersion = "1.0.0"
 
+// maxCapturesPerConn bounds how many captures a single native-messaging
+// connection may spool, so a paired extension cannot fill the disk unboundedly.
+const maxCapturesPerConn = 10000
+
 // HostConfig configures one RunHost session.
 type HostConfig struct {
 	Pub          *[32]byte
@@ -26,6 +30,7 @@ func (c HostConfig) nonceOK(got string) bool {
 // transport/encode error otherwise. It NEVER writes secret values back to w.
 func RunHost(r io.Reader, w io.Writer, cfg HostConfig) error {
 	paired := false
+	captures := 0
 	for {
 		m, err := ReadFrame(r)
 		if err != nil {
@@ -60,6 +65,11 @@ func RunHost(r io.Reader, w io.Writer, cfg HostConfig) error {
 					return werr
 				}
 				continue
+			}
+			captures++
+			if captures > maxCapturesPerConn {
+				_ = WriteFrame(w, Msg{V: 1, Type: "error", Code: "rate_limited", Message: "capture limit reached for this connection"})
+				return nil
 			}
 			payload, _ := json.Marshal(m) // re-marshal the validated message as the spool record
 			id, serr := WriteSpool(cfg.SpoolDir, cfg.Pub, payload)

@@ -1,11 +1,36 @@
 package capture
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/inovacc/scout/pkg/scout/vault"
 )
+
+// TestInitKeypairCreatesMissingParentDir guards the clean-install path: the
+// captures/ dir does not exist yet, so InitKeypair (writePub) and EnsureNonce
+// must create the parent before writing. Regression for the Phase-1 review's
+// release-blocking finding.
+func TestInitKeypairCreatesMissingParentDir(t *testing.T) {
+	v, dir := newTempVault(t)
+
+	pubPath := filepath.Join(dir, "captures", "capture.pub") // parent absent
+	if _, err := InitKeypair(v, pubPath, false); err != nil {
+		t.Fatalf("InitKeypair into missing dir: %v", err)
+	}
+	if _, err := os.Stat(pubPath); err != nil {
+		t.Fatalf("public key not written: %v", err)
+	}
+
+	noncePath := filepath.Join(dir, "captures2", "pairing.nonce") // parent absent
+	if _, err := EnsureNonce(noncePath); err != nil {
+		t.Fatalf("EnsureNonce into missing dir: %v", err)
+	}
+	if _, err := os.Stat(noncePath); err != nil {
+		t.Fatalf("nonce not written: %v", err)
+	}
+}
 
 func newTempVault(t *testing.T) (*vault.Vault, string) {
 	t.Helper()

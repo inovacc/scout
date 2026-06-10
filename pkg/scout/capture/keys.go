@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"golang.org/x/crypto/nacl/box"
 
@@ -114,6 +115,9 @@ func pubFromPriv(priv *[32]byte) *[32]byte {
 }
 
 func writePub(pubPath string, pub *[32]byte) error {
+	if err := os.MkdirAll(filepath.Dir(pubPath), 0o700); err != nil {
+		return fmt.Errorf("scout: capture: mkdir for public key: %w", err)
+	}
 	if err := os.WriteFile(pubPath, pub[:], 0o644); err != nil {
 		return fmt.Errorf("scout: capture: write public key: %w", err)
 	}

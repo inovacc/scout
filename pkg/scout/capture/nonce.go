@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -20,6 +21,9 @@ func EnsureNonce(path string) (string, error) {
 		return "", fmt.Errorf("scout: capture: gen nonce: %w", err)
 	}
 	n := hex.EncodeToString(raw[:])
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return "", fmt.Errorf("scout: capture: mkdir for nonce: %w", err)
+	}
 	if err := os.WriteFile(path, []byte(n), 0o600); err != nil {
 		return "", fmt.Errorf("scout: capture: write nonce: %w", err)
 	}
