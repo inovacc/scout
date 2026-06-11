@@ -1,6 +1,7 @@
 package amazon
 
 import (
+	"context"
 	"testing"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -48,7 +49,7 @@ func TestAmazonProvider_LoginURL(t *testing.T) {
 
 func TestValidateSession_NilSession(t *testing.T) {
 	p := &amazonProvider{}
-	if err := p.ValidateSession(nil, nil); err == nil {
+	if err := p.ValidateSession(context.Background(), nil); err == nil {
 		t.Fatal("expected error")
 	}
 }
@@ -56,7 +57,7 @@ func TestValidateSession_NilSession(t *testing.T) {
 func TestValidateSession_ValidSessionID(t *testing.T) {
 	p := &amazonProvider{}
 	s := &auth.Session{Cookies: []scout.Cookie{{Name: "session-id", Value: "123-456-789"}}}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("error = %v", err)
 	}
 }
@@ -64,7 +65,7 @@ func TestValidateSession_ValidSessionID(t *testing.T) {
 func TestValidateSession_CaseInsensitive(t *testing.T) {
 	p := &amazonProvider{}
 	s := &auth.Session{Cookies: []scout.Cookie{{Name: "Session-Id", Value: "abc"}}}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("error = %v, expected case-insensitive match", err)
 	}
 }
@@ -72,7 +73,7 @@ func TestValidateSession_CaseInsensitive(t *testing.T) {
 func TestValidateSession_NoCookie(t *testing.T) {
 	p := &amazonProvider{}
 	s := &auth.Session{Cookies: []scout.Cookie{{Name: "other", Value: "val"}}}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -84,7 +85,7 @@ func TestValidateSession_NoCookie(t *testing.T) {
 func TestValidateSession_EmptyValue(t *testing.T) {
 	p := &amazonProvider{}
 	s := &auth.Session{Cookies: []scout.Cookie{{Name: "session-id", Value: ""}}}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error for empty session-id value")
 	}

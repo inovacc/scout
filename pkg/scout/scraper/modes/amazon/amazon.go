@@ -233,7 +233,7 @@ func (m *AmazonMode) Scrape(ctx context.Context, session scraper.SessionData, op
 
 // buildTargetSet creates a lookup set from ASINs and search queries.
 // An empty set means no filtering.
-func buildTargetSet(targets []string) map[string]struct{} { //nolint:unused
+func buildTargetSet(targets []string) map[string]struct{} {
 	if len(targets) == 0 {
 		return nil
 	}
@@ -535,7 +535,7 @@ func extractSellerInfo(ctx context.Context, page *scout.Page, asin string) *scra
 }
 
 // parsePrice extracts the numeric price from a price string like "$19.99" or "₹1,299.00".
-func parsePrice(priceStr string) float64 { //nolint:unused
+func parsePrice(priceStr string) float64 {
 	// Remove currency symbols and whitespace.
 	priceStr = strings.TrimSpace(priceStr)
 	priceStr = strings.Map(func(r rune) rune {
