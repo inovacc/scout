@@ -1,6 +1,7 @@
 package linkedin
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -49,7 +50,7 @@ func TestLinkedInProvider_LoginURL(t *testing.T) {
 
 func TestValidateSession_NilSession(t *testing.T) {
 	p := &linkedinProvider{}
-	err := p.ValidateSession(nil, nil)
+	err := p.ValidateSession(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error for nil session")
 	}
@@ -60,7 +61,7 @@ func TestValidateSession_ValidLiAt(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "li_at", Value: "some-token"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -70,7 +71,7 @@ func TestValidateSession_ValidJSESSIONID(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "JSESSIONID", Value: "abc123"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -80,7 +81,7 @@ func TestValidateSession_ValidLiMc(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "li_mc", Value: "token"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -90,7 +91,7 @@ func TestValidateSession_NoCookies(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "other", Value: "val"}},
 	}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error for missing linkedin cookies")
 	}
@@ -104,7 +105,7 @@ func TestValidateSession_EmptyCookies(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{},
 	}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error for empty cookies")
 	}

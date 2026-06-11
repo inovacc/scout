@@ -1,6 +1,7 @@
 package youtube
 
 import (
+	"context"
 	"testing"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -48,7 +49,7 @@ func TestYouTubeProvider_LoginURL(t *testing.T) {
 
 func TestValidateSession_NilSession(t *testing.T) {
 	p := &youtubeProvider{}
-	err := p.ValidateSession(nil, nil)
+	err := p.ValidateSession(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error for nil session")
 	}
@@ -59,7 +60,7 @@ func TestValidateSession_ValidSID(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "SID", Value: "abc"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -69,7 +70,7 @@ func TestValidateSession_ValidSSID(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "SSID", Value: "xyz"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -79,7 +80,7 @@ func TestValidateSession_ValidHSID(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "HSID", Value: "token"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -89,7 +90,7 @@ func TestValidateSession_ValidLOGININFO(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "LOGIN_INFO", Value: "info"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -99,7 +100,7 @@ func TestValidateSession_NoCookies(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "other", Value: "val"}},
 	}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error for missing youtube cookies")
 	}
@@ -111,7 +112,7 @@ func TestValidateSession_NoCookies(t *testing.T) {
 func TestValidateSession_EmptyCookies(t *testing.T) {
 	p := &youtubeProvider{}
 	s := &auth.Session{Cookies: []scout.Cookie{}}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error for empty cookies")
 	}

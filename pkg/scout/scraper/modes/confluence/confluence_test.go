@@ -1,6 +1,7 @@
 package confluence
 
 import (
+	"context"
 	"testing"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -48,7 +49,7 @@ func TestConfluenceProvider_LoginURL(t *testing.T) {
 
 func TestValidateSession_NilSession(t *testing.T) {
 	p := &confluenceProvider{}
-	if err := p.ValidateSession(nil, nil); err == nil {
+	if err := p.ValidateSession(context.Background(), nil); err == nil {
 		t.Fatal("expected error for nil session")
 	}
 }
@@ -58,7 +59,7 @@ func TestValidateSession_ValidTokenInTokens(t *testing.T) {
 	s := &auth.Session{
 		Tokens: map[string]string{"cloud.session.token": "abc123"},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -69,7 +70,7 @@ func TestValidateSession_ValidTokenInCookies(t *testing.T) {
 		Tokens:  map[string]string{},
 		Cookies: []scout.Cookie{{Name: "cloud.session.token", Value: "tok"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -80,7 +81,7 @@ func TestValidateSession_NoToken(t *testing.T) {
 		Tokens:  map[string]string{},
 		Cookies: []scout.Cookie{{Name: "other", Value: "val"}},
 	}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error")
 	}

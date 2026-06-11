@@ -1,6 +1,7 @@
 package sharepoint
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -49,7 +50,7 @@ func TestSharePointProvider_LoginURL(t *testing.T) {
 
 func TestValidateSession_NilSession(t *testing.T) {
 	p := &sharepointProvider{}
-	if err := p.ValidateSession(nil, nil); err == nil {
+	if err := p.ValidateSession(context.Background(), nil); err == nil {
 		t.Fatal("expected error")
 	}
 }
@@ -57,7 +58,7 @@ func TestValidateSession_NilSession(t *testing.T) {
 func TestValidateSession_ValidFedAuth(t *testing.T) {
 	p := &sharepointProvider{}
 	s := &auth.Session{Tokens: map[string]string{"FedAuth": "token123"}}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("error = %v", err)
 	}
 }
@@ -65,7 +66,7 @@ func TestValidateSession_ValidFedAuth(t *testing.T) {
 func TestValidateSession_ValidRtFa(t *testing.T) {
 	p := &sharepointProvider{}
 	s := &auth.Session{Tokens: map[string]string{"rtFa": "token456"}}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("error = %v", err)
 	}
 }
@@ -76,7 +77,7 @@ func TestValidateSession_ValidCookieFallback(t *testing.T) {
 		Tokens:  map[string]string{},
 		Cookies: []scout.Cookie{{Name: "SPOIDCRL", Value: "val"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("error = %v", err)
 	}
 }
@@ -87,7 +88,7 @@ func TestValidateSession_NoToken(t *testing.T) {
 		Tokens:  map[string]string{},
 		Cookies: []scout.Cookie{{Name: "other", Value: "v"}},
 	}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error")
 	}

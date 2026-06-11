@@ -1,6 +1,7 @@
 package gmaps
 
 import (
+	"context"
 	"testing"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -48,7 +49,7 @@ func TestGMapsProvider_LoginURL(t *testing.T) {
 
 func TestValidateSession_NilSession(t *testing.T) {
 	p := &gmapsProvider{}
-	if err := p.ValidateSession(nil, nil); err == nil {
+	if err := p.ValidateSession(context.Background(), nil); err == nil {
 		t.Fatal("expected error")
 	}
 }
@@ -56,7 +57,7 @@ func TestValidateSession_NilSession(t *testing.T) {
 func TestValidateSession_ValidSID(t *testing.T) {
 	p := &gmapsProvider{}
 	s := &auth.Session{Cookies: []scout.Cookie{{Name: "SID", Value: "abc"}}}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("error = %v", err)
 	}
 }
@@ -64,7 +65,7 @@ func TestValidateSession_ValidSID(t *testing.T) {
 func TestValidateSession_ValidNID(t *testing.T) {
 	p := &gmapsProvider{}
 	s := &auth.Session{Cookies: []scout.Cookie{{Name: "NID", Value: "xyz"}}}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("error = %v", err)
 	}
 }
@@ -72,7 +73,7 @@ func TestValidateSession_ValidNID(t *testing.T) {
 func TestValidateSession_NoCookies(t *testing.T) {
 	p := &gmapsProvider{}
 	s := &auth.Session{Cookies: []scout.Cookie{{Name: "other", Value: "val"}}}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -164,8 +165,8 @@ func TestParseMapsPLACES_InvalidJSON(t *testing.T) {
 
 func TestParseMapsPLACES_EmptyJSON(t *testing.T) {
 	results := parseMapsPLACES("{}", nil)
-	if results == nil {
-		// OK: no business profile, no reviews, no photos
+	if len(results) != 0 {
+		t.Errorf("expected 0 results for empty JSON object, got %d", len(results))
 	}
 }
 

@@ -1,6 +1,7 @@
 package gmail
 
 import (
+	"context"
 	"testing"
 
 	"github.com/inovacc/scout/pkg/scout"
@@ -48,7 +49,7 @@ func TestGmailProvider_LoginURL(t *testing.T) {
 
 func TestValidateSession_NilSession(t *testing.T) {
 	p := &gmailProvider{}
-	err := p.ValidateSession(nil, nil)
+	err := p.ValidateSession(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error for nil session")
 	}
@@ -59,7 +60,7 @@ func TestValidateSession_WithSSID(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "SSID", Value: "abc"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -69,7 +70,7 @@ func TestValidateSession_WithSID(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "SID", Value: "xyz"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -79,7 +80,7 @@ func TestValidateSession_WithHSID(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{{Name: "HSID", Value: "123"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("ValidateSession() error = %v", err)
 	}
 }
@@ -89,7 +90,7 @@ func TestValidateSession_NoCookies(t *testing.T) {
 	s := &auth.Session{
 		Cookies: []scout.Cookie{},
 	}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error for missing session cookies")
 	}
@@ -106,7 +107,7 @@ func TestValidateSession_WrongCookies(t *testing.T) {
 			{Name: "APISID", Value: "notvalid"},
 		},
 	}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error for wrong cookies")
 	}

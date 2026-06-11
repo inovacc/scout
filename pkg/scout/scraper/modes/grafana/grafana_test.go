@@ -1,6 +1,8 @@
 package grafana
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -49,7 +51,7 @@ func TestGrafanaProvider_LoginURL(t *testing.T) {
 
 func TestValidateSession_NilSession(t *testing.T) {
 	p := &grafanaProvider{}
-	if err := p.ValidateSession(nil, nil); err == nil {
+	if err := p.ValidateSession(context.Background(), nil); err == nil {
 		t.Fatal("expected error")
 	}
 }
@@ -57,7 +59,7 @@ func TestValidateSession_NilSession(t *testing.T) {
 func TestValidateSession_ValidGrafanaSession(t *testing.T) {
 	p := &grafanaProvider{}
 	s := &auth.Session{Tokens: map[string]string{"grafana_session": "tok"}}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("error = %v", err)
 	}
 }
@@ -65,7 +67,7 @@ func TestValidateSession_ValidGrafanaSession(t *testing.T) {
 func TestValidateSession_ValidAPIToken(t *testing.T) {
 	p := &grafanaProvider{}
 	s := &auth.Session{Tokens: map[string]string{"api_token": "key"}}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("error = %v", err)
 	}
 }
@@ -76,7 +78,7 @@ func TestValidateSession_ValidCookie(t *testing.T) {
 		Tokens:  map[string]string{},
 		Cookies: []scout.Cookie{{Name: "grafana_session", Value: "val"}},
 	}
-	if err := p.ValidateSession(nil, s); err != nil {
+	if err := p.ValidateSession(context.Background(), s); err != nil {
 		t.Errorf("error = %v", err)
 	}
 }
@@ -87,11 +89,12 @@ func TestValidateSession_NoAuth(t *testing.T) {
 		Tokens:  map[string]string{},
 		Cookies: []scout.Cookie{{Name: "other", Value: "val"}},
 	}
-	err := p.ValidateSession(nil, s)
+	err := p.ValidateSession(context.Background(), s)
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if _, ok := err.(*scraper.AuthError); !ok {
+	var authErr *scraper.AuthError
+	if !errors.As(err, &authErr) {
 		t.Errorf("expected *scraper.AuthError, got %T", err)
 	}
 }
