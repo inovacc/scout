@@ -717,8 +717,13 @@ Shipped as v1.0.3 under the Superpowers workflow (brainstorm → spec → execut
   active tab's cookies + web storage to `scout capture-host` over native messaging.
 - Go glue: native-messaging launch routing in `main()` (Chrome passes the origin as argv);
   `scout capture-host keygen` (pinned ID); allowed ext-id persisted at install.
-- Zero password handling (Phase 3). Acceptance: manual E2E checklist
+- Zero password handling (Phase 3). Acceptance: E2E checklist
   `docs/superpowers/specs/2026-06-10-scout-capture-phase2-e2e-checklist.md`.
+- **VERIFIED 2026-06-10** via automated driver `hacks/captureE2E` (`075ccb5`): 20/20 steps,
+  exit 0, against `main` — SHIPPED extension `chrome.storage` available (`9dc80ba` fix),
+  capture → sealed spool → `vault import-captures` → `vault use` replay = AUTHENTICATED,
+  + both negative checks. Sole residual: the rendered popup `activeTab` click gesture is
+  human-only (not CDP-automatable); functional path is automated. Re-run: `go run ./hacks/captureE2E`.
 
 ---
 

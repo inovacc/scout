@@ -1,5 +1,14 @@
 # Scout Capture — Phase 2 (MV3 Session-Capture Extension) Implementation Plan
 
+> **STATUS: DONE + VERIFIED 2026-06-10.** Implemented and merged (`26acf3b`); a
+> post-merge release-blocker (missing `"storage"` permission → non-functional SW)
+> was fixed in `9dc80ba`. End-to-end behavior is verified by the automated driver
+> `hacks/captureE2E` (`075ccb5`) — 20/20 steps, exit 0 against `main` `4a4cf76`
+> (`go run ./hacks/captureE2E`). The unchecked boxes below are not a TODO list;
+> the work shipped (git history is the source of truth) and is proven by the E2E.
+> Sole residual: the rendered popup `activeTab` click gesture is human-only (not
+> CDP-automatable) — see the acceptance checklist's automation legend.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship an MV3 browser extension that, on an explicit user click, captures the active tab's cookies + web storage and hands them to the local `scout capture-host` (Phase 1) over native messaging, so `scout vault import-captures` + `scout vault use` can replay the operator's own session headlessly — with **zero password handling** (that is Phase 3).
