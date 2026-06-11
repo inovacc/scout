@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 )
@@ -22,7 +23,7 @@ func BenchmarkJSONHandler(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		w := httptest.NewRecorder()
-		r := httptest.NewRequest("GET", "/metrics/json", nil)
+		r := httptest.NewRequest(http.MethodGet, "/metrics/json", nil)
 		handler.ServeHTTP(w, r)
 	}
 }
@@ -35,7 +36,7 @@ func BenchmarkPrometheusHandler(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		w := httptest.NewRecorder()
-		r := httptest.NewRequest("GET", "/metrics", nil)
+		r := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 		handler.ServeHTTP(w, r)
 	}
 }

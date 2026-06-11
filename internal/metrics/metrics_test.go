@@ -67,7 +67,7 @@ func TestJSONHandler(t *testing.T) {
 	Reset()
 	Get().NavigationsTotal.Add(42)
 
-	req := httptest.NewRequest("GET", "/metrics/json", nil)
+	req := httptest.NewRequest(http.MethodGet, "/metrics/json", nil)
 	w := httptest.NewRecorder()
 	Handler().ServeHTTP(w, req)
 
@@ -98,7 +98,7 @@ func TestPrometheusHandler(t *testing.T) {
 	Reset()
 	Get().ScreenshotsTotal.Add(7)
 
-	req := httptest.NewRequest("GET", "/metrics", nil)
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 	w := httptest.NewRecorder()
 	PrometheusHandler().ServeHTTP(w, req)
 

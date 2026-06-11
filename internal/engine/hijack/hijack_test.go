@@ -2,6 +2,7 @@ package hijack
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -513,7 +514,7 @@ func TestExportHARWithRequestAndResponse(t *testing.T) {
 	entry := harDoc.Log.Entries[0]
 
 	// Request checks
-	if entry.Request.Method != "POST" {
+	if entry.Request.Method != http.MethodPost {
 		t.Errorf("method = %q, want POST", entry.Request.Method)
 	}
 	if entry.Request.HTTPVersion != "HTTP/1.1" {

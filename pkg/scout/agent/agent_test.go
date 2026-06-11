@@ -1398,7 +1398,7 @@ func TestServerToolsSchemaError(t *testing.T) {
 	}
 	s.registerRoutes()
 
-	req := httptest.NewRequest("GET", "/tools/schema", nil)
+	req := httptest.NewRequest(http.MethodGet, "/tools/schema", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -1413,7 +1413,7 @@ func TestServerToolsSchemaValidJSON(t *testing.T) {
 		Tool{Name: "shot", Description: "Screenshot", Parameters: emptyParams()},
 	)
 
-	req := httptest.NewRequest("GET", "/tools/schema", nil)
+	req := httptest.NewRequest(http.MethodGet, "/tools/schema", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 

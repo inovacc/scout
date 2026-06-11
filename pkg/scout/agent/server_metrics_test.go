@@ -34,7 +34,7 @@ func TestServerMetricsOnCall(t *testing.T) {
 	s.registerRoutes()
 
 	body := bytes.NewBufferString(`{"name":"test_nav","arguments":{}}`)
-	req := httptest.NewRequest("POST", "/call", body)
+	req := httptest.NewRequest(http.MethodPost, "/call", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
@@ -68,7 +68,7 @@ func TestServerMetricsOnError(t *testing.T) {
 	s.registerRoutes()
 
 	body := bytes.NewBufferString(`{"name":"fail_tool","arguments":{}}`)
-	req := httptest.NewRequest("POST", "/call", body)
+	req := httptest.NewRequest(http.MethodPost, "/call", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
@@ -94,7 +94,7 @@ func TestServerMetricsEndpoint(t *testing.T) {
 	s.registerRoutes()
 
 	// Test Prometheus endpoint
-	req := httptest.NewRequest("GET", "/metrics", nil)
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -106,7 +106,7 @@ func TestServerMetricsEndpoint(t *testing.T) {
 	}
 
 	// Test JSON endpoint
-	req = httptest.NewRequest("GET", "/metrics/json", nil)
+	req = httptest.NewRequest(http.MethodGet, "/metrics/json", nil)
 	w = httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -143,7 +143,7 @@ func TestServerMultipleCallsAccumulate(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		body := bytes.NewBufferString(`{"name":"ping","arguments":{}}`)
-		req := httptest.NewRequest("POST", "/call", body)
+		req := httptest.NewRequest(http.MethodPost, "/call", body)
 		w := httptest.NewRecorder()
 		s.mux.ServeHTTP(w, req)
 	}

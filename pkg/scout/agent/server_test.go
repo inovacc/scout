@@ -30,7 +30,7 @@ func TestServerHealth(t *testing.T) {
 		Tool{Name: "test_tool", Description: "A test tool"},
 	)
 
-	req := httptest.NewRequest("GET", "/health", nil)
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -55,7 +55,7 @@ func TestServerToolsOpenAI(t *testing.T) {
 		Tool{Name: "navigate", Description: "Go to URL", Parameters: emptyParams()},
 	)
 
-	req := httptest.NewRequest("GET", "/tools", nil)
+	req := httptest.NewRequest(http.MethodGet, "/tools", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -77,7 +77,7 @@ func TestServerToolsAnthropic(t *testing.T) {
 		Tool{Name: "navigate", Description: "Go to URL", Parameters: emptyParams()},
 	)
 
-	req := httptest.NewRequest("GET", "/tools/anthropic", nil)
+	req := httptest.NewRequest(http.MethodGet, "/tools/anthropic", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -101,7 +101,7 @@ func TestServerCallMissingName(t *testing.T) {
 	s := newTestServer()
 
 	body := bytes.NewBufferString(`{"arguments":{}}`)
-	req := httptest.NewRequest("POST", "/call", body)
+	req := httptest.NewRequest(http.MethodPost, "/call", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
@@ -115,7 +115,7 @@ func TestServerCallUnknownTool(t *testing.T) {
 	s := newTestServer()
 
 	body := bytes.NewBufferString(`{"name":"nonexistent","arguments":{}}`)
-	req := httptest.NewRequest("POST", "/call", body)
+	req := httptest.NewRequest(http.MethodPost, "/call", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
@@ -129,7 +129,7 @@ func TestServerCallInvalidJSON(t *testing.T) {
 	s := newTestServer()
 
 	body := bytes.NewBufferString(`{invalid json}`)
-	req := httptest.NewRequest("POST", "/call", body)
+	req := httptest.NewRequest(http.MethodPost, "/call", body)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -149,7 +149,7 @@ func TestServerCallSuccess(t *testing.T) {
 	})
 
 	body := bytes.NewBufferString(`{"name":"echo","arguments":{}}`)
-	req := httptest.NewRequest("POST", "/call", body)
+	req := httptest.NewRequest(http.MethodPost, "/call", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
@@ -181,7 +181,7 @@ func TestServerCallHandlerError(t *testing.T) {
 	})
 
 	body := bytes.NewBufferString(`{"name":"fail","arguments":{}}`)
-	req := httptest.NewRequest("POST", "/call", body)
+	req := httptest.NewRequest(http.MethodPost, "/call", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
@@ -209,7 +209,7 @@ func TestServerToolsSchema(t *testing.T) {
 		Tool{Name: "nav", Description: "Navigate", Parameters: emptyParams()},
 	)
 
-	req := httptest.NewRequest("GET", "/tools/schema", nil)
+	req := httptest.NewRequest(http.MethodGet, "/tools/schema", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -233,7 +233,7 @@ func TestServerHealthMultipleTools(t *testing.T) {
 		Tool{Name: "c", Description: "Tool C"},
 	)
 
-	req := httptest.NewRequest("GET", "/health", nil)
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -252,7 +252,7 @@ func TestCORSHeaders(t *testing.T) {
 	handler := s.corsMiddleware(s.rateLimitMiddleware(s.mux))
 
 	t.Run("allowlisted origin echoed", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/health", nil)
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
 		req.Header.Set("Origin", "https://example.com")
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
@@ -269,7 +269,7 @@ func TestCORSHeaders(t *testing.T) {
 	})
 
 	t.Run("non-allowlisted origin not echoed", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/health", nil)
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
 		req.Header.Set("Origin", "https://evil.example")
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
@@ -280,7 +280,7 @@ func TestCORSHeaders(t *testing.T) {
 	})
 
 	t.Run("no origin no headers", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/health", nil)
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 
@@ -290,7 +290,7 @@ func TestCORSHeaders(t *testing.T) {
 	})
 
 	t.Run("preflight OPTIONS returns 204", func(t *testing.T) {
-		req := httptest.NewRequest("OPTIONS", "/call", nil)
+		req := httptest.NewRequest(http.MethodOptions, "/call", nil)
 		req.Header.Set("Origin", "https://app.test")
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
@@ -316,7 +316,7 @@ func TestRateLimiting(t *testing.T) {
 
 	// Use up all burst tokens.
 	for i := 0; i < 5; i++ {
-		req := httptest.NewRequest("GET", "/health", nil)
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 		if w.Code != http.StatusOK {
@@ -325,7 +325,7 @@ func TestRateLimiting(t *testing.T) {
 	}
 
 	// Next request should be rate limited.
-	req := httptest.NewRequest("GET", "/health", nil)
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -359,7 +359,7 @@ func TestAuthMiddlewareNoKey(t *testing.T) {
 	s := newTestServer(Tool{Name: "t", Description: "test"})
 	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
-	req := httptest.NewRequest("GET", "/tools", nil)
+	req := httptest.NewRequest(http.MethodGet, "/tools", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -372,7 +372,7 @@ func TestAuthMiddlewareValidKey(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test", Parameters: emptyParams()})
 	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
-	req := httptest.NewRequest("GET", "/tools", nil)
+	req := httptest.NewRequest(http.MethodGet, "/tools", nil)
 	req.Header.Set("Authorization", "Bearer secret-key-123")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -386,7 +386,7 @@ func TestAuthMiddlewareInvalidKey(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
 	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
-	req := httptest.NewRequest("GET", "/tools", nil)
+	req := httptest.NewRequest(http.MethodGet, "/tools", nil)
 	req.Header.Set("Authorization", "Bearer wrong-key")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -408,7 +408,7 @@ func TestAuthMiddlewareMissingHeader(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
 	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
-	req := httptest.NewRequest("GET", "/tools", nil)
+	req := httptest.NewRequest(http.MethodGet, "/tools", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -429,7 +429,7 @@ func TestAuthMiddlewareHealthBypass(t *testing.T) {
 	s := newTestServerWithAPIKey("secret-key-123", Tool{Name: "t", Description: "test"})
 	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
-	req := httptest.NewRequest("GET", "/health", nil)
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -441,7 +441,7 @@ func TestAuthMiddlewareHealthBypass(t *testing.T) {
 func TestSwaggerUIEndpoint(t *testing.T) {
 	s := newTestServer(Tool{Name: "t", Description: "test"})
 
-	req := httptest.NewRequest("GET", "/docs", nil)
+	req := httptest.NewRequest(http.MethodGet, "/docs", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -466,7 +466,7 @@ func TestSwaggerUIEndpoint(t *testing.T) {
 func TestOpenAPISpecEndpoint(t *testing.T) {
 	s := newTestServer(Tool{Name: "t", Description: "test"})
 
-	req := httptest.NewRequest("GET", "/openapi.yaml", nil)
+	req := httptest.NewRequest(http.MethodGet, "/openapi.yaml", nil)
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
 
@@ -493,7 +493,7 @@ func TestAuthMiddlewareDocsBypass(t *testing.T) {
 	handler := s.corsMiddleware(s.authMiddleware(s.rateLimitMiddleware(s.mux)))
 
 	for _, path := range []string{"/docs", "/openapi.yaml"} {
-		req := httptest.NewRequest("GET", path, nil)
+		req := httptest.NewRequest(http.MethodGet, path, nil)
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 
@@ -509,7 +509,7 @@ func TestAuthMiddlewareMetricsRequiresAuth(t *testing.T) {
 
 	for _, path := range []string{"/metrics", "/metrics/json"} {
 		// Without a token, operational metrics now require auth (no bypass).
-		req := httptest.NewRequest("GET", path, nil)
+		req := httptest.NewRequest(http.MethodGet, path, nil)
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 		if w.Code != http.StatusUnauthorized {
@@ -517,7 +517,7 @@ func TestAuthMiddlewareMetricsRequiresAuth(t *testing.T) {
 		}
 
 		// With a valid token, metrics remain reachable.
-		req2 := httptest.NewRequest("GET", path, nil)
+		req2 := httptest.NewRequest(http.MethodGet, path, nil)
 		req2.Header.Set("Authorization", "Bearer secret-key-123")
 		w2 := httptest.NewRecorder()
 		handler.ServeHTTP(w2, req2)
@@ -555,7 +555,7 @@ func TestStreamSuccess(t *testing.T) {
 	})
 
 	body := bytes.NewBufferString(`{"name":"echo","arguments":{}}`)
-	req := httptest.NewRequest("POST", "/stream", body)
+	req := httptest.NewRequest(http.MethodPost, "/stream", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
@@ -607,7 +607,7 @@ func TestStreamError(t *testing.T) {
 	})
 
 	body := bytes.NewBufferString(`{"name":"fail","arguments":{}}`)
-	req := httptest.NewRequest("POST", "/stream", body)
+	req := httptest.NewRequest(http.MethodPost, "/stream", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
@@ -640,7 +640,7 @@ func TestStreamMissingName(t *testing.T) {
 	s := newTestServer()
 
 	body := bytes.NewBufferString(`{"arguments":{}}`)
-	req := httptest.NewRequest("POST", "/stream", body)
+	req := httptest.NewRequest(http.MethodPost, "/stream", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)
@@ -668,7 +668,7 @@ func TestStreamUnknownTool(t *testing.T) {
 	s := newTestServer()
 
 	body := bytes.NewBufferString(`{"name":"nonexistent","arguments":{}}`)
-	req := httptest.NewRequest("POST", "/stream", body)
+	req := httptest.NewRequest(http.MethodPost, "/stream", body)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.mux.ServeHTTP(w, req)

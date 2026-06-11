@@ -262,12 +262,12 @@ func TestBrowserConfig_IsHeadless(t *testing.T) {
 
 func TestStrategy_String(t *testing.T) {
 	s := &Strategy{
-		Name:  "my-strat",
+		Name:  "my-start",
 		Steps: []Step{{Name: "a"}, {Name: "b"}},
 	}
 
 	got := s.String()
-	if !contains(got, "my-strat") || !contains(got, "a, b") {
+	if !contains(got, "my-start") || !contains(got, "a, b") {
 		t.Errorf("String() = %q, unexpected", got)
 	}
 }
