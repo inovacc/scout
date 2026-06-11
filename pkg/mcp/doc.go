@@ -1,10 +1,10 @@
 /*
-Copyright (c) 2026 Security Research
-
 Package mcp provides a reusable MCP sampling library. It lets any Go MCP
 server ask its connected client (e.g., Claude Code) for an AI completion via
 the standard sampling/createMessage reverse-RPC, without depending on any
 provider SDK.
+
+Copyright (c) 2026 Security Research
 
 # Pattern
 

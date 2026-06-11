@@ -1,4 +1,4 @@
-// Package tracing provides OpenTelemetry instrumentation for Scout.
+// Tracing provides OpenTelemetry instrumentation for Scout.
 //
 // Usage:
 //
@@ -7,6 +7,7 @@
 //
 // Or with OTEL_EXPORTER_OTLP_ENDPOINT environment variable set.
 // When no exporter is configured, tracing is a no-op.
+
 package tracing
 
 import (

@@ -1,4 +1,5 @@
-// Package idle provides an activity-based shutdown timer.
+// Package idle provides an activity-based shutdown timer used by the MCP and
+// agent servers to auto-shutdown the browser after a period of inactivity.
 package idle
 
 import (

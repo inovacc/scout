@@ -760,7 +760,7 @@ func TestTimezoneLocales_HaveRequiredFields(t *testing.T) {
 }
 
 func TestScreenResolutions_Positive(t *testing.T) {
-	allRes := make([]screenResolution, 0)
+	allRes := make([]screenResolution, 0, len(screenResolutionsWindows)+len(screenResolutionsMac)+len(screenResolutionsLinux)+len(screenResolutionsMobile))
 	allRes = append(allRes, screenResolutionsWindows...)
 	allRes = append(allRes, screenResolutionsMac...)
 	allRes = append(allRes, screenResolutionsLinux...)

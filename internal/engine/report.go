@@ -120,9 +120,12 @@ func renderReport(r *Report) string {
 	b.WriteString("## Raw Data (JSON)\n\n")
 	b.WriteString("```json\n")
 
-	raw, _ := json.MarshalIndent(r, "", "  ")
-
-	b.Write(raw)
+	raw, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		fmt.Fprintf(&b, "(failed to marshal report JSON: %v)", err)
+	} else {
+		b.Write(raw)
+	}
 	b.WriteString("\n```\n")
 
 	return b.String()

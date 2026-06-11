@@ -165,7 +165,7 @@ func handleFetch(_ context.Context, args map[string]any) (*sdk.ToolResult, error
 
 	switch format {
 	case "markdown":
-		var opts []scout.MarkdownOption
+		opts := make([]scout.MarkdownOption, 0, 1)
 		opts = append(opts, scout.WithMainContentOnly())
 
 		md, err := page.Markdown(opts...)

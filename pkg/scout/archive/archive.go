@@ -1,6 +1,7 @@
-// Package archive provides a unified interface for extracting browser archives
-// in multiple formats (zip, tar.gz, deb, rpm) into the scout browser cache.
 package archive
+
+// This file provides a unified interface for extracting browser archives
+// in multiple formats (zip, tar.gz, deb, rpm) into the scout browser cache.
 
 import (
 	"fmt"

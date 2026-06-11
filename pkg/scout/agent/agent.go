@@ -1,6 +1,8 @@
-// Package agent provides AI agent framework integration for Scout.
-// It generates tool schemas and adapters for OpenAI, Anthropic, and LangChain.
 package agent
+
+// This file provides AI agent framework integration for Scout: it generates
+// tool schemas and adapters for OpenAI, Anthropic, and LangChain. The package
+// doc lives in doc.go.
 
 import (
 	"context"

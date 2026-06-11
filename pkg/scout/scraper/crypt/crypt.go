@@ -1,4 +1,3 @@
-// Package crypt provides AES-256-GCM encryption for session data.
 package crypt
 
 import (

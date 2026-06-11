@@ -34,7 +34,10 @@ func installNativeManifest(extID string) (string, error) {
 		"type":            "stdio",
 		"allowed_origins": []string{"chrome-extension://" + extID + "/"},
 	}
-	b, _ := json.MarshalIndent(manifest, "", "  ")
+	b, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("scout: capture: marshal manifest: %w", err)
+	}
 	path := filepath.Join(dir, nativeHostName+".json")
 	if err := os.WriteFile(path, b, 0o600); err != nil {
 		return "", fmt.Errorf("scout: capture: write manifest: %w", err)

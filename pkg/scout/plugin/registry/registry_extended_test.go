@@ -162,7 +162,10 @@ func TestLoadLockFile_ValidFile(t *testing.T) {
 		},
 	}
 
-	data, _ := json.MarshalIndent(lf, "", "  ")
+	data, err := json.MarshalIndent(lf, "", "  ")
+	if err != nil {
+		t.Fatalf("json.MarshalIndent() error: %v", err)
+	}
 	if err := os.WriteFile(filepath.Join(lockDir, "lock.json"), data, 0o600); err != nil {
 		t.Fatal(err)
 	}

@@ -97,7 +97,10 @@ func handleFormFill(_ context.Context, args map[string]any) (*sdk.ToolResult, er
 	}
 
 	// Fill form fields via JS eval.
-	valuesJSON, _ := json.Marshal(formValues)
+	valuesJSON, err := json.Marshal(formValues)
+	if err != nil {
+		return sdk.ErrorResult(err.Error()), nil
+	}
 	selector, _ := args["selector"].(string)
 	if selector == "" {
 		selector = "form"

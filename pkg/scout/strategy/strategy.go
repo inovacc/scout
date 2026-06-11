@@ -1,13 +1,3 @@
-// Package strategy provides declarative YAML/JSON strategy files for
-// multi-step browser automation workflows. A strategy file describes browser
-// configuration, authentication, scrape steps, and output destinations.
-//
-// Usage:
-//
-//	s, err := strategy.LoadFile("strategy.yaml")
-//	if err != nil { ... }
-//	if err := strategy.Validate(s); err != nil { ... }
-//	if err := strategy.Execute(ctx, s); err != nil { ... }
 package strategy
 
 import (
@@ -19,6 +9,17 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+// Strategy files are declarative YAML/JSON descriptions of multi-step browser
+// automation workflows, covering browser configuration, authentication, scrape
+// steps, and output destinations.
+//
+// Usage:
+//
+//	s, err := strategy.LoadFile("strategy.yaml")
+//	if err != nil { ... }
+//	if err := strategy.Validate(s); err != nil { ... }
+//	if err := strategy.Execute(ctx, s); err != nil { ... }
 
 // Strategy is the top-level declaration for a multi-step workflow.
 type Strategy struct {

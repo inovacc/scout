@@ -1034,7 +1034,10 @@ func makePatchedExtension(home, shipped string) (string, error) {
 	}
 	m["permissions"] = list
 	m["host_permissions"] = []string{"<all_urls>"}
-	out, _ := json.MarshalIndent(m, "", "  ")
+	out, err := json.MarshalIndent(m, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("marshal patched manifest: %w", err)
+	}
 	if err := os.WriteFile(mp, out, 0o600); err != nil {
 		return "", fmt.Errorf("write patched manifest: %w", err)
 	}
@@ -1168,7 +1171,10 @@ func portOf(u string) string {
 }
 
 func jsString(s string) string {
-	b, _ := json.Marshal(s)
+	b, err := json.Marshal(s)
+	if err != nil {
+		panic(err) // marshaling a string cannot fail
+	}
 	return string(b)
 }
 

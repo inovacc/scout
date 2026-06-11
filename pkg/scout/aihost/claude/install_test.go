@@ -56,7 +56,10 @@ func TestPatchSettingsPreservesUnrelatedKeys(t *testing.T) {
 		},
 		"customKey": "must-survive",
 	}
-	preBytes, _ := json.Marshal(pre)
+	preBytes, err := json.Marshal(pre)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(settingsPath, preBytes, 0o644); err != nil {
 		t.Fatal(err)
 	}

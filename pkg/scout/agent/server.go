@@ -298,7 +298,10 @@ func writeSSE(w http.ResponseWriter, flusher http.Flusher, event, data string) {
 }
 
 func escapeJSON(s string) string {
-	b, _ := json.Marshal(s)
+	b, err := json.Marshal(s)
+	if err != nil {
+		return s
+	}
 	// Remove surrounding quotes added by json.Marshal.
 	if len(b) >= 2 {
 		return string(b[1 : len(b)-1])
@@ -449,5 +452,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.WriteHeader(status)
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	_ = enc.Encode(v)
+	if err := enc.Encode(v); err != nil {
+		slog.Error("agent: writeJSON: encode response", "err", err)
+	}
 }

@@ -1,15 +1,16 @@
 /*
 Copyright (c) 2026 Security Research
-
-Capability inspection helpers for the package-level sampling singleton.
-These are non-blocking accessors over the cached InitializeParams advertised
-by the connected host (Claude Code) at MCP handshake time.
-
-D-45-CAPABILITY-PROBE: callers MUST treat a `false` return as authoritative
-for the lifetime of the current session — graceful-degrade to NilMCPClient
-semantics rather than spinning a retry loop.
 */
+
 package mcp
+
+// Capability inspection helpers for the package-level sampling singleton.
+// These are non-blocking accessors over the cached InitializeParams advertised
+// by the connected host (Claude Code) at MCP handshake time.
+//
+// D-45-CAPABILITY-PROBE: callers MUST treat a `false` return as authoritative
+// for the lifetime of the current session — graceful-degrade to NilMCPClient
+// semantics rather than spinning a retry loop.
 
 import "context"
 

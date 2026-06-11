@@ -181,7 +181,9 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 					go func() {
 						enc := json.NewEncoder(f)
 						for m := range msgs {
-							_ = enc.Encode(m)
+							if err := enc.Encode(m); err != nil {
+								slog.Error("scout: server: encode ws message", "err", err)
+							}
 						}
 						close(done)
 					}()

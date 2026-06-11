@@ -8,6 +8,7 @@ daemon-only (D-03/D-04): cmd/mcp.go calls SetSession after Server.Connect.
 All failure modes (D-06) WARN-log and return an error so adapters can swallow
 and degrade gracefully (NilMCPClient semantics).
 */
+
 package mcp
 
 import (

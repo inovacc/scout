@@ -121,7 +121,11 @@ func TestCallSuccess(t *testing.T) {
 			t.Errorf("bad request json: %v", err)
 			return
 		}
-		resp, _ := json.Marshal(Response{ID: req.ID, Result: json.RawMessage(`{"value":42}`)})
+		resp, err := json.Marshal(Response{ID: req.ID, Result: json.RawMessage(`{"value":42}`)})
+		if err != nil {
+			t.Errorf("marshal response: %v", err)
+			return
+		}
 		ws.push(resp)
 	}()
 
@@ -158,10 +162,14 @@ func TestCallErrorResponse(t *testing.T) {
 		raw := waitForSend(t, ws)
 		var req Request
 		_ = json.Unmarshal(raw, &req)
-		resp, _ := json.Marshal(Response{
+		resp, err := json.Marshal(Response{
 			ID:    req.ID,
 			Error: &Error{Code: -32000, Message: "Could not find object with given id"},
 		})
+		if err != nil {
+			t.Errorf("marshal response: %v", err)
+			return
+		}
 		ws.push(resp)
 	}()
 
@@ -217,11 +225,14 @@ func TestEventDispatch(t *testing.T) {
 	c.Start(ws)
 	defer ws.close()
 
-	evt, _ := json.Marshal(Event{
+	evt, err := json.Marshal(Event{
 		SessionID: "S1",
 		Method:    "Target.targetCreated",
 		Params:    json.RawMessage(`{"targetId":"t1"}`),
 	})
+	if err != nil {
+		t.Fatalf("marshal event: %v", err)
+	}
 	ws.push(evt)
 
 	select {
@@ -266,14 +277,21 @@ func TestUnknownResponseIDIgnored(t *testing.T) {
 	defer ws.close()
 
 	// Push a response for an ID nobody is waiting on.
-	orphan, _ := json.Marshal(Response{ID: 9999, Result: json.RawMessage(`"x"`)})
+	orphan, err := json.Marshal(Response{ID: 9999, Result: json.RawMessage(`"x"`)})
+	if err != nil {
+		t.Fatalf("marshal orphan: %v", err)
+	}
 	ws.push(orphan)
 
 	go func() {
 		raw := waitForSend(t, ws)
 		var req Request
 		_ = json.Unmarshal(raw, &req)
-		resp, _ := json.Marshal(Response{ID: req.ID, Result: json.RawMessage(`"ok"`)})
+		resp, err := json.Marshal(Response{ID: req.ID, Result: json.RawMessage(`"ok"`)})
+		if err != nil {
+			t.Errorf("marshal response: %v", err)
+			return
+		}
 		ws.push(resp)
 	}()
 

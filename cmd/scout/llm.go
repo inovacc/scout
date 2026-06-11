@@ -692,7 +692,10 @@ func ollamaListModels(ctx context.Context, host string) ([]string, error) {
 
 // ollamaPullModel downloads a model via Ollama's native streaming POST /api/pull.
 func ollamaPullModel(ctx context.Context, host, model string, progress func(status string, completed, total int64)) error {
-	body, _ := json.Marshal(map[string]string{"name": model})
+	body, err := json.Marshal(map[string]string{"name": model})
+	if err != nil {
+		return err
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ollamaAPIBase(host)+"/api/pull", bytes.NewReader(body))
 	if err != nil {

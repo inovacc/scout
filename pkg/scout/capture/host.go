@@ -71,7 +71,13 @@ func RunHost(r io.Reader, w io.Writer, cfg HostConfig) error {
 				_ = WriteFrame(w, Msg{V: 1, Type: "error", Code: "rate_limited", Message: "capture limit reached for this connection"})
 				return nil
 			}
-			payload, _ := json.Marshal(m) // re-marshal the validated message as the spool record
+			payload, merr := json.Marshal(m) // re-marshal the validated message as the spool record
+			if merr != nil {
+				if werr := WriteFrame(w, Msg{V: 1, Type: "error", Code: "marshal", Message: "could not encode capture"}); werr != nil {
+					return werr
+				}
+				continue
+			}
 			id, serr := WriteSpool(cfg.SpoolDir, cfg.Pub, payload)
 			if serr != nil {
 				if werr := WriteFrame(w, Msg{V: 1, Type: "error", Code: "spool", Message: "could not store capture"}); werr != nil {

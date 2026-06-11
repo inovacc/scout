@@ -1,5 +1,3 @@
-// Package registry provides plugin discovery, version management, and integrity
-// verification for Scout plugins distributed via GitHub Releases.
 package registry
 
 import (

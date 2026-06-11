@@ -67,7 +67,7 @@ var (
 
 	NewLLMWorkspace = llm.NewWorkspace
 
-	// MCP sampling: routes LLM completions through the connected MCP
+	// NewMCPSamplingProvider routes LLM completions through the connected MCP
 	// host (e.g. Claude Code) via sampling/createMessage reverse-RPC.
 	// No external API keys and no local LLM install — the host does
 	// the inference. Used when scout itself is running as an MCP server.

@@ -49,8 +49,8 @@ func (s Summary) String() string {
 }
 
 func writeDetails(b *strings.Builder, changes []NodeChange) {
-	const max = 3
-	if len(changes) <= max {
+	const maxN = 3
+	if len(changes) <= maxN {
 		b.WriteString(" (")
 		for i, c := range changes {
 			if i > 0 {
@@ -62,13 +62,13 @@ func writeDetails(b *strings.Builder, changes []NodeChange) {
 		return
 	}
 	b.WriteString(" (")
-	for i := range max {
+	for i := range maxN {
 		if i > 0 {
 			b.WriteString(", ")
 		}
 		writeChange(b, changes[i])
 	}
-	_, _ = fmt.Fprintf(b, ", and %d more)", len(changes)-max)
+	_, _ = fmt.Fprintf(b, ", and %d more)", len(changes)-maxN)
 }
 
 func writeChange(b *strings.Builder, c NodeChange) {

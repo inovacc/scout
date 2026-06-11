@@ -140,23 +140,23 @@ func unmarshalBinary(data []byte) (*SessionInfo, error) {
 	return info, nil
 }
 
-func writeStr(buf []byte, off, cap int, s string) {
+func writeStr(buf []byte, off, capacity int, s string) {
 	// Zero the field first so a shorter overwrite doesn't leave stale tail bytes.
-	for i := range cap {
+	for i := range capacity {
 		buf[off+i] = 0
 	}
 	b := []byte(s)
-	if len(b) > cap {
-		b = b[:cap]
+	if len(b) > capacity {
+		b = b[:capacity]
 	}
-	copy(buf[off:off+cap], b)
+	copy(buf[off:off+capacity], b)
 }
 
-func readStr(buf []byte, off, cap int) string {
-	field := buf[off : off+cap]
+func readStr(buf []byte, off, capacity int) string {
+	field := buf[off : off+capacity]
 	end := bytes.IndexByte(field, 0)
 	if end < 0 {
-		end = cap
+		end = capacity
 	}
 	return string(field[:end])
 }

@@ -50,7 +50,7 @@ func TestDomainQueue_EnqueueDequeue(t *testing.T) {
 func TestDomainQueue_DomainPartitioning(t *testing.T) {
 	q := NewDomainQueue(0)
 
-	var reqs []*CrawlRequest
+	reqs := make([]*CrawlRequest, 0, 8)
 	for i := range 5 {
 		reqs = append(reqs, &CrawlRequest{
 			URL:   fmt.Sprintf("https://a.com/page%d", i),

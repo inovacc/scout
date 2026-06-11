@@ -290,7 +290,10 @@ func TestMcpServersHasScoutFromPluginMcp(t *testing.T) {
 			Name: map[string]any{"command": "scout-from-plugin"},
 		},
 	}
-	b, _ := json.Marshal(doc)
+	b, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(pluginMcp, b, 0o644); err != nil {
 		t.Fatal(err)
 	}

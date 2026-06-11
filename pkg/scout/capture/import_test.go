@@ -12,9 +12,15 @@ func TestImportMergesPerSiteAndDeletes(t *testing.T) {
 	pub, _ := InitKeypair(v, filepath.Join(dir, "capture.pub"), false)
 	spoolDir := filepath.Join(dir, "spool")
 
-	login, _ := json.Marshal(Msg{V: 1, Type: "capture_login", Site: "example.com", Username: "alice", Password: "hunter2"})
-	sess, _ := json.Marshal(Msg{V: 1, Type: "capture_session", Site: "example.com",
+	login, err := json.Marshal(Msg{V: 1, Type: "capture_login", Site: "example.com", Username: "alice", Password: "hunter2"})
+	if err != nil {
+		t.Fatalf("marshal login: %v", err)
+	}
+	sess, err := json.Marshal(Msg{V: 1, Type: "capture_session", Site: "example.com",
 		Cookies: []WireCookie{{Name: "sid", Value: "v", Domain: "example.com", Path: "/"}}})
+	if err != nil {
+		t.Fatalf("marshal session: %v", err)
+	}
 	if _, err := WriteSpool(spoolDir, pub, login); err != nil {
 		t.Fatalf("WriteSpool login: %v", err)
 	}

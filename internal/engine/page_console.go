@@ -28,7 +28,7 @@ func (p *Page) OnConsole(cb func(ConsoleMessage)) func() {
 
 	go func() {
 		wait := p.page.EachEvent(func(e *proto2.RuntimeConsoleAPICalled) {
-			var parts []string
+			parts := make([]string, 0, len(e.Args))
 			for _, arg := range e.Args {
 				parts = append(parts, arg.Value.Str())
 			}

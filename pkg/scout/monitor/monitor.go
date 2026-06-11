@@ -1,5 +1,3 @@
-// Package monitor provides continuous visual regression testing and site monitoring.
-// It captures screenshots at intervals, compares against baselines, and reports changes.
 package monitor
 
 import (

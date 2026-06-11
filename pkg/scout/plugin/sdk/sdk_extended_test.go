@@ -8,6 +8,17 @@ import (
 	"testing"
 )
 
+// mustMarshal marshals v or fails the test. Keeps errchkjson satisfied on the
+// "unsafe" any/float64 inputs used in these table tests.
+func mustMarshal(t *testing.T, v any) []byte {
+	t.Helper()
+	b, err := json.Marshal(v)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	return b
+}
+
 // --- mock handlers for new capabilities ---
 
 type mockAuth struct {
@@ -239,7 +250,10 @@ func TestHandleRequest_AuthDetect_Success(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterAuth(&mockAuth{detected: true})
 
-	params, _ := json.Marshal(PageState{URL: "https://example.com"})
+	params, err := json.Marshal(PageState{URL: "https://example.com"})
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
 	req := &request{JSONRPC: "2.0", ID: 2, Method: "auth/detect", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -264,7 +278,10 @@ func TestHandleRequest_AuthDetect_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterAuth(&mockAuth{err: fmt.Errorf("detect failed")})
 
-	params, _ := json.Marshal(PageState{URL: "https://example.com"})
+	params, err := json.Marshal(PageState{URL: "https://example.com"})
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
 	req := &request{JSONRPC: "2.0", ID: 2, Method: "auth/detect", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -279,7 +296,10 @@ func TestHandleRequest_AuthDetect_NoHandler(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(PageState{URL: "https://example.com"})
+	params, err := json.Marshal(PageState{URL: "https://example.com"})
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
 	req := &request{JSONRPC: "2.0", ID: 2, Method: "auth/detect", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -310,7 +330,7 @@ func TestHandleRequest_AuthCapture_Success(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterAuth(&mockAuth{session: &SessionData{Provider: "github", URL: "https://github.com"}})
 
-	params, _ := json.Marshal(PageState{URL: "https://github.com"})
+	params := mustMarshal(t,PageState{URL: "https://github.com"})
 	req := &request{JSONRPC: "2.0", ID: 3, Method: "auth/capture", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -325,7 +345,7 @@ func TestHandleRequest_AuthCapture_NoHandler(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(PageState{URL: "https://github.com"})
+	params := mustMarshal(t,PageState{URL: "https://github.com"})
 	req := &request{JSONRPC: "2.0", ID: 3, Method: "auth/capture", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -356,7 +376,7 @@ func TestHandleRequest_AuthCapture_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterAuth(&mockAuth{err: fmt.Errorf("capture failed")})
 
-	params, _ := json.Marshal(PageState{URL: "https://github.com"})
+	params := mustMarshal(t,PageState{URL: "https://github.com"})
 	req := &request{JSONRPC: "2.0", ID: 3, Method: "auth/capture", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -372,7 +392,7 @@ func TestHandleRequest_AuthValidate_Success(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterAuth(&mockAuth{valid: true})
 
-	params, _ := json.Marshal(SessionData{Provider: "test"})
+	params := mustMarshal(t,SessionData{Provider: "test"})
 	req := &request{JSONRPC: "2.0", ID: 4, Method: "auth/validate", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -387,7 +407,7 @@ func TestHandleRequest_AuthValidate_NoHandler(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(SessionData{Provider: "test"})
+	params := mustMarshal(t,SessionData{Provider: "test"})
 	req := &request{JSONRPC: "2.0", ID: 4, Method: "auth/validate", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -418,7 +438,7 @@ func TestHandleRequest_AuthValidate_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterAuth(&mockAuth{err: fmt.Errorf("validate failed")})
 
-	params, _ := json.Marshal(SessionData{Provider: "test"})
+	params := mustMarshal(t,SessionData{Provider: "test"})
 	req := &request{JSONRPC: "2.0", ID: 4, Method: "auth/validate", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -436,7 +456,10 @@ func TestHandleRequest_ResourceRead_Success(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterResource("myapp://data", &mockResource{content: "hello", mimeType: "text/plain"})
 
-	params, _ := json.Marshal(map[string]string{"uri": "myapp://data"})
+	params, err := json.Marshal(map[string]string{"uri": "myapp://data"})
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
 	req := &request{JSONRPC: "2.0", ID: 5, Method: "resource/read", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -460,7 +483,10 @@ func TestHandleRequest_ResourceRead_NotFound(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(map[string]string{"uri": "myapp://missing"})
+	params, err := json.Marshal(map[string]string{"uri": "myapp://missing"})
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
 	req := &request{JSONRPC: "2.0", ID: 5, Method: "resource/read", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -476,7 +502,7 @@ func TestHandleRequest_ResourceRead_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterResource("myapp://fail", &mockResource{err: fmt.Errorf("read failed")})
 
-	params, _ := json.Marshal(map[string]string{"uri": "myapp://fail"})
+	params := mustMarshal(t,map[string]string{"uri": "myapp://fail"})
 	req := &request{JSONRPC: "2.0", ID: 5, Method: "resource/read", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -535,7 +561,10 @@ func TestHandleRequest_PromptGet_Success(t *testing.T) {
 		messages: []PromptMessage{{Role: "user", Content: "Analyze this"}},
 	})
 
-	params, _ := json.Marshal(map[string]any{"name": "analyze", "arguments": map[string]string{"topic": "Go"}})
+	params, err := json.Marshal(map[string]any{"name": "analyze", "arguments": map[string]string{"topic": "Go"}})
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
 	req := &request{JSONRPC: "2.0", ID: 7, Method: "prompt/get", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -550,7 +579,10 @@ func TestHandleRequest_PromptGet_NotFound(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(map[string]any{"name": "missing"})
+	params, err := json.Marshal(map[string]any{"name": "missing"})
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
 	req := &request{JSONRPC: "2.0", ID: 7, Method: "prompt/get", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -566,7 +598,10 @@ func TestHandleRequest_PromptGet_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterPrompt("fail", &mockPrompt{err: fmt.Errorf("prompt failed")})
 
-	params, _ := json.Marshal(map[string]any{"name": "fail"})
+	params, err := json.Marshal(map[string]any{"name": "fail"})
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
 	req := &request{JSONRPC: "2.0", ID: 7, Method: "prompt/get", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -623,7 +658,7 @@ func TestHandleRequest_SinkInit_Success(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterSink("s3", &mockSink{})
 
-	params, _ := json.Marshal(map[string]any{"name": "s3", "config": map[string]any{"bucket": "test"}})
+	params := mustMarshal(t,map[string]any{"name": "s3", "config": map[string]any{"bucket": "test"}})
 	req := &request{JSONRPC: "2.0", ID: 9, Method: "sink/init", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -638,7 +673,7 @@ func TestHandleRequest_SinkInit_NotFound(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(map[string]any{"name": "missing", "config": map[string]any{}})
+	params := mustMarshal(t,map[string]any{"name": "missing", "config": map[string]any{}})
 	req := &request{JSONRPC: "2.0", ID: 9, Method: "sink/init", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -654,7 +689,7 @@ func TestHandleRequest_SinkInit_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterSink("fail", &mockSink{initErr: fmt.Errorf("init failed")})
 
-	params, _ := json.Marshal(map[string]any{"name": "fail", "config": map[string]any{}})
+	params := mustMarshal(t,map[string]any{"name": "fail", "config": map[string]any{}})
 	req := &request{JSONRPC: "2.0", ID: 9, Method: "sink/init", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -684,7 +719,7 @@ func TestHandleRequest_SinkWrite_Success(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterSink("s3", &mockSink{})
 
-	params, _ := json.Marshal(map[string]any{"name": "s3", "results": []map[string]any{{"key": "val"}}})
+	params := mustMarshal(t,map[string]any{"name": "s3", "results": []map[string]any{{"key": "val"}}})
 	req := &request{JSONRPC: "2.0", ID: 10, Method: "sink/write", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -699,7 +734,7 @@ func TestHandleRequest_SinkWrite_NotFound(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(map[string]any{"name": "missing", "results": []map[string]any{}})
+	params := mustMarshal(t,map[string]any{"name": "missing", "results": []map[string]any{}})
 	req := &request{JSONRPC: "2.0", ID: 10, Method: "sink/write", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -715,7 +750,7 @@ func TestHandleRequest_SinkWrite_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterSink("fail", &mockSink{writeErr: fmt.Errorf("write failed")})
 
-	params, _ := json.Marshal(map[string]any{"name": "fail", "results": []map[string]any{{"a": 1}}})
+	params := mustMarshal(t,map[string]any{"name": "fail", "results": []map[string]any{{"a": 1}}})
 	req := &request{JSONRPC: "2.0", ID: 10, Method: "sink/write", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -745,7 +780,7 @@ func TestHandleRequest_SinkFlush_Success(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterSink("s3", &mockSink{})
 
-	params, _ := json.Marshal(map[string]string{"name": "s3"})
+	params := mustMarshal(t,map[string]string{"name": "s3"})
 	req := &request{JSONRPC: "2.0", ID: 11, Method: "sink/flush", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -760,7 +795,7 @@ func TestHandleRequest_SinkFlush_NotFound(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(map[string]string{"name": "missing"})
+	params := mustMarshal(t,map[string]string{"name": "missing"})
 	req := &request{JSONRPC: "2.0", ID: 11, Method: "sink/flush", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -776,7 +811,7 @@ func TestHandleRequest_SinkFlush_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterSink("fail", &mockSink{flushErr: fmt.Errorf("flush failed")})
 
-	params, _ := json.Marshal(map[string]string{"name": "fail"})
+	params := mustMarshal(t,map[string]string{"name": "fail"})
 	req := &request{JSONRPC: "2.0", ID: 11, Method: "sink/flush", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -806,7 +841,7 @@ func TestHandleRequest_SinkClose_Success(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterSink("s3", &mockSink{})
 
-	params, _ := json.Marshal(map[string]string{"name": "s3"})
+	params := mustMarshal(t,map[string]string{"name": "s3"})
 	req := &request{JSONRPC: "2.0", ID: 12, Method: "sink/close", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -821,7 +856,7 @@ func TestHandleRequest_SinkClose_NotFound(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(map[string]string{"name": "missing"})
+	params := mustMarshal(t,map[string]string{"name": "missing"})
 	req := &request{JSONRPC: "2.0", ID: 12, Method: "sink/close", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -837,7 +872,7 @@ func TestHandleRequest_SinkClose_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterSink("fail", &mockSink{closeErr: fmt.Errorf("close failed")})
 
-	params, _ := json.Marshal(map[string]string{"name": "fail"})
+	params := mustMarshal(t,map[string]string{"name": "fail"})
 	req := &request{JSONRPC: "2.0", ID: 12, Method: "sink/close", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -869,7 +904,7 @@ func TestHandleRequest_Middleware_BeforeNavigate(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterMiddleware(&mockMiddleware{result: AllowResult()})
 
-	params, _ := json.Marshal(MiddlewareContext{Hook: "before_navigate", URL: "https://example.com"})
+	params := mustMarshal(t,MiddlewareContext{Hook: "before_navigate", URL: "https://example.com"})
 	req := &request{JSONRPC: "2.0", ID: 13, Method: "middleware/before_navigate", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -885,7 +920,7 @@ func TestHandleRequest_Middleware_AfterLoad(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterMiddleware(&mockMiddleware{result: AllowResult()})
 
-	params, _ := json.Marshal(MiddlewareContext{Hook: "after_load", URL: "https://example.com"})
+	params := mustMarshal(t,MiddlewareContext{Hook: "after_load", URL: "https://example.com"})
 	req := &request{JSONRPC: "2.0", ID: 14, Method: "middleware/after_load", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -901,7 +936,7 @@ func TestHandleRequest_Middleware_BeforeExtract(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterMiddleware(&mockMiddleware{result: AllowResult()})
 
-	params, _ := json.Marshal(MiddlewareContext{Hook: "before_extract", URL: "https://example.com"})
+	params := mustMarshal(t,MiddlewareContext{Hook: "before_extract", URL: "https://example.com"})
 	req := &request{JSONRPC: "2.0", ID: 15, Method: "middleware/before_extract", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -917,7 +952,7 @@ func TestHandleRequest_Middleware_OnError(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterMiddleware(&mockMiddleware{result: RetryResult()})
 
-	params, _ := json.Marshal(MiddlewareContext{Hook: "on_error", URL: "https://example.com", Error: "timeout"})
+	params := mustMarshal(t,MiddlewareContext{Hook: "on_error", URL: "https://example.com", Error: "timeout"})
 	req := &request{JSONRPC: "2.0", ID: 16, Method: "middleware/on_error", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -932,7 +967,7 @@ func TestHandleRequest_Middleware_NoHandler(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(MiddlewareContext{Hook: "before_navigate", URL: "https://example.com"})
+	params := mustMarshal(t,MiddlewareContext{Hook: "before_navigate", URL: "https://example.com"})
 	req := &request{JSONRPC: "2.0", ID: 17, Method: "middleware/before_navigate", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -963,7 +998,7 @@ func TestHandleRequest_Middleware_HandlerError(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterMiddleware(&mockMiddleware{err: fmt.Errorf("middleware error")})
 
-	params, _ := json.Marshal(MiddlewareContext{Hook: "before_navigate", URL: "https://example.com"})
+	params := mustMarshal(t,MiddlewareContext{Hook: "before_navigate", URL: "https://example.com"})
 	req := &request{JSONRPC: "2.0", ID: 19, Method: "middleware/before_navigate", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -982,7 +1017,7 @@ func TestHandleRequest_EventEmit(t *testing.T) {
 	eh := &mockEvent{}
 	s.OnEvent(eh)
 
-	params, _ := json.Marshal(EventData{Type: "navigation", URL: "https://example.com"})
+	params := mustMarshal(t,EventData{Type: "navigation", URL: "https://example.com"})
 	req := &request{JSONRPC: "2.0", ID: 20, Method: "event/emit", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -1001,7 +1036,7 @@ func TestHandleRequest_EventEmit_NoHandler(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(EventData{Type: "navigation"})
+	params := mustMarshal(t,EventData{Type: "navigation"})
 	req := &request{JSONRPC: "2.0", ID: 20, Method: "event/emit", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -1020,7 +1055,7 @@ func TestHandleRequest_CommandExecute_Success(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterCommand("extract", &mockCommand{result: CommandOutput("extracted data")})
 
-	params, _ := json.Marshal(CommandParams{Command: "extract", Args: []string{"https://example.com"}})
+	params := mustMarshal(t,CommandParams{Command: "extract", Args: []string{"https://example.com"}})
 	req := &request{JSONRPC: "2.0", ID: 21, Method: "command/execute", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -1035,7 +1070,7 @@ func TestHandleRequest_CommandExecute_NotFound(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(CommandParams{Command: "missing"})
+	params := mustMarshal(t,CommandParams{Command: "missing"})
 	req := &request{JSONRPC: "2.0", ID: 21, Method: "command/execute", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -1051,7 +1086,7 @@ func TestHandleRequest_CommandExecute_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterCommand("fail", &mockCommand{err: fmt.Errorf("command failed")})
 
-	params, _ := json.Marshal(CommandParams{Command: "fail"})
+	params := mustMarshal(t,CommandParams{Command: "fail"})
 	req := &request{JSONRPC: "2.0", ID: 21, Method: "command/execute", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -1083,7 +1118,7 @@ func TestHandleRequest_CommandComplete_Success(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterCompletion("extract", &mockCompletion{suggestions: []string{"--format", "--output"}})
 
-	params, _ := json.Marshal(CompletionParams{Command: "extract", Args: []string{"url"}, ToComp: "--"})
+	params := mustMarshal(t,CompletionParams{Command: "extract", Args: []string{"url"}, ToComp: "--"})
 	req := &request{JSONRPC: "2.0", ID: 22, Method: "command/complete", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -1107,7 +1142,7 @@ func TestHandleRequest_CommandComplete_NotFound(t *testing.T) {
 
 	s := newTestServer(&buf)
 
-	params, _ := json.Marshal(CompletionParams{Command: "missing"})
+	params := mustMarshal(t,CompletionParams{Command: "missing"})
 	req := &request{JSONRPC: "2.0", ID: 22, Method: "command/complete", Params: params}
 	s.handleRequest(context.Background(), req)
 
@@ -1124,7 +1159,7 @@ func TestHandleRequest_CommandComplete_Error(t *testing.T) {
 	s := newTestServer(&buf)
 	s.RegisterCompletion("fail", &mockCompletion{err: fmt.Errorf("complete failed")})
 
-	params, _ := json.Marshal(CompletionParams{Command: "fail"})
+	params := mustMarshal(t,CompletionParams{Command: "fail"})
 	req := &request{JSONRPC: "2.0", ID: 22, Method: "command/complete", Params: params}
 	s.handleRequest(context.Background(), req)
 

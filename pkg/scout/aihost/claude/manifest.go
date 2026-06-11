@@ -16,8 +16,9 @@ const (
 	Repository  = "https://github.com/inovacc/scout"
 	License     = "BSD-3-Clause"
 
-	// MCP server registration (.mcp.json). Command is the binary on PATH;
-	// args are passed verbatim. Keep in sync with cmd/scout/server.go.
+	// McpServerName is the MCP server registration name (.mcp.json). McpCommand
+	// is the binary on PATH; args are passed verbatim. Keep in sync with
+	// cmd/scout/server.go.
 	McpServerName = "scout"
 	McpCommand    = "scout"
 )

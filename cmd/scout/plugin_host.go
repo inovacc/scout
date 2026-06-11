@@ -4,6 +4,7 @@
 // pkg/scout/aihost/<host>/. This file only routes flags to the
 // selected host. The existing subprocess JSON-RPC plugin commands moved
 // to `scout subplugin *` (cmd/scout/plugin.go).
+
 package main
 
 import (

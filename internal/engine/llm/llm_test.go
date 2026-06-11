@@ -439,8 +439,8 @@ func TestOpenAIProvider_DefaultOptions(t *testing.T) {
 
 func TestOpenAIProvider_CustomAuthHeader(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("X-API-Key") != "mykey" {
-			t.Errorf("custom auth header = %q, want %q", r.Header.Get("X-API-Key"), "mykey")
+		if r.Header.Get("X-Api-Key") != "mykey" {
+			t.Errorf("custom auth header = %q, want %q", r.Header.Get("X-Api-Key"), "mykey")
 		}
 
 		resp := openaiChatResponse{

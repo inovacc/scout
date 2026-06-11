@@ -1,6 +1,7 @@
 /*
 Copyright (c) 2026 Security Research
 */
+
 package mcp
 
 import (

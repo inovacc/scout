@@ -66,15 +66,15 @@ func TestJS_ParensNotWildlyUnbalanced(t *testing.T) {
 	// The main JS may have regex patterns with unescaped parens,
 	// so we only check that the imbalance is small (not structural corruption).
 	open := strings.Count(JS, "(")
-	close := strings.Count(JS, ")")
-	diff := open - close
+	closeCount := strings.Count(JS, ")")
+	diff := open - closeCount
 	if diff < 0 {
 		diff = -diff
 	}
 
 	// Allow small imbalance from regex literals
 	if diff > 10 {
-		t.Errorf("JS parens imbalance too large: open=%d close=%d diff=%d", open, close, diff)
+		t.Errorf("JS parens imbalance too large: open=%d close=%d diff=%d", open, closeCount, diff)
 	}
 }
 

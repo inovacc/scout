@@ -1,3 +1,4 @@
-// Package proxy is the Scout API middleware proxy: YAML route definitions,
-// browser-side extraction, and response caching for protected upstream APIs.
 package proxy
+
+// The package documentation lives in proxy.go to keep a single godoc entry.
+// This file is reserved for package-level declarations.
