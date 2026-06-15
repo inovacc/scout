@@ -5,6 +5,7 @@ package redact
 import (
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -12,6 +13,11 @@ import (
 const Placeholder = "***REDACTED***"
 
 // Pattern matches flag/field/header/query names whose values are secret.
+// Matching is intentionally substring-based (not word-bounded): it must catch
+// composite names like "access_token", "refresh_token" and "x-api-secret". The
+// cost is occasional over-redaction (e.g. "--author" matches "auth"), which is
+// the right trade-off for a secret redactor — a false positive is harmless, a
+// missed secret is not.
 var Pattern = regexp.MustCompile(`(?i)(api[-_]?key|passphrase|password|secret|token|credential|cookie|bearer|authorization|auth|sig)`)
 
 // Args returns a copy of args with the values of sensitive flags masked. It
@@ -96,10 +102,18 @@ func URL(raw string) string {
 		return raw
 	}
 
-	// Build raw query manually so the placeholder is not percent-encoded.
+	// Build raw query manually so the placeholder is not percent-encoded. Keys
+	// are sorted so the output is deterministic.
+	keys := make([]string, 0, len(q))
+	for k := range q {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
 	parts := make([]string, 0, len(q))
-	for k, vs := range q {
-		for _, v := range vs {
+	for _, k := range keys {
+		for _, v := range q[k] {
 			if v == Placeholder {
 				parts = append(parts, url.QueryEscape(k)+"="+Placeholder)
 			} else {
@@ -122,8 +136,13 @@ func Header(name, value string) string {
 	return value
 }
 
-// Body truncates b to max bytes, returning the string and whether it truncated.
+// Body truncates b to at most max bytes, returning the string and whether it
+// truncated. A negative max is treated as 0.
 func Body(b []byte, max int) (string, bool) {
+	if max < 0 {
+		max = 0
+	}
+
 	if len(b) <= max {
 		return string(b), false
 	}

@@ -2,6 +2,7 @@ package redact
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -42,7 +43,7 @@ func TestMap(t *testing.T) {
 
 func TestURL(t *testing.T) {
 	got := URL("https://h/p?token=abc&q=1")
-	if got == "https://h/p?token=abc&q=1" || !contains(got, Placeholder) || !contains(got, "q=1") {
+	if strings.Contains(got, "token=abc") || !strings.Contains(got, Placeholder) || !strings.Contains(got, "q=1") {
 		t.Fatalf("URL redaction wrong: %s", got)
 	}
 	if URL("not a url") != "not a url" {
@@ -61,14 +62,16 @@ func TestHeaderAndBody(t *testing.T) {
 	if s != "hel" || !trunc {
 		t.Fatalf("body cap wrong: %q %v", s, trunc)
 	}
-}
 
-func contains(s, sub string) bool { return len(s) >= len(sub) && (s == sub || indexOf(s, sub) >= 0) }
-func indexOf(s, sub string) int {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
+	if s, trunc := Body([]byte("x"), 0); s != "" || !trunc {
+		t.Fatalf("body max=0 wrong: %q %v", s, trunc)
 	}
-	return -1
+
+	if s, trunc := Body([]byte("x"), -1); s != "" || !trunc { // must not panic on negative max
+		t.Fatalf("body negative max wrong: %q %v", s, trunc)
+	}
+
+	if s, trunc := Body(nil, 5); s != "" || trunc {
+		t.Fatalf("empty body wrong: %q %v", s, trunc)
+	}
 }
