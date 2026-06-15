@@ -47,15 +47,15 @@ or run standalone for one-shot operations.`,
 			cmd.SetErr(stderr)
 		}
 
-		if !flags.ShouldIgnoreCommand(cmd.Name()) {
-			interaction.Init("cli")
-			interaction.Emit(interaction.Event{
-				Kind:   "cli",
-				Source: "cli",
-				Name:   cmd.Name(),
-				Input:  map[string]any{"args": redact.Args(args)},
-			})
-		}
+		// Past the ShouldIgnoreCommand early-return above, so capture starts here
+		// unconditionally for the (non-ignored) command.
+		interaction.Init("cli")
+		interaction.Emit(interaction.Event{
+			Kind:   "cli",
+			Source: "cli",
+			Name:   cmd.Name(),
+			Input:  map[string]any{"args": redact.Args(args)},
+		})
 
 		return nil
 	},
