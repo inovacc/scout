@@ -13,7 +13,9 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/internal/idle"
+	"github.com/inovacc/scout/internal/interaction"
 	"github.com/inovacc/scout/internal/metrics"
+	"github.com/inovacc/scout/internal/redact"
 	"github.com/inovacc/scout/internal/tracing"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/aria"
@@ -161,6 +163,7 @@ func addTracedTool(server *mcp.Server, tool *mcp.Tool, handler func(ctx context.
 			}
 		}()
 
+		start := time.Now()
 		ctx, finish := tracing.MCPToolSpan(ctx, name)
 
 		result, err = handler(ctx, req)
@@ -178,8 +181,41 @@ func addTracedTool(server *mcp.Server, tool *mcp.Tool, handler func(ctx context.
 			finish(nil)
 		}
 
+		ok := err == nil && (result == nil || !result.IsError)
+
+		ev := interaction.Event{
+			Kind:       "mcp_tool",
+			Source:     "mcp",
+			Name:       name,
+			OK:         &ok,
+			DurationMS: time.Since(start).Milliseconds(),
+		}
+		if err != nil {
+			ev.Error = err.Error()
+		}
+		if args := mcpToolArgs(req); args != nil {
+			ev.Input = redact.Map(args)
+		}
+
+		interaction.Emit(ev)
+
 		return result, err
 	})
+}
+
+// mcpToolArgs returns the call's arguments as a map for capture, or nil.
+func mcpToolArgs(req *mcp.CallToolRequest) map[string]any {
+	if req == nil {
+		return nil
+	}
+	if len(req.Params.Arguments) == 0 {
+		return nil
+	}
+	var m map[string]any
+	if json.Unmarshal(req.Params.Arguments, &m) == nil {
+		return m
+	}
+	return nil
 }
 
 func errResult(msg string) (*mcp.CallToolResult, error) {
@@ -334,6 +370,9 @@ func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool, bro
 		IdleTimeout: idleTimeout,
 	}
 
+	interaction.Init("mcp")
+	defer func() { _ = interaction.Close("ok") }()
+
 	server := NewServer(cfg, cancel)
 
 	return server.Run(ctx, &mcp.StdioTransport{})
@@ -352,6 +391,9 @@ func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, s
 		Logger:      logger,
 		IdleTimeout: idleTimeout,
 	}
+
+	interaction.Init("mcp")
+	defer func() { _ = interaction.Close("ok") }()
 
 	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
 		return NewServer(cfg, cancel)
