@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/google/gops/agent"
@@ -106,6 +107,22 @@ func Execute() {
 			_ = log.Close()
 		}
 
+		// A command that failed before PersistentPreRunE ran (arg-validation
+		// error or unknown command) never started a capture. Record it now so
+		// these high-signal "friction" invocations are not lost.
+		if err != nil && interaction.Default() == nil {
+			if name := firstPositional(os.Args[1:]); !flags.ShouldIgnoreCommand(name) {
+				interaction.Init("cli")
+				interaction.Emit(interaction.Event{
+					Kind:   "cli",
+					Source: "cli",
+					Name:   name,
+					Input:  map[string]any{"args": redact.Args(os.Args[1:])},
+					Error:  err.Error(),
+				})
+			}
+		}
+
 		status := "ok"
 		if err != nil {
 			status = "error"
@@ -125,6 +142,18 @@ func Execute() {
 	if exitCode != 0 {
 		os.Exit(exitCode)
 	}
+}
+
+// firstPositional returns the first non-flag argument (the attempted
+// subcommand), or "" if none.
+func firstPositional(args []string) string {
+	for _, a := range args {
+		if !strings.HasPrefix(a, "-") {
+			return a
+		}
+	}
+
+	return ""
 }
 
 // registerPluginCommands discovers plugins and registers any cli_command capabilities
