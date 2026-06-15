@@ -31,7 +31,12 @@ type (
 	GeolocationCfg = engine.GeolocationCfg
 	// NetworkCfg overrides network conditions (offline / throttle).
 	NetworkCfg = engine.NetworkCfg
+	// Clock controls a page's emulated time (fake Date/timers).
+	Clock = engine.Clock
 )
+
+// WithClock installs an emulated clock initialized to at (drive via Page.Clock()).
+func WithClock(at time.Time) Option { return engine.WithClock(at) }
 
 // Devices is the registry of device presets.
 //
