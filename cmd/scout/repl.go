@@ -86,11 +86,16 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 			case "exit", "quit", "help":
 				// meta commands — not captured
 			default:
+				args := redact.Args(parts[1:])
+				for i := range args {
+					args[i] = redact.URL(args[i]) // mask tokens in positional URLs
+				}
+
 				interaction.Emit(interaction.Event{
 					Kind:   "browser_action",
 					Source: "repl",
 					Name:   c,
-					Input:  map[string]any{"args": redact.Args(parts[1:])},
+					Input:  map[string]any{"args": args},
 				})
 			}
 

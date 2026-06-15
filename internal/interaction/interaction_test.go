@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -122,4 +123,45 @@ func TestConcurrentClose(t *testing.T) {
 	if ends != 1 {
 		t.Fatalf("session_end count = %d, want exactly 1", ends)
 	}
+}
+
+// TestInitSupersedesAndClosesPrevious guards against a file-handle leak: a
+// second Init (e.g. "mcp"/"repl" after the root "cli") must close the recorder
+// it replaces, so the first file is finalized with a session_end rather than
+// orphaned open.
+func TestInitSupersedesAndClosesPrevious(t *testing.T) {
+	t.Setenv("SCOUT_INTERACTIONS", "1")
+	t.Setenv("SCOUT_HOME", t.TempDir())
+
+	if first := Init("cli"); first == nil {
+		t.Fatal("first Init returned nil")
+	}
+
+	second := Init("mcp")
+	if second == nil {
+		t.Fatal("second Init returned nil")
+	}
+	if Default() != second {
+		t.Fatal("Default should be the second recorder")
+	}
+
+	dir, _ := Dir()
+	entries, _ := os.ReadDir(dir)
+
+	var cliFile string
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), "cli-") {
+			cliFile = filepath.Join(dir, e.Name())
+		}
+	}
+	if cliFile == "" {
+		t.Fatal("no cli-*.jsonl created")
+	}
+
+	data, _ := os.ReadFile(cliFile)
+	if !strings.Contains(string(data), `"kind":"session_end"`) {
+		t.Fatalf("superseded recorder missing session_end:\n%s", data)
+	}
+
+	_ = Close("ok") // finalize the second recorder; don't leak across tests
 }

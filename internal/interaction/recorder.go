@@ -133,8 +133,15 @@ func Init(entrypoint string) *Recorder {
 	}
 
 	defMu.Lock()
+	old := defRec
 	defRec = r
 	defMu.Unlock()
+
+	// Close any recorder we just replaced so its file handle is not leaked and
+	// it still gets a session_end — e.g. the short-lived "cli" recorder that
+	// root PersistentPreRunE opens before a long-lived "scout mcp"/"scout repl"
+	// replaces it with its own. Close is nil-safe.
+	_ = old.Close("superseded")
 
 	return r
 }

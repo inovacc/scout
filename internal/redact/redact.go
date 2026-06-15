@@ -65,19 +65,36 @@ func Map(m map[string]any) map[string]any {
 
 	out := make(map[string]any, len(m))
 	for k, v := range m {
-		switch {
-		case Pattern.MatchString(k):
+		if Pattern.MatchString(k) {
 			out[k] = Placeholder
-		default:
-			if nested, ok := v.(map[string]any); ok {
-				out[k] = Map(nested)
-			} else {
-				out[k] = v
-			}
+			continue
 		}
+
+		out[k] = redactValue(v)
 	}
 
 	return out
+}
+
+// redactValue recursively redacts a value: maps by key, slices element-wise,
+// and strings via URL (masking secret query-param values). Other types pass
+// through unchanged.
+func redactValue(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		return Map(val)
+	case []any:
+		out := make([]any, len(val))
+		for i, e := range val {
+			out[i] = redactValue(e)
+		}
+
+		return out
+	case string:
+		return URL(val)
+	default:
+		return v
+	}
 }
 
 // URL masks the values of sensitive query params, preserving scheme/host/path.

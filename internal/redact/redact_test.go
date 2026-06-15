@@ -27,14 +27,30 @@ func TestArgs(t *testing.T) {
 }
 
 func TestMap(t *testing.T) {
-	in := map[string]any{"url": "http://x", "password": "p", "nested": map[string]any{"token": "t", "ok": 1}}
+	in := map[string]any{
+		"url":      "https://h/p?token=abc&q=1",
+		"password": "p",
+		"nested":   map[string]any{"token": "t", "ok": 1},
+		"items":    []any{map[string]any{"secret": "s"}, "https://y?token=z"},
+	}
 	got := Map(in)
-	if got["url"] != "http://x" || got["password"] != Placeholder {
-		t.Fatalf("top-level redaction wrong: %v", got)
+
+	if got["password"] != Placeholder {
+		t.Fatalf("password not redacted: %v", got)
+	}
+	if u, _ := got["url"].(string); strings.Contains(u, "token=abc") || !strings.Contains(u, Placeholder) {
+		t.Fatalf("url value not redacted: %v", got["url"])
 	}
 	n := got["nested"].(map[string]any)
 	if n["token"] != Placeholder || n["ok"] != 1 {
 		t.Fatalf("nested redaction wrong: %v", n)
+	}
+	items := got["items"].([]any)
+	if items[0].(map[string]any)["secret"] != Placeholder {
+		t.Fatalf("array element map not redacted: %v", items[0])
+	}
+	if s, _ := items[1].(string); strings.Contains(s, "token=z") || !strings.Contains(s, Placeholder) {
+		t.Fatalf("array element URL not redacted: %v", items[1])
 	}
 	if in["password"] != "p" {
 		t.Fatal("input mutated")
