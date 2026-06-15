@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -53,7 +54,7 @@ func TestRecorderRoundtrip(t *testing.T) {
 	}
 
 	dir, _ := Dir()
-	f, err := os.Open(dir + string(os.PathSeparator) + "cli-test.jsonl")
+	f, err := os.Open(filepath.Join(dir, "cli-test.jsonl"))
 	if err != nil {
 		t.Fatalf("open capture: %v", err)
 	}
@@ -76,5 +77,49 @@ func TestRecorderRoundtrip(t *testing.T) {
 
 	if len(kinds) != 3 || kinds[0] != "session_start" || kinds[1] != "cli" || kinds[2] != "session_end" {
 		t.Fatalf("unexpected kinds: %v", kinds)
+	}
+}
+
+// TestConcurrentClose guards the Close concurrency contract: many goroutines
+// emitting and closing at once must produce exactly one session_end and no race
+// (run with -race). Verifies the single-lock Close.
+func TestConcurrentClose(t *testing.T) {
+	t.Setenv("SCOUT_INTERACTIONS", "1")
+	t.Setenv("SCOUT_HOME", t.TempDir())
+
+	rec, err := Open("cli", "concurrent")
+	if err != nil || rec == nil {
+		t.Fatalf("Open: rec=%v err=%v", rec, err)
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rec.Emit(Event{Kind: "browser_action"})
+			_ = rec.Close("ok")
+		}()
+	}
+	wg.Wait()
+
+	dir, _ := Dir()
+	f, err := os.Open(filepath.Join(dir, "concurrent.jsonl"))
+	if err != nil {
+		t.Fatalf("open capture: %v", err)
+	}
+	defer f.Close()
+
+	ends := 0
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		var e Event
+		if json.Unmarshal(sc.Bytes(), &e) == nil && e.Kind == "session_end" {
+			ends++
+		}
+	}
+
+	if ends != 1 {
+		t.Fatalf("session_end count = %d, want exactly 1", ends)
 	}
 }

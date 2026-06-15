@@ -3,6 +3,7 @@ package interaction
 import (
 	"bufio"
 	"encoding/json"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
@@ -79,25 +80,37 @@ func (r *Recorder) Emit(e Event) {
 	_ = r.w.Flush()
 }
 
-// Close writes a session_end event and closes the file. Safe on a nil receiver.
+// Close writes a session_end event and closes the file. Safe on a nil receiver
+// and idempotent: the whole operation holds the lock so concurrent callers
+// cannot double-write session_end or double-close the file.
 func (r *Recorder) Close(status string) error {
 	if r == nil {
 		return nil
 	}
 
 	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if r.closed {
-		r.mu.Unlock()
 		return nil
 	}
-	events := r.seq
-	r.mu.Unlock()
 
-	r.Emit(Event{Kind: "session_end", Extra: map[string]any{"status": status, "events": events}})
-
-	r.mu.Lock()
-	defer r.mu.Unlock()
 	r.closed = true
+
+	// Write session_end inline (not via Emit, which would re-acquire the lock).
+	end := Event{
+		Seq:   r.seq,
+		TS:    time.Now().UTC().Format(time.RFC3339Nano),
+		Kind:  "session_end",
+		Extra: map[string]any{"status": status, "events": r.seq},
+	}
+	r.seq++
+
+	if b, err := json.Marshal(end); err == nil {
+		_, _ = r.w.Write(b)
+		_ = r.w.WriteByte('\n')
+	}
+
 	_ = r.w.Flush()
 
 	return r.f.Close()
@@ -115,6 +128,7 @@ var (
 func Init(entrypoint string) *Recorder {
 	r, err := Open(entrypoint, entrypoint+"-"+ksuid.New().String())
 	if err != nil {
+		slog.Warn("scout: interaction capture disabled", "error", err)
 		return nil
 	}
 
