@@ -602,6 +602,12 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 		}).Call(rodPage)
 	}
 
+	// Apply Playwright-style emulation overrides (device metrics, locale,
+	// timezone, color-scheme, geolocation, network) on this page.
+	if err := p.applyEmulationOptions(b.opts); err != nil {
+		return nil, err
+	}
+
 	if b.opts.smartWait && url != "" {
 		_ = p.WaitFrameworkReady()
 	}

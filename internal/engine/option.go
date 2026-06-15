@@ -84,6 +84,16 @@ type options struct {
 	mobile             *MobileConfig // mobile device automation via ADB
 	touchEmulation     bool          // enable touch simulation on desktop
 	blockRules         []BlockRule   // network requests to abort at the browser (recon: capture payload without server hit)
+
+	// Playwright-style emulation overrides, applied on NewPage via CDP.
+	deviceScaleFactor float64         // device pixel ratio (0 = leave browser default)
+	isMobile          bool            // mobile viewport/UA emulation
+	locale            string          // e.g. "pt-BR" (Emulation.setLocaleOverride)
+	timezone          string          // e.g. "America/Sao_Paulo"
+	colorScheme       string          // "light" | "dark" | "no-preference"
+	geolocation       *GeolocationCfg // geolocation override
+	grantGeolocation  bool            // auto-grant geolocation permission
+	networkConditions *NetworkCfg     // offline / throttle override
 }
 
 // BlockRule declares a network-request blocking pattern. Pattern uses CDP
