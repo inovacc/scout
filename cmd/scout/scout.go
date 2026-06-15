@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -63,11 +62,6 @@ or run standalone for one-shot operations.`,
 }
 
 func init() {
-	rootCmd.AddCommand(grpcCmd)
-
-	rootCmd.PersistentFlags().String("addr", "localhost:9551", "gRPC daemon address (deprecated, use --target)")
-	rootCmd.PersistentFlags().StringSlice("target", nil, "target server address(es), repeatable")
-	rootCmd.PersistentFlags().Bool("standalone", false, "run without daemon (one-shot browser)")
 	rootCmd.PersistentFlags().String("session", "", "session ID to use")
 	rootCmd.PersistentFlags().StringP("output", "o", "", "output file path")
 	rootCmd.PersistentFlags().String("format", "text", "output format (text, json)")
@@ -77,7 +71,6 @@ func init() {
 	rootCmd.PersistentFlags().Bool("maximized", false, "start browser window maximized")
 	rootCmd.PersistentFlags().Bool("devtools", false, "open Chrome DevTools automatically")
 	rootCmd.PersistentFlags().Bool("stealth", false, "enable anti-bot-detection stealth mode")
-	rootCmd.PersistentFlags().Bool("insecure", false, "disable mTLS for client connections")
 	rootCmd.PersistentFlags().String("electron-app", "", "path to Electron app directory or binary")
 	rootCmd.PersistentFlags().String("electron-version", "", "Electron version to download (e.g. v33.2.0)")
 	rootCmd.PersistentFlags().String("electron-cdp", "", "CDP endpoint of running Electron app")
@@ -208,12 +201,6 @@ func main() {
 	// dirs, and legacy JSON-format scout.pid files from before the binary
 	// cutover).
 	_, _ = session.CleanStaleSessions()
-
-	// Hard-cutover purge: the legacy `active-sessions/` index is no longer
-	// maintained; the per-session scout.pid is the single source of truth.
-	if dir, err := scoutDir(); err == nil && dir != "" {
-		_ = os.RemoveAll(filepath.Join(dir, "active-sessions"))
-	}
 
 	// Background retrier for stale dirs that resisted the bounded
 	// startup cleanup (Windows AV / Search Indexer / OneDrive holding

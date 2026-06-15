@@ -272,7 +272,6 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 	registerBrowserTools(server, state)
 	registerCaptureTools(server, state)
 	registerSessionTools(server, state)
-	registerSwarmTools(server, state)
 	registerWebSocketTools(server, state)
 	registerAriaTools(server, state)
 	registerGatherTool(server, state)   // unified via pkg/scout/tools

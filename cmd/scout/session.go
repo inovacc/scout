@@ -1,248 +1,27 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	pb "github.com/inovacc/scout/grpc/scoutpb"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 )
 
 func init() {
 	rootCmd.AddCommand(sessionCmd)
-	sessionCmd.AddCommand(sessionCreateCmd, sessionDestroyCmd, sessionListCmd, sessionUseCmd,
+	sessionCmd.AddCommand(sessionListCmd,
 		sessionDirListCmd, sessionDirPruneCmd, sessionDirCleanCmd, sessionDirRmCmd, sessionResetCmd)
 
 	sessionListCmd.Flags().Bool("pending", false, "list directories the reaper could not remove (locked/stuck) instead of tracked sessions")
 
 	sessionResetCmd.Flags().Bool("all", false, "reset all sessions")
-
-	sessionCreateCmd.Flags().Bool("headless", true, "run browser in headless mode")
-	sessionCreateCmd.Flags().Bool("stealth", false, "enable anti-bot-detection stealth mode")
-	sessionCreateCmd.Flags().String("proxy", "", "proxy URL (e.g. socks5://host:port)")
-	sessionCreateCmd.Flags().String("user-agent", "", "custom user agent string")
-	sessionCreateCmd.Flags().String("url", "", "initial URL to navigate to")
-	sessionCreateCmd.Flags().Bool("record", false, "enable HAR recording")
-	sessionCreateCmd.Flags().Bool("capture-body", false, "capture response bodies in HAR")
-	sessionCreateCmd.Flags().Bool("maximized", false, "start browser window maximized")
-	sessionCreateCmd.Flags().Bool("devtools", false, "open Chrome DevTools automatically")
-	sessionCreateCmd.Flags().Bool("no-sandbox", false, "disable browser sandbox (containers/WSL)")
-	sessionCreateCmd.Flags().Bool("ephemeral", false, "create a non-reusable session (cleaned on Close instead of persisted)")
-	sessionCreateCmd.Flags().Duration("expires-in", 0, "expiration window for reusable sessions (e.g. 24h, 7d). 0 = default 7d. Ignored for --ephemeral.")
-	sessionCreateCmd.Flags().StringSlice("block", nil, "URL pattern(s) whose matching requests should be aborted at the browser; repeatable. CDP URLPattern syntax (* wildcards)")
-	sessionCreateCmd.Flags().StringSlice("block-method", nil, "HTTP method(s) paired by index with --block (empty = any). Repeatable")
-	sessionCreateCmd.Flags().Bool("har", false, "enable HAR recording (alias for --record)")
-	sessionCreateCmd.Flags().Bool("hijack", false, "enable real-time hijack capture stream")
-	sessionCreateCmd.Flags().Bool("hijack-bodies", false, "capture request + response bodies in hijack stream")
-	sessionCreateCmd.Flags().String("har-out", "", "override default <session>/har.json (path relative to session dir or absolute)")
-	sessionCreateCmd.Flags().String("hijack-out", "", "override default <session>/hijack.jsonl")
-	sessionCreateCmd.Flags().Bool("console", false, "capture browser console output to <session>/console.log")
-	sessionCreateCmd.Flags().Bool("ws", false, "capture WebSocket frames to <session>/ws.jsonl")
-
-	sessionCreateCmd.Flags().String("profile", "", "path to .scoutprofile file to apply at session creation")
-	sessionCreateCmd.Flags().Bool("decrypt", false, "decrypt the profile file (requires --passphrase)")
-	sessionCreateCmd.Flags().String("passphrase", "", "passphrase for encrypted profile decryption")
-
-	sessionDestroyCmd.Flags().Bool("all", false, "destroy all sessions")
 }
 
 var sessionCmd = &cobra.Command{
 	Use:   "session",
 	Short: "Manage browser sessions",
-}
-
-var sessionCreateCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a new browser session",
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		addr, _ := cmd.Flags().GetString("addr")
-		insecureMode, _ := cmd.Flags().GetBool("insecure")
-
-		var (
-			client pb.ScoutServiceClient
-			conn   *grpc.ClientConn
-			err    error
-		)
-		if insecureMode {
-			if err := ensureDaemon(addr); err != nil {
-				return err
-			}
-
-			client, conn, err = getClient(addr)
-		} else {
-			client, conn, err = getClientTLS(addr)
-		}
-
-		if err != nil {
-			return err
-		}
-
-		defer func() { _ = conn.Close() }()
-
-		headless, _ := cmd.Flags().GetBool("headless")
-		stealth, _ := cmd.Flags().GetBool("stealth")
-		proxy, _ := cmd.Flags().GetString("proxy")
-		userAgent, _ := cmd.Flags().GetString("user-agent")
-		url, _ := cmd.Flags().GetString("url")
-		record, _ := cmd.Flags().GetBool("record")
-		captureBody, _ := cmd.Flags().GetBool("capture-body")
-		maximized, _ := cmd.Flags().GetBool("maximized")
-		devtools, _ := cmd.Flags().GetBool("devtools")
-		noSandbox, _ := cmd.Flags().GetBool("no-sandbox")
-		ephemeral, _ := cmd.Flags().GetBool("ephemeral")
-		expiresIn, _ := cmd.Flags().GetDuration("expires-in")
-
-		blockPatterns, _ := cmd.Flags().GetStringSlice("block")
-		blockMethods, _ := cmd.Flags().GetStringSlice("block-method")
-		blocks := make([]*pb.BlockRule, 0, len(blockPatterns))
-		for i, p := range blockPatterns {
-			m := ""
-			if i < len(blockMethods) {
-				m = blockMethods[i]
-			}
-			blocks = append(blocks, &pb.BlockRule{Pattern: p, Method: m})
-		}
-
-		harFlag, _ := cmd.Flags().GetBool("har")
-		hijackFlag, _ := cmd.Flags().GetBool("hijack")
-		hijackBodies, _ := cmd.Flags().GetBool("hijack-bodies")
-		harOut, _ := cmd.Flags().GetString("har-out")
-		hijackOut, _ := cmd.Flags().GetString("hijack-out")
-		consoleFlag, _ := cmd.Flags().GetBool("console")
-		wsFlag, _ := cmd.Flags().GetBool("ws")
-
-		// Load profile if specified, applying overrides to session creation fields.
-		profilePath, _ := cmd.Flags().GetString("profile")
-		if profilePath != "" {
-			decrypt, _ := cmd.Flags().GetBool("decrypt")
-
-			var prof *scout.UserProfile
-
-			if decrypt {
-				passphrase, _ := cmd.Flags().GetString("passphrase")
-				if passphrase == "" {
-					passphrase, err = readPassphrase(cmd.ErrOrStderr(), "Enter passphrase: ")
-					if err != nil {
-						return err
-					}
-				}
-
-				prof, err = scout.LoadProfileEncrypted(profilePath, passphrase)
-			} else {
-				prof, err = scout.LoadProfile(profilePath)
-			}
-
-			if err != nil {
-				return fmt.Errorf("scout: session create: load profile: %w", err)
-			}
-
-			// Apply profile fields as defaults (explicit flags still win).
-			if !cmd.Flags().Changed("user-agent") && prof.Identity.UserAgent != "" {
-				userAgent = prof.Identity.UserAgent
-			}
-
-			if !cmd.Flags().Changed("proxy") && prof.Proxy != "" {
-				proxy = prof.Proxy
-			}
-
-			if !cmd.Flags().Changed("stealth") && prof.Browser.Type == "brave" {
-				stealth = true
-			}
-
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Applying profile: %s\n", prof.Name)
-		}
-
-		resp, err := client.CreateSession(context.Background(), &pb.CreateSessionRequest{
-			Headless:         headless,
-			Stealth:          stealth,
-			Proxy:            proxy,
-			UserAgent:        userAgent,
-			InitialUrl:       url,
-			Record:           record,
-			CaptureBody:      captureBody,
-			Maximized:        maximized,
-			Devtools:         devtools,
-			NoSandbox:        noSandbox,
-			Ephemeral:        ephemeral,
-			ExpiresInSeconds: int64(expiresIn.Seconds()),
-			Blocks:           blocks,
-			RecordHar:        harFlag,
-			RecordHijack:     hijackFlag,
-			HijackBodies:     hijackBodies,
-			HarOut:           harOut,
-			HijackOut:        hijackOut,
-			RecordConsole:    consoleFlag,
-			RecordWs:         wsFlag,
-		})
-		if err != nil {
-			return fmt.Errorf("scout: create session: %w", err)
-		}
-
-		if err := saveCurrentSession(resp.GetSessionId()); err != nil {
-			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: could not save session: %v\n", err)
-		}
-
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Session created: %s\n", resp.GetSessionId())
-		if resp.GetTitle() != "" || resp.GetUrl() != "" {
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  Page: %s - %s\n", resp.GetTitle(), resp.GetUrl())
-		}
-
-		return nil
-	},
-}
-
-var sessionDestroyCmd = &cobra.Command{
-	Use:   "destroy [id]",
-	Short: "Destroy a browser session",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client, conn, err := resolveClient(cmd)
-		if err != nil {
-			return err
-		}
-
-		defer func() { _ = conn.Close() }()
-
-		all, _ := cmd.Flags().GetBool("all")
-		if all {
-			ids, _ := listTrackedSessions()
-			for _, id := range ids {
-				_, err := client.DestroySession(context.Background(), &pb.SessionRequest{SessionId: id})
-				if err != nil {
-					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: destroy %s: %v\n", id, err)
-				} else {
-					_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Destroyed: %s\n", id)
-				}
-
-			}
-
-			return nil
-		}
-
-		sessionFlag, _ := cmd.Flags().GetString("session")
-
-		var id string
-		if len(args) > 0 {
-			id = args[0]
-		} else {
-			id, err = resolveSession(sessionFlag)
-			if err != nil {
-				return err
-			}
-		}
-
-		_, err = client.DestroySession(context.Background(), &pb.SessionRequest{SessionId: id})
-		if err != nil {
-			return fmt.Errorf("scout: destroy session: %w", err)
-		}
-
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Destroyed: %s\n", id)
-
-		return nil
-	},
 }
 
 var sessionListCmd = &cobra.Command{
@@ -273,31 +52,9 @@ var sessionListCmd = &cobra.Command{
 			return nil
 		}
 
-		currentID, _ := resolveSession("")
-
 		for _, id := range ids {
-			marker := "  "
-			if id == currentID {
-				marker = "* "
-			}
-
-			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s%s\n", marker, id)
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), id)
 		}
-
-		return nil
-	},
-}
-
-var sessionUseCmd = &cobra.Command{
-	Use:   "use <id>",
-	Short: "Set the active session for subsequent commands",
-	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := saveCurrentSession(args[0]); err != nil {
-			return err
-		}
-
-		_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Active session: %s\n", args[0])
 
 		return nil
 	},

@@ -1,9 +1,0 @@
-//go:build !linux && !windows
-
-package server
-
-import "github.com/inovacc/scout/pkg/scout"
-
-func platformSessionDefaults() []scout.Option {
-	return nil
-}

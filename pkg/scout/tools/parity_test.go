@@ -29,7 +29,6 @@ var verbRegistry = []struct {
 	{"PDF", false, true, "REPL has no pdf command"},
 	{"Tabs", true, true, ""},
 	{"NewTab", true, true, ""},
-	{"SwarmCrawl", false, true, ""},
 	{"WSListen", false, true, ""},
 	{"WSSend", false, true, ""},
 	{"WSConnections", false, true, ""},
