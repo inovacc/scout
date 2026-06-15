@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/inovacc/scout/internal/interaction"
+	"github.com/inovacc/scout/internal/redact"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/tools"
 	"github.com/spf13/cobra"
@@ -49,6 +51,9 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 			}
 		}
 
+		interaction.Init("repl")
+		defer func() { _ = interaction.Close("ok") }()
+
 		out := cmd.OutOrStdout()
 		scanner := bufio.NewScanner(os.Stdin)
 
@@ -76,6 +81,18 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 
 			parts := strings.SplitN(line, " ", 3)
 			c := parts[0]
+
+			switch c {
+			case "exit", "quit", "help":
+				// meta commands — not captured
+			default:
+				interaction.Emit(interaction.Event{
+					Kind:   "browser_action",
+					Source: "repl",
+					Name:   c,
+					Input:  map[string]any{"args": redact.Args(parts[1:])},
+				})
+			}
 
 			switch c {
 			case "exit", "quit":
