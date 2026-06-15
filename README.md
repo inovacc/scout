@@ -2,7 +2,7 @@
 
 Browser automation, web scraping, and site testing for AI agents.
 
-Scout ships as a **Claude Code plugin** (with Codex CLI and Gemini CLI on the roadmap). Install the plugin, restart your AI host, and Scout's full surface — agents, skills, slash commands, and 27 MCP tools — is available to your agent without writing a line of code.
+Scout ships as a **Claude Code plugin** (with Codex CLI and Gemini CLI on the roadmap). Install the plugin, restart your AI host, and Scout's full surface — agents, skills, slash commands, and MCP tools — is available to your agent without writing a line of code.
 
 ## Quick start
 
@@ -20,12 +20,10 @@ After restart you have:
 
 - **6 skills** (auto-triggered): `scrape`, `screenshot`, `test-site`, `gather`, `crawl`, `monitor`
 - **6 slash commands** (user-invoked): `/scout:scrape`, `/scout:screenshot`, `/scout:test-site`, `/scout:gather`, `/scout:crawl`, `/scout:monitor`
-- **6 agents** (via Task tool): `browser-automation`, `site-tester`, `web-scraper`, `site-mapper`, `session-capture`, `flow-porter`
-- **27 MCP tools** (direct): `gather`, `test_site`, `sitemap`, `report_*`, `runbook_*`, `screenshot`, `snapshot`, `navigate`, `click`, `type`, `eval`, `swarm_crawl`, `ws_listen`, … (full list: `scout plugin extract --target ./out && cat ./out/.mcp.json`)
+- **5 agents** (via Task tool): `site-tester`, `web-scraper`, `site-mapper`, `session-capture`, `flow-porter`
+- **MCP tools** (direct): `gather`, `test_site`, `sitemap`, `report_*`, `runbook_*`, `screenshot`, `snapshot`, `navigate`, `click`, `type`, `eval`, `ws_listen`, … (full list: `scout plugin extract --target ./out && cat ./out/.mcp.json`)
 
 Verify the install: `scout plugin doctor --host claude`. Other hosts: `scout plugin install --host all`.
-
-> **Heads-up — `scout agent serve` (REST AI ingress) is deprecated** and will be removed on 2026-07-23. Migrate to the MCP server via the plugin install above. See `docs/BACKLOG.md`.
 
 ## Features
 
@@ -46,21 +44,18 @@ Verify the install: `scout plugin doctor --host claude`. Other hosts: `scout plu
 - **Pagination** - Click-next, URL-pattern, infinite-scroll, and load-more with Go generics
 - **Search Engine Integration** - Google, Bing, DuckDuckGo, Wikipedia, Google Scholar, Google News
 - **Web Crawling** - BFS crawling with depth/page limits, domain filtering, sitemap parsing
-- **Swarm Mode** - Distributed crawling with coordinator/worker architecture and domain-partitioned queues
 - **HAR Network Recording** - Capture HTTP traffic via CDP events and export as HAR 1.2 format
 - **LLM-Powered Extraction** - 6 built-in providers (Ollama, OpenAI, Anthropic, OpenRouter, DeepSeek, Gemini) with review pipeline
 - **Research Presets** - Shallow, Medium, and Deep research modes with caching and incremental research
 - **Scraper Framework** - 20 pluggable modes with AES-256-GCM encrypted session persistence
-- **MCP Server** - 18 built-in tools + plugin-contributed tools for LLM browser control via stdio or SSE
+- **MCP Server** - 17 built-in tools + plugin-contributed tools for LLM browser control via stdio
 - **Plugin System** - Subprocess JSON-RPC plugins with Go SDK, marketplace, and 12 built-in plugins
-- **gRPC Remote Control** - Multi-session browser control with 25+ RPCs and event streaming
 - **Electron Support** - `WithElectronApp(path)` with auto-download runtime
 - **REPL Mode** - Interactive browser shell with 20 commands, no daemon required
 - **Health Check** - Site-wide broken link, console error, and network failure detection
 - **Visual Monitoring** - Pixel-level visual regression testing with baseline management
 - **Reports** - AI-consumable markdown reports for health checks, gather, and crawl results
 - **Chrome Extensions** - Load unpacked, download from Chrome Web Store, embedded bridge extension
-- **Cloud Upload** - OAuth2 upload to Google Drive and OneDrive
 
 ## Installation (library + standalone CLI)
 
@@ -124,33 +119,22 @@ func main() {
 
 ### As a CLI
 
-```bash
-# Start a browser session
-scout session create --url=https://example.com
+Single-shot verbs each run one browser process and take a URL directly:
 
-# Inspect the page
-scout title
-scout url
-scout text "h1"
+```bash
+# Inspect a page
+scout title https://example.com
+scout url https://example.com
+scout text https://example.com "h1"
 
 # Take a screenshot
-scout screenshot --output=page.png
-
-# Navigate
-scout navigate https://example.org
-scout back
-scout forward
-
-# Interact with elements
-scout click "button#submit"
-scout type "input[name=q]" "search query"
-scout key Enter
+scout screenshot https://example.com --output=page.png
 
 # Extract data
-scout eval "document.title"
-scout html --selector="div.content"
-scout table --url=https://example.com --selector="table"
-scout meta --url=https://example.com
+scout eval https://example.com "document.title"
+scout html https://example.com --selector="div.content"
+scout table https://example.com --selector="table"
+scout meta https://example.com
 
 # Search engines (standalone)
 scout search "golang web scraping" --engine=google
@@ -158,11 +142,12 @@ scout search "golang web scraping" --engine=google
 # Crawl a site (standalone)
 scout crawl https://example.com --max-depth=2
 
-# REPL mode (no daemon)
+# Multi-step automation (one process): interactive shell,
+# the stdio MCP server, or a strategy/runbook file
 scout repl https://example.com
 
-# Clean up
-scout session destroy --all
+# Inspect captured session files
+scout session list
 ```
 
 ## Examples
@@ -359,12 +344,12 @@ err := page.NavigateWithRetry("https://example.com", rl)
 | `WithDevTools()`                  | Open Chrome DevTools for each tab                            | disabled        |
 | `WithFingerprintRotation(cfg)`    | Enable fingerprint rotation strategy                         | disabled        |
 | `WithResearchPreset(preset)`      | Set research depth: Shallow, Medium, Deep                    | none            |
-| `WithRemoteCDP(endpoint)`         | Connect to existing Chrome DevTools endpoint                 | none            |
+| `WithRemoteCDP(endpoint)`         | Connect to existing Chrome DevTools endpoint (dormant)       | none            |
 | `WithElectronApp(path)`           | Launch an Electron application                               | none            |
 
 ## MCP Server (LLM Integration)
 
-Scout includes a [Model Context Protocol](https://modelcontextprotocol.io/) server exposing 18 built-in browser automation tools for LLMs like Claude, plus additional tools contributed by plugins.
+Scout includes a [Model Context Protocol](https://modelcontextprotocol.io/) server exposing 17 built-in browser automation tools for LLMs like Claude, plus additional tools contributed by plugins. The server runs over **stdio only**.
 
 ```bash
 # Install for Claude Code (local project)
@@ -375,12 +360,9 @@ scout mcp --install --global
 
 # Start manually (stdio)
 scout mcp
-
-# Start with HTTP+SSE transport
-scout mcp --sse --addr=localhost:8080
 ```
 
-### Built-in Tools (18)
+### Built-in Tools (17)
 
 | Category | Tools | Description |
 |----------|-------|-------------|
@@ -388,7 +370,6 @@ scout mcp --sse --addr=localhost:8080
 | **Interaction** | `click`, `type`, `eval` | Element interaction and JS execution |
 | **Content** | `extract`, `screenshot`, `snapshot`, `pdf` | Content extraction, screenshots, PDF export |
 | **Session** | `session_list`, `session_reset` | Session management |
-| **Crawling** | `swarm_crawl` | Distributed BFS crawling |
 | **WebSocket** | `ws_listen`, `ws_send`, `ws_connections` | Monitor, send, and list WebSocket traffic |
 
 Additional tools (markdown, table, meta, forms, network, etc.) are available via the 12 built-in plugins.
@@ -427,52 +408,9 @@ claude --plugin-dir .
 |-------|-------------|
 | `web-scraper` | Autonomous web scraping with extraction strategies |
 | `site-tester` | Automated site health and quality testing |
-| `browser-automation` | General-purpose browser automation workflows |
-
-## Agent HTTP API
-
-Scout provides an HTTP API for AI agent integration via `pkg/scout/agent/`.
-
-```bash
-# Start the agent HTTP server
-scout agent serve
-```
-
-### Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/tools` | List available tools (OpenAI/Anthropic schema) |
-| `POST` | `/tools/{name}` | Execute a tool by name |
-| `GET` | `/health` | Health check |
-
-```bash
-# Example: navigate to a URL
-curl -X POST http://localhost:8080/tools/navigate \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com"}'
-```
-
-The agent framework also provides `OpenAITools()` and `AnthropicTools()` for embedding Scout tools directly into AI agent pipelines.
-
-## Mobile Automation
-
-Scout supports mobile browser automation via ADB (Android Debug Bridge).
-
-```bash
-# List connected devices
-scout mobile devices
-
-# Connect to a device
-scout mobile connect <device-id>
-
-# Touch gestures
-scout mobile tap 500 300
-scout mobile swipe 500 800 500 200
-scout mobile scroll down
-```
-
-Mobile sessions use Chrome on Android via `adb forward` for CDP connections.
+| `site-mapper` | Site structure discovery and URL mapping |
+| `session-capture` | Capture browser session traffic for replay |
+| `flow-porter` | Port captured flows into deterministic replay specs |
 
 ## Plugin System
 
@@ -526,33 +464,9 @@ scout vault rm <id>
 
 Secrets are held in swap-locked, explicitly-zeroed buffers and are never passed via environment variables. Set `SCOUT_VAULT_PASSPHRASE` for non-interactive use (a stderr warning notes it is visible to child processes; prefer the interactive prompt).
 
-## Cloud Deployment
+## Observability
 
-Scout can be deployed to Kubernetes using the included Helm chart.
-
-```bash
-# Deploy with Helm
-helm install scout deploy/helm/scout/
-
-# Or use the CLI
-scout cloud deploy
-scout cloud status
-scout cloud scale --replicas=3
-```
-
-## Monitoring
-
-Scout exposes runtime metrics for observability.
-
-```bash
-# Prometheus metrics endpoint
-curl http://localhost:9551/metrics
-
-# JSON metrics
-curl http://localhost:9551/metrics/json
-```
-
-OpenTelemetry tracing is available when `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT` is set. All MCP tools are auto-instrumented.
+OpenTelemetry tracing remains available (no-op by default) when `SCOUT_TRACE=1` or `OTEL_EXPORTER_OTLP_ENDPOINT` is set. All MCP tools are auto-instrumented.
 
 ## CLI Reference
 
@@ -560,17 +474,14 @@ The `scout` CLI provides 50+ subcommands. Run `scout cmdtree` for the full comma
 
 | Command | Description |
 |---------|-------------|
-| `scout session create/destroy/list/use/reset` | Session lifecycle management |
-| `scout navigate/back/forward/reload` | Page navigation |
-| `scout click/type/key/select/hover` | Element interaction |
-| `scout title/url/text/attr/eval/html` | Page inspection |
-| `scout screenshot/pdf` | Visual capture |
-| `scout markdown --url=<url>` | HTML-to-Markdown conversion |
-| `scout table/meta` | Structured data extraction |
+| `scout session list/list-local/prune/clean/rm/reset` | File-based session management |
+| `scout title/url/text/attr/eval/html <url>` | Single-shot page inspection |
+| `scout screenshot/pdf <url>` | Visual capture |
+| `scout markdown <url>` | HTML-to-Markdown conversion |
+| `scout table/meta <url>` | Structured data extraction |
 | `scout form detect/fill/submit` | Form interaction |
 | `scout search <query>` | Multi-engine search |
 | `scout crawl <url>` | BFS crawling |
-| `scout swarm start <url>` | Distributed crawling |
 | `scout map <url>` | URL discovery |
 | `scout gather <url>` | One-shot page intelligence |
 | `scout test-site <url>` | Site health check |
@@ -583,29 +494,11 @@ The `scout` CLI provides 50+ subcommands. Run `scout cmdtree` for the full comma
 | `scout swagger <url>` | OpenAPI extraction |
 | `scout sitemap extract <url>` | Full-site DOM + Markdown extraction |
 | `scout auth login/capture/status` | Auth framework |
-| `scout mcp` | MCP server |
-| `scout agent serve` | Agent HTTP API server |
-| `scout mobile devices/connect` | Mobile automation |
+| `scout mcp` | MCP server (stdio) |
 | `scout plugin list/install/search` | Plugin management |
 | `scout browser list` | Browser management |
-| `scout cloud deploy/status/scale` | Cloud deployment |
 | `scout report list/show/delete` | Report management |
-| `scout upload auth/file/status` | Cloud upload (Drive, OneDrive) |
-| `scout connect --cdp ws://...` | Remote CDP connection |
-| `scout server` | Run gRPC server directly |
 | `scout version` | Version info |
-
-## gRPC Service
-
-Multi-session browser control via gRPC on port 9551 with mTLS authentication and device pairing.
-
-```bash
-# Start gRPC server
-scout server
-
-# Or via Task
-task grpc:server
-```
 
 ## Development
 
@@ -619,12 +512,11 @@ task check         # Full quality check: fmt, vet, lint, test
 task lint          # Run golangci-lint
 task lint:fix      # Run golangci-lint with --fix
 task fmt           # Format code (go fmt + goimports)
-task proto         # Generate protobuf code
 ```
 
 ## Dependencies
 
-**Core library** (no gRPC -- library-only consumers do not pull gRPC deps):
+**Core library:**
 
 | Package | Purpose |
 |---------|---------|
@@ -636,15 +528,12 @@ task proto         # Generate protobuf code
 | [ollama/ollama](https://github.com/ollama/ollama) | Ollama Go client for local LLM provider |
 | [go-sdk/mcp](https://github.com/modelcontextprotocol/go-sdk) | Model Context Protocol server for LLM integration |
 
-**gRPC layer and CLI** (`grpc/` and `cmd/` only):
+**CLI** (`cmd/` only):
 
 | Package | Purpose |
 |---------|---------|
-| [google.golang.org/grpc](https://pkg.go.dev/google.golang.org/grpc) | gRPC framework |
-| [google.golang.org/protobuf](https://pkg.go.dev/google.golang.org/protobuf) | Protocol Buffers runtime |
 | [google/uuid](https://github.com/google/uuid) | Session ID generation |
 | [spf13/cobra](https://github.com/spf13/cobra) | CLI framework |
-| [grandcat/zeroconf](https://github.com/grandcat/zeroconf) | mDNS service discovery for device pairing |
 | [google/gops](https://github.com/google/gops) | Process discovery and orphan detection |
 | [go.opentelemetry.io/otel](https://opentelemetry.io) | Distributed tracing |
 

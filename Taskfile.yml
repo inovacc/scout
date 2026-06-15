@@ -3,10 +3,6 @@ version: 3
 vars:
   MAIN_PACKAGE: ./cmd/scout
   COVERAGE_FILE: coverage.out
-  # Standard Go bin dir ($GOPATH/bin, on PATH) — where `install` puts `scout`
-  # and where service:start launches the daemon from. Mirrors weaver's pattern.
-  GOPATHBIN:
-    sh: go env GOPATH
 
 tasks:
   # === INFORMATION ===
@@ -21,23 +17,6 @@ tasks:
       - go install -ldflags="-s -w" {{.MAIN_PACKAGE}}
 
   # === CODE GENERATION ===
-  proto:
-    desc: Generate gRPC protobuf code for scout service
-    cmds:
-      - protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative grpc/proto/scout.proto
-      - cmd: move grpc\proto\scout.pb.go grpc\scoutpb\scout.pb.go
-        platforms: [ windows ]
-      - cmd: move grpc\proto\scout_grpc.pb.go grpc\scoutpb\scout_grpc.pb.go
-        platforms: [ windows ]
-      - cmd: mv grpc/proto/scout.pb.go grpc/scoutpb/scout.pb.go
-        platforms: [ linux, darwin ]
-      - cmd: mv grpc/proto/scout_grpc.pb.go grpc/scoutpb/scout_grpc.pb.go
-        platforms: [ linux, darwin ]
-    sources:
-      - grpc/proto/*.proto
-    generates:
-      - grpc/scoutpb/*.pb.go
-
   generate:stealth:
     desc: Regenerate stealth anti-detection JS assets (requires Node.js/npx)
     dir: pkg/stealth
@@ -54,42 +33,11 @@ tasks:
     cmds:
       - go build -o bin/scout ./cmd/scout
 
-  # === SERVICE (local daemon redeploy lifecycle) ===
-  # Ported from weaver's service:* pattern: stop the daemon, reinstall the binary
-  # to $GOPATH/bin, restart it detached, then health-check. The scout daemon is
-  # `scout server` (gRPC, default port 9551). weaver's web:build step is omitted —
-  # scout has no separate web bundle (embeds compile directly into the binary).
-  service:stop:
-    desc: Stop the running scout daemon (kills all scout processes)
-    ignore_error: true
-    cmds:
-      - cmd: powershell -NoProfile -Command "Get-Process scout -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 2"
-        platforms: [ windows ]
-      - cmd: pkill -x scout || true
-        platforms: [ linux, darwin ]
-
-  service:start:
-    desc: Start the installed scout daemon ($GOPATH/bin), detached
-    cmds:
-      - cmd: powershell -NoProfile -Command "Start-Process -FilePath (Join-Path '{{.GOPATHBIN}}' 'bin\scout.exe') -ArgumentList 'server' -WindowStyle Hidden"
-        platforms: [ windows ]
-      - cmd: nohup "{{.GOPATHBIN}}/bin/scout" server >/dev/null 2>&1 &
-        platforms: [ linux, darwin ]
-
-  service:deploy:
-    desc: Stop daemon, reinstall scout to $GOPATH/bin, and restart (local redeploy)
-    cmds:
-      - task: service:stop
-      - task: install
-      - task: service:start
-      - cmd: powershell -NoProfile -Command "Start-Sleep -Seconds 5; Get-Process scout -ErrorAction SilentlyContinue | Select-Object Id,StartTime | Format-Table"
-        platforms: [ windows ]
-
   # === TEST TASKS ===
   test:
     desc: Run all tests with coverage
     cmds:
-      - go test -v -race -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./internal/... ./grpc/...
+      - go test -v -race -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./internal/...
 
   test:coverage:
     desc: Generate HTML coverage report
@@ -101,7 +49,7 @@ tasks:
   test:cover:
     desc: Run tests and show coverage percentage
     cmds:
-      - go test -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./internal/... ./grpc/...
+      - go test -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./internal/...
       - cmd: go tool cover -func={{.COVERAGE_FILE}} | findstr "total:"
         platforms: [ windows ]
       - cmd: go tool cover -func={{.COVERAGE_FILE}} | grep "total:"
@@ -110,12 +58,12 @@ tasks:
   test:unit:
     desc: Run unit tests only (skip integration)
     cmds:
-      - go test -v -short ./pkg/scout/... ./internal/... ./grpc/...
+      - go test -v -short ./pkg/scout/... ./internal/...
 
   test:full:
     desc: Full suite including browser-dependent integration tests (multi-minute)
     cmds:
-      - go test -v -race -count=1 -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./internal/... ./grpc/...
+      - go test -v -race -count=1 -coverprofile={{.COVERAGE_FILE}} ./pkg/scout/... ./internal/...
 
   # === CODE QUALITY ===
   fmt:
@@ -141,17 +89,6 @@ tasks:
       - task: vet
       - task: lint
       - task: test
-
-  # === gRPC TASKS ===
-  grpc:server:
-    desc: Run the gRPC scout server
-    cmds:
-      - go run ./cmd/scout server {{.CLI_ARGS}}
-
-  grpc:client:
-    desc: Run the interactive gRPC client
-    cmds:
-      - go run ./cmd/scout client {{.CLI_ARGS}}
 
   # === DEPENDENCY MANAGEMENT ===
   deps:
