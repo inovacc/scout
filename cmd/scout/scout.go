@@ -12,7 +12,9 @@ import (
 	"github.com/google/gops/agent"
 	"github.com/inovacc/scout/internal/engine/session"
 	"github.com/inovacc/scout/internal/flags"
+	"github.com/inovacc/scout/internal/interaction"
 	"github.com/inovacc/scout/internal/logger"
+	"github.com/inovacc/scout/internal/redact"
 	"github.com/inovacc/scout/internal/tracing"
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/inovacc/scout/pkg/scout/plugin"
@@ -43,6 +45,16 @@ or run standalone for one-shot operations.`,
 			stdout, stderr := log.StartExecution(cmd.Name(), args, cmd.OutOrStdout(), cmd.ErrOrStderr())
 			cmd.SetOut(stdout)
 			cmd.SetErr(stderr)
+		}
+
+		if !flags.ShouldIgnoreCommand(cmd.Name()) {
+			interaction.Init("cli")
+			interaction.Emit(interaction.Event{
+				Kind:   "cli",
+				Source: "cli",
+				Name:   cmd.Name(),
+				Input:  map[string]any{"args": redact.Args(args)},
+			})
 		}
 
 		return nil
@@ -93,6 +105,12 @@ func Execute() {
 			log.EndExecution(err)
 			_ = log.Close()
 		}
+
+		status := "ok"
+		if err != nil {
+			status = "error"
+		}
+		_ = interaction.Close(status)
 
 		if err != nil {
 			// rootCmd has SilenceErrors=true so cobra never prints. Print
