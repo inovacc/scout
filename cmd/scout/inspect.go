@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/inovacc/scout/pkg/scout"
 	"github.com/spf13/cobra"
@@ -152,6 +153,18 @@ var evalCmd = &cobra.Command{
 
 		result, err := page.Eval(args[1])
 		if err != nil {
+			// If the evaluated JS navigated the page (a click, form submit, or
+			// location.reload), the V8 execution context is torn down before a
+			// value can be returned. That is a successful side effect, not a JS
+			// fault — wait for the new document and report where it landed
+			// instead of failing the whole command.
+			if isNavigationError(err) {
+				_ = page.WaitLoad()
+				url, _ := page.URL()
+				_, _ = fmt.Fprintf(cmd.OutOrStdout(), "navigated to %s\n", url)
+				return nil
+			}
+
 			return fmt.Errorf("scout: eval: %w", err)
 		}
 
@@ -159,6 +172,25 @@ var evalCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+// isNavigationError reports whether err means the JS execution context was
+// destroyed by a page navigation (CDP -32000 "Inspected target navigated or
+// closed" / "Execution context was destroyed"), as opposed to a real fault in
+// the evaluated script. Such navigations are a legitimate side effect of eval,
+// so callers treat this as success rather than an error.
+func isNavigationError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	s := err.Error()
+
+	return strings.Contains(s, "navigated or closed") ||
+		strings.Contains(s, "Inspected target navigated") ||
+		strings.Contains(s, "context was destroyed") ||
+		strings.Contains(s, "Execution context was destroyed") ||
+		strings.Contains(s, "Cannot find context")
 }
 
 var htmlCmd = &cobra.Command{
