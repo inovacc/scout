@@ -295,11 +295,24 @@ func (s *ScoutServer) Interactive(stream pb.ScoutService_InteractiveServer) erro
 			_ = subID   // used in defer above
 			_ = eventCh // used in goroutine below
 
-			// Goroutine to forward events to client
+			// Goroutine to forward events to client. It must exit when the stream
+			// context is cancelled (client gone / stream ended), not only when
+			// eventCh closes — otherwise a stalled peer leaks this goroutine.
+			streamCtx := stream.Context()
+
 			go func() {
-				for ev := range eventCh {
-					if err := stream.Send(ev); err != nil {
+				for {
+					select {
+					case <-streamCtx.Done():
 						return
+					case ev, ok := <-eventCh:
+						if !ok {
+							return
+						}
+
+						if err := stream.Send(ev); err != nil {
+							return
+						}
 					}
 				}
 			}()

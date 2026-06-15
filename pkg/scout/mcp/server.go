@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -75,6 +76,15 @@ func (s *mcpState) ensureBrowser(_ context.Context) (*scout.Browser, error) {
 	b, err := scout.New(opts...) //nolint:contextcheck
 	if err != nil {
 		return nil, fmt.Errorf("scout-mcp: launch browser: %w", err)
+	}
+
+	// Enforce the SSRF URL-policy on EVERY outbound request (redirects and
+	// in-page fetch from the eval tool), not just the navigate-time check.
+	if s.policy != nil {
+		policy := s.policy
+		b.InstallRequestFilter(func(rawURL string) bool {
+			return policy.Check(context.Background(), rawURL) == nil
+		})
 	}
 
 	s.browser = b
@@ -352,6 +362,10 @@ func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, s
 		Handler: handler,
 	}
 
+	if err := guardSSEBind(addr); err != nil {
+		return err
+	}
+
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("scout: mcp: %w", err)
@@ -376,4 +390,40 @@ func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, s
 	case err := <-errCh:
 		return err
 	}
+}
+
+// guardSSEBind fails closed: the MCP SSE transport exposes full browser control
+// (navigate/eval/...) with no authentication, so it must not listen on a
+// non-loopback address unless the operator opts in via SCOUT_MCP_ALLOW_REMOTE
+// (intended only when fronted by an authenticating proxy).
+func guardSSEBind(addr string) error {
+	host := addr
+	if h, _, err := net.SplitHostPort(addr); err == nil {
+		host = h
+	}
+
+	if mcpLoopbackHost(host) {
+		return nil
+	}
+
+	if v := os.Getenv("SCOUT_MCP_ALLOW_REMOTE"); v == "1" || v == "true" {
+		return nil
+	}
+
+	return fmt.Errorf("scout: mcp: refusing to bind non-loopback address %q for the unauthenticated SSE transport; bind localhost or set SCOUT_MCP_ALLOW_REMOTE=1 (only behind an authenticating proxy)", addr)
+}
+
+// mcpLoopbackHost reports whether host is a loopback address. Empty, "0.0.0.0"
+// and "::" are treated as non-loopback.
+func mcpLoopbackHost(host string) bool {
+	switch host {
+	case "127.0.0.1", "::1", "localhost":
+		return true
+	}
+
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+
+	return false
 }

@@ -78,14 +78,14 @@ func SaveReport(r *Report) (string, error) {
 	}
 
 	dir := ReportsDir()
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", fmt.Errorf("scout: report: create dir: %w", err)
 	}
 
 	content := renderReport(r)
 
 	path := filepath.Join(dir, r.ID+".txt")
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		return "", fmt.Errorf("scout: report: write: %w", err)
 	}
 

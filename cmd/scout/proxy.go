@@ -35,7 +35,9 @@ var proxyStartCmd = &cobra.Command{
 		addr, _ := cmd.Flags().GetString("addr")
 
 		if addr == "" {
-			addr = ":" + port
+			// Default to loopback so the proxy is not network-exposed unless an
+			// address is set explicitly (which then requires a token).
+			addr = "127.0.0.1:" + port
 		}
 
 		cfg, err := proxy.LoadConfig(file)

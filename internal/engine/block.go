@@ -49,3 +49,48 @@ func (b *Browser) installBlockRules(rules []BlockRule) {
 	go router.Run()
 	b.blockRouter = router
 }
+
+// InstallRequestFilter enforces an egress/SSRF policy on EVERY outbound request,
+// not just the top-level navigation. The filter is consulted with each request's
+// URL — including HTTP redirects and in-page fetch()/XHR issued by evaluated
+// JavaScript — and any request it rejects is aborted at the network layer
+// (Fetch.failRequest). This closes the gap where a navigate-time URL check is
+// bypassed by a 30x redirect to an internal host or by the eval tool.
+//
+// Intended for untrusted-caller front ends (the agent REST API and the MCP
+// server). Call once, right after New(), before navigation.
+//
+// Note: the browser resolves DNS independently of the filter, so this reduces
+// but does not fully eliminate DNS rebinding (TOCTOU); pinning the resolved IP
+// additionally requires Chrome --host-resolver-rules.
+func (b *Browser) InstallRequestFilter(filter func(rawURL string) bool) {
+	if b == nil || b.browser == nil || filter == nil {
+		return
+	}
+
+	router := b.blockRouter
+	fresh := router == nil
+	if fresh {
+		router = b.browser.HijackRequests()
+	}
+
+	err := router.Add("*", "", func(h *Hijack) {
+		u := h.Request.URL().String()
+		if filter(u) {
+			h.ContinueRequest(&proto2.FetchContinueRequest{})
+			return
+		}
+
+		slog.Warn("scout: SSRF policy blocked request", "url", u)
+		h.Response.Fail(proto2.NetworkErrorReasonBlockedByClient)
+	})
+	if err != nil {
+		slog.Warn("scout: install request filter failed", "err", err)
+		return
+	}
+
+	if fresh {
+		go router.Run()
+		b.blockRouter = router
+	}
+}

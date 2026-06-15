@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +44,33 @@ func sanitizeSessionRel(p string) (string, error) {
 
 // ════════════════════════ Session Lifecycle ════════════════════════
 
+const defaultMaxSessions = 32
+
+// maxConcurrentSessions caps simultaneously-open sessions, overridable via
+// SCOUT_MAX_SESSIONS, to bound resource use from an authenticated peer.
+func maxConcurrentSessions() int {
+	if v := os.Getenv("SCOUT_MAX_SESSIONS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+
+	return defaultMaxSessions
+}
+
+// sessionCount returns the number of live sessions.
+func (s *ScoutServer) sessionCount() int {
+	n := 0
+
+	s.sessions.Range(func(_, _ any) bool {
+		n++
+
+		return true
+	})
+
+	return n
+}
+
 func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.CreateSessionResponse, error) {
 	s.touchIdle()
 
@@ -64,6 +92,13 @@ func (s *ScoutServer) CreateSession(ctx context.Context, req *pb.CreateSessionRe
 	}
 	if hijackPath == "" {
 		hijackPath = "hijack.jsonl"
+	}
+
+	// Bound concurrent sessions so an authenticated peer cannot exhaust host
+	// resources by spawning unlimited browser processes.
+	if limit := maxConcurrentSessions(); s.sessionCount() >= limit {
+		return nil, status.Errorf(codes.ResourceExhausted,
+			"scout: session limit reached (%d); close a session or raise SCOUT_MAX_SESSIONS", limit)
 	}
 
 	opts := platformSessionDefaults()

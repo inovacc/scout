@@ -28,6 +28,7 @@ func init() {
 	serverCmd.Flags().Bool("reflection", false, "enable gRPC reflection (exposes the service schema)")
 	serverCmd.Flags().Bool("insecure", false, "disable mTLS (no authentication)")
 	serverCmd.Flags().String("pairing-token", "", "out-of-band token required to pair a new device (env SCOUT_PAIRING_TOKEN); a random token is generated and printed if unset")
+	serverCmd.Flags().String("pairing-host", "127.0.0.1", "bind host for the plaintext pairing listener (default: loopback). Only set a routable host on a trusted network — the pairing token and certificates are exchanged unencrypted")
 	// --idle-timeout inherited from root persistent flags
 }
 
@@ -168,7 +169,19 @@ var serverCmd = &cobra.Command{
 				}
 			}
 
-			pairingAddr = fmt.Sprintf(":%d", port+1)
+			// The pairing handshake exchanges the token and certificates over a
+			// PLAINTEXT gRPC channel, so default the listener to loopback. Binding a
+			// routable host requires an explicit --pairing-host on a trusted network.
+			pairingHost, _ := cmd.Flags().GetString("pairing-host")
+			if pairingHost == "" {
+				pairingHost = "127.0.0.1"
+			}
+
+			pairingAddr = net.JoinHostPort(pairingHost, strconv.Itoa(port+1))
+
+			if !isLoopbackHost(pairingHost) {
+				_, _ = fmt.Fprintf(os.Stderr, "WARNING: pairing listener bound to non-loopback %s — the pairing token and certificates transit in PLAINTEXT; only pair over a trusted network.\n", pairingAddr)
+			}
 
 			pairingLis, err := net.Listen("tcp", pairingAddr)
 			if err != nil {

@@ -36,6 +36,11 @@ type ServerConfig struct {
 	// by default. Server-to-server callers omit Origin and are unaffected.
 	// A single "*" entry opts into allowing any origin.
 	AllowedOrigins []string
+	// InsecureAllowRemote permits binding a non-loopback address with no APIKey.
+	// Without it the server fails closed, because it exposes browser
+	// eval/navigation (and thus SSRF) to anyone who can reach the port. Intended
+	// only for deployments fronted by an external authenticating proxy.
+	InsecureAllowRemote bool
 }
 
 // Server wraps a Provider with an HTTP interface for AI agent frameworks.
@@ -94,6 +99,15 @@ func NewServer(cfg ServerConfig) (*Server, error) {
 	}
 
 	provider := NewProvider(browser)
+
+	// Enforce the SSRF URL-policy on EVERY outbound request (redirects and
+	// in-page fetch from the eval tool), not just the navigate handler.
+	if provider.policy != nil {
+		policy := provider.policy
+		browser.InstallRequestFilter(func(rawURL string) bool {
+			return policy.Check(context.Background(), rawURL) == nil
+		})
+	}
 
 	rps := cfg.RateLimit
 	if rps == 0 {
@@ -402,6 +416,42 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// guardBind fails closed: an agent server with no API key must not listen on a
+// non-loopback address, because it exposes browser eval/navigation (and thus
+// SSRF) to anyone who can reach the port. Callers that intend an open bind (for
+// example behind an authenticating reverse proxy) must set InsecureAllowRemote.
+func (s *Server) guardBind() error {
+	if s.config.APIKey != "" || s.config.InsecureAllowRemote {
+		return nil
+	}
+
+	host := s.config.Addr
+	if h, _, err := net.SplitHostPort(s.config.Addr); err == nil {
+		host = h
+	}
+
+	if !isLoopbackHost(host) {
+		return fmt.Errorf("scout: agent server: refusing to bind non-loopback address %q without an API key; set ServerConfig.APIKey or ServerConfig.InsecureAllowRemote", s.config.Addr)
+	}
+
+	return nil
+}
+
+// isLoopbackHost reports whether host is a loopback address. Empty, "0.0.0.0"
+// and "::" are treated as non-loopback (they accept remote connections).
+func isLoopbackHost(host string) bool {
+	switch host {
+	case "127.0.0.1", "::1", "localhost":
+		return true
+	}
+
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+
+	return false
+}
+
 // ListenAndServe starts the HTTP server. If IdleTimeout is configured and
 // onIdle is provided, the server will call onIdle (typically context cancel)
 // after IdleTimeout of inactivity.
@@ -409,6 +459,10 @@ func (s *Server) ListenAndServe(ctx context.Context, onIdle ...func()) error {
 	if s.config.IdleTimeout > 0 && len(onIdle) > 0 {
 		s.idle = idle.New(s.config.IdleTimeout, onIdle[0])
 		defer s.idle.Stop()
+	}
+
+	if err := s.guardBind(); err != nil {
+		return err
 	}
 
 	ln, err := net.Listen("tcp", s.config.Addr)

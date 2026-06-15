@@ -39,6 +39,7 @@ func init() {
 
 	pluginInstallCmd.Flags().String("checksum", "", "expected SHA256 (hex) of the downloaded archive; install aborts on mismatch")
 	pluginInstallCmd.Flags().Bool("insecure-http", false, "allow plugin download over plaintext HTTP (NOT recommended)")
+	pluginInstallCmd.Flags().Bool("allow-unverified", false, "install a downloaded plugin even without a --checksum (trust-on-first-use; NOT recommended)")
 }
 
 var pluginCmd = &cobra.Command{
@@ -192,9 +193,25 @@ func installPluginFromDir(cmd *cobra.Command, srcDir string) error {
 const maxPluginDownload = 128 << 20 // 128 MB
 
 func installPluginFromURL(cmd *cobra.Command, url string) error {
+	expected, _ := cmd.Flags().GetString("checksum")
+	allowUnverified, _ := cmd.Flags().GetBool("allow-unverified")
+
+	_, err := downloadInstall(cmd, url, expected, allowUnverified)
+
+	return err
+}
+
+// downloadInstall downloads a plugin archive from url, enforces the download
+// guardrails (no plaintext HTTP without opt-in, size limit), verifies the
+// archive against expected (a hex SHA256) when provided, and installs it. When
+// no checksum is available the install is trust-on-first-use: it proceeds only
+// if allowUnverified is true, otherwise it fails closed so a hostile or MITM'd
+// archive cannot be installed silently. Returns the SHA256 of the downloaded
+// archive so callers can pin it.
+func downloadInstall(cmd *cobra.Command, url, expected string, allowUnverified bool) (string, error) {
 	if strings.HasPrefix(url, "http://") {
 		if allow, _ := cmd.Flags().GetBool("insecure-http"); !allow {
-			return fmt.Errorf("scout: plugin install: refusing plaintext HTTP download of %q; use https or pass --insecure-http", url)
+			return "", fmt.Errorf("scout: plugin install: refusing plaintext HTTP download of %q; use https or pass --insecure-http", url)
 		}
 	}
 
@@ -202,37 +219,42 @@ func installPluginFromURL(cmd *cobra.Command, url string) error {
 
 	resp, err := http.Get(url) //nolint:gosec,noctx // user-provided URL
 	if err != nil {
-		return fmt.Errorf("scout: plugin install: download: %w", err)
+		return "", fmt.Errorf("scout: plugin install: download: %w", err)
 	}
 
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("scout: plugin install: download: HTTP %d", resp.StatusCode)
+		return "", fmt.Errorf("scout: plugin install: download: HTTP %d", resp.StatusCode)
 	}
 
 	data, err := io.ReadAll(io.LimitReader(resp.Body, maxPluginDownload+1))
 	if err != nil {
-		return fmt.Errorf("scout: plugin install: read body: %w", err)
+		return "", fmt.Errorf("scout: plugin install: read body: %w", err)
 	}
 	if len(data) > maxPluginDownload {
-		return fmt.Errorf("scout: plugin install: download exceeds %d-byte limit", maxPluginDownload)
+		return "", fmt.Errorf("scout: plugin install: download exceeds %d-byte limit", maxPluginDownload)
 	}
 
-	// A checksum is the only trust anchor for a downloaded binary; without one
-	// the install is trust-on-first-use. Verify when provided, warn otherwise.
-	expected, _ := cmd.Flags().GetString("checksum")
+	sum := sha256Hex(data)
+
+	// A checksum is the only trust anchor for a downloaded binary. Verify when
+	// provided; otherwise the install is trust-on-first-use and must be opted
+	// into explicitly so a hostile or MITM'd archive is never installed silently.
 	if err := verifyPluginChecksum(data, expected); err != nil {
-		return err
+		return "", err
 	}
 	if expected == "" {
-		_, _ = fmt.Fprintf(cmd.OutOrStderr(), "warning: installing UNVERIFIED plugin (no --checksum). SHA256=%s\n", sha256Hex(data))
+		if !allowUnverified {
+			return "", fmt.Errorf("scout: plugin install: refusing to install UNVERIFIED plugin (no checksum). SHA256=%s — re-run with --checksum=<sha256> to verify, or --allow-unverified to accept the risk", sum)
+		}
+		_, _ = fmt.Fprintf(cmd.OutOrStderr(), "warning: installing UNVERIFIED plugin (trust-on-first-use). SHA256=%s\n", sum)
 	}
 
 	// Extract archive to temp dir.
 	tmpDir, err := os.MkdirTemp("", "scout-plugin-*")
 	if err != nil {
-		return fmt.Errorf("scout: plugin install: %w", err)
+		return "", fmt.Errorf("scout: plugin install: %w", err)
 	}
 
 	defer func() { _ = os.RemoveAll(tmpDir) }()
@@ -240,16 +262,20 @@ func installPluginFromURL(cmd *cobra.Command, url string) error {
 	// Determine filename from URL path.
 	filename := filepath.Base(url)
 	if err := archive.Extract(data, filename, tmpDir); err != nil {
-		return fmt.Errorf("scout: plugin install: extract: %w", err)
+		return "", fmt.Errorf("scout: plugin install: extract: %w", err)
 	}
 
 	// Find plugin.json in extracted contents (may be nested one level).
 	manifestDir, err := findManifestDir(tmpDir)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return installPluginFromDir(cmd, manifestDir)
+	if err := installPluginFromDir(cmd, manifestDir); err != nil {
+		return "", err
+	}
+
+	return sum, nil
 }
 
 func sha256Hex(data []byte) string {
@@ -294,10 +320,26 @@ func findManifestDir(root string) (string, error) {
 	return "", fmt.Errorf("scout: plugin install: no plugin.json found in archive")
 }
 
-func pluginDestDir(name string) (string, error) {
-	destDir, err := scouthome.Sub(filepath.Join("plugins", name))
+// safePluginDir resolves <scouthome>/plugins/<name> and guarantees name is a
+// single local path segment so it cannot escape the plugins directory via a
+// crafted manifest name or argument (path traversal).
+func safePluginDir(name string) (string, error) {
+	root, err := scouthome.Sub("plugins")
 	if err != nil {
-		return "", fmt.Errorf("scout: plugin install: %w", err)
+		return "", fmt.Errorf("scout: plugin: %w", err)
+	}
+
+	if !filepath.IsLocal(name) || strings.ContainsAny(name, `/\`) {
+		return "", fmt.Errorf("scout: plugin: invalid plugin name %q (must be a single local path segment)", name)
+	}
+
+	return filepath.Join(root, name), nil
+}
+
+func pluginDestDir(name string) (string, error) {
+	destDir, err := safePluginDir(name)
+	if err != nil {
+		return "", err
 	}
 
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
@@ -354,9 +396,9 @@ var pluginRemoveCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
-		dir, err := scouthome.Sub(filepath.Join("plugins", name))
+		dir, err := safePluginDir(name)
 		if err != nil {
-			return fmt.Errorf("scout: plugin remove: %w", err)
+			return err
 		}
 
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -507,12 +549,16 @@ var pluginUpdateCmd = &cobra.Command{
 			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "  %s: updating to %s...\n", p.Name, info.Latest)
 
 			url := registry.LatestReleaseURL(info.Repo, p.Name)
-			if err := installPluginFromURL(cmd, url); err != nil {
+			// The registry index publishes no per-release checksum, so a registry
+			// update is trust-on-first-use; pin the downloaded archive's hash in
+			// the lock file so later drift is at least detectable.
+			sha, err := downloadInstall(cmd, url, "", true)
+			if err != nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "  %s: update failed: %v\n", p.Name, err)
 				continue
 			}
 
-			lf.Lock(p.Name, info.Latest, "", info.Repo)
+			lf.Lock(p.Name, info.Latest, sha, info.Repo)
 			updated++
 		}
 

@@ -77,7 +77,7 @@ pkg/scout/tools.Gather so flags and arguments behave identically.`,
 				ssFile = outFile[:len(outFile)-len(filepath.Ext(outFile))] + "_screenshot.png"
 			}
 			if data, err := decodeBase64(result.Screenshot); err == nil {
-				if err := os.WriteFile(ssFile, data, 0o644); err == nil {
+				if err := os.WriteFile(ssFile, data, 0o600); err == nil {
 					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Screenshot saved: %s\n", ssFile)
 				}
 			}
@@ -88,7 +88,7 @@ pkg/scout/tools.Gather so flags and arguments behave identically.`,
 			if outFile != "" && outFile != "-" {
 				harFile = outFile[:len(outFile)-len(filepath.Ext(outFile))] + ".har"
 			}
-			if err := os.WriteFile(harFile, result.HAR, 0o644); err == nil {
+			if err := os.WriteFile(harFile, result.HAR, 0o600); err == nil {
 				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "HAR saved: %s (%d entries)\n", harFile, result.HAREntries)
 			}
 		}

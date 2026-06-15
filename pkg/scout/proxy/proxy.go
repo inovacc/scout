@@ -11,9 +11,11 @@ package proxy
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -21,6 +23,7 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/pkg/scout"
+	"github.com/inovacc/scout/pkg/scout/urlpolicy"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,6 +31,9 @@ import (
 type Config struct {
 	Routes   []Route       `yaml:"routes" json:"routes"`
 	Defaults RouteDefaults `yaml:"defaults,omitempty" json:"defaults,omitempty"`
+	// Token, when set (or via SCOUT_PROXY_TOKEN), requires every request except
+	// /health to present "Authorization: Bearer <token>".
+	Token string `yaml:"auth_token,omitempty" json:"auth_token,omitempty"`
 }
 
 // RouteDefaults are applied to all routes unless overridden.
@@ -75,6 +81,8 @@ func LoadConfig(path string) (*Config, error) {
 // Server is the API proxy HTTP server.
 type Server struct {
 	config  *Config
+	token   string
+	policy  *urlpolicy.Policy
 	mux     *http.ServeMux
 	cache   *responseCache
 	logger  *slog.Logger
@@ -84,11 +92,18 @@ type Server struct {
 
 // New creates a new proxy server from configuration.
 func New(cfg *Config) (*Server, error) {
+	token := cfg.Token
+	if token == "" {
+		token = os.Getenv("SCOUT_PROXY_TOKEN")
+	}
+
 	s := &Server{
 		config: cfg,
+		token:  token,
 		mux:    http.NewServeMux(),
 		cache:  newResponseCache(),
 		logger: slog.New(slog.NewTextHandler(os.Stderr, nil)),
+		policy: urlpolicy.FromEnv(),
 	}
 
 	// Register routes.
@@ -123,15 +138,77 @@ func New(cfg *Config) (*Server, error) {
 
 // ListenAndServe starts the proxy server on the given address.
 func (s *Server) ListenAndServe(addr string) error {
-	s.logger.Info("proxy starting", "addr", addr, "routes", len(s.config.Routes))
+	if err := guardProxyBind(addr, s.token); err != nil {
+		return err
+	}
+
+	s.logger.Info("proxy starting", "addr", addr, "routes", len(s.config.Routes), "auth", s.token != "")
 
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           s.mux,
+		Handler:           s.authMiddleware(s.mux),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	return srv.ListenAndServe()
+}
+
+// authMiddleware enforces a Bearer token on every route except /health when a
+// token is configured (Config.Token or SCOUT_PROXY_TOKEN).
+func (s *Server) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.token == "" || r.URL.Path == "/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+		if token == "" || subtle.ConstantTimeCompare([]byte(token), []byte(s.token)) != 1 {
+			http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// guardProxyBind fails closed: the proxy navigates to caller-influenced URLs, so
+// it must not listen on a non-loopback address unless it is authenticated (a
+// token is set) or the operator explicitly opts in via SCOUT_PROXY_ALLOW_REMOTE.
+func guardProxyBind(addr, token string) error {
+	if token != "" {
+		return nil
+	}
+
+	host := addr
+	if h, _, err := net.SplitHostPort(addr); err == nil {
+		host = h
+	}
+
+	if proxyLoopbackHost(host) {
+		return nil
+	}
+
+	if v := os.Getenv("SCOUT_PROXY_ALLOW_REMOTE"); v == "1" || v == "true" {
+		return nil
+	}
+
+	return fmt.Errorf("scout: proxy: refusing to bind non-loopback address %q with no auth_token; set Config.Token / SCOUT_PROXY_TOKEN, or SCOUT_PROXY_ALLOW_REMOTE=1", addr)
+}
+
+// proxyLoopbackHost reports whether host is a loopback address. Empty, "0.0.0.0"
+// and "::" are treated as non-loopback.
+func proxyLoopbackHost(host string) bool {
+	switch host {
+	case "127.0.0.1", "::1", "localhost":
+		return true
+	}
+
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+
+	return false
 }
 
 // Close shuts down the proxy and releases browser resources.
@@ -180,6 +257,15 @@ func (s *Server) handleRoute(route Route) http.HandlerFunc {
 		for _, param := range route.Params {
 			val := r.URL.Query().Get(param)
 			targetURL = strings.ReplaceAll(targetURL, "{{."+param+"}}", val)
+		}
+
+		// SSRF guard: the target is built from caller-influenced query params, so
+		// validate it against the policy (default-deny internal/loopback) before
+		// navigating, unless the operator opted in via SCOUT_ALLOW_LOCAL_TARGETS.
+		if err := s.policy.Check(r.Context(), targetURL); err != nil {
+			http.Error(w, fmt.Sprintf(`{"error": %q}`, err.Error()), http.StatusForbidden)
+
+			return
 		}
 
 		// Check cache.

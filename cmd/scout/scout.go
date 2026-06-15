@@ -146,11 +146,16 @@ func provisionBrowserForPlugin(cmd *cobra.Command) (*plugin.BrowserContext, erro
 func main() {
 	maybeRunCaptureHost() // native-messaging host mode: returns immediately for normal CLI use
 
-	if err := agent.Listen(agent.Options{ShutdownCleanup: true}); err != nil {
-		slog.Warn("scout: gops agent", "error", err)
-	}
+	// The gops agent exposes an unauthenticated diagnostic endpoint on loopback,
+	// reachable by any local user on a multi-user host. Cross-process discovery
+	// (goprocess.Find) does not require it, so allow disabling via SCOUT_GOPS=0.
+	if v := os.Getenv("SCOUT_GOPS"); v != "0" && v != "false" && v != "FALSE" {
+		if err := agent.Listen(agent.Options{ShutdownCleanup: true}); err != nil {
+			slog.Warn("scout: gops agent", "error", err)
+		}
 
-	defer agent.Close()
+		defer agent.Close()
+	}
 
 	// Clean leftover sessions from previous runs (dead processes, orphaned
 	// dirs, and legacy JSON-format scout.pid files from before the binary

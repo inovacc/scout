@@ -172,6 +172,11 @@ func (ws *WebSocket) read() ([]byte, error) {
 		size = size<<8 + int(b)
 	}
 
+	const maxWebSocketFrame = 256 << 20 // 256 MiB — bound a malicious/garbage frame length
+	if size < 0 || size > maxWebSocketFrame {
+		return nil, fmt.Errorf("websocket: frame length %d exceeds %d-byte cap", size, maxWebSocketFrame)
+	}
+
 	data := make([]byte, size)
 	_, err = io.ReadFull(ws.r, data)
 

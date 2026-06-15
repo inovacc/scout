@@ -142,6 +142,13 @@ func (m *Manifest) validate() error {
 		return fmt.Errorf("name is required")
 	}
 
+	// Name doubles as the on-disk plugin directory name, so it must be a single
+	// local path segment. This blocks a hostile manifest from escaping the
+	// plugins directory via '..' or an absolute path (path traversal).
+	if !filepath.IsLocal(m.Name) || strings.ContainsAny(m.Name, `/\`) {
+		return fmt.Errorf("name %q must be a single local path segment", m.Name)
+	}
+
 	if m.Version == "" {
 		return fmt.Errorf("version is required")
 	}
