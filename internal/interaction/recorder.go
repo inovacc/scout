@@ -15,11 +15,12 @@ import (
 // Recorder is a per-session append-only JSONL writer. All methods are safe on a
 // nil *Recorder (no-op), so callers never branch on Enabled().
 type Recorder struct {
-	mu     sync.Mutex
-	f      *os.File
-	w      *bufio.Writer
-	seq    int
-	closed bool
+	mu      sync.Mutex
+	f       *os.File
+	w       *bufio.Writer
+	seq     int
+	closed  bool
+	started time.Time
 }
 
 // Open returns a Recorder writing <Dir>/<id>.jsonl, or (nil, nil) when capture
@@ -44,7 +45,7 @@ func Open(entrypoint, id string) (*Recorder, error) {
 		return nil, err
 	}
 
-	r := &Recorder{f: f, w: bufio.NewWriter(f)}
+	r := &Recorder{f: f, w: bufio.NewWriter(f), started: time.Now()}
 	r.Emit(Event{Kind: "session_start", Source: entrypoint, Extra: map[string]any{"entrypoint": entrypoint, "id": id}})
 
 	return r, nil
@@ -99,10 +100,11 @@ func (r *Recorder) Close(status string) error {
 
 	// Write session_end inline (not via Emit, which would re-acquire the lock).
 	end := Event{
-		Seq:   r.seq,
-		TS:    time.Now().UTC().Format(time.RFC3339Nano),
-		Kind:  "session_end",
-		Extra: map[string]any{"status": status, "events": r.seq},
+		Seq:        r.seq,
+		TS:         time.Now().UTC().Format(time.RFC3339Nano),
+		Kind:       "session_end",
+		DurationMS: time.Since(r.started).Milliseconds(),
+		Extra:      map[string]any{"status": status, "events": r.seq},
 	}
 	r.seq++
 

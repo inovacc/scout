@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestGate(t *testing.T) {
@@ -164,4 +165,43 @@ func TestInitSupersedesAndClosesPrevious(t *testing.T) {
 	}
 
 	_ = Close("ok") // finalize the second recorder; don't leak across tests
+}
+
+// TestSessionEndDuration verifies session_end carries a first-class duration_ms
+// so analysis tools need no timestamp math.
+func TestSessionEndDuration(t *testing.T) {
+	t.Setenv("SCOUT_INTERACTIONS", "1")
+	t.Setenv("SCOUT_HOME", t.TempDir())
+
+	rec, err := Open("cli", "dur-test")
+	if err != nil || rec == nil {
+		t.Fatalf("Open: rec=%v err=%v", rec, err)
+	}
+
+	time.Sleep(5 * time.Millisecond)
+
+	if err := rec.Close("ok"); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	dir, _ := Dir()
+	data, err := os.ReadFile(filepath.Join(dir, "dur-test.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var end Event
+	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		var e Event
+		if json.Unmarshal([]byte(line), &e) == nil && e.Kind == "session_end" {
+			end = e
+		}
+	}
+
+	if end.Kind != "session_end" {
+		t.Fatal("no session_end event found")
+	}
+	if end.DurationMS < 1 {
+		t.Fatalf("session_end duration_ms = %d, want >= 1 after a 5ms session", end.DurationMS)
+	}
 }
