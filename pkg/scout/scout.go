@@ -10,7 +10,6 @@ import (
 
 	"github.com/inovacc/scout/internal/engine/browser"
 	"github.com/inovacc/scout/internal/engine/lib/proto"
-	"golang.org/x/oauth2"
 
 	"github.com/inovacc/scout/internal/engine"
 )
@@ -211,10 +210,6 @@ type TabGroupOption = engine.TabGroupOption
 type TableData = engine.TableData
 type TechStack = engine.TechStack
 type TwoCaptchaService = engine.TwoCaptchaService
-type UploadConfig = engine.UploadConfig
-type UploadResult = engine.UploadResult
-type UploadSink = engine.UploadSink
-type Uploader = engine.Uploader
 type UserProfile = engine.UserProfile
 type VPNConnection = engine.VPNConnection
 type VPNProvider = engine.VPNProvider
@@ -316,8 +311,6 @@ var (
 	SelectorCSS                 = engine.SelectorTypeCSSSector
 	SelectorRegex               = engine.SelectorTypeRegex
 	SelectorText                = engine.SelectorTypeText
-	SinkGoogleDrive             = engine.SinkGoogleDrive
-	SinkOneDrive                = engine.SinkOneDrive
 	Wikipedia                   = engine.Wikipedia
 	WindowStateFullscreen       = engine.WindowStateFullscreen
 	WindowStateMaximized        = engine.WindowStateMaximized
@@ -382,7 +375,6 @@ func LoadProfileEncrypted(path, passphrase string) (*UserProfile, error) {
 	return engine.LoadProfileEncrypted(path, passphrase)
 }
 func LoadSessionFromFile(path string) (*SessionState, error) { return engine.LoadSessionFromFile(path) }
-func LoadUploadConfig() (*UploadConfig, error)               { return engine.LoadUploadConfig() }
 func LookupBrowserPublic(bt BrowserType) (string, error)     { return browser.LookupBrowser(bt) }
 func MergeProfiles(base, overlay *UserProfile) *UserProfile {
 	return engine.MergeProfiles(base, overlay)
@@ -476,7 +468,6 @@ func NewSurfsharkProvider(email, password string) *SurfsharkProvider {
 func NewTwoCaptchaService(apiKey string) *TwoCaptchaService {
 	return engine.NewTwoCaptchaService(apiKey)
 }
-func NewUploader(cfg *UploadConfig) *Uploader { return engine.NewUploader(cfg) }
 func NewWebMCPRegistry() *WebMCPRegistry      { return engine.NewWebMCPRegistry() }
 func PaginateByClick[T any](p *Page, nextSelector string, opts ...PaginateOption) ([]T, error) {
 	return engine.PaginateByClick[T](p, nextSelector, opts...)
@@ -546,7 +537,6 @@ func SaveProfileEncrypted(p *UserProfile, path, passphrase string) error {
 func SaveSessionToFile(state *SessionState, path string) error {
 	return engine.SaveSessionToFile(state, path)
 }
-func SaveUploadConfig(cfg *UploadConfig) error { return engine.SaveUploadConfig(cfg) }
 func SessionDataDir(id string) string          { return engine.SessionDataDir(id) }
 func SessionDir(id string) string              { return engine.SessionDir(id) }
 func SessionHash(rawURL, label string) string  { return engine.SessionHash(rawURL, label) }
@@ -559,9 +549,6 @@ func StartOrphanWatchdog(interval time.Duration, done <-chan struct{}) {
 }
 func TabGroupCollect[T any](tg *TabGroup, fn func(*Page) (T, error)) ([]T, []error) {
 	return engine.TabGroupCollect(tg, fn)
-}
-func UploadOAuthConfig(sink UploadSink, clientID, clientSecret, redirectURL string) *oauth2.Config {
-	return engine.UploadOAuthConfig(sink, clientID, clientSecret, redirectURL)
 }
 func ValidateProxyChain(chain *ProxyChain) error { return engine.ValidateProxyChain(chain) }
 func VisualDiff(baseline, current []byte, opts ...VisualDiffOption) (*VisualDiffResult, error) {
