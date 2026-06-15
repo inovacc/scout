@@ -31,8 +31,6 @@ automation capabilities as MCP tools. Communicates via stdio (JSON-RPC).
 
 Use --install to generate .mcp.json in the current directory.
 Use --install --claude to register globally via "claude mcp add".
-Use --sse to start with HTTP+SSE transport instead of stdio (default addr: localhost:8080).
-Use --addr to customize the SSE listen address.
 
 Tools (18 built-in browser automation tools):
   Browser:     navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open
@@ -94,8 +92,6 @@ Subcommands:
 		logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 		headless, _ := cmd.Flags().GetBool("headless")
 		stealth, _ := cmd.Flags().GetBool("stealth")
-		useSSE, _ := cmd.Flags().GetBool("sse")
-		addr, _ := cmd.Flags().GetString("addr")
 		bin, _ := cmd.Flags().GetString("bin")
 		browserType, _ := cmd.Flags().GetString("browser")
 		idleTimeout, _ := cmd.Flags().GetDuration("idle-timeout")
@@ -114,10 +110,6 @@ Subcommands:
 			}
 		}
 
-		if useSSE {
-			return scoutmcp.ServeSSE(context.Background(), logger, addr, headless, stealth, bin, idleTimeout)
-		}
-
 		return scoutmcp.Serve(context.Background(), logger, headless, stealth, bin, idleTimeout)
 	},
 }
@@ -126,8 +118,6 @@ func init() {
 	rootCmd.AddCommand(mcpCmd)
 	mcpCmd.Flags().BoolP("install", "i", false, "Write .mcp.json to current directory")
 	mcpCmd.Flags().BoolP("claude", "c", false, "Register globally via claude mcp add (use with --install)")
-	mcpCmd.Flags().Bool("sse", false, "Use HTTP+SSE transport instead of stdio")
-	mcpCmd.Flags().String("addr", "localhost:8080", "Listen address for SSE transport")
 	mcpCmd.Flags().String("bin", "", "Path to browser executable")
 	mcpCmd.Flags().String("browser", "", "Browser type: chrome, brave, edge (resolves to cached binary)")
 	mcpCmd.Flags().Bool("allow-local-targets", false, "allow MCP tools to navigate to local/internal addresses (off by default)")

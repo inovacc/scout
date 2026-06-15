@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"net"
-	"net/http"
-	"os"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -377,94 +374,3 @@ func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool, bro
 	return server.Run(ctx, &mcp.StdioTransport{})
 }
 
-// ServeSSE starts the MCP server with HTTP+SSE transport on the given address.
-// Blocks until the context is cancelled or idle timeout expires.
-func ServeSSE(ctx context.Context, logger *slog.Logger, addr string, headless, stealth bool, browserBin string, idleTimeout time.Duration) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	cfg := ServerConfig{
-		Headless:    headless,
-		Stealth:     stealth,
-		BrowserBin:  browserBin,
-		Logger:      logger,
-		IdleTimeout: idleTimeout,
-	}
-
-	interaction.Init("mcp")
-	defer func() { _ = interaction.Close("ok") }()
-
-	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
-		return NewServer(cfg, cancel)
-	}, nil)
-
-	srv := &http.Server{
-		Addr:    addr,
-		Handler: handler,
-	}
-
-	if err := guardSSEBind(addr); err != nil {
-		return err
-	}
-
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return fmt.Errorf("scout: mcp: %w", err)
-	}
-
-	logger.Info("MCP SSE server listening", "addr", ln.Addr().String())
-
-	errCh := make(chan error, 1)
-
-	go func() {
-		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
-			errCh <- fmt.Errorf("scout: mcp: %w", err)
-		}
-
-		close(errCh)
-	}()
-
-	select {
-	case <-ctx.Done():
-		_ = srv.Close()
-		return ctx.Err()
-	case err := <-errCh:
-		return err
-	}
-}
-
-// guardSSEBind fails closed: the MCP SSE transport exposes full browser control
-// (navigate/eval/...) with no authentication, so it must not listen on a
-// non-loopback address unless the operator opts in via SCOUT_MCP_ALLOW_REMOTE
-// (intended only when fronted by an authenticating proxy).
-func guardSSEBind(addr string) error {
-	host := addr
-	if h, _, err := net.SplitHostPort(addr); err == nil {
-		host = h
-	}
-
-	if mcpLoopbackHost(host) {
-		return nil
-	}
-
-	if v := os.Getenv("SCOUT_MCP_ALLOW_REMOTE"); v == "1" || v == "true" {
-		return nil
-	}
-
-	return fmt.Errorf("scout: mcp: refusing to bind non-loopback address %q for the unauthenticated SSE transport; bind localhost or set SCOUT_MCP_ALLOW_REMOTE=1 (only behind an authenticating proxy)", addr)
-}
-
-// mcpLoopbackHost reports whether host is a loopback address. Empty, "0.0.0.0"
-// and "::" are treated as non-loopback.
-func mcpLoopbackHost(host string) bool {
-	switch host {
-	case "127.0.0.1", "::1", "localhost":
-		return true
-	}
-
-	if ip := net.ParseIP(host); ip != nil {
-		return ip.IsLoopback()
-	}
-
-	return false
-}
