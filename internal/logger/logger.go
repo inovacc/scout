@@ -7,12 +7,12 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/inovacc/scout/internal/flags"
+	"github.com/inovacc/scout/internal/redact"
 	"github.com/segmentio/ksuid"
 )
 
@@ -300,7 +300,7 @@ func (l *Logger) StartExecution(command string, args []string, stdout, stderr io
 
 	l.slog.Info("command_start",
 		"cmd", command,
-		"args", redactArgs(args),
+		"args", redact.Args(args),
 		"timestamp", l.execution.StartTime.Format(time.RFC3339),
 		"pid", os.Getpid(),
 	)
@@ -340,7 +340,7 @@ func (l *Logger) EndExecution(err error) {
 
 	attrs := []any{
 		"cmd", l.execution.Command,
-		"args", redactArgs(l.execution.Args),
+		"args", redact.Args(l.execution.Args),
 		"status", status,
 		"duration_ms", duration.Milliseconds(),
 		"start_time", l.execution.StartTime.Format(time.RFC3339),
@@ -397,48 +397,4 @@ func (l *Logger) Writer() io.Writer {
 // FormatArgs formats command arguments as a single string.
 func FormatArgs(args []string) string {
 	return strings.Join(args, " ")
-}
-
-// redactedValue replaces secret argument values in command logs.
-const redactedValue = "***REDACTED***"
-
-// sensitiveArgPattern matches flag names whose values must never be written to
-// the command log (api keys, passphrases, tokens, cookies, bearer/auth values).
-var sensitiveArgPattern = regexp.MustCompile(`(?i)(api[-_]?key|passphrase|password|secret|token|credential|cookie|bearer|auth)`)
-
-// redactArgs returns a copy of args with the values of sensitive flags masked.
-// It handles "--flag value", "--flag=value" and short "-f value" forms so that
-// secrets passed on the command line never land in the command log file. The
-// input slice is never mutated.
-func redactArgs(args []string) []string {
-	if len(args) == 0 {
-		return args
-	}
-
-	out := make([]string, len(args))
-	copy(out, args)
-
-	for i := 0; i < len(out); i++ {
-		a := out[i]
-
-		dashes := len(a) - len(strings.TrimLeft(a, "-"))
-		if dashes == 0 {
-			continue
-		}
-
-		body := a[dashes:]
-		if eq := strings.IndexByte(body, '='); eq >= 0 {
-			if sensitiveArgPattern.MatchString(body[:eq]) {
-				out[i] = a[:dashes] + body[:eq] + "=" + redactedValue
-			}
-
-			continue
-		}
-
-		if sensitiveArgPattern.MatchString(body) && i+1 < len(out) && !strings.HasPrefix(out[i+1], "-") {
-			out[i+1] = redactedValue
-		}
-	}
-
-	return out
 }
