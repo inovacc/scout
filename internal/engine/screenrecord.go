@@ -298,6 +298,45 @@ func (r *ScreenRecorder) ExportGIF(w io.Writer) error {
 	return nil
 }
 
+// SaveGIF encodes the captured frames as an animated GIF written to path.
+func (r *ScreenRecorder) SaveGIF(path string) error {
+	if r == nil {
+		return fmt.Errorf("scout: screenrecord: nil recorder")
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("scout: screenrecord: create %s: %w", path, err)
+	}
+
+	if err := r.ExportGIF(f); err != nil {
+		_ = f.Close()
+		return err
+	}
+
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("scout: screenrecord: close %s: %w", path, err)
+	}
+
+	return nil
+}
+
+// RecordVideo starts capturing this page's screen and returns the running
+// recorder — the Playwright-style one-call entry to NewScreenRecorder + Start.
+// Stop it with ScreenRecorder.Stop, then persist via SaveGIF/ExportGIF/ExportFrames.
+func (p *Page) RecordVideo(opts ...ScreenRecordOption) (*ScreenRecorder, error) {
+	r := NewScreenRecorder(p, opts...)
+	if r == nil {
+		return nil, fmt.Errorf("scout: record video: nil page")
+	}
+
+	if err := r.Start(); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
 // ExportFrames saves each captured frame as an individual JPEG file in the given directory.
 func (r *ScreenRecorder) ExportFrames(dir string) error {
 	if r == nil {
