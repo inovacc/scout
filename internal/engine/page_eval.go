@@ -154,6 +154,24 @@ func (p *rodPage) evaluate(opts *EvalOptions) (*proto2.RuntimeRemoteObject, erro
 		return nil, err
 	}
 
+	// If no arguments and no this object, try simple evaluate first.
+	// This fixes the bug where primitives like location.href fail when wrapped in a function call.
+	if len(args) == 0 && opts.ThisObj == nil {
+		res, err := proto2.RuntimeEvaluate{
+			Expression:    opts.JS,
+			AwaitPromise:  opts.AwaitPromise,
+			ReturnByValue: opts.ByValue,
+			UserGesture:   opts.UserGesture,
+		}.Call(p)
+		if err == nil && res.ExceptionDetails == nil {
+			if res.Result.Type != proto2.RuntimeRemoteObjectTypeFunction {
+				return res.Result, nil
+			}
+		}
+		// If it's a function or we got an error (like ContextNotFound), 
+		// we fall through to the more robust RuntimeCallFunctionOn logic.
+	}
+
 	req := proto2.RuntimeCallFunctionOn{
 		AwaitPromise:        opts.AwaitPromise,
 		ReturnByValue:       opts.ByValue,

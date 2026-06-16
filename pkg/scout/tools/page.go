@@ -105,7 +105,10 @@ func Reload(_ context.Context, p *scout.Page, _ ReloadInput) (*EmptyOutput, erro
 
 // WaitInput waits for page load (Selector empty) or for an element to appear.
 type WaitInput struct {
-	Selector string `json:"selector,omitempty" jsonschema:"CSS selector to wait for; empty waits for page load"`
+	Selector   string `json:"selector,omitempty" jsonschema:"CSS selector to wait for; empty waits for page load"`
+	WaitFor    string `json:"wait_for,omitempty" jsonschema:"Condition to wait for: networkidle, url, selector"`
+	URLPattern string `json:"url_pattern,omitempty" jsonschema:"URL pattern to wait for (glob or re:regex)"`
+	TimeoutMS  int    `json:"timeout_ms,omitempty" jsonschema:"Max wait time in milliseconds"`
 }
 
 // Wait blocks until the page finishes loading or the selector resolves.
@@ -114,13 +117,40 @@ func Wait(_ context.Context, p *scout.Page, in WaitInput) (*EmptyOutput, error) 
 		return nil, fmt.Errorf("tools: wait: nil page")
 	}
 
-	if in.Selector == "" {
-		waitLoadBounded(p, 15*time.Second)
+	timeout := time.Duration(in.TimeoutMS) * time.Millisecond
+
+	switch in.WaitFor {
+	case "networkidle":
+		if err := p.WaitNetworkIdle(timeout); err != nil {
+			return nil, fmt.Errorf("tools: wait networkidle: %w", err)
+		}
+		return &EmptyOutput{OK: true}, nil
+
+	case "url":
+		if in.URLPattern == "" {
+			return nil, fmt.Errorf("tools: wait url: url_pattern required")
+		}
+		if err := p.WaitForURL(in.URLPattern, timeout); err != nil {
+			return nil, fmt.Errorf("tools: wait url: %w", err)
+		}
 		return &EmptyOutput{OK: true}, nil
 	}
 
-	if _, err := p.Element(in.Selector); err != nil {
-		return nil, fmt.Errorf("tools: wait: %w", err)
+	// Legacy behavior: if selector is provided, wait for it.
+	// If selector is empty, wait for page load.
+	if in.Selector == "" {
+		if timeout == 0 {
+			timeout = 15 * time.Second
+		}
+		waitLoadBounded(p, timeout)
+		return &EmptyOutput{OK: true}, nil
+	}
+
+	// wait for selector
+	// WaitSelector doesn't exist yet on Page, let's use p.Element which waits internally?
+	// Actually, internal/engine/page.go has WaitSelector.
+	if _, err := p.WaitSelector(in.Selector); err != nil {
+		return nil, fmt.Errorf("tools: wait selector %q: %w", in.Selector, err)
 	}
 
 	return &EmptyOutput{OK: true}, nil

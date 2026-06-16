@@ -180,22 +180,47 @@ func registerBrowserTools(server *mcp.Server, state *mcpState) {
 
 	addTracedTool(server, &mcp.Tool{
 		Name:        "wait",
-		Description: "Wait for a page condition (load, selector)",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"selector":{"type":"string","description":"CSS selector to wait for"}}}`),
+		Description: "Wait for a page condition (load, selector, networkidle, url)",
+		InputSchema: json.RawMessage(`{
+			"type": "object",
+			"properties": {
+				"selector": {"type": "string", "description": "CSS selector to wait for"},
+				"wait_for": {"type": "string", "description": "Condition to wait for: networkidle, url, selector", "enum": ["networkidle", "url", "selector"]},
+				"url_pattern": {"type": "string", "description": "URL pattern to wait for (glob or re:regex)"},
+				"timeout_ms": {"type": "integer", "description": "Max wait time in milliseconds"}
+			}
+		}`),
 	}, func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		var args struct {
-			Selector string `json:"selector"`
+			Selector   string `json:"selector"`
+			WaitFor    string `json:"wait_for"`
+			URLPattern string `json:"url_pattern"`
+			TimeoutMS  int    `json:"timeout_ms"`
 		}
 
-		_ = json.Unmarshal(req.Params.Arguments, &args)
+		if err := json.Unmarshal(req.Params.Arguments, &args); err != nil {
+			return errResult(err.Error())
+		}
 
 		page, err := state.ensurePage(ctx)
 		if err != nil {
 			return errResult(err.Error())
 		}
 
-		if _, err := tools.Wait(ctx, page, tools.WaitInput{Selector: args.Selector}); err != nil {
+		if _, err := tools.Wait(ctx, page, tools.WaitInput{
+			Selector:   args.Selector,
+			WaitFor:    args.WaitFor,
+			URLPattern: args.URLPattern,
+			TimeoutMS:  args.TimeoutMS,
+		}); err != nil {
 			return errResult(err.Error())
+		}
+
+		switch args.WaitFor {
+		case "networkidle":
+			return textResult("Network is idle")
+		case "url":
+			return textResult(fmt.Sprintf("URL matches %s", args.URLPattern))
 		}
 
 		if args.Selector != "" {

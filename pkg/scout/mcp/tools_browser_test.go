@@ -224,6 +224,77 @@ func TestEvalTool(t *testing.T) {
 	}
 }
 
+func TestEvalToolPrimitives(t *testing.T) {
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/")
+
+	// Test with a string primitive
+	result, err := callTool(ctx, cs, "eval", map[string]any{"expression": "location.href"})
+	if err != nil {
+		t.Fatalf("eval location.href: %v", err)
+	}
+	if result.IsError {
+		t.Errorf("eval location.href error: %s", result.Content[0].(*mcp.TextContent).Text)
+	} else {
+		text := result.Content[0].(*mcp.TextContent).Text
+		if !strings.Contains(text, ts.URL) {
+			t.Errorf("expected URL containing %s, got: %s", ts.URL, text)
+		}
+	}
+
+	// Test with a number primitive
+	result, err = callTool(ctx, cs, "eval", map[string]any{"expression": "42"})
+	if err != nil {
+		t.Fatalf("eval 42: %v", err)
+	}
+	if result.IsError {
+		t.Errorf("eval 42 error: %s", result.Content[0].(*mcp.TextContent).Text)
+	} else {
+		text := result.Content[0].(*mcp.TextContent).Text
+		if text != "42" {
+			t.Errorf("expected '42', got: %s", text)
+		}
+	}
+}
+
+func TestWaitToolModes(t *testing.T) {
+	ts := newTestHTTPServer()
+	defer ts.Close()
+
+	cs := connectTestClient(t, ServerConfig{Headless: true, Logger: slog.Default()})
+	ctx := context.Background()
+
+	navigateHelper(t, ctx, cs, ts.URL+"/")
+
+	// Test wait_for: url
+	result, err := callTool(ctx, cs, "wait", map[string]any{
+		"wait_for":    "url",
+		"url_pattern": "*",
+	})
+	if err != nil {
+		t.Fatalf("wait url: %v", err)
+	}
+	if result.IsError {
+		t.Errorf("wait url error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+
+	// Test wait_for: networkidle
+	result, err = callTool(ctx, cs, "wait", map[string]any{
+		"wait_for": "networkidle",
+	})
+	if err != nil {
+		t.Fatalf("wait networkidle: %v", err)
+	}
+	if result.IsError {
+		t.Errorf("wait networkidle error: %s", result.Content[0].(*mcp.TextContent).Text)
+	}
+}
+
 func TestClickTool(t *testing.T) {
 	ts := newTestHTTPServer()
 	defer ts.Close()

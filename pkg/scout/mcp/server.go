@@ -269,6 +269,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 	registerBrowserTools(server, state)
 	registerLocatorTools(server, state) // Playwright-style locators + web-first assertions
 	registerCaptureTools(server, state)
+	registerHijackTools(server, state)
 	registerSessionTools(server, state)
 	registerWebSocketTools(server, state)
 	registerAriaTools(server, state)

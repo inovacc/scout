@@ -1,10 +1,13 @@
 package engine
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/inovacc/scout/internal/engine/lib/devices"
@@ -500,6 +503,86 @@ func (p *Page) WaitIdle(timeout time.Duration) error {
 	}
 
 	return nil
+}
+
+// WaitNetworkIdle waits for the network to be idle (no requests for 500ms).
+func (p *Page) WaitNetworkIdle(timeout time.Duration) error {
+	if timeout == 0 {
+		timeout = 15 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(p.page.ctx, timeout)
+	defer cancel()
+
+	// Use the existing WaitRequestIdle which is more robust than a manual debounce.
+	// It internally uses an idle counter with a debounce duration.
+	wait := p.page.WaitRequestIdle(500*time.Millisecond, nil, nil, nil)
+
+	done := make(chan struct{})
+	go func() {
+		wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("scout: wait networkidle: %w", ctx.Err())
+	}
+}
+
+// WaitForURL waits for the page URL to match the pattern.
+func (p *Page) WaitForURL(pattern string, timeout time.Duration) error {
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(p.page.ctx, timeout)
+	defer cancel()
+
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("scout: wait url %q: %w", pattern, ctx.Err())
+		case <-ticker.C:
+			res, err := p.Eval("location.href")
+			if err != nil {
+				continue
+			}
+			url := res.String()
+
+			if matchURL(url, pattern) {
+				return nil
+			}
+		}
+	}
+}
+
+func matchURL(url, pattern string) bool {
+	if strings.HasPrefix(pattern, "re:") {
+		re, err := regexp.Compile(pattern[3:])
+		if err != nil {
+			return strings.Contains(url, pattern[3:])
+		}
+		return re.MatchString(url)
+	}
+
+	if strings.Contains(pattern, "*") {
+		// Simple glob to regex: escape everything except *
+		rePattern := "^" + regexp.QuoteMeta(pattern) + "$"
+		rePattern = strings.ReplaceAll(rePattern, "\\*", ".*")
+		re, err := regexp.Compile(rePattern)
+		if err != nil {
+			return strings.Contains(url, pattern)
+		}
+		return re.MatchString(url)
+	}
+
+	return strings.Contains(url, pattern)
 }
 
 // WaitRequestIdle waits for all network requests to settle. The duration specifies how long

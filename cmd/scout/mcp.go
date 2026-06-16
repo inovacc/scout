@@ -32,9 +32,9 @@ automation capabilities as MCP tools. Communicates via stdio (JSON-RPC).
 Use --install to generate .mcp.json in the current directory.
 Use --install --claude to register globally via "claude mcp add".
 
-Tools (18 built-in browser automation tools):
+Tools (19 built-in browser automation tools):
   Browser:     navigate, click, type, back, forward, wait, screenshot, snapshot, extract, eval, open
-  Capture:     pdf, session_list, session_reset, open, swarm_crawl
+  Capture:     pdf, session_list, session_reset, open, swarm_crawl, hijack_watch
   WebSocket:   ws_listen, ws_send, ws_connections
 Resources: scout://page/markdown, scout://page/url, scout://page/title
 
