@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Scout Evade",
+  "version": "0.1.0",
+  "description": "Injects Scout's anti-bot-detection stealth evasions into every page at document_start (MAIN world) to defeat JS-fingerprint bot detection such as Cloudflare Turnstile.",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["evasions.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    }
+  ]
+}
