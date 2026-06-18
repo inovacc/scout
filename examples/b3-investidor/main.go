@@ -28,7 +28,7 @@ func main() {
 	}
 
 	if err := run(*profile, pass, *sectionsPath, *outRoot); err != nil {
-		fmt.Fprintf(os.Stderr, "b3: %v\n", err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 }
