@@ -1,6 +1,8 @@
 package okf_test
 
 import (
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 
@@ -171,6 +173,97 @@ func TestValidateValid(t *testing.T) {
 	}}
 	if err := b.Validate(); err != nil {
 		t.Errorf("expected nil error, got: %v", err)
+	}
+}
+
+// TestCRLFFrontmatter proves that a file with CRLF line endings in the
+// frontmatter parses correctly (Fix 1 regression guard).
+func TestCRLFFrontmatter(t *testing.T) {
+	t.Parallel()
+
+	// Construct the file bytes manually with CRLF endings throughout.
+	content := "---\r\ntype: Page\r\ntitle: P\r\n---\r\nBody line\r\n"
+
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "note.md"), []byte(content), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	got, err := okf.Read(dir)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if len(got.Concepts) != 1 {
+		t.Fatalf("concept count: got %d, want 1", len(got.Concepts))
+	}
+	c := got.Concepts[0]
+	if c.Type != "Page" {
+		t.Errorf("Type: got %q, want %q (CRLF frontmatter leak?)", c.Type, "Page")
+	}
+	if c.Title != "P" {
+		t.Errorf("Title: got %q, want %q", c.Title, "P")
+	}
+}
+
+// TestNoFrontmatter verifies that a file with no frontmatter block results in
+// an empty Type and the full file content as Body.
+func TestNoFrontmatter(t *testing.T) {
+	t.Parallel()
+
+	content := "# Just a heading\n\nSome text.\n"
+
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "plain.md"), []byte(content), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	got, err := okf.Read(dir)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if len(got.Concepts) != 1 {
+		t.Fatalf("concept count: got %d, want 1", len(got.Concepts))
+	}
+	c := got.Concepts[0]
+	if c.Type != "" {
+		t.Errorf("Type: got %q, want empty string", c.Type)
+	}
+	if c.Body != content {
+		t.Errorf("Body: got %q, want %q", c.Body, content)
+	}
+}
+
+// TestBodyFenceDash ensures that a "---" line inside the body is not
+// mis-parsed as a closing frontmatter fence (frontmatter-ambiguity guard).
+func TestBodyFenceDash(t *testing.T) {
+	t.Parallel()
+
+	want := okf.Concept{
+		ID:   "fenced",
+		Type: "Page",
+		Body: "intro\n\n---\n\nmore\n",
+	}
+
+	b := &okf.Bundle{Concepts: []okf.Concept{want}}
+	dir := t.TempDir()
+
+	if err := b.Write(dir); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+
+	got, err := okf.Read(dir)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	if len(got.Concepts) != 1 {
+		t.Fatalf("concept count: got %d, want 1", len(got.Concepts))
+	}
+	c := got.Concepts[0]
+	if c.Type != want.Type {
+		t.Errorf("Type: got %q, want %q", c.Type, want.Type)
+	}
+	if c.Body != want.Body {
+		t.Errorf("Body: got %q, want %q", c.Body, want.Body)
 	}
 }
 

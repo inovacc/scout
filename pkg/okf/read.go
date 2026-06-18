@@ -107,7 +107,11 @@ func splitFrontmatter(content string) (fm, body string) {
 	}
 
 	// Find the closing "---" fence after the opening one.
-	rest := content[4:] // skip the leading "---\n"
+	skip := 4
+	if strings.HasPrefix(content, "---\r\n") {
+		skip = 5
+	}
+	rest := content[skip:] // skip the leading "---\n" (4) or "---\r\n" (5)
 
 	endIdx := strings.Index(rest, "\n---\n")
 	if endIdx == -1 {
