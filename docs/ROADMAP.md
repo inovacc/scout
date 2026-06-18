@@ -727,7 +727,40 @@ Shipped as v1.0.3 under the Superpowers workflow (brainstorm → spec → execut
 
 ---
 
-## Phase 80+ — Future
+## Phase 80+ — Planned
+
+### Phase 80 — Vault → Flow Secret Injection, No-Expose Hardening [PLANNED]
+
+**Goal:** Make "set a secret once, reference it anywhere in a flow, and never expose it" a complete, guaranteed capability — closing the gaps left after Phase 78 (vault) + Phase 79 (flow `${secret}` header chains).
+
+**Already shipped (78 + 79):** vault stores secrets (Argon2id + AES-256-GCM, `LockedBuffer`, never a Go `string`); `scout flow run --profile` resolves `${secret.NAME}` from a vault profile at send time; the analyzer redacts secret values from its LLM digest and parameterizes secret-bearing headers + URL-query tokens to `${secret.*}`; emitted `flow.yaml` is secret-free (`pkg/scout/flow/hygiene_test.go`); `${secret.*}` fails closed with no resolver.
+
+**New scope (the gaps):**
+- **All request locations:** extend `${secret.*}` injection beyond headers to URL query params, JSON body fields, and form/multipart fields (the analyzer emits header chains only today — the "query/json chain-injection" line from FLOW v2).
+- **No-expose guarantee surface:** a `scout flow lint` / audit that statically proves no secret literal can land in `capture.json`, `flow.yaml`, run logs, or output sinks; promote the existing `hygiene_test.go` checks into a reusable validator.
+- **Runtime redaction:** ensure `flow run` stdout/result and every sink never serialize a *resolved* secret value (not only the emitted spec).
+- **`set → inject` ergonomics:** a one-obvious-path `scout vault set NAME=…` → `scout flow run --profile` story, documented end-to-end.
+- **(Optional) reach:** vault `${secret.*}` references in strategy files + proxy-route auth, so the same no-expose model covers strategy/proxy, not only flow.
+
+**Acceptance:** a secret set via `scout vault set` injects into a header, a URL query param, and a JSON body field of a flow request, resolved only at send time, with the value absent from every on-disk artifact and log (enforced by extended hygiene tests); `scout flow lint` flags any hard-coded secret-looking literal.
+
+**Builds on:** Phase 78, Phase 79. **Subsumes:** the query/json chain-injection portion of FLOW v2 ([BACKLOG.md](BACKLOG.md)).
+
+### Phase 81 — Open Knowledge Format (OKF) Export — reusable `pkg/okf` [PLANNED]
+
+**Goal:** Emit Scout's extraction output as an **Open Knowledge Format** bundle so any AI agent can consume it as curated, account-free, SDK-free context. OKF (Google Cloud, Apache-2.0, spec `GoogleCloudPlatform/knowledge-catalog/okf/SPEC.md`, v0.1 ~2026-06) = a directory of Markdown files with YAML frontmatter; **one file = one "concept"** (identity = file path), frontmatter requires exactly a `type` field (+ recommended `title` / `description` / `resource` / `tags` / `timestamp`), and relationships are bundle-relative Markdown links.
+
+**Reusable package — `pkg/okf` (scout-independent):** a self-contained reader/writer for the format with **zero `internal/engine` imports and no Google SDK** — just a small serializer/parser — so it is reusable as a standalone OKF library. Sketch API: `okf.Bundle`, `okf.Concept{Type, Title, Description, Resource, Tags, Timestamp, Body, Links}`, `Bundle.Write(dir)`, `okf.Read(dir)`, frontmatter round-trip + bundle-relative link validation.
+
+**Scout integration (consumes `pkg/okf`):**
+- `scout knowledge <url>` command + an `okf` output sink that serializes a `gather` / `crawl` result into an OKF bundle, reusing existing markdown + `scout:"selector"` struct-tag extraction.
+- Concept-type mapping: page → `Page`, extracted entity → domain `type`, hijack/flow capture → `API Endpoint`, inferred schema → `Schema`; auto-emit `resource` = source URL and `timestamp` = crawl time (provenance).
+- Relationships from Scout's existing link graph / site-mapper → bundle-relative Markdown links → a traversable concept graph.
+- Expose the bundle as an MCP resource / report type alongside `gather` / `report`.
+
+**Acceptance:** `scout knowledge <url> -o ./bundle` writes a valid OKF bundle (`index.md` + concept files, each with a `type` frontmatter field, round-trippable via `okf.Read`); a multi-page crawl yields concepts linked by bundle-relative Markdown links; `pkg/okf` has zero scout/engine imports (enforced by an import test) plus round-trip tests.
+
+**Maturity guard:** OKF is v0.1, single-vendor-stewarded — ship the writer behind a flag and track the spec repo for breaking changes before promoting it to a headline feature. **Source:** [Google Cloud blog](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing/) · [spec repo](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf).
 
 ### Remaining Work
 
