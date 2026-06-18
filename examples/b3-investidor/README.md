@@ -15,6 +15,9 @@ all sections headless on every run to raw JSON + flattened CSV.
    and `token_storage_key` for bearer mode.
 
 ## Every run
+
+> The Taskfile is standalone: `cd examples/b3-investidor` first — the bare `task` target names are not wired into the root Taskfile.
+
 ```bash
 export SCOUT_PASSPHRASE='…'
 task b3:run PROFILE=<your-b3-profile-id>

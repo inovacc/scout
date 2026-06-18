@@ -40,34 +40,29 @@ func NewRun(root string, ts time.Time) (*Run, error) {
 func (r *Run) Dir() string { return r.dir }
 
 func (r *Run) WriteSection(id string, raw []byte, header []string, rows [][]string) error {
-	jsonPath := filepath.Join(r.dir, id+".json")
-	f, err := os.OpenFile(jsonPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
-	if err != nil {
+	if err := os.WriteFile(filepath.Join(r.dir, id+".json"), raw, 0o600); err != nil {
 		return fmt.Errorf("b3: write %s.json: %w", id, err)
-	}
-	defer func() { _ = f.Close() }()
-	if _, err := f.Write(raw); err != nil {
-		return fmt.Errorf("b3: write %s.json: %w", id, err)
-	}
-	if err := f.Close(); err != nil {
-		return fmt.Errorf("b3: close %s.json: %w", id, err)
 	}
 
-	csvPath := filepath.Join(r.dir, id+".csv")
-	f, err = os.OpenFile(csvPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	cf, err := os.OpenFile(filepath.Join(r.dir, id+".csv"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("b3: write %s.csv: %w", id, err)
 	}
-	defer func() { _ = f.Close() }()
-	w := csv.NewWriter(f)
+	w := csv.NewWriter(cf)
 	if err := w.Write(header); err != nil {
+		_ = cf.Close()
 		return fmt.Errorf("b3: csv header: %w", err)
 	}
 	if err := w.WriteAll(rows); err != nil {
+		_ = cf.Close()
 		return fmt.Errorf("b3: csv rows: %w", err)
 	}
 	w.Flush()
-	return w.Error()
+	if err := w.Error(); err != nil {
+		_ = cf.Close()
+		return fmt.Errorf("b3: csv flush: %w", err)
+	}
+	return cf.Close()
 }
 
 func (r *Run) WriteManifest(m Manifest) error {

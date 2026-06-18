@@ -61,7 +61,9 @@ func run(profile string, pass []byte, sectionsPath, outRoot string) error {
 		header, rows, err := b3pipe.Flatten(res.Body, s.RecordPath)
 		if err != nil {
 			// still write raw json for debugging; surface the flatten error
-			_ = runOut.WriteSection(s.Output, res.Body, []string{"_raw"}, [][]string{{string(res.Body)}})
+			if werr := runOut.WriteSection(s.Output, res.Body, []string{"_raw"}, [][]string{{string(res.Body)}}); werr != nil {
+				return fmt.Errorf("section %s: flatten failed (%w) and raw dump also failed: %v", s.ID, err, werr)
+			}
 			return fmt.Errorf("section %s: %w", s.ID, err)
 		}
 		if err := runOut.WriteSection(s.Output, res.Body, header, rows); err != nil {
