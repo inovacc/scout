@@ -15,7 +15,7 @@ import (
 func init() {
 	rootCmd.AddCommand(okfCmd)
 
-	okfCmd.Flags().StringP("out", "o", "./knowledge-bundle", "output directory for the OKF bundle")
+	okfCmd.Flags().String("out", "./knowledge-bundle", "output directory for the OKF bundle")
 	okfCmd.Flags().Int("depth", 0, "crawl depth (0 = seed only)")
 	okfCmd.Flags().Int("max-pages", 20, "maximum pages to gather")
 }
