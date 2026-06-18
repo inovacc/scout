@@ -762,6 +762,20 @@ Shipped as v1.0.3 under the Superpowers workflow (brainstorm → spec → execut
 
 **Maturity guard:** OKF is v0.1, single-vendor-stewarded — ship the writer behind a flag and track the spec repo for breaking changes before promoting it to a headline feature. **Source:** [Google Cloud blog](https://cloud.google.com/blog/products/data-analytics/how-the-open-knowledge-format-can-improve-data-sharing/) · [spec repo](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf).
 
+### Evaluated 2026-06-18 — chromedp / cdproto: NOT incorporating the engine
+
+**Verdict:** Do **not** adopt `github.com/chromedp/chromedp` as a CDP engine/client. This reaffirms **ADR-0002** (chromedp's action-pipeline `Run(ctx, actions...)` is fundamentally incompatible with Scout's fluent OOP facade — a dual backend needs a 142+ method adapter layer) and **ADR-0006** (the rod fork was internalized to own the CDP stack). A two-sided steelman analysis (strongest case for vs strongest case against) converged on rejection:
+
+- **No capability gap** — Scout already implements everything chromedp offers (navigation, eval, HTTP+WS hijack/modify-in-flight, stealth, fingerprint rotation, screenshots, PDF, input/touch/device emulation, sessions). chromedp adds no missing feature.
+- **Engine-migration cost** — ~127 facade methods (Browser/Page/Element) are built directly on the internalized rod API; a swap is a ground-up rewrite of `internal/engine/`.
+- **Stealth is the differentiator and is rod-bound** — the 17 ExtraJS evasions + go-rod/stealth integration apply via rod's `EvalOnNewDocument`/page lifecycle hooks; chromedp's action model can't inject them the same way, so a migration would forfeit Scout's core value-add.
+- **Philosophy reversal** — reintroduces an external CDP dependency and a second proto/cdp stack (binary bloat) against the same-machine, internalized-engine design.
+- chromedp's *client* (NodeID node-cache, fixed-size event buffer) is itself a **downgrade** vs Scout's RemoteObjectID + auto-wait engine under high concurrency.
+
+**Narrow live thread (the only real value) — `cdproto`, P3 (see [BACKLOG.md](BACKLOG.md)):** `github.com/chromedp/cdproto` is the de-facto most current, community-regenerated Go CDP protocol binding (MIT; tiny deps — `sysutil` + `easyjson`; easyjson marshaling beats reflection on hot event streams). Two *non-engine* uses are worth a scoped investigation:
+1. **Reference-diff (low risk):** periodically diff `cdproto` against Scout's vendored `internal/engine/lib/proto/` to catch new/deprecated CDP commands — protocol currency with **zero runtime dependency**; feeds the existing `.scripts/rod-upstream-diff.sh` tracking.
+2. **Proto-source adoption (gated):** replacing rod's `proto` with `cdproto` as the runtime type source — pursued **only if** (1) measures a real domain-coverage/currency gap justifying the rewire of the internal `cdp` client + all `proto.*` references. Neither steelman could verify a current coverage gap, so this stays gated behind that measurement.
+
 ### Remaining Work
 
 See [BACKLOG.md](BACKLOG.md) for future work — current open items: iOS Safari (P3), Claude Code marketplace submission (P3). Breakdown in [IMPLEMENTATION_TASKS.md](IMPLEMENTATION_TASKS.md).
