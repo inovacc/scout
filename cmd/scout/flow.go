@@ -214,9 +214,9 @@ func flowProvider(cmd *cobra.Command) (scout.LLMProvider, error) {
 }
 
 func init() {
-	flowCaptureCmd.Flags().StringP("out", "o", "", "output capture path (default capture.json)")
+	flowCaptureCmd.Flags().String("out", "", "output capture path (default capture.json)")
 	flowCaptureCmd.Flags().StringSlice("filter", []string{"*api*", "*graphql*"}, "URL glob filters to keep")
-	flowAnalyzeCmd.Flags().StringP("out", "o", "", "output flow spec path (default flow.yaml)")
+	flowAnalyzeCmd.Flags().String("out", "", "output flow spec path (default flow.yaml)")
 	flowAnalyzeCmd.Flags().String("name", "captured-flow", "name for the generated flow")
 	flowAnalyzeCmd.Flags().String("llm", "", "LLM provider (ollama|openai|anthropic; default from env or ollama)")
 	flowRunCmd.Flags().String("profile", "", "vault profile id for auth (default: spec auth.profile)")
