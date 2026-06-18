@@ -1,0 +1,7 @@
+# runtime data + secrets — never commit
+b3-data/
+capture.json
+flow.yaml
+sections.yaml
+*.profile/
+.scripts/

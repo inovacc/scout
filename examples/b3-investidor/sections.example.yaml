@@ -1,0 +1,10 @@
+base_url: "https://www.investidor.b3.com.br"
+auth:
+  mode: "bearer"            # "cookie" | "bearer" — set from recon
+  token_storage_key: ""     # localStorage key holding the access JWT (bearer mode)
+sections:
+  - id: "posicao"
+    endpoint: "https://investidor.b3.com.br/api/posicao"   # confirmed at recon
+    output: "posicao"
+    record_path: "data"     # dot path to the record array in the JSON response
+  # add movimentacao, proventos, … from capture.json
