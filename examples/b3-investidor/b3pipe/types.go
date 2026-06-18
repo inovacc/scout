@@ -17,3 +17,19 @@ type SectionsConfig struct {
 	Auth     AuthConfig `yaml:"auth"`
 	Sections []Section  `yaml:"sections"`
 }
+
+type RefreshTokenInfo struct {
+	Found            bool
+	InLocalStorage   bool
+	InSessionStorage bool
+	InReadableCookie bool
+	InHTTPOnlyCookie bool
+}
+
+type Engine string
+
+const (
+	EngineA        Engine = "A"        // browserless scout flow run
+	EngineB        Engine = "B"        // headless browser self-refresh
+	EngineFallback Engine = "fallback" // no refresh token; re-capture headed on expiry
+)
