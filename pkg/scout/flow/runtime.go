@@ -8,6 +8,8 @@ import (
 	"io"
 	"maps"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"time"
 )
@@ -17,6 +19,7 @@ type RunOptions struct {
 	Client  *http.Client      // nil → a default 30s client
 	Secrets SecretResolver    // nil → ${secret.*} is an error
 	Vars    map[string]string // overrides merged over FlowSpec.Vars
+	DumpDir string            // when set, each step's response body is written to DumpDir/<id>.json
 }
 
 // RunResult is the per-step outcome of a run.
@@ -52,6 +55,11 @@ func Run(ctx context.Context, f *FlowSpec, opts RunOptions) (*RunResult, error) 
 		sr, err := runStep(ctx, client, step, vars, opts.Secrets)
 		if err != nil {
 			return res, fmt.Errorf("scout: flow: step %q: %w", step.ID, err)
+		}
+		if opts.DumpDir != "" && sr != nil {
+			if err := os.WriteFile(filepath.Join(opts.DumpDir, sr.ID+".json"), []byte(sr.Body), 0o600); err != nil {
+				return nil, fmt.Errorf("scout: flow: dump %s: %w", sr.ID, err)
+			}
 		}
 		res.Steps = append(res.Steps, *sr)
 	}

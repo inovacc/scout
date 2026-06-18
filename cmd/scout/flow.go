@@ -90,6 +90,9 @@ var flowRunCmd = &cobra.Command{
 			return err
 		}
 		opts := flow.RunOptions{}
+		if d, _ := cmd.Flags().GetString("dump-dir"); d != "" {
+			opts.DumpDir = d
+		}
 		if profile == "" && f.Auth != nil {
 			profile = f.Auth.Profile
 		}
@@ -217,6 +220,7 @@ func init() {
 	flowAnalyzeCmd.Flags().String("name", "captured-flow", "name for the generated flow")
 	flowAnalyzeCmd.Flags().String("llm", "", "LLM provider (ollama|openai|anthropic; default from env or ollama)")
 	flowRunCmd.Flags().String("profile", "", "vault profile id for auth (default: spec auth.profile)")
+	flowRunCmd.Flags().String("dump-dir", "", "directory to write each step's response body (<id>.json)")
 	flowVerifyCmd.Flags().String("golden", "", "golden capture.json to diff against")
 	flowCmd.AddCommand(flowCaptureCmd, flowAnalyzeCmd, flowRunCmd, flowVerifyCmd)
 	rootCmd.AddCommand(flowCmd)

@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -92,6 +94,26 @@ func TestRunGraphQL(t *testing.T) {
 	}
 	if res.Steps[0].Extracted["total"] != "7" {
 		t.Fatalf("extract: %+v", res.Steps[0].Extracted)
+	}
+}
+
+func TestRunDumpDir(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+	spec := &FlowSpec{
+		Name:  "t",
+		Steps: []FlowStep{{ID: "one", Request: Request{Method: "GET", URL: srv.URL}}},
+	}
+	dir := t.TempDir()
+	_, err := Run(context.Background(), spec, RunOptions{DumpDir: dir})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "one.json"))
+	if err != nil || string(b) != `{"ok":true}` {
+		t.Fatalf("dump = %q err=%v", b, err)
 	}
 }
 
