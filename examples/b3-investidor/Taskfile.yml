@@ -1,0 +1,33 @@
+version: "3"
+
+vars:
+  URL: "https://www.investidor.b3.com.br"
+  PROFILE_DIR: '{{.SCOUT_HOME | default (printf "%s/.scout-b3" .HOME)}}'
+
+tasks:
+  bootstrap:
+    desc: "Headed login (gov.br + MFA) + capture auth into vault profile 'b3'"
+    cmds:
+      - echo "A headed Chrome will open. Log in via gov.br (CPF + MFA), then walk Posição / Movimentação / Proventos so the SPA fires every API call. Close the window when done."
+      - scout repl {{.URL}} --headless=false --user-data-dir "{{.PROFILE_DIR}}"
+      - echo "Now capturing cookies + storage into vault profile 'b3'..."
+      - scout vault capture b3 {{.URL}} --user-data-dir "{{.PROFILE_DIR}}"
+      - echo "Vault profile 'b3' created. Note the printed profile ID."
+
+  recon:
+    desc: "Capture API traffic to capture.json; inspect token location to pick the engine"
+    cmds:
+      - echo "Replays a headed session and records *api*/*graphql* calls. Log in if prompted."
+      - scout flow capture {{.URL}} --out capture.json --filter '*api*' --filter '*graphql*'
+      - echo "Inspect capture.json for: the data endpoints (-> sections.yaml), the refresh endpoint, and where the access/refresh token lives (localStorage vs httpOnly cookie). Then author sections.yaml from sections.example.yaml."
+
+  run:
+    desc: "Headless extraction of all sections to b3-data/ (Engine B)"
+    cmds:
+      - go run . --profile {{.PROFILE | default "REPLACE_WITH_PROFILE_ID"}} --sections sections.yaml --out "{{.PROFILE_DIR}}"
+
+  verify:
+    desc: "Re-run and confirm auto-refresh worked (no re-login)"
+    cmds:
+      - task: run
+      - echo "Open {{.PROFILE_DIR}}/b3-data/latest/_run.json and confirm every section status is 200."
