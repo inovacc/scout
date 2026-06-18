@@ -49,6 +49,8 @@ remain, both **P3** (only relevant against the most advanced anti-bot stacks):
   doesn't address. Also consider `WithoutBridge()` as the stealth-mode default (content-script
   injection is itself a signal).
 
+**Field-confirmed 2026-06-18 — B3 `investidor.b3.com.br` (Cloudflare managed challenge + Private Access Token) is unbeatable by current stealth.** Three live attempts — CDP `--stealth`, a stealth relaunch, and a new MAIN-world `document_start` evasion **extension** (`extensions/scout-evade/`, ports the 17 evasions as an MV3 content script) — all looped on Turnstile with `403` + a PAT challenge. Confirms the block is **below JavaScript**: no in-page injection (CDP or extension) moves the TLS/JA3 fingerprint of Chrome-for-Testing or the CDP-driven context, so JS-layer evasion is the wrong tool here. **What would actually be needed:** the JA3/JA4 + HTTP/2 work above (a real-Chrome or uTLS-style TLS fingerprint), and/or an attach-to-human-cleared-real-browser path (Scout has no `connect`-to-running-Chrome command today — only `--electron-cdp`). `extensions/scout-evade/` stands as a reusable artifact against **JS-only** detectors; it is explicitly NOT a Cloudflare bypass.
+
 ### HARDENING-V2 — residual findings from the 2026-06-04 adversarial audit
 
 The audit's CRITICAL (self-update integrity → RCE), the daemon-env secret leak, and the flow
