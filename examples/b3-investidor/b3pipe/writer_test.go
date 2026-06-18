@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -35,9 +36,11 @@ func TestRunWriteSectionAndManifest(t *testing.T) {
 		t.Errorf("csv = %v", recs)
 	}
 	// mode 0o600
-	info, _ := os.Stat(jsonPath)
-	if info.Mode().Perm() != 0o600 {
-		t.Errorf("mode = %v", info.Mode().Perm())
+	if runtime.GOOS != "windows" {
+		info, _ := os.Stat(jsonPath)
+		if info.Mode().Perm() != 0o600 {
+			t.Errorf("mode = %v", info.Mode().Perm())
+		}
 	}
 	// manifest + latest
 	if err := run.WriteManifest(Manifest{Timestamp: ts.Format(time.RFC3339), Engine: "B",
