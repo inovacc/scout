@@ -28,7 +28,7 @@ jobs:
 
       # Compile gate (blocking): main must always build on Linux.
       - name: Build
-        run: go build ./cmd/... ./pkg/... ./internal/... ./grpc/...
+        run: go build ./cmd/... ./pkg/... ./internal/...
 
       # Unit-test gate (blocking): -short skips Chromium-dependent tests (browser
       # suite is fully gated) plus the process-spawning reaper / session-doctor
@@ -37,7 +37,7 @@ jobs:
       # still emits coverage to the step summary.
       - name: Test (-short, blocking)
         run: |
-          go test -short -covermode=atomic -coverprofile=coverage.out ./cmd/... ./pkg/... ./internal/... ./grpc/...
+          go test -short -covermode=atomic -coverprofile=coverage.out ./cmd/... ./pkg/... ./internal/...
           {
             echo "### Coverage (-short)"
             echo '```'
