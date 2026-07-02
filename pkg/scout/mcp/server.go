@@ -121,7 +121,7 @@ func (s *mcpState) ensureBrowser(_ context.Context) (*scout.Browser, error) {
 	// in-page fetch from the eval tool), not just the navigate-time check.
 	if s.policy != nil {
 		policy := s.policy
-		b.InstallRequestFilter(func(rawURL string) bool {
+		b.InstallRequestFilter(func(rawURL string) bool { //nolint:contextcheck // SSRF filter runs per CDP request; there is no request ctx at interception time
 			return policy.Check(context.Background(), rawURL) == nil
 		})
 	}

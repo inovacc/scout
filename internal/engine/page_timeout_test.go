@@ -22,7 +22,7 @@ func TestPage_OutlivesOperationTimeout(t *testing.T) {
 	if err != nil {
 		t.Skipf("browser unavailable: %v", err)
 	}
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("<html><body><h1 id=\"x\">hi</h1></body></html>"))
