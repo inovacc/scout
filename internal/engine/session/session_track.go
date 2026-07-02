@@ -173,26 +173,52 @@ func WriteInfo(id string, info *SessionInfo) error {
 
 	path := filepath.Join(dir, "scout.pid")
 
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
+	// Write atomically. Writing in place with O_TRUNC let a concurrent reader
+	// (ReapOnce) observe a truncated/partial record and treat a LIVE session as
+	// corrupt — then reap it. Write to a temp file in the same dir, fsync, then
+	// os.Rename over scout.pid (atomic; MOVEFILE_REPLACE_EXISTING on Windows), so
+	// a reader always sees either the old or the new complete file.
+	tmp := path + ".tmp"
+
+	f, err := os.OpenFile(tmp, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
-		return fmt.Errorf("scout: open scout.pid: %w", err)
+		return fmt.Errorf("scout: open scout.pid.tmp: %w", err)
 	}
 
 	if _, err := f.Write(marshalBinary(info)); err != nil {
 		_ = f.Close()
-		return fmt.Errorf("scout: write scout.pid: %w", err)
+		_ = os.Remove(tmp)
+
+		return fmt.Errorf("scout: write scout.pid.tmp: %w", err)
 	}
 
 	if err := f.Sync(); err != nil {
 		_ = f.Close()
-		return fmt.Errorf("scout: sync scout.pid: %w", err)
+		_ = os.Remove(tmp)
+
+		return fmt.Errorf("scout: sync scout.pid.tmp: %w", err)
 	}
 
 	if err := f.Close(); err != nil {
-		return fmt.Errorf("scout: close scout.pid: %w", err)
+		_ = os.Remove(tmp)
+
+		return fmt.Errorf("scout: close scout.pid.tmp: %w", err)
 	}
 
-	return nil
+	// Rename can transiently fail on Windows if a reader has scout.pid open;
+	// reads are brief, so a couple of short retries make this robust.
+	var renameErr error
+	for range 3 {
+		if renameErr = os.Rename(tmp, path); renameErr == nil {
+			return nil
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	_ = os.Remove(tmp)
+
+	return fmt.Errorf("scout: replace scout.pid: %w", renameErr)
 }
 
 // ReadInfo reads the session info from <SessionsDir>/<id>/scout.pid in the
@@ -217,9 +243,30 @@ func ReadInfo(id string) (*SessionInfo, error) {
 		return nil, fmt.Errorf("scout: session %s: directory not owned by current user", id)
 	}
 
-	data, err := os.ReadFile(filepath.Join(dir, "scout.pid"))
-	if err != nil {
-		return nil, err
+	pidPath := filepath.Join(dir, "scout.pid")
+
+	// Retry transient read failures. On Windows a concurrent WriteInfo rename
+	// (MoveFileEx replace) can briefly make scout.pid un-openable ("file in use").
+	// Because the reaper treats a ReadInfo error as "corrupt → reap", a transient
+	// failure here would reap a LIVE session — so ride it out with a bounded
+	// retry. Genuine absence (os.IsNotExist) returns immediately. Thanks to the
+	// atomic write, any successful read is a complete record (never torn).
+	var (
+		data []byte
+		err  error
+	)
+
+	for attempt := 0; ; attempt++ {
+		data, err = os.ReadFile(pidPath)
+		if err == nil {
+			break
+		}
+
+		if os.IsNotExist(err) || attempt >= 5 {
+			return nil, err
+		}
+
+		time.Sleep(20 * time.Millisecond)
 	}
 
 	info, err := unmarshalBinary(data)
@@ -328,7 +375,9 @@ func FindReusable(browser string, headless bool) *SessionListing {
 
 	for i := range sessions {
 		info := sessions[i].Info
-		if info.Reusable && info.Browser == browser && info.Headless == headless {
+		// Skip expired reusable sessions: adopting one races the reaper, which is
+		// about to kill it (and its browser) — the launching browser would die.
+		if info.Reusable && !info.IsExpired() && info.Browser == browser && info.Headless == headless {
 			return &sessions[i]
 		}
 	}
