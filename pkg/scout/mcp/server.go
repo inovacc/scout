@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 
@@ -41,6 +42,31 @@ type mcpState struct {
 	ariaStore *aria.Store
 	hooks     *hookRegistry
 	policy    *urlpolicy.Policy
+
+	// openBrowsers are headed inspection browsers spawned by the "open" tool.
+	// They intentionally outlive a single call (the user drives them), so they
+	// are NOT closed on idle — only on full server teardown (Serve).
+	openBrowsers []*scout.Browser
+}
+
+// trackOpenBrowser registers a headed inspection browser for teardown cleanup.
+func (s *mcpState) trackOpenBrowser(b *scout.Browser) {
+	s.mu.Lock()
+	s.openBrowsers = append(s.openBrowsers, b)
+	s.mu.Unlock()
+}
+
+// closeOpenBrowsers closes every headed inspection browser. Called only on full
+// server teardown so a client disconnect does not orphan the Chrome process.
+func (s *mcpState) closeOpenBrowsers() {
+	s.mu.Lock()
+	browsers := s.openBrowsers
+	s.openBrowsers = nil
+	s.mu.Unlock()
+
+	for _, b := range browsers {
+		_ = b.Close()
+	}
 }
 
 // touch resets the idle timer on activity.
@@ -56,13 +82,27 @@ func (s *mcpState) ensureBrowser(_ context.Context) (*scout.Browser, error) {
 	defer s.mu.Unlock()
 
 	if s.browser != nil {
-		return s.browser, nil
+		// Liveness check: if Chrome's process has exited (crash, OOM, killed by
+		// the user or the reaper), drop the dead handle and re-launch instead of
+		// returning a wedged CDP connection that errors on every call forever.
+		// Browser.Done() is closed when the launcher process exits.
+		select {
+		case <-s.browser.Done():
+			_ = s.browser.Close()
+			s.browser = nil
+			s.page = nil
+		default:
+			return s.browser, nil
+		}
 	}
 
 	opts := []scout.Option{
 		scout.WithHeadless(s.config.Headless),
 		scout.WithNoSandbox(),
-		scout.WithTimeout(0), // disable rod's 30s page timeout; MCP manages its own lifecycle
+		// Real per-operation timeout (Page.timed applies it per call, not as an
+		// absolute page-lifetime deadline). A bad selector now fails this one
+		// tool call instead of blocking the single stdio transport forever.
+		scout.WithTimeout(60 * time.Second),
 	}
 	if s.config.BrowserBin != "" {
 		opts = append(opts, scout.WithExecPath(s.config.BrowserBin))
@@ -81,7 +121,7 @@ func (s *mcpState) ensureBrowser(_ context.Context) (*scout.Browser, error) {
 	// in-page fetch from the eval tool), not just the navigate-time check.
 	if s.policy != nil {
 		policy := s.policy
-		b.InstallRequestFilter(func(rawURL string) bool {
+		b.InstallRequestFilter(func(rawURL string) bool { //nolint:contextcheck // SSRF filter runs per CDP request; there is no request ctx at interception time
 			return policy.Check(context.Background(), rawURL) == nil
 		})
 	}
@@ -164,6 +204,7 @@ func addTracedTool(server *mcp.Server, tool *mcp.Tool, handler func(ctx context.
 		ctx, finish := tracing.MCPToolSpan(ctx, name)
 
 		result, err = handler(ctx, req)
+		err = annotateBrowserError(err)
 
 		metrics.Get().ToolCallsTotal.Add(1)
 
@@ -198,6 +239,25 @@ func addTracedTool(server *mcp.Server, tool *mcp.Tool, handler func(ctx context.
 
 		return result, err
 	})
+}
+
+// annotateBrowserError appends a recovery hint to errors that indicate the
+// browser/CDP connection was lost, so the AI client resets and re-launches
+// instead of retrying the same doomed call (which is indistinguishable from a
+// selector typo without this hint).
+func annotateBrowserError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	msg := strings.ToLower(err.Error())
+	for _, marker := range []string{"eof", "use of closed", "websocket", "cdp connection", "context canceled", "connection reset", "wsarecv", "wsasend"} {
+		if strings.Contains(msg, marker) {
+			return fmt.Errorf("%w — the browser or page may have closed or crashed; call session_reset, then retry", err)
+		}
+	}
+
+	return err
 }
 
 // mcpToolArgs returns the call's arguments as a map for capture, or nil.
@@ -238,23 +298,34 @@ func jsonResult(v any) (*mcp.CallToolResult, error) {
 }
 
 // NewServer creates an MCP server with Scout tools and resources.
-// If cancelOnIdle is non-nil and cfg.IdleTimeout > 0, the idle timer will
-// call cancelOnIdle when the timeout expires.
 // If cfg.PluginManager is set, plugin-provided MCP tools are registered.
 func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
+	server, _ := newServerWithState(cfg, cancelOnIdle...)
+
+	return server
+}
+
+// newServerWithState builds the server and also returns the internal state, so
+// callers (Serve) can tear the browser down when the transport ends.
+func newServerWithState(cfg ServerConfig, cancelOnIdle ...func()) (*mcp.Server, *mcpState) {
 	state := &mcpState{config: cfg, ariaStore: aria.NewStore(), hooks: newHookRegistry(), policy: urlpolicy.FromEnv()}
 
-	if cfg.IdleTimeout > 0 && len(cancelOnIdle) > 0 && cancelOnIdle[0] != nil {
-		cb := cancelOnIdle[0]
+	if cfg.IdleTimeout > 0 {
 		state.idle = idle.New(cfg.IdleTimeout, func() {
 			if cfg.Logger != nil {
-				cfg.Logger.Warn("idle timeout reached, shutting down", "timeout", cfg.IdleTimeout)
+				cfg.Logger.Info("idle: releasing browser; server stays up", "timeout", cfg.IdleTimeout)
 			}
 
+			// Release the browser to reclaim Chrome memory, but NEVER cancel the
+			// server context. A stdio MCP server's lifetime is owned by the
+			// client (Claude Code); the next tool call re-launches the browser
+			// lazily. Previously this called the Serve cancel, so the process
+			// exited after the idle window and the client could not reach it
+			// again for the rest of the session ("use once, then dead").
 			state.reset()
-			cb()
 		})
 	}
+	_ = cancelOnIdle // retained for API compatibility; idle no longer cancels the transport
 
 	logger := cfg.Logger
 	if logger == nil {
@@ -286,7 +357,7 @@ func NewServer(cfg ServerConfig, cancelOnIdle ...func()) *mcp.Server {
 		cfg.PluginManager.RegisterMCPTools(server)
 	}
 
-	return server
+	return server, state
 }
 
 // RegisterWebMCPTools adds discovered WebMCP tools to the MCP server.
@@ -371,8 +442,14 @@ func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool, bro
 	interaction.Init("mcp")
 	defer func() { _ = interaction.Close("ok") }()
 
-	server := NewServer(cfg, cancel)
+	server, state := newServerWithState(cfg, cancel)
+
+	// Release the browser when the transport ends (client disconnect / stdin
+	// EOF). Without this, the lazily-launched headless Chrome and its session
+	// dir are orphaned every time the client goes away. Also close any headed
+	// inspection browsers opened via the "open" tool.
+	defer state.reset()
+	defer state.closeOpenBrowsers()
 
 	return server.Run(ctx, &mcp.StdioTransport{})
 }
-

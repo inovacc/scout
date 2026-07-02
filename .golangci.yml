@@ -27,6 +27,13 @@ linters:
       - path: "pkg/scout/capture.go"
         linters:
           - contextcheck
+
+      # internal/engine wraps rod's stored-context model: Page.timed / rodPage.Timeout
+      # derive from the page's stored ctx (p.ctx), which contextcheck cannot see as an
+      # inherited context. Same rationale as the scraper/grpc exclusions above.
+      - path: "internal/engine/"
+        linters:
+          - contextcheck
       - path: "pkg/scout/recipes/"
         linters:
           - staticcheck

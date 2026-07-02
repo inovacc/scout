@@ -591,10 +591,6 @@ func (l *Launcher) Exit() <-chan struct{} {
 
 // Kill the browser process.
 func (l *Launcher) Kill() {
-	// empirical timing: 1s delay before kill ensures child processes (renderer, GPU)
-	// have time to initialize; browsers have no API to signal child readiness.
-	utils2.Sleep(1)
-
 	if l.PID() == 0 { // avoid killing the current process
 		return
 	}
@@ -610,7 +606,14 @@ func (l *Launcher) Kill() {
 // Cleanup wait until the Browser exits and remove [flags.UserDataDir].
 // Retries removal on failure (Windows may hold file locks briefly after Chrome exits).
 func (l *Launcher) Cleanup() {
-	<-l.exit
+	// Bound the wait for process exit. l.exit only closes when cmd.Wait()
+	// returns; if the Chrome tree does not fully exit (taskkill failure, AV
+	// interference, a surviving child holding the inherited stdio pipe) this
+	// would block teardown forever. Proceed to best-effort dir removal on timeout.
+	select {
+	case <-l.exit:
+	case <-time.After(5 * time.Second):
+	}
 
 	dir := l.Get(flags.UserDataDir)
 	for range 3 {

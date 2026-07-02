@@ -3,10 +3,18 @@
 package session
 
 import (
+	"context"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
+
+// browserScanTimeout bounds the PowerShell/WMI process enumeration. A slow or
+// hung WMI/CIM service is a well-known Windows failure mode; without a deadline
+// this scan (which runs on the synchronous startup reap path) would block every
+// scout command indefinitely. On timeout we fail closed (return no PIDs).
+const browserScanTimeout = 3 * time.Second
 
 // findBrowsersWindows enumerates running browser processes via PowerShell
 // Get-CimInstance Win32_Process (which exposes CommandLine — tasklist does
@@ -27,8 +35,14 @@ func findBrowsersWindows(dataDir string) []int {
 		Where-Object { $_.CommandLine } |
 		ForEach-Object { "$($_.ProcessId)` + "`t" + `$($_.CommandLine)" }`
 
-	out, err := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", script).Output()
+	ctx, cancel := context.WithTimeout(context.Background(), browserScanTimeout)
+	defer cancel()
+
+	out, err := exec.CommandContext(ctx, "powershell", "-NoProfile", "-NonInteractive", "-Command", script).Output()
 	if err != nil {
+		// Includes context.DeadlineExceeded: fail closed (no PIDs) rather than
+		// hang the caller. A missed zombie is reaped on a later pass; a hang is
+		// user-visible on every command.
 		return nil
 	}
 

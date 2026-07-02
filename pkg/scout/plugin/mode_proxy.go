@@ -39,8 +39,64 @@ func (m *ModeProxy) Scrape(ctx context.Context, session scraper.SessionData, opt
 
 	ch := make(chan scraper.Result, 32)
 
+	// Two producers write to ch: the batch goroutine (Call return value) and the
+	// notification drainer (streamed "result" messages that arrive during Call).
+	// To make close-of-ch race-free, the batch goroutine is the SOLE closer: it
+	// signals the drainer to stop (stopStream), waits until the drainer has
+	// stopped sending (streamDone), and only then closes ch. Previously the
+	// batch goroutine closed ch while the drainer was still sending, panicking
+	// the whole process with "send on closed channel".
+	stopStream := make(chan struct{})
+	streamDone := make(chan struct{})
+
+	// Drain notifications for streamed results.
 	go func() {
-		defer close(ch)
+		defer close(streamDone)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-stopStream:
+				return
+			case notif, ok := <-client.Notifications():
+				if !ok {
+					return
+				}
+
+				switch notif.Method {
+				case "result":
+					var r scraper.Result
+					if err := json.Unmarshal(notif.Params, &r); err == nil {
+						select {
+						case ch <- r:
+						case <-ctx.Done():
+							return
+						case <-stopStream:
+							return
+						}
+					}
+				case "log":
+					var logMsg struct {
+						Level   string `json:"level"`
+						Message string `json:"message"`
+					}
+
+					if err := json.Unmarshal(notif.Params, &logMsg); err == nil {
+						m.manager.logger.Log(ctx, parseLevel(logMsg.Level), logMsg.Message, "plugin", m.manifest.Name)
+					}
+				}
+			}
+		}
+	}()
+
+	// Batch goroutine + sole closer of ch.
+	go func() {
+		defer func() {
+			close(stopStream) // tell the drainer to stop sending
+			<-streamDone      // wait until it has stopped
+			close(ch)         // now the only sender remaining is us, and we are done
+		}()
 
 		result, err := client.Call(ctx, "scrape", params)
 		if err != nil {
@@ -69,41 +125,6 @@ func (m *ModeProxy) Scrape(ctx context.Context, session scraper.SessionData, opt
 			select {
 			case ch <- single:
 			case <-ctx.Done():
-			}
-		}
-	}()
-
-	// Also drain notifications for streamed results.
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case notif, ok := <-client.Notifications():
-				if !ok {
-					return
-				}
-
-				switch notif.Method {
-				case "result":
-					var r scraper.Result
-					if err := json.Unmarshal(notif.Params, &r); err == nil {
-						select {
-						case ch <- r:
-						case <-ctx.Done():
-							return
-						}
-					}
-				case "log":
-					var logMsg struct {
-						Level   string `json:"level"`
-						Message string `json:"message"`
-					}
-
-					if err := json.Unmarshal(notif.Params, &logMsg); err == nil {
-						m.manager.logger.Log(ctx, parseLevel(logMsg.Level), logMsg.Message, "plugin", m.manifest.Name)
-					}
-				}
 			}
 		}
 	}()

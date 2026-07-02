@@ -55,9 +55,13 @@ func (b *Browser) HealthCheck(targetURL string, opts ...HealthCheckOption) (*Hea
 	ctx, cancel := context.WithTimeout(context.Background(), o.timeout)
 	defer cancel()
 
-	_ = ctx // used indirectly via timeout awareness
-
 	handler := func(page *Page, result *CrawlResult) error {
+		// Honor --timeout (o.timeout): once the deadline passes, abort the crawl
+		// by failing subsequent page handlers. Best-effort, per-page granularity.
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return fmt.Errorf("scout: health check timeout: %w", ctxErr)
+		}
+
 		pageURL := result.URL
 
 		// Set up CDP event listeners for console errors and JS exceptions.
@@ -75,7 +79,15 @@ func (b *Browser) HealthCheck(targetURL string, opts ...HealthCheckOption) (*Hea
 			pageMu.Unlock()
 		}
 
-		wait := rodPage.EachEvent(
+		// Pump console/exception events in the BACKGROUND, bounded by pumpCtx, so
+		// events during load are actually captured and the pump is stopped when
+		// we are done collecting. Previously wait() was called inline AFTER load
+		// (line ~"wait()"), so no events were pumped during load and wait() then
+		// blocked until the page deadline — ~30s of dead time per crawled page.
+		pumpCtx, pumpCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer pumpCancel()
+
+		wait := rodPage.Context(pumpCtx).EachEvent(
 			func(e *proto.RuntimeConsoleAPICalled) {
 				if e.Type != proto.RuntimeConsoleAPICalledTypeError &&
 					e.Type != proto.RuntimeConsoleAPICalledTypeWarning {
@@ -109,6 +121,10 @@ func (b *Browser) HealthCheck(targetURL string, opts ...HealthCheckOption) (*Hea
 				})
 			},
 		)
+
+		// Start the background event pump now, before load, so console errors and
+		// JS exceptions raised during page load are captured.
+		go wait()
 
 		// Enable Runtime domain for console/exception events.
 		_ = proto.RuntimeEnable{}.Call(rodPage)
@@ -148,7 +164,9 @@ func (b *Browser) HealthCheck(targetURL string, opts ...HealthCheckOption) (*Hea
 			hijacker.Stop()
 		}
 
-		wait()
+		// Stop the background event pump now that load + settle is done. This
+		// replaces the old inline wait() that blocked to the page deadline.
+		pumpCancel()
 
 		// Collect page issues.
 		pageMu.Lock()

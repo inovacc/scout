@@ -56,6 +56,9 @@ Commands: navigate, eval, click, type, extract, screenshot, markdown, html,
 
 		out := cmd.OutOrStdout()
 		scanner := bufio.NewScanner(os.Stdin)
+		// Allow up to 1MB input lines so pasting a large `eval` payload does not
+		// silently terminate the REPL (bufio's default token limit is 64KB).
+		scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 
 		for {
 			prompt := "> "

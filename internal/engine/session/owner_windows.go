@@ -53,5 +53,25 @@ func validateDirOwner(dir string) bool {
 		return false
 	}
 
-	return windows.EqualSid(dirOwner, tokenUser.User.Sid)
+	if windows.EqualSid(dirOwner, tokenUser.User.Sid) {
+		return true
+	}
+
+	// Objects created by an elevated (Run as Administrator) process are owned by
+	// the BUILTIN\Administrators group SID, not the user SID. Accept that case
+	// when the current process token is itself elevated / a member of the
+	// Administrators group, so an elevated scout does not treat its own live
+	// sessions as foreign and reap them (and their browsers) within ~2 minutes.
+	adminsSid, err := windows.CreateWellKnownSid(windows.WinBuiltinAdministratorsSid)
+	if err != nil {
+		return false
+	}
+
+	if !windows.EqualSid(dirOwner, adminsSid) {
+		return false
+	}
+
+	isAdmin, err := token.IsMember(adminsSid)
+
+	return err == nil && isAdmin
 }

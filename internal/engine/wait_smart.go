@@ -182,8 +182,12 @@ func (p *Page) WaitFrameworkReady() error {
 		return nil
 	}
 
-	// Framework-specific wait via JS
-	_, err = p.Eval(fmt.Sprintf(`(name) => %s(name)`, waitFrameworkReadyJS), fw.Name)
+	// Framework-specific wait via JS. waitFrameworkReadyJS is ALREADY a complete
+	// `(name) => {...}` function returning a Promise; pass it straight to Eval
+	// (which applies args and awaits the Promise). The old fmt.Sprintf wrapped it
+	// as `(name) => <fn>(name)`, a SyntaxError that made this whole feature dead
+	// code — every call silently fell back to the plain WaitLoad below.
+	_, err = p.Eval(waitFrameworkReadyJS, fw.Name)
 	if err != nil {
 		// JS wait failed — fall back to standard wait
 		_ = p.WaitLoad()

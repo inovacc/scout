@@ -88,10 +88,27 @@ type PageTimingInfo struct {
 
 // Page wraps a rod page (browser tab) with a simplified API.
 type Page struct {
-	page     *rodPage
-	browser  *Browser
-	info     *PageInfo
-	hijacker *SessionHijacker
+	page      *rodPage
+	browser   *Browser
+	info      *PageInfo
+	hijacker  *SessionHijacker
+	opTimeout time.Duration // per-operation timeout budget (0 = unbounded)
+}
+
+// timed returns a rod page carrying a FRESH per-operation timeout deadline.
+// Self-contained page operations call this so each gets its own opTimeout budget,
+// instead of sharing one absolute deadline measured from page creation (which
+// made every operation fail once the page outlived the timeout — e.g. the REPL
+// became unusable ~30s after opening a tab). Element finders intentionally do
+// NOT use this: the rod element they return would otherwise capture the expiring
+// clone's context and die opTimeout after it was found (bounding element
+// operations is a separate follow-up).
+func (p *Page) timed() *rodPage {
+	if p.opTimeout > 0 {
+		return p.page.Timeout(p.opTimeout)
+	}
+
+	return p.page
 }
 
 // Hijacker returns the session hijacker attached to this page, or nil.
@@ -105,7 +122,7 @@ func (p *Page) Hijacker() *SessionHijacker {
 
 // Navigate loads the given URL in the page.
 func (p *Page) Navigate(url string) error {
-	if err := p.page.Navigate(url); err != nil {
+	if err := p.timed().Navigate(url); err != nil {
 		return fmt.Errorf("scout: navigate to %s: %w", url, err)
 	}
 
@@ -114,7 +131,7 @@ func (p *Page) Navigate(url string) error {
 
 // NavigateBack navigates to the previous page in history.
 func (p *Page) NavigateBack() error {
-	if err := p.page.NavigateBack(); err != nil {
+	if err := p.timed().NavigateBack(); err != nil {
 		return fmt.Errorf("scout: navigate back: %w", err)
 	}
 
@@ -123,7 +140,7 @@ func (p *Page) NavigateBack() error {
 
 // NavigateForward navigates to the next page in history.
 func (p *Page) NavigateForward() error {
-	if err := p.page.NavigateForward(); err != nil {
+	if err := p.timed().NavigateForward(); err != nil {
 		return fmt.Errorf("scout: navigate forward: %w", err)
 	}
 
@@ -132,7 +149,7 @@ func (p *Page) NavigateForward() error {
 
 // Reload refreshes the current page.
 func (p *Page) Reload() error {
-	if err := p.page.Reload(); err != nil {
+	if err := p.timed().Reload(); err != nil {
 		return fmt.Errorf("scout: reload: %w", err)
 	}
 
@@ -170,7 +187,7 @@ func (p *Page) Title() (string, error) {
 
 // HTML returns the full HTML content of the page.
 func (p *Page) HTML() (string, error) {
-	html, err := p.page.HTML()
+	html, err := p.timed().HTML()
 	if err != nil {
 		return "", fmt.Errorf("scout: get html: %w", err)
 	}
@@ -180,7 +197,7 @@ func (p *Page) HTML() (string, error) {
 
 // Screenshot captures a screenshot of the visible viewport as PNG bytes.
 func (p *Page) Screenshot() ([]byte, error) {
-	data, err := p.page.Screenshot(false, nil)
+	data, err := p.timed().Screenshot(false, nil)
 	if err != nil {
 		return nil, fmt.Errorf("scout: screenshot: %w", err)
 	}
@@ -190,7 +207,7 @@ func (p *Page) Screenshot() ([]byte, error) {
 
 // FullScreenshot captures a full-page screenshot as PNG bytes.
 func (p *Page) FullScreenshot() ([]byte, error) {
-	data, err := p.page.Screenshot(true, nil)
+	data, err := p.timed().Screenshot(true, nil)
 	if err != nil {
 		return nil, fmt.Errorf("scout: full screenshot: %w", err)
 	}
@@ -200,7 +217,7 @@ func (p *Page) FullScreenshot() ([]byte, error) {
 
 // ScrollScreenshot captures a scrolling screenshot of the entire page.
 func (p *Page) ScrollScreenshot() ([]byte, error) {
-	data, err := p.page.ScrollScreenshot(nil)
+	data, err := p.timed().ScrollScreenshot(nil)
 	if err != nil {
 		return nil, fmt.Errorf("scout: scroll screenshot: %w", err)
 	}
@@ -303,7 +320,7 @@ func (p *Page) PDFWithOptions(opts PDFOptions) ([]byte, error) {
 
 // Eval evaluates JavaScript on the page and returns the result.
 func (p *Page) Eval(js string, args ...any) (*EvalResult, error) {
-	obj, err := p.page.Eval(js, args...)
+	obj, err := p.timed().Eval(js, args...)
 	if err != nil {
 		return nil, fmt.Errorf("scout: eval: %w", err)
 	}
@@ -445,7 +462,7 @@ func (p *Page) HasXPath(xpath string) (bool, error) {
 
 // WaitLoad waits for the page load event.
 func (p *Page) WaitLoad() error {
-	if err := p.page.WaitLoad(); err != nil {
+	if err := p.timed().WaitLoad(); err != nil {
 		return fmt.Errorf("scout: wait load: %w", err)
 	}
 

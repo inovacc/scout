@@ -155,6 +155,18 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 		}
 	}
 
+	// If a local Chrome was spawned (l != nil), guarantee it is killed on any
+	// failure between here and successful registration. Several setup paths
+	// below call the rod browser's Close() (CDP only), which does NOT kill the
+	// OS process — so without this, a failed New() leaks a live Chrome for the
+	// caller's lifetime (e.g. every retry inside the MCP server).
+	success := false
+	defer func() {
+		if !success && l != nil {
+			l.Kill()
+		}
+	}()
+
 	b := newRodBrowser().ControlURL(u)
 	if o.slowMotion > 0 {
 		b = b.SlowMotion(o.slowMotion)
@@ -228,6 +240,8 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 
 		br.register()
 
+		success = true
+
 		return br, nil
 	}
 
@@ -273,6 +287,8 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 	EnsureReaperWatchdog()
 
 	br.register()
+
+	success = true
 
 	return br, nil
 }
@@ -569,11 +585,12 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 		}
 	}
 
-	if b.opts.timeout > 0 {
-		rodPage = rodPage.Timeout(b.opts.timeout)
-	}
-
-	p := &Page{page: rodPage, browser: b}
+	// Do NOT bake an absolute deadline into the stored page. rodPage.Timeout(d)
+	// is a deadline measured from now; storing that clone makes every later
+	// operation fail once the page is older than d (the REPL became unusable
+	// ~30s after opening a tab). Keep the base page and apply the timeout PER
+	// operation via Page.timed().
+	p := &Page{page: rodPage, browser: b, opTimeout: b.opts.timeout}
 
 	if len(b.opts.blockPatterns) > 0 {
 		if err := p.SetBlockedURLs(b.opts.blockPatterns...); err != nil {
@@ -728,9 +745,20 @@ func (b *Browser) Close() error {
 		// 4. Stop fingerprint rotator.
 		b.fpRot = nil
 
-		// 5. Close CDP connection.
+		// 5. Close CDP connection (bounded). The CDP Browser.close is a network
+		// round-trip to Chrome with no deadline; a wedged/suspended Chrome would
+		// otherwise hang teardown forever. Bound it, then fall through to Kill
+		// (step 7) which destroys the process and unblocks any stuck call.
 		if b.browser != nil {
-			closeErr = b.browser.Close()
+			done := make(chan error, 1)
+			go func() { done <- b.browser.Close() }()
+
+			select {
+			case closeErr = <-done:
+			case <-time.After(5 * time.Second):
+				closeErr = fmt.Errorf("scout: browser close timed out; killing process")
+			}
+
 			b.browser = nil
 		}
 
