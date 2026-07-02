@@ -199,14 +199,6 @@ func StartReaperWatchdog(interval time.Duration, done <-chan struct{}) {
 	}
 
 	go func() {
-		// Panic recovery so a single bad iteration (filesystem race, gops
-		// internal race) does not silently kill the watchdog.
-		defer func() {
-			if r := recover(); r != nil {
-				slog.Error("scout: reaper watchdog panic", "panic", r)
-			}
-		}()
-
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
@@ -215,7 +207,19 @@ func StartReaperWatchdog(interval time.Duration, done <-chan struct{}) {
 			case <-done:
 				return
 			case <-ticker.C:
-				_ = ReapOnce()
+				// Recover PER ITERATION so a single bad pass (filesystem race,
+				// gops internal race) is logged and skipped — the watchdog keeps
+				// running. A recover at the goroutine top would let the goroutine
+				// RETURN after one panic, permanently disabling reaping.
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							slog.Error("scout: reaper watchdog iteration panic", "panic", r)
+						}
+					}()
+
+					_ = ReapOnce()
+				}()
 			}
 		}
 	}()

@@ -110,10 +110,15 @@ func (h *SessionHijacker) Stop() {
 }
 
 func (h *SessionHijacker) emit(ev HijackEvent) {
-	select {
-	case <-h.stopCh:
+	// Hold h.mu across the stopped-check AND the send. Stop() closes h.events
+	// under the same lock, so serializing here makes a send-on-closed-channel
+	// panic impossible (previously the unlocked stopCh check could pass, then
+	// Stop close both channels, then this send panic and crash the process).
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.stopped {
 		return
-	default:
 	}
 
 	select {

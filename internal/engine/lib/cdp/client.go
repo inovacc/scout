@@ -130,7 +130,16 @@ func (cdp *Client) Event() <-chan *Event {
 
 // Consume messages coming from the browser via the websocket.
 func (cdp *Client) consumeMessages() {
-	defer close(cdp.event)
+	// Recover so a single malformed frame or unexpected panic on this read
+	// goroutine cannot crash the whole process. cdp.event is still closed
+	// exactly once on exit (below), which flushes readers cleanly.
+	defer func() {
+		if r := recover(); r != nil {
+			cdp.logger.Println("cdp: consumeMessages panic recovered:", r)
+		}
+
+		close(cdp.event)
+	}()
 
 	for {
 		data, err := cdp.ws.Read()
@@ -147,14 +156,24 @@ func (cdp *Client) consumeMessages() {
 			ID int `json:"id"`
 		}
 
-		err = json.Unmarshal(data, &id)
-		utils.E(err)
+		if err := json.Unmarshal(data, &id); err != nil {
+			// Malformed frame (a websocket control/close frame, a protocol-drifted
+			// payload from a newer Chrome, proxy-injected bytes). Skip it rather
+			// than panic — one bad frame must not kill the process.
+			cdp.logger.Println("cdp: skip unparseable frame:", err)
+
+			continue
+		}
 
 		if id.ID == 0 {
 			var evt Event
 
-			err := json.Unmarshal(data, &evt)
-			utils.E(err)
+			if err := json.Unmarshal(data, &evt); err != nil {
+				cdp.logger.Println("cdp: skip unparseable event:", err)
+
+				continue
+			}
+
 			cdp.logger.Println(&evt)
 
 			cdp.event <- &evt
@@ -164,8 +183,11 @@ func (cdp *Client) consumeMessages() {
 
 		var res Response
 
-		err = json.Unmarshal(data, &res)
-		utils.E(err)
+		if err := json.Unmarshal(data, &res); err != nil {
+			cdp.logger.Println("cdp: skip unparseable response:", err)
+
+			continue
+		}
 
 		cdp.logger.Println(&res)
 
