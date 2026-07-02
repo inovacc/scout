@@ -49,7 +49,15 @@ func ChromiumDownloadURLs(revision int) []string {
 // extracts it to ~/.scout/browsers/chromium/<revision>/. Returns the executable path.
 func DownloadChromium(ctx context.Context, revision int) (string, error) {
 	if revision <= 0 {
-		revision = ChromiumRevisionDefault
+		// revision <= 0 means "track the latest snapshot": resolve Google's
+		// LAST_CHANGE endpoint. Fall back to the pinned default only if that API
+		// is unreachable (e.g. offline), so downloads still work without network
+		// to the version endpoint.
+		if latest, ok := latestChromiumRevision(ctx); ok {
+			revision = latest
+		} else {
+			revision = ChromiumRevisionDefault
+		}
 	}
 
 	cacheDir, err := CacheDir()

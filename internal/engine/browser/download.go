@@ -142,7 +142,7 @@ func Resolve(ctx context.Context, bt BrowserType) (string, error) {
 	case Edge:
 		return DownloadEdge(ctx)
 	case Chromium:
-		return DownloadChromium(ctx, ChromiumRevisionDefault)
+		return DownloadChromium(ctx, 0) // 0 = track latest snapshot (pinned default is the offline fallback)
 	default:
 		return "", err
 	}
@@ -203,7 +203,7 @@ func ResolveCached(ctx context.Context, bt BrowserType) (string, error) {
 	case Chrome:
 		return DownloadChrome(ctx)
 	case Chromium:
-		return DownloadChromium(ctx, ChromiumRevisionDefault)
+		return DownloadChromium(ctx, 0) // 0 = track latest snapshot (pinned default is the offline fallback)
 	default:
 		return "", fmt.Errorf("%w: %s", ErrNotFound, bt)
 	}

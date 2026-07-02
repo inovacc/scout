@@ -54,11 +54,18 @@ func downloadChromium(ctx context.Context, cacheDir string) (string, error) {
 		cacheDir = sub
 	}
 
-	revision := 1592198 // pinned Chromium revision
-
 	conf, ok := chromiumHostConf[runtime.GOOS+"_"+runtime.GOARCH]
 	if !ok {
 		return "", fmt.Errorf("scout: browser: no Chromium download for %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	// Track the latest snapshot; fall back to the pinned revision only if the
+	// LAST_CHANGE API is unreachable (e.g. offline).
+	const pinnedChromiumRevision = 1592198
+
+	revision := pinnedChromiumRevision
+	if latest, ok := latestChromiumRevision(ctx, conf.urlPrefix); ok {
+		revision = latest
 	}
 
 	revStr := fmt.Sprintf("%d", revision)
@@ -121,6 +128,40 @@ var chromiumHostConf = map[string]struct {
 	"linux_amd64":   {"Linux_x64", "chrome-linux.zip"},
 	"windows_386":   {"Win", "chrome-win.zip"},
 	"windows_amd64": {"Win_x64", "chrome-win.zip"},
+}
+
+// latestChromiumRevision queries Google's LAST_CHANGE endpoint for the newest
+// Chromium snapshot revision available for the given platform prefix (e.g.
+// "Win_x64"). Returns (revision, true) on success; (0, false) if the endpoint is
+// unreachable or unparseable, so callers can fall back to a pinned revision.
+func latestChromiumRevision(ctx context.Context, prefix string) (int, bool) {
+	url := fmt.Sprintf("https://commondatastorage.googleapis.com/chromium-browser-snapshots/%s/LAST_CHANGE", prefix)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return 0, false
+	}
+
+	client := &http.Client{Timeout: 15 * time.Second}
+
+	resp, err := client.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		if resp != nil {
+			_ = resp.Body.Close()
+		}
+
+		return 0, false
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	b, _ := io.ReadAll(io.LimitReader(resp.Body, 32))
+
+	var rev int
+	if _, err := fmt.Sscanf(strings.TrimSpace(string(b)), "%d", &rev); err != nil {
+		return 0, false
+	}
+
+	return rev, true
 }
 
 func chromiumDownloadURLs(revision int, conf struct{ urlPrefix, zipName string }) []string {
