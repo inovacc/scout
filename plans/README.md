@@ -32,16 +32,27 @@ proceed in parallel. 006 is safety-critical (the reaper) — do it after 001 and
 
 | Plan | Title | Symptom | Priority | Effort | Risk | Depends on | Status |
 |------|-------|---------|----------|--------|------|------------|--------|
-| 001 | Kill the startup hang: bound the WMI scan + de-block session reaping | hangs | P0 | M | MED | — | TODO |
-| 002 | Bound every teardown wait (Close / Kill / Cleanup) | hangs | P0 | M | MED | — | TODO |
-| 003 | Eliminate panic-to-crash paths | closes | P0 | M | MED | — | TODO |
-| 004 | Fix the 30-second page-lifetime deadline | hangs/UX | P1 | M | MED | — | TODO |
-| 005 | Harden the MCP server lifecycle | hangs/closes | P1 | L | MED | 002,004 | TODO |
-| 006 | Reaper safety: never kill live / foreign / elevated / daemon browsers | closes | P1 | L | HIGH | 001 | TODO |
-| 007 | Stop shipping silently-dead features (fail loud or fix) | UX | P1 | L | MED | — | TODO |
-| 008 | CLI failure-UX & exit hygiene | UX | P2 | M | LOW | — | TODO |
+| 001 | Kill the startup hang: bound the WMI scan + de-block session reaping | hangs | P0 | M | MED | — | DONE |
+| 002 | Bound every teardown wait (Close / Kill / Cleanup) | hangs | P0 | M | MED | — | DONE |
+| 003 | Eliminate panic-to-crash paths | closes | P0 | M | MED | — | DONE |
+| 004 | Fix the 30-second page-lifetime deadline | hangs/UX | P1 | M | MED | — | DONE (page-op timeouts done; element-op timeouts a noted follow-up) |
+| 005 | Harden the MCP server lifecycle | hangs/closes | P1 | L | MED | 002,004 | DONE (in-flight-counter guard noted as follow-up) |
+| 006 | Reaper safety: never kill live / foreign / elevated / daemon browsers | closes | P1 | L | HIGH | 001 | DONE (Steps 1-3; owner start-token Step 4 deferred — on-disk format change) |
+| 007 | Stop shipping silently-dead features (fail loud or fix) | UX | P1 | L | MED | — | DONE (health-check/smart-wait/console/ws-stub; crawl-concurrency + 3 stubs deferred) |
+| 008 | CLI failure-UX & exit hygiene | UX | P2 | M | LOW | — | DONE (exit hygiene/REPL/gather/help; usage-code split + SIGINT unify deferred) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (rationale)
+
+## Implementation note (2026-07-02)
+
+All 8 plans implemented on branch `reliability/implement-all` (11 commits off `4ecf689`). Each
+fix builds (incl. `GOOS=windows`), vets, and passes its package's `-short` tests + targeted
+`-race` regressions; plan 004 was verified end-to-end against a real browser (an aged page still
+executes operations). Higher-risk/format-changing sub-items were deliberately deferred with inline
+`Deferred:` notes in each commit rather than rushed — see the Status column. A repo-pre-existing
+failure (`TestSitemapExtract`, "bridge not available" in headless) and the slow full browser suite
+(`task test:full`, minutes on Windows) were confirmed unrelated to these changes against the
+`4ecf689` baseline.
 
 ## Dependency notes
 
