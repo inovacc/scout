@@ -5,10 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 )
+
+// ExitCodeError carries a nonzero exit code from a plugin CLI command up to the
+// root Execute() wrapper, which maps it to the process exit code. This replaces
+// an os.Exit() that bypassed the wrapper's logger/interaction flush, stderr
+// print, and provisioned-browser cleanup.
+type ExitCodeError struct{ Code int }
+
+func (e *ExitCodeError) Error() string {
+	return fmt.Sprintf("plugin command exited with code %d", e.Code)
+}
 
 // CommandEntry declares a CLI command provided by a plugin.
 type CommandEntry struct {
@@ -139,7 +148,7 @@ func (c *CommandProxy) runE(cmd *cobra.Command, args []string) error {
 	}
 
 	if cmdResult.ExitCode != 0 {
-		os.Exit(cmdResult.ExitCode)
+		return &ExitCodeError{Code: cmdResult.ExitCode}
 	}
 
 	return nil

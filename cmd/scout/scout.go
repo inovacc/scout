@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -27,13 +28,17 @@ var rootCmd = &cobra.Command{
 	Long: `Scout is a CLI for headless browser automation, web scraping, search, crawling,
 and forensic capture. It wraps go-rod and exposes all features as commands.
 
-Commands communicate with a background gRPC daemon for session persistence,
-or run standalone for one-shot operations.`,
+Sessions are per-command (no daemon): each invocation opens and cleanly closes
+its own browser. Multi-step automation uses ` + "`scout repl`" + `, the stdio MCP
+server (` + "`scout mcp`" + `), or strategy/runbook files.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if err := flags.ExportFlagsToEnv(); err != nil {
-			return nil // non-fatal
+			// Non-fatal, but do NOT return early: the old `return nil` silently
+			// skipped logger + interaction-capture init below — disabling exactly
+			// the diagnostics you want when the cache dir is broken. Warn and go on.
+			slog.Warn("scout: export flags to env failed; continuing", "err", err)
 		}
 
 		if flags.ShouldIgnoreCommand(cmd.Name()) {
@@ -123,11 +128,16 @@ func Execute() {
 		_ = interaction.Close(status)
 
 		if err != nil {
-			// rootCmd has SilenceErrors=true so cobra never prints. Print
-			// here so failures aren't silently swallowed.
-			_, _ = fmt.Fprintf(os.Stderr, "scout: %v\n", err)
+			var ece *plugin.ExitCodeError
+			if !errors.As(err, &ece) {
+				// rootCmd has SilenceErrors=true so cobra never prints. Print
+				// here so failures aren't silently swallowed. Plugin commands
+				// that exited nonzero already emitted their own output, so we
+				// pass their code through without an extra "scout:" line.
+				_, _ = fmt.Fprintf(os.Stderr, "scout: %v\n", err)
+			}
 
-			return 1
+			return exitCodeFor(err)
 		}
 		return 0
 	}()
@@ -135,6 +145,19 @@ func Execute() {
 	if exitCode != 0 {
 		os.Exit(exitCode)
 	}
+}
+
+// exitCodeFor maps a command error to a process exit code. A plugin command that
+// exited nonzero carries its own code (via plugin.ExitCodeError); every other
+// failure is a generic error (1). This is the single exit chokepoint — no code
+// outside Execute() should call os.Exit for a command failure.
+func exitCodeFor(err error) int {
+	var ece *plugin.ExitCodeError
+	if errors.As(err, &ece) && ece.Code != 0 {
+		return ece.Code
+	}
+
+	return 1
 }
 
 // firstPositional returns the first non-flag argument (the attempted

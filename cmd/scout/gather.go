@@ -76,11 +76,14 @@ pkg/scout/tools.Gather so flags and arguments behave identically.`,
 			if outFile != "" && outFile != "-" {
 				ssFile = outFile[:len(outFile)-len(filepath.Ext(outFile))] + "_screenshot.png"
 			}
-			if data, err := decodeBase64(result.Screenshot); err == nil {
-				if err := os.WriteFile(ssFile, data, 0o600); err == nil {
-					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Screenshot saved: %s\n", ssFile)
-				}
+			data, derr := decodeBase64(result.Screenshot)
+			if derr != nil {
+				return fmt.Errorf("scout: gather: decode screenshot: %w", derr)
 			}
+			if werr := os.WriteFile(ssFile, data, 0o600); werr != nil {
+				return fmt.Errorf("scout: gather: write screenshot %s: %w", ssFile, werr)
+			}
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "Screenshot saved: %s\n", ssFile)
 		}
 
 		if saveHAR && len(result.HAR) > 0 {
@@ -88,9 +91,10 @@ pkg/scout/tools.Gather so flags and arguments behave identically.`,
 			if outFile != "" && outFile != "-" {
 				harFile = outFile[:len(outFile)-len(filepath.Ext(outFile))] + ".har"
 			}
-			if err := os.WriteFile(harFile, result.HAR, 0o600); err == nil {
-				_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "HAR saved: %s (%d entries)\n", harFile, result.HAREntries)
+			if werr := os.WriteFile(harFile, result.HAR, 0o600); werr != nil {
+				return fmt.Errorf("scout: gather: write har %s: %w", harFile, werr)
 			}
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "HAR saved: %s (%d entries)\n", harFile, result.HAREntries)
 		}
 
 		outputResult := *result
