@@ -200,7 +200,12 @@ func main() {
 	// Clean leftover sessions from previous runs (dead processes, orphaned
 	// dirs, and legacy JSON-format scout.pid files from before the binary
 	// cutover).
-	_, _ = session.CleanStaleSessions()
+	//
+	// Run OFF the critical path: a slow WMI/CIM service or an AV/indexer-wedged
+	// session dir must never delay the user's command. The background retrier
+	// and reaper watchdog below own ongoing cleanup, and ReapOnce is documented
+	// idempotent + concurrency-safe, so a concurrent first sweep is safe.
+	go func() { _, _ = session.CleanStaleSessions() }()
 
 	// Background retrier for stale dirs that resisted the bounded
 	// startup cleanup (Windows AV / Search Indexer / OneDrive holding
