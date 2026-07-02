@@ -55,6 +55,12 @@ This extension operates at the **JavaScript layer only**. It cannot change:
 - HTTP/2 fingerprint (ALPN, frame order)
 - Chrome Privacy Attestation tokens (PAT / Private State Tokens)
 - Low-level CDP-detectable automation markers (requires Scout's CDP-level patches)
+- **Web Worker / Service Worker `navigator` and User-Agent** — MV3 content scripts do
+  **not** execute in dedicated/shared/service Worker scopes (in *any* `world`), so this
+  extension cannot patch a worker's `navigator`/UA. A worker leaking the real
+  `HeadlessChrome` UA or unpatched `navigator` values (the `hasInconsistentWorkerValues`
+  bot signal) must be fixed at the CDP layer — Scout sets the UA as a process-global
+  `--user-agent` switch and (planned) injects the evasions into each worker session.
 
 For full bot evasion, pair this extension with Scout's built-in stealth layer
 (`WithStealth()` or `SCOUT_STEALTH=true`), which applies additional CDP-level

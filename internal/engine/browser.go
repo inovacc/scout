@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/inovacc/scout/internal/engine/browser"
+	devices2 "github.com/inovacc/scout/internal/engine/lib/devices"
 	launcher2 "github.com/inovacc/scout/internal/engine/lib/launcher"
 	"github.com/inovacc/scout/internal/engine/lib/launcher/flags"
 	proto2 "github.com/inovacc/scout/internal/engine/lib/proto"
@@ -294,6 +295,29 @@ func New(opts ...Option) (*Browser, error) { //nolint:maintidx
 }
 
 // launchLocal starts a local browser process and returns the CDP WebSocket URL and launcher.
+// resolveUserAgent returns the User-Agent the main thread will present, resolved
+// before the browser process starts so it can also be set as the process-global
+// --user-agent switch (which, unlike a per-page CDP override, reaches Web Workers).
+// Precedence mirrors NewPage: an explicit WithUserAgent wins, then a static
+// fingerprint's UA, otherwise the default device emulation (LaptopWithMDPIScreen)
+// that NewPage applies to every page. Mobile/ADB sessions keep the real device UA.
+// Rotation (fpRot) resolves per-page after launch, so its UA is not covered here.
+func resolveUserAgent(o *options) string {
+	if o.userAgent != "" {
+		return o.userAgent
+	}
+
+	if o.fingerprint != nil && o.fingerprint.UserAgent != "" {
+		return o.fingerprint.UserAgent
+	}
+
+	if o.mobile != nil {
+		return ""
+	}
+
+	return devices2.LaptopWithMDPIScreen.UserAgent
+}
+
 func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 	// Kill dangling browser processes left over from previous sessions.
 	_, _ = CleanOrphans()
@@ -412,6 +436,17 @@ func launchLocal(o *options) (string, *launcher2.Launcher, error) {
 
 	if o.stealth {
 		l = l.Set(flags.Flag("disable-blink-features"), "AutomationControlled")
+	}
+
+	// Apply the resolved User-Agent as a process-global Chrome switch. Unlike the
+	// per-page Network.setUserAgentOverride (browser.go NewPage), --user-agent also
+	// reaches dedicated/shared/service Worker scopes and outgoing HTTP headers, so
+	// the main thread and every worker present the same UA. This closes the
+	// hasInconsistentWorkerValues / worker "HeadlessChrome" leak that detectors key
+	// on. NewPage still sets the per-page override (for userAgentMetadata/UA-CH)
+	// using the same resolved string, so the two never disagree. See plan 009.
+	if ua := resolveUserAgent(o); ua != "" {
+		l = l.Set(flags.Flag("user-agent"), ua)
 	}
 
 	// Apply TLS profile flags.
