@@ -1,8 +1,10 @@
 package engine
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/inovacc/scout/internal/engine/lib/proto"
@@ -157,17 +159,41 @@ func (b *Browser) Gather(targetURL string, opts ...GatherOption) (*GatherResult,
 		}
 	}
 
-	// Set up console capture.
-	var consoleLog []string
+	// Set up console capture. Run the event pump in the BACKGROUND under a
+	// cancelable context so console messages emitted during navigation are
+	// captured. The old code discarded EachEvent's returned wait func entirely,
+	// so the pump never ran and --console always came back empty.
+	var (
+		consoleLog []string
+		consoleMu  sync.Mutex
+		pumpCancel context.CancelFunc
+		pumpDone   = make(chan struct{})
+	)
 
 	if wantConsole {
 		rodPage := page.RodPage()
-		rodPage.EachEvent(func(e *proto.RuntimeConsoleAPICalled) {
+
+		var pumpCtx context.Context
+		pumpCtx, pumpCancel = context.WithCancel(context.Background())
+
+		wait := rodPage.Context(pumpCtx).EachEvent(func(e *proto.RuntimeConsoleAPICalled) {
 			msg := consoleArgsToString(e.Args)
+			consoleMu.Lock()
 			consoleLog = append(consoleLog, fmt.Sprintf("[%s] %s", e.Type, msg))
+			consoleMu.Unlock()
 		})
 
+		go func() { wait(); close(pumpDone) }()
+
+		// Safety net: guarantees the pump context is cancelled on any early
+		// return below (Navigate/WaitLoad errors) so the goroutine never leaks.
+		// The explicit pumpCancel()+<-pumpDone before the console read is what
+		// stops it on the success path.
+		defer pumpCancel()
+
 		_ = proto.RuntimeEnable{}.Call(rodPage)
+	} else {
+		close(pumpDone)
 	}
 
 	// Navigate.
@@ -240,9 +266,17 @@ func (b *Browser) Gather(targetURL string, opts ...GatherOption) (*GatherResult,
 		}
 	}
 
-	// Console.
+	// Console. Stop the background pump and wait for it to drain before reading
+	// consoleLog, so the read never races an in-flight append.
+	if pumpCancel != nil {
+		pumpCancel()
+	}
+	<-pumpDone
+
 	if wantConsole {
+		consoleMu.Lock()
 		result.ConsoleLog = consoleLog
+		consoleMu.Unlock()
 	}
 
 	result.Duration = time.Since(start).Round(time.Millisecond).String()

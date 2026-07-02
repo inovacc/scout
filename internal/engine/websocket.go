@@ -176,17 +176,11 @@ func containsSubstr(s, sub string) bool {
 	return false
 }
 
-// SendWebSocketMessage sends a message to a WebSocket connection on the page via JS eval.
+// SendWebSocketMessage is not implemented: there is no reliable way to reach an
+// arbitrary existing WebSocket object from injected JS. It previously ran a stub
+// that returned a "not supported" string but reported success — a silent no-op.
+// Fail loudly so callers do not believe a frame was sent. To send on a socket you
+// created, keep a reference to it and use page.Eval directly.
 func (p *Page) SendWebSocketMessage(url, data string) error {
-	js := fmt.Sprintf(`(() => {
-		// Find matching WebSocket.
-		const targets = [];
-		// We need to find existing WS connections — not straightforward from JS.
-		// This works for newly created connections after our interceptor.
-		return 'send not directly supported — use page eval with your WS reference';
-	})()`)
-
-	_, err := p.Eval(js)
-
-	return err
+	return fmt.Errorf("scout: SendWebSocketMessage(%q) not supported: hold your own WebSocket reference and use page.Eval to send", url)
 }
