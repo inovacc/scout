@@ -96,6 +96,10 @@ func registerSessionTools(server *mcp.Server, state *mcpState) {
 			return errResult(fmt.Sprintf("scout-mcp: open: %s", err))
 		}
 
+		// Track for teardown so a client disconnect does not orphan the headed
+		// Chrome. Not closed on idle — the user drives this window.
+		state.trackOpenBrowser(b)
+
 		_ = page.WaitLoad()
 
 		title, _ := page.Title()
