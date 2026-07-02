@@ -585,11 +585,12 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 		}
 	}
 
-	if b.opts.timeout > 0 {
-		rodPage = rodPage.Timeout(b.opts.timeout)
-	}
-
-	p := &Page{page: rodPage, browser: b}
+	// Do NOT bake an absolute deadline into the stored page. rodPage.Timeout(d)
+	// is a deadline measured from now; storing that clone makes every later
+	// operation fail once the page is older than d (the REPL became unusable
+	// ~30s after opening a tab). Keep the base page and apply the timeout PER
+	// operation via Page.timed().
+	p := &Page{page: rodPage, browser: b, opTimeout: b.opts.timeout}
 
 	if len(b.opts.blockPatterns) > 0 {
 		if err := p.SetBlockedURLs(b.opts.blockPatterns...); err != nil {
