@@ -453,4 +453,3 @@ func Serve(ctx context.Context, logger *slog.Logger, headless, stealth bool, bro
 
 	return server.Run(ctx, &mcp.StdioTransport{})
 }
-
