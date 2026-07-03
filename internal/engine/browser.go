@@ -567,6 +567,13 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 			}
 		}
 
+		// Opt-in: mirror the spoofed navigator into Web Workers before navigation, so
+		// on-load workers are caught (plan 009 Step 2). Gated via WithWorkerStealth so
+		// the default stealth path stays strictly hang-free.
+		if b.opts.workerStealth {
+			installWorkerStealth(rodPage)
+		}
+
 		if url != "" {
 			if err := rodPage.Navigate(url); err != nil {
 				return nil, fmt.Errorf("scout: navigate: %w", err)

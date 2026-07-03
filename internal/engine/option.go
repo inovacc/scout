@@ -31,6 +31,7 @@ type options struct {
 	browserType        BrowserType
 	headless           bool
 	stealth            bool
+	workerStealth      bool
 	userAgent          string
 	proxy              string
 	windowW            int
@@ -146,6 +147,17 @@ func WithHeadless(v bool) Option {
 // WithStealth enables stealth mode to avoid bot detection.
 func WithStealth() Option {
 	return func(o *options) { o.stealth = true }
+}
+
+// WithWorkerStealth extends stealth to Web Workers: workers spawned by the page are
+// made to present the same navigator identity as the main thread, clearing the
+// hasInconsistentWorkerValues bot signal (deviceandbrowserinfo, CreepJS). Requires
+// WithStealth. Opt-in because the underlying CDP worker pause can stall a page that
+// synchronously awaits its own worker inside a single blocking Eval — a pattern real
+// sites and normal scraping never produce, but which is excluded from the default
+// stealth path to keep it strictly hang-free. See installWorkerStealth.
+func WithWorkerStealth() Option {
+	return func(o *options) { o.stealth = true; o.workerStealth = true }
 }
 
 // WithUserAgent sets a custom User-Agent string.
