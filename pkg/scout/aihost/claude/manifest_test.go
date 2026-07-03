@@ -118,18 +118,18 @@ func TestMcpJSONShape(t *testing.T) {
 	}
 }
 
-// TestGeneratedFilesKeysAndPayloads verifies GeneratedFiles() returns
-// exactly the two synthesised manifest paths and their payloads match
-// the dedicated generators byte-for-byte.
+// TestGeneratedFilesKeysAndPayloads verifies GeneratedFiles() returns exactly the
+// three synthesised manifest paths (plugin.json, .mcp.json, hooks/hooks.json) and
+// their payloads match the dedicated generators byte-for-byte.
 func TestGeneratedFilesKeysAndPayloads(t *testing.T) {
 	gen, err := GeneratedFiles()
 	if err != nil {
 		t.Fatalf("GeneratedFiles: %v", err)
 	}
-	if len(gen) != 2 {
-		t.Fatalf("expected 2 generated files, got %d (%v)", len(gen), keysOf(gen))
+	if len(gen) != 3 {
+		t.Fatalf("expected 3 generated files, got %d (%v)", len(gen), keysOf(gen))
 	}
-	wantPaths := []string{".claude-plugin/plugin.json", ".mcp.json"}
+	wantPaths := []string{".claude-plugin/plugin.json", ".mcp.json", "hooks/hooks.json"}
 	for _, p := range wantPaths {
 		if _, ok := gen[p]; !ok {
 			t.Errorf("missing generated path %q (have %v)", p, keysOf(gen))
@@ -142,6 +142,10 @@ func TestGeneratedFilesKeysAndPayloads(t *testing.T) {
 	mj, _ := McpJSON()
 	if string(gen[".mcp.json"]) != string(mj) {
 		t.Errorf(".mcp.json payload diverges from McpJSON()")
+	}
+	hj, _ := HooksJSON()
+	if string(gen["hooks/hooks.json"]) != string(hj) {
+		t.Errorf("hooks/hooks.json payload diverges from HooksJSON()")
 	}
 }
 
