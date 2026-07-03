@@ -315,6 +315,12 @@ func resolveUserAgent(o *options) string {
 		return ""
 	}
 
+	// Under stealth, present a User-Agent coherent with the real host OS so the
+	// platform, fonts and WebGL agree (no Mac-UA-on-Windows lie).
+	if o.stealth {
+		return defaultStealthUA()
+	}
+
 	return devices2.LaptopWithMDPIScreen.UserAgent
 }
 
@@ -567,6 +573,13 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 			}
 		}
 
+		// Opt-in: mirror the spoofed navigator into Web Workers before navigation, so
+		// on-load workers are caught (plan 009 Step 2). Gated via WithWorkerStealth so
+		// the default stealth path stays strictly hang-free.
+		if b.opts.workerStealth {
+			installWorkerStealth(rodPage)
+		}
+
 		if url != "" {
 			if err := rodPage.Navigate(url); err != nil {
 				return nil, fmt.Errorf("scout: navigate: %w", err)
@@ -605,6 +618,10 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 
 	if b.opts.userAgent == "" && hasFP {
 		b.opts.userAgent = b.opts.fingerprint.UserAgent
+	} else if b.opts.userAgent == "" && b.opts.stealth {
+		// Under stealth, override the page UA to the host-OS-coherent default so it
+		// matches the launch --user-agent flag and the host platform/WebGL.
+		b.opts.userAgent = defaultStealthUA()
 	}
 
 	if b.opts.userAgent != "" {

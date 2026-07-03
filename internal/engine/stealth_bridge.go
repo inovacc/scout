@@ -22,5 +22,10 @@ func stealthPage(b *rodBrowser) (*rodPage, error) {
 		return nil, err
 	}
 
+	// Override WebGL to values coherent with the host OS (Windows ANGLE/D3D11, Linux
+	// Mesa, macOS Intel Iris) so the GPU agrees with the presented platform. Runs after
+	// the evasion bundle so it wins; a no-op on macOS.
+	_, _ = p.EvalOnNewDocument(stealthWebGLOverrideJS())
+
 	return p, nil
 }

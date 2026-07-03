@@ -96,10 +96,15 @@ func browserOpt(cmd *cobra.Command) scout.Option {
 	return scout.WithBrowser(scout.BrowserType(b))
 }
 
-// stealthOpts returns WithStealth if the --stealth flag is set, or nil.
+// stealthOpts returns the stealth option implied by the --stealth / --worker-stealth
+// flags, or nil. --worker-stealth implies stealth and additionally mirrors the spoofed
+// identity into Web Workers.
 func stealthOpts(cmd *cobra.Command) []scout.Option {
-	s, _ := cmd.Flags().GetBool("stealth")
-	if s {
+	if ws, _ := cmd.Flags().GetBool("worker-stealth"); ws {
+		return []scout.Option{scout.WithWorkerStealth()}
+	}
+
+	if s, _ := cmd.Flags().GetBool("stealth"); s {
 		return []scout.Option{scout.WithStealth()}
 	}
 

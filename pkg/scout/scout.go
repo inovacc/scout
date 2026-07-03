@@ -468,7 +468,7 @@ func NewSurfsharkProvider(email, password string) *SurfsharkProvider {
 func NewTwoCaptchaService(apiKey string) *TwoCaptchaService {
 	return engine.NewTwoCaptchaService(apiKey)
 }
-func NewWebMCPRegistry() *WebMCPRegistry      { return engine.NewWebMCPRegistry() }
+func NewWebMCPRegistry() *WebMCPRegistry { return engine.NewWebMCPRegistry() }
 func PaginateByClick[T any](p *Page, nextSelector string, opts ...PaginateOption) ([]T, error) {
 	return engine.PaginateByClick[T](p, nextSelector, opts...)
 }
@@ -537,10 +537,10 @@ func SaveProfileEncrypted(p *UserProfile, path, passphrase string) error {
 func SaveSessionToFile(state *SessionState, path string) error {
 	return engine.SaveSessionToFile(state, path)
 }
-func SessionDataDir(id string) string          { return engine.SessionDataDir(id) }
-func SessionDir(id string) string              { return engine.SessionDir(id) }
-func SessionHash(rawURL, label string) string  { return engine.SessionHash(rawURL, label) }
-func SessionsDir() string                      { return engine.SessionsDir() }
+func SessionDataDir(id string) string         { return engine.SessionDataDir(id) }
+func SessionDir(id string) string             { return engine.SessionDir(id) }
+func SessionHash(rawURL, label string) string { return engine.SessionHash(rawURL, label) }
+func SessionsDir() string                     { return engine.SessionsDir() }
 func SnapshotWithLLM(page *Page, provider LLMProvider, prompt string, opts ...SnapshotOption) (string, error) {
 	return engine.SnapshotWithLLM(page, provider, prompt, opts...)
 }
@@ -781,6 +781,7 @@ func WithSolverLLM(provider LLMProvider) SolverOption         { return engine.Wi
 func WithSolverService(svc CaptchaSolverService) SolverOption { return engine.WithSolverService(svc) }
 func WithSolverTimeout(d time.Duration) SolverOption          { return engine.WithSolverTimeout(d) }
 func WithStealth() Option                                     { return engine.WithStealth() }
+func WithWorkerStealth() Option                               { return engine.WithWorkerStealth() }
 func WithSystemBrowser() Option                               { return engine.WithSystemBrowser() }
 func WithSwaggerEndpointsOnly(v bool) SwaggerOption           { return engine.WithSwaggerEndpointsOnly(v) }
 func WithSwaggerRaw(v bool) SwaggerOption                     { return engine.WithSwaggerRaw(v) }
