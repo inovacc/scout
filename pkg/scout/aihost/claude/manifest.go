@@ -106,8 +106,13 @@ func GeneratedFiles() (map[string][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	hj, err := HooksJSON()
+	if err != nil {
+		return nil, err
+	}
 	return map[string][]byte{
 		".claude-plugin/plugin.json": pj,
 		".mcp.json":                  mj,
+		"hooks/hooks.json":           hj,
 	}, nil
 }

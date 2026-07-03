@@ -50,6 +50,17 @@ type Status interface {
 	PrintStatus(w *os.File) error
 }
 
+// HookProvider is an optional capability for hosts that emit lifecycle-hook
+// manifests binding the host's hook events to `scout hook <event>` subcommands.
+// Like ManifestFiles, hook payloads are written OUTSIDE the commands/agents/skills
+// stale-sweep so they survive re-install. Only hosts with a native hook surface
+// (Claude Code today) implement it; skills-only hosts (codex/gemini) omit it.
+type HookProvider interface {
+	// Hooks returns hook-manifest payloads keyed by their plugin-tree-relative
+	// path (e.g. "hooks/hooks.json").
+	Hooks() (map[string][]byte, error)
+}
+
 // DoctorCheck is one host-side health check result.
 type DoctorCheck struct {
 	Name    string `json:"name"`

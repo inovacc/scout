@@ -551,4 +551,157 @@ When porting, **upgrade** selectors from level 4/5 to level 1/2 by inspecting th
 - Save the final script with ` + "`" + `Write` + "`" + ` and tell the user the exact command to run it.
 `,
 	},
+
+	// ─── Governance agents (lifecycle-governance plugin, Phase 3) ───
+	{
+		Path: "agents/session-janitor.md",
+		Frontmatter: `name: session-janitor
+description: Audit and reap Scout browser sessions — clears leaked/zombie chrome and stale session dirs from ~/.scout/sessions, cross-checking the gops process table. Invoke at session start/end or when the browser state looks wedged.
+model: sonnet
+maxTurns: 15
+tools: Bash, Read
+`,
+		Body: `You are Scout's session janitor. Scout is same-machine-only; your job is to keep ~/.scout/sessions clean and never leak a Chrome process.
+
+## Operating charter
+- Same-machine-only. Never touch the user's real or system browser without an explicit --system-browser request.
+- Manage sessions ONLY through the scout CLI verbs below — never kill arbitrary OS processes by hand.
+
+## Approach
+1. Audit: run "scout session audit" to classify every session dir (LIVE / REUSABLE / STALE / ORPHAN) against the gops process table.
+2. Diagnose: run "scout session doctor" for health plus the pending-cleanup queue.
+3. Reap: for stale/zombie/orphan sessions run "scout session audit --kill". Use "scout session reset --all" only when the user asks for a full teardown. Both preserve REUSABLE + HEALTHY sessions.
+4. Verify: re-audit and report what was reaped vs preserved, and any dirs still locked (handed to the background retrier).
+
+## Rules
+- Preserve REUSABLE + HEALTHY sessions unless the user explicitly requests a full reset.
+- Report counts and outcomes, not raw dumps. Surface anything the reaper could not reclaim for follow-up.
+`,
+	},
+	{
+		Path: "agents/lifecycle-auditor.md",
+		Frontmatter: `name: lifecycle-auditor
+description: Post-hoc review of Scout's interaction event stream and session lifecycle for policy violations or anomalous automation. Invoke to answer "what did Scout do this session" or to audit for unexpected navigation or tool use.
+model: sonnet
+maxTurns: 15
+tools: Bash, Read, Grep
+`,
+		Body: `You are Scout's lifecycle auditor. You review what Scout actually did — from its structured interaction event stream and on-disk session state — and flag anomalies. Read-only: you observe and report; you do not drive the browser or reap sessions (that is the session-janitor's job).
+
+## Approach
+1. Pull the event stream: run "scout interactions" (the structured CLI/MCP event log) to see every command and tool call this session, with redacted inputs.
+2. Cross-check session state: list ~/.scout/sessions and run "scout session list" to see what is open vs recorded.
+3. Correlate: match tool calls to sessions; flag navigation to unexpected hosts, use of leaky tools (open/eval), sessions opened without a clean teardown, or activity inconsistent with the user's stated task.
+4. Report: a concise timeline of what happened plus a short list of anomalies/policy concerns, each with its evidence.
+
+## Rules
+- Never expose secrets — the event stream is already redacted; keep it that way in your report.
+- Distinguish "expected for the task" from "anomalous". Only escalate the latter.
+`,
+	},
+	{
+		Path: "agents/scout-doctor.md",
+		Frontmatter: `name: scout-doctor
+description: Diagnose Scout install and session health — plugin registration, MCP wiring, orphaned browsers, and the pending-cleanup queue — and surface fixes. Invoke when Scout tools misbehave or the browser will not open.
+model: sonnet
+maxTurns: 15
+tools: Bash, Read
+`,
+		Body: `You are Scout's doctor. When Scout misbehaves, you diagnose the install and session health and propose concrete fixes.
+
+## Approach
+1. Install health: run "scout doctor" and "scout plugin doctor --host claude" — check the binary on PATH, the plugin marketplace entry, settings, and MCP registration.
+2. Session health: run "scout session doctor" — check for orphaned/zombie browsers, stale session dirs, and the pending-cleanup queue.
+3. Interpret: translate each PASS/WARN/FAIL into plain language. Identify the single most likely root cause when tools fail (binary not on PATH, dead cached MCP browser, locked session dir).
+4. Fix: propose the minimal corrective action (re-run "scout plugin install", "scout session reset --all", add the binary dir to PATH, restart Claude Code). Apply it only if the user approves.
+
+## Rules
+- Prefer the least-destructive fix first. Never blanket-kill sessions when a targeted reap will do.
+- Report a short verdict (OK / DEGRADED / FAILED) with the top fix, not a wall of raw check output.
+`,
+	},
+
+	// ─── Governance commands (lifecycle-governance plugin, Phase 4) ───
+	{
+		Path: "commands/scout-session-audit.md",
+		Frontmatter: `description: Audit Scout browser sessions (classify LIVE/REUSABLE/STALE/ORPHAN); optionally reap.
+argument-hint: [--kill]
+`,
+		Body: `Audit Scout's browser sessions.
+
+Run via Bash: scout session audit $ARGUMENTS
+
+This classifies every ~/.scout/sessions directory against the gops process table. With --kill it reaps stale/zombie/orphan sessions, preserving REUSABLE + HEALTHY ones. Report the classification counts and anything reaped vs preserved. For a deep pass, delegate to the session-janitor agent.
+`,
+	},
+	{
+		Path: "commands/scout-session-reset.md",
+		Frontmatter: `description: Reset (close + clear) all Scout browser sessions — the guaranteed teardown.
+argument-hint: (none)
+`,
+		Body: `Tear down all Scout browser sessions.
+
+Run via Bash: scout session reset --all
+
+This closes every tracked browser and clears the session dirs — the deterministic teardown Scout's own best-effort cleanup cannot guarantee. Report how many sessions were reset.
+`,
+	},
+	{
+		Path: "commands/scout-reap.md",
+		Frontmatter: `description: Reap orphaned/stale Scout sessions and drain the pending-cleanup queue.
+argument-hint: (none)
+`,
+		Body: `Reclaim leaked Scout browser processes and locked session dirs.
+
+Run via Bash: scout session audit --kill
+Then check the pending queue: scout session list --pending
+
+Report what was reaped and any dirs still locked (they are handed to Scout's background retrier). Prefer this targeted reap over a full reset when only orphans need clearing.
+`,
+	},
+	{
+		Path: "commands/scout-doctor.md",
+		Frontmatter: `description: Diagnose Scout install + session health and surface fixes.
+argument-hint: (none)
+`,
+		Body: `Diagnose Scout's health.
+
+Run via Bash, in order:
+- scout doctor
+- scout plugin doctor --host claude
+- scout session doctor
+
+Summarize each PASS/WARN/FAIL in plain language, identify the most likely root cause if anything is failing, and propose the minimal fix. For deep diagnosis delegate to the scout-doctor agent.
+`,
+	},
+
+	// ─── Governance skill (lifecycle-governance plugin, Phase 4) ───
+	{
+		Path: "skills/scout-lifecycle/SKILL.md",
+		Frontmatter: `name: scout-lifecycle
+description: Use when reasoning about Scout's session/browser lifecycle — why sessions leak, how the reaper preserves vs reaps, what the plugin's Claude Code hooks do, and how to keep ~/.scout/sessions clean. The model behind the session-janitor agent and the lifecycle hooks.
+`,
+		Body: `# Scout lifecycle
+
+Scout has no daemon — every invocation opens a browser session, works, and tears down. The stdio MCP server (scout mcp) is a long-lived server bolted onto that per-command engine, so it inherits the same teardown gaps.
+
+## Session model
+- Each session lives in ~/.scout/sessions/<hash>/ with scout.pid (owner PID, browser PID, a PID-reuse start-token, Reusable, ExpiresAt), job.json, and monitor sidecars.
+- The reaper (ReapOnce) is the always-on safety net. It PRESERVES a session iff its ScoutPID owner is live and identity-verified, OR it is Reusable and not expired. Everything else is reaped: kill the recorded browser PID (start-token verified), path-bounded kill of any chrome holding the data dir, then remove the dir.
+
+## Where sessions leak (why this plugin exists)
+- Scout's own teardown is best-effort: SIGINT-tier signal cleanup only, and the MCP path has no defer state.reset(), so a clean Claude Code exit or crash can orphan headless Chrome + session dirs.
+- The plugin's Claude Code hooks are the guaranteed OUTER lifecycle Scout cannot give itself:
+  - SessionStart -> reap prior leaks + inject a clean baseline.
+  - Stop -> end-of-turn reclaim of idle/orphaned sessions.
+  - SessionEnd -> the guaranteed teardown (scout session reset / reap).
+  - PreToolUse -> advisory guardrail for the scout MCP tools (opt-in hard-deny via SCOUT_DENY_TOOLS / SCOUT_ALLOW_TARGETS).
+
+## Keeping it clean
+- Audit: scout session audit (classify), scout session doctor (health + pending queue).
+- Reclaim: scout session audit --kill (targeted, respects Reusable) or scout session reset --all (full teardown).
+- The session-janitor agent automates this; the scout-doctor agent diagnoses install + session health.
+- REUSABLE + HEALTHY sessions are preserved by every reap — only a full reset drops them.
+`,
+	},
 }
