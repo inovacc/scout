@@ -315,6 +315,12 @@ func resolveUserAgent(o *options) string {
 		return ""
 	}
 
+	// Under stealth, present a User-Agent coherent with the real host OS so the
+	// platform, fonts and WebGL agree (no Mac-UA-on-Windows lie).
+	if o.stealth {
+		return defaultStealthUA()
+	}
+
 	return devices2.LaptopWithMDPIScreen.UserAgent
 }
 
@@ -612,6 +618,10 @@ func (b *Browser) NewPage(url string) (*Page, error) { //nolint:maintidx
 
 	if b.opts.userAgent == "" && hasFP {
 		b.opts.userAgent = b.opts.fingerprint.UserAgent
+	} else if b.opts.userAgent == "" && b.opts.stealth {
+		// Under stealth, override the page UA to the host-OS-coherent default so it
+		// matches the launch --user-agent flag and the host platform/WebGL.
+		b.opts.userAgent = defaultStealthUA()
 	}
 
 	if b.opts.userAgent != "" {
