@@ -1,7 +1,9 @@
 package claude
 
 import (
+	"fmt"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/inovacc/scout/pkg/scout/aihost"
 )
@@ -50,6 +52,30 @@ func Doctor() aihost.DoctorReport {
 			"required for `claude plugin marketplace add` during install")
 	} else {
 		add("claude_cli", "PASS", "claude CLI on PATH", "")
+	}
+	if pathExists(filepath.Join(target, "hooks", "hooks.json")) {
+		add("hooks_present", "PASS", "hooks/hooks.json in plugin tree", "")
+	} else {
+		add("hooks_present", "WARN", "hooks/hooks.json missing from plugin tree",
+			"run `scout plugin install --host claude` to write the lifecycle hooks")
+	}
+	if _, err := exec.LookPath(McpCommand); err != nil {
+		add("hook_binary", "WARN", McpCommand+" not on PATH — hooks cannot resolve",
+			"install the scout binary on PATH (hook commands run via shell)")
+	} else {
+		add("hook_binary", "PASS", McpCommand+" on PATH (hooks resolve)", "")
+	}
+	switch present, total := PermissionsAllowCount(); {
+	case present == total:
+		add("permissions_allowlist", "PASS",
+			fmt.Sprintf("%d/%d low-risk scout tools auto-approved", present, total), "")
+	case present > 0:
+		add("permissions_allowlist", "WARN",
+			fmt.Sprintf("%d/%d scout tools in permissions.allow", present, total),
+			"re-run `scout plugin install --host claude` to auto-approve the rest")
+	default:
+		add("permissions_allowlist", "WARN", "no scout tools auto-approved (prompts per tool)",
+			"run `scout plugin install --host claude` to add the scout allowlist")
 	}
 
 	r.Verdict = computeVerdict(r.Checks)

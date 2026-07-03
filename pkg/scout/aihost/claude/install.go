@@ -182,6 +182,146 @@ func UnpatchMcpServers() error {
 	return atomicWriteJSON(path, doc)
 }
 
+// scoutPermissions is the allowlist auto-approved in settings.json permissions.allow
+// on install. Claude Code plugins cannot bundle permissions natively (only the user's
+// global settings.json carries them), so install patches them in — but SCOPED to
+// Scout's own low-risk tools: the read-only/observation MCP verbs and the read-only
+// `scout session|doctor` CLI. Mutating tools (eval, open, type, click, session_reset)
+// are deliberately omitted so they still prompt.
+func scoutPermissions() []string {
+	return []string{
+		"mcp__scout__navigate",
+		"mcp__scout__back",
+		"mcp__scout__forward",
+		"mcp__scout__wait",
+		"mcp__scout__snapshot",
+		"mcp__scout__screenshot",
+		"mcp__scout__extract",
+		"mcp__scout__pdf",
+		"mcp__scout__session_list",
+		"Bash(scout session:*)",
+		"Bash(scout doctor:*)",
+		"Bash(scout plugin doctor:*)",
+	}
+}
+
+// PatchPermissions adds Scout's low-risk allowlist to settings.json permissions.allow,
+// idempotently (existing entries are preserved; scout entries are not duplicated).
+func PatchPermissions() error {
+	path, err := settingsJSONPath()
+	if err != nil {
+		return err
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+		raw = []byte("{}")
+	}
+	doc := map[string]any{}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return fmt.Errorf("parse settings.json: %w", err)
+	}
+
+	perms, _ := doc["permissions"].(map[string]any)
+	if perms == nil {
+		perms = map[string]any{}
+	}
+	existing, _ := perms["allow"].([]any)
+
+	have := map[string]struct{}{}
+	for _, e := range existing {
+		if s, ok := e.(string); ok {
+			have[s] = struct{}{}
+		}
+	}
+	for _, want := range scoutPermissions() {
+		if _, ok := have[want]; !ok {
+			existing = append(existing, want)
+			have[want] = struct{}{}
+		}
+	}
+
+	perms["allow"] = existing
+	doc["permissions"] = perms
+	return atomicWriteJSON(path, doc)
+}
+
+// UnpatchPermissions removes exactly Scout's allowlist entries from
+// permissions.allow, leaving any user-added entries untouched.
+func UnpatchPermissions() error {
+	path, err := settingsJSONPath()
+	if err != nil {
+		return err
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	doc := map[string]any{}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		return err
+	}
+	perms, ok := doc["permissions"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	existing, _ := perms["allow"].([]any)
+
+	ours := map[string]struct{}{}
+	for _, s := range scoutPermissions() {
+		ours[s] = struct{}{}
+	}
+	kept := existing[:0]
+	for _, e := range existing {
+		if s, ok := e.(string); ok {
+			if _, isOurs := ours[s]; isOurs {
+				continue
+			}
+		}
+		kept = append(kept, e)
+	}
+	perms["allow"] = kept
+	doc["permissions"] = perms
+	return atomicWriteJSON(path, doc)
+}
+
+// PermissionsAllowCount reports how many of scoutPermissions() are present in
+// settings.json permissions.allow (for the doctor report).
+func PermissionsAllowCount() (present, total int) {
+	total = len(scoutPermissions())
+	path, err := settingsJSONPath()
+	if err != nil {
+		return 0, total
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return 0, total
+	}
+	doc := map[string]any{}
+	if json.Unmarshal(raw, &doc) != nil {
+		return 0, total
+	}
+	perms, _ := doc["permissions"].(map[string]any)
+	allow, _ := perms["allow"].([]any)
+	have := map[string]struct{}{}
+	for _, e := range allow {
+		if s, ok := e.(string); ok {
+			have[s] = struct{}{}
+		}
+	}
+	for _, want := range scoutPermissions() {
+		if _, ok := have[want]; ok {
+			present++
+		}
+	}
+	return present, total
+}
+
 // RegisterLocalMarketplace shells out `claude plugin marketplace add
 // <target>` so CC indexes our directory-source marketplace.
 func RegisterLocalMarketplace(target string) {
@@ -294,6 +434,11 @@ func Install(target string) (int, error) {
 	if err := PatchSettings(); err != nil {
 		return n, fmt.Errorf("patch settings.json: %w", err)
 	}
+	if err := PatchPermissions(); err != nil {
+		fmt.Fprintf(os.Stderr, "[install] permissions.allow: %v (continuing)\n", err)
+	} else {
+		fmt.Fprintf(os.Stderr, "[install] auto-approved %d low-risk scout tools in settings.json permissions.allow\n", len(scoutPermissions()))
+	}
 	if err := UnpatchMcpServers(); err == nil {
 		fmt.Fprintln(os.Stderr, "[install] cleaned: settings.json mcpServers.scout (now owned by plugin .mcp.json)")
 	}
@@ -305,6 +450,9 @@ func Install(target string) (int, error) {
 func Uninstall(target string) error {
 	if err := UnpatchSettings(); err != nil {
 		fmt.Fprintf(os.Stderr, "[uninstall] settings.json: %v (continuing)\n", err)
+	}
+	if err := UnpatchPermissions(); err != nil {
+		fmt.Fprintf(os.Stderr, "[uninstall] permissions.allow: %v (continuing)\n", err)
 	}
 	if err := UnpatchMcpServers(); err != nil {
 		fmt.Fprintf(os.Stderr, "[uninstall] mcpServers: %v (continuing)\n", err)
